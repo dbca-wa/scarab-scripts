@@ -1,0 +1,19 @@
+---
+title: "P275-SCB Scarab"
+author: "Florian Mayer"
+date: "12/19/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Welcome
+This repo will contain ETL, QA and analytical scripts, workbooks and apps consuming
+SCB data from legacy database snapshots kept on [data.dpaw.wa.gov.au](https://data.dpaw.wa.gov.au/organization/species-and-communities)
+and later the SCB API.
+
+Tasks are tracked at [scarab](https://github.com/parksandwildlife/scarab/issues)
+with a neat [Kanban board](https://waffle.io/parksandwildlife/scarab/).
+Contact Florian to gain write access.
