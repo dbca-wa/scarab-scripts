@@ -1,0 +1,132 @@
+---
+title: "Data ETL: TEC, Fauna, Flora"
+author: "Florian Mayer"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# devtools::install_github("ropenscilabs/skimr")
+# install from github: "brianb/mdbtools"
+# devtools::install_github("ropensci/ckanr")
+library(tidyverse)
+library(skimr)
+library(Hmisc)
+library(ckanr)
+
+# Configure ckanr to data.dpaw.wa.gov.au
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), 
+                   key = Sys.getenv("CKAN_API_KEY"))
+
+#' Download, extract and open a zipped Access database from a CKAN dataset
+#' 
+#' @param resource_id The CKAN resource ID of a zipped Access DB
+#' @param destdir The local destination directory for the extracted file, 
+#'  will be created if not existing. Default: "data"
+#' @param dateformat The parameter dateformat for Hmisc::mdb.get(), 
+#'  default: '%Y-%m-%d'
+#' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
+#' @returns The Hmisc::mdb.get connection
+dl_mdbzip <- function(resource_id, 
+                      destdir="data", 
+                      dateformat = '%Y-%m-%d', 
+                      asis = TRUE) {
+    dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
+    tmp <- tempfile()
+    res_url <- ckanr::resource_show(resource_id)$url
+    utils::download.file(res_url, tmp)
+    dbfile <- utils::unzip(tmp, exdir = destdir)
+    unlink(tmp)
+    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
+    con
+}
+```
+
+# Load data from CKAN snapshot
+Download the zip archive containing the MS Access database, 
+extract the archive and open a database connection.
+
+```{r load_data}
+tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
+fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f")
+fauna_aux <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>% read.csv(., as.is = TRUE)
+```
+
+# Extract data
+Tables are extracted from the db connection, joined to lookups, columns renamed,
+datatypes parsed.
+
+## TEC
+
+```{r extract_tables}
+# sites <- con$tblSections %>%
+#   transmute(
+#     id=as.numeric(SubSect.Id),
+#     division=as.character(division.name),
+#     section=as.character(txtSections),
+#     subsection=as.character(txtSubSection),
+#     lat=-as.numeric(SubSect.center.lat),
+#     lon=as.numeric(SubSect.center.long),
+#     y_max=-as.numeric(SubSect.NE.lat),
+#     y_min=-as.numeric(SubSect.SW.lat),
+#     x_max=as.numeric(SubSect.NE.long),
+#     x_min=as.numeric(SubSect.SW.long))
+# row.names(sites) <- sites$id
+occ_raw <- tec$OCCURRENCES %>% tibble::as.tibble() 
+
+# whack it with a wrench until it fits
+occ <- occ_raw %>%
+    dplyr::transmute(
+    id = OCC.UNIQUE.ID %>% as.integer,
+    com_no = COM.NO %>% as.integer,
+    occ_no = OCC.NO %>% as.integer,
+    occ_confidential = OCC.CONFIDENTIAL %>% as.integer,
+    occ_source_code = OCC.SOURCE.CODE %>% as.character,
+    body_id = BDY.ID %>% as.integer,
+    occ_br_code = OCC.BR.CODE %>% as.character,
+    occ_beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character,
+    occ_ibra_reg_code = OCC.IBRA.REG.CODE %>% as.character,
+    occ_dola_ref = OCC.DOLA.REF %>% as.character
+# [11] "OCC.CTRC.SYS"             "OCC.CTRC.RECOMMENDATION" 
+# [13] "OCC.CWEALTH.LISTING"      "OCC.ORIGINAL.AREA"       
+# [15] "OCC.AREA.ACCURACY"        "OCC.DATA"                
+# [17] "OCC.OTHER"                "OCC.SOIL"                
+# [19] "OCC.SURF.GEOLOGY"         "OCC.LAND.ELEMENT"        
+# [21] "OCC.WATER"                "OCC.DRAINAGE"            
+# [23] "OCC.COM.STRUCTURE"        "OCC.CLASSIFICATION"      
+# [25] "OCC.OTHER.ATTR"           "OCC.BEARD.MAP.CODE"      
+# [27] "OCC.BEARD.DESC"           "OCC.DESC"                
+# [29] "OCC.BOUNDARY.DESC"        "OCC.SPECIES.DESC"        
+# [31] "OCC.ZONE.CODE"            "USERNAME"                
+# [33] "OCC.DATE.ENTERED"         "OCC.DATE.EDITED"         
+# [35] "OCC.BUFFER.RADIUS"        "OCC.BUSH.FOREVER.SITE.NO"
+# [37] "OCC.STATUS.CODE"          "OCC.NO.BOUNDARY"         
+# [39] "OCC.COMMONWEALTH.DESC"   
+    
+    )
+
+occ %>% skimr::skim()
+
+summary(tec)
+```
+
+## Flora
+```{r}
+# skimr::skim(flora) #  invalid multibyte string, element 1077
+head(flora)
+summary(flora)
+```
+
+## Fauna
+
+Access database not supplied, only front-end db.
+
+```{r}
+fr <- fauna_aux$`Fauna Records`
+# head(fr)
+# skimr::skim(fr)
+# Error in consolidate(x = `*tmp*`, value = value) : object '*tmp*' not found
+```
