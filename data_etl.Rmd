@@ -118,6 +118,27 @@ summary(tec)
 # skimr::skim(flora) #  invalid multibyte string, element 1077
 head(flora)
 summary(flora)
+library(leaflet)
+leaflet(width=800, height=600) %>% 
+    addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+    addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+    clearBounds() %>%
+    addAwesomeMarkers(
+        data = flora,
+        lng = ~Gda94Long, lat=~Gda94Lat,
+        icon = leaflet::makeAwesomeIcon(),
+        label=~paste(Taxon),
+        popup=~paste("<h3>", Taxon, "</h3>", 
+                     "<strong>Encountered on</strong>", CountDate, "<br/>",
+                     HabNotes, "<br/>",PopNotes, "<br/>", Location),
+        group = "Flora",
+        clusterOptions = markerClusterOptions()) %>%
+    addLayersControl(
+        baseGroups = c("Aerial", "Place names"),
+        overlayGroups = c("Flora"),
+        options = layersControlOptions(collapsed = FALSE))
+
+
 ```
 
 ## Fauna
