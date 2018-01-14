@@ -1,13 +1,20 @@
 ---
-title: "Data ETL: TEC, Fauna, Flora"
-author: "Florian Mayer"
+title: "Data ETL: Fauna, Flora, TEC"
+author: "Florian Mayer, DBCA"
 date: "`r Sys.time()`"
-output: html_document
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 # devtools::install_github("ropenscilabs/skimr")
+# devtools::install_github("tidyverse/readr")
 # install from github: "brianb/mdbtools"
 # devtools::install_github("ropensci/ckanr")
 library(tidyverse)
@@ -43,81 +50,55 @@ dl_mdbzip <- function(resource_id,
     con
 }
 ```
+# SCB data background
+TODO: Context
 
-# Load data from CKAN snapshot
+TODO: Links to CKAN datasets
+
+# Fauna
+
+## Fauna data load
 Download the zip archive containing the MS Access database, 
 extract the archive and open a database connection.
 
-```{r load_data}
-tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
-tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
+Access database not supplied, only front-end db.
+
+TODO: get actual database.
+
+```{r fauna_data_load}
 fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f")
 fauna_aux <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>% read.csv(., as.is = TRUE, encoding="utf-8", fileEncoding = "latin1")
-```
 
-# Extract data
-Tables are extracted from the db connection, joined to lookups, columns renamed,
-datatypes parsed.
-
-## TEC
-
-```{r extract_tables}
-# sites <- con$tblSections %>%
-#   transmute(
-#     id=as.numeric(SubSect.Id),
-#     division=as.character(division.name),
-#     section=as.character(txtSections),
-#     subsection=as.character(txtSubSection),
-#     lat=-as.numeric(SubSect.center.lat),
-#     lon=as.numeric(SubSect.center.long),
-#     y_max=-as.numeric(SubSect.NE.lat),
-#     y_min=-as.numeric(SubSect.SW.lat),
-#     x_max=as.numeric(SubSect.NE.long),
-#     x_min=as.numeric(SubSect.SW.long))
-# row.names(sites) <- sites$id
-occ_raw <- tec$OCCURRENCES %>% tibble::as.tibble() 
-
-# whack it with a wrench until it fits
-occ <- occ_raw %>%
+# TODO: extract other tables
+fr <- fauna_aux$`Fauna Records` %>%
     dplyr::transmute(
-    id = OCC.UNIQUE.ID %>% as.integer,
-    com_no = COM.NO %>% as.integer,
-    occ_no = OCC.NO %>% as.integer,
-    occ_confidential = OCC.CONFIDENTIAL %>% as.integer,
-    occ_source_code = OCC.SOURCE.CODE %>% as.character,
-    body_id = BDY.ID %>% as.integer,
-    occ_br_code = OCC.BR.CODE %>% as.character,
-    occ_beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character,
-    occ_ibra_reg_code = OCC.IBRA.REG.CODE %>% as.character,
-    occ_dola_ref = OCC.DOLA.REF %>% as.character
-# [11] "OCC.CTRC.SYS"             "OCC.CTRC.RECOMMENDATION" 
-# [13] "OCC.CWEALTH.LISTING"      "OCC.ORIGINAL.AREA"       
-# [15] "OCC.AREA.ACCURACY"        "OCC.DATA"                
-# [17] "OCC.OTHER"                "OCC.SOIL"                
-# [19] "OCC.SURF.GEOLOGY"         "OCC.LAND.ELEMENT"        
-# [21] "OCC.WATER"                "OCC.DRAINAGE"            
-# [23] "OCC.COM.STRUCTURE"        "OCC.CLASSIFICATION"      
-# [25] "OCC.OTHER.ATTR"           "OCC.BEARD.MAP.CODE"      
-# [27] "OCC.BEARD.DESC"           "OCC.DESC"                
-# [29] "OCC.BOUNDARY.DESC"        "OCC.SPECIES.DESC"        
-# [31] "OCC.ZONE.CODE"            "USERNAME"                
-# [33] "OCC.DATE.ENTERED"         "OCC.DATE.EDITED"         
-# [35] "OCC.BUFFER.RADIUS"        "OCC.BUSH.FOREVER.SITE.NO"
-# [37] "OCC.STATUS.CODE"          "OCC.NO.BOUNDARY"         
-# [39] "OCC.COMMONWEALTH.DESC"   
-    
+        db_no = DBNo %>% as.integer,
+        dist_db = DistDB %>% as.integer,
+        # TODO: parse 79 remaining columns
     )
-
-occ %>% skimr::skim()
-
-summary(tec)
 ```
 
-## Flora
-```{r}
-skimr::skim(flora)
+## Fauna data overview
+```{r fauna_skim}
+skimr::skim(fr)
+```
 
+# Flora
+
+## Flora data load
+```{r flora_load_data}
+flora <- ckanr::resource_show(
+    "913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>% 
+    read.csv(., as.is=TRUE, encoding = "utf8", fileEncoding = "latin1")
+```
+
+## Flora data overview
+```{r flora_skim}
+skimr::skim(flora)
+```
+
+## Flora map
+```{r flora_map}
 leaflet(width=800, height=600) %>% 
     addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
     addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
@@ -142,13 +123,68 @@ leaflet(width=800, height=600) %>%
 
 ```
 
-## Fauna
+# TEC
 
-Access database not supplied, only front-end db.
+## TEC data load
+```{r tec_data_load}
+tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
+```
 
-```{r}
-fr <- fauna_aux$`Fauna Records`
-# head(fr)
-# skimr::skim(fr)
-# Error in consolidate(x = `*tmp*`, value = value) : object '*tmp*' not found
+## TEC data transformation
+```{r extract_tables}
+# Date formats
+orders <- c("m/d/y H:M:S")
+tz <- "Australia/Perth"
+
+occ <- tec$OCCURRENCES %>% 
+    tibble::as.tibble() %>%
+    dplyr::transmute(
+    id = OCC.UNIQUE.ID %>% as.integer,
+    com_no = COM.NO %>% as.integer,
+    occ_no = OCC.NO %>% as.integer,
+    confidential = OCC.CONFIDENTIAL %>% as.integer,
+    source_code = OCC.SOURCE.CODE %>% as.character,
+    body_id = BDY.ID %>% as.integer,
+    br_code = OCC.BR.CODE %>% as.character,
+    beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character,
+    ibra_reg_code = OCC.IBRA.REG.CODE %>% as.character,
+    dola_ref = OCC.DOLA.REF %>% as.character,
+    ctrc_sys = OCC.CTRC.SYS %>% as.integer,
+    ctrc_recommendation = OCC.CTRC.RECOMMENDATION %>% as.character,
+    cwealth_listing = OCC.CWEALTH.LISTING %>% as.character,
+    original_area = OCC.ORIGINAL.AREA %>% as.double,
+    area_accuracy = OCC.AREA.ACCURACY %>% as.double,
+    data = OCC.DATA %>% as.character,
+    other = OCC.OTHER %>% as.character,
+    soil = OCC.SOIL %>% as.character,
+    surf_geology = OCC.SURF.GEOLOGY %>% as.character,
+    land_element = OCC.LAND.ELEMENT %>% as.character,
+    water = OCC.WATER %>% as.character,
+    drainage = OCC.DRAINAGE %>% as.character,
+    com_structure = OCC.COM.STRUCTURE %>% as.character,
+    classification = OCC.CLASSIFICATION %>% as.character,
+    other_attr =  OCC.OTHER.ATTR %>% as.character,
+    beard_map_code = OCC.BEARD.MAP.CODE %>% as.character,
+    beard_desc = OCC.BEARD.DESC %>% as.character,
+    desc = OCC.DESC %>% as.character,
+    boundary_desc = OCC.BOUNDARY.DESC %>% as.character,
+    species_desc = OCC.SPECIES.DESC %>% as.character,
+    zone_code = OCC.ZONE.CODE %>% as.character,
+    username = USERNAME %>% as.character,
+    date_entered =  OCC.DATE.ENTERED %>% 
+        lubridate::parse_date_time(., orders = orders, tz=tz), 
+    date_edited = OCC.DATE.EDITED %>% as.character %>% 
+        lubridate::parse_date_time(., orders = orders, tz=tz),
+    buffer_radius = OCC.BUFFER.RADIUS %>% as.integer,
+    bush_forever_site_no = OCC.BUSH.FOREVER.SITE.NO %>% as.integer,
+    status_code = OCC.STATUS.CODE %>% as.logical,
+    no_boundary = OCC.NO.BOUNDARY %>% as.integer,
+    commenwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character
+    )
+```
+
+## TEC data overview
+```{r tec_skim}
+occ %>% skimr::skim()
 ```
