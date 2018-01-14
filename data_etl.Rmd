@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # devtools::install_github("ropensci/ckanr")
 library(tidyverse)
 library(skimr)
+library(leaflet)
 library(Hmisc)
 library(ckanr)
 
@@ -52,7 +53,7 @@ tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f")
 fauna_aux <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>% read.csv(., as.is = TRUE)
+flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>% read.csv(., as.is = TRUE, encoding="utf-8", fileEncoding = "latin1")
 ```
 
 # Extract data
@@ -115,10 +116,8 @@ summary(tec)
 
 ## Flora
 ```{r}
-# skimr::skim(flora) #  invalid multibyte string, element 1077
-head(flora)
-summary(flora)
-library(leaflet)
+skimr::skim(flora)
+
 leaflet(width=800, height=600) %>% 
     addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
     addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
@@ -126,11 +125,13 @@ leaflet(width=800, height=600) %>%
     addAwesomeMarkers(
         data = flora,
         lng = ~Gda94Long, lat=~Gda94Lat,
-        icon = leaflet::makeAwesomeIcon(),
-        label=~paste(Taxon),
-        popup=~paste("<h3>", Taxon, "</h3>", 
+        icon = leaflet::makeAwesomeIcon(icon="leaf"),
+        label = ~paste(Taxon),
+        popup = ~paste("<h3>", Taxon, "</h3>", 
                      "<strong>Encountered on</strong>", CountDate, "<br/>",
-                     HabNotes, "<br/>",PopNotes, "<br/>", Location),
+                     HabNotes, "<br/>",
+                     PopNotes, "<br/>", 
+                     Location),
         group = "Flora",
         clusterOptions = markerClusterOptions()) %>%
     addLayersControl(
