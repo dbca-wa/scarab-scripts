@@ -1,0 +1,109 @@
+---
+title: "Data ETL: Flora"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# devtools::install_github("ropenscilabs/skimr")
+# devtools::install_github("tidyverse/readr")
+# install from github: "brianb/mdbtools"
+# devtools::install_github("ropensci/ckanr")
+library(tidyverse)
+library(skimr)
+library(leaflet)
+library(Hmisc)
+library(ckanr)
+
+# Configure ckanr to data.dpaw.wa.gov.au
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), 
+                   key = Sys.getenv("CKAN_API_KEY"))
+
+#' Download, extract and open a zipped Access database from a CKAN dataset
+#' 
+#' @param resource_id The CKAN resource ID of a zipped Access DB
+#' @param destdir The local destination directory for the extracted file, 
+#'  will be created if not existing. Default: "data"
+#' @param dateformat The parameter dateformat for Hmisc::mdb.get(), 
+#'  default: '%Y-%m-%d'
+#' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
+#' @returns The Hmisc::mdb.get connection
+dl_mdbzip <- function(resource_id, 
+                      destdir="data", 
+                      dateformat = '%Y-%m-%d', 
+                      asis = TRUE) {
+    dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
+    tmp <- tempfile()
+    res_url <- ckanr::resource_show(resource_id)$url
+    utils::download.file(res_url, tmp)
+    dbfile <- utils::unzip(tmp, exdir = destdir)
+    unlink(tmp)
+    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
+    con
+}
+```
+# SCB data background
+TODO: Context
+
+[Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database/resource/d1fccebb-02e2-4a40-aba4-c4d6ad012edb) on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
+
+# Flora
+
+## Flora data load
+```{r flora_load_data}
+flora <- ckanr::resource_show(
+    "913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>% 
+    read.csv(., as.is=TRUE, encoding = "utf8", fileEncoding = "latin1")
+```
+
+## Flora data overview
+```{r flora_skim}
+skimr::skim(flora)
+```
+
+## Flora map
+```{r flora_map}
+leaflet(width=800, height=600) %>% 
+    addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+    addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+    clearBounds() %>%
+    addAwesomeMarkers(
+        data = flora,
+        lng = ~Gda94Long, lat=~Gda94Lat,
+        icon = leaflet::makeAwesomeIcon(icon="leaf"),
+        label = ~paste(Taxon),
+        popup = ~paste("<h3>", Taxon, "</h3>", 
+                     "<strong>Encountered on</strong>", CountDate, "<br/>",
+                     HabNotes, "<br/>",
+                     PopNotes, "<br/>", 
+                     Location),
+        group = "Flora",
+        clusterOptions = markerClusterOptions()) %>%
+    addLayersControl(
+        baseGroups = c("Aerial", "Place names"),
+        overlayGroups = c("Flora"),
+        options = layersControlOptions(collapsed = FALSE))
+```
+
+## Flora data upload
+Create resource once-off to get a resource ID.
+Subsequently, upload the compiled workbook.
+Note, this process lags one compilation of this workbook, as the HTML output
+is generated after the R code is run.
+
+```{r flora_upload}
+# d <- ckanr::package_show("threatened-and-priority-flora-database")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "html",
+#                      name = "Flora Data ETL",
+#                      upload = "data_etl_flora.html")
+ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", "data_etl_fauna.html")
+```

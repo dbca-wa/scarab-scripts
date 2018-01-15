@@ -1,5 +1,5 @@
 ---
-title: "Data ETL: Fauna, Flora, TEC"
+title: "Data ETL: TEC"
 author: "Florian Mayer, DBCA"
 date: "`r Sys.time()`"
 always_allow_html: yes
@@ -53,75 +53,8 @@ dl_mdbzip <- function(resource_id,
 # SCB data background
 TODO: Context
 
-TODO: Links to CKAN datasets
-
-# Fauna
-
-## Fauna data load
-Download the zip archive containing the MS Access database, 
-extract the archive and open a database connection.
-
-Access database not supplied, only front-end db.
-
-TODO: get actual database.
-
-```{r fauna_data_load}
-fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f")
-fauna_aux <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-
-# TODO: extract other tables
-fr <- fauna_aux$`Fauna Records` %>%
-    dplyr::transmute(
-        db_no = DBNo %>% as.integer,
-        dist_db = DistDB %>% as.integer,
-        # TODO: parse 79 remaining columns
-    )
-```
-
-## Fauna data overview
-```{r fauna_skim}
-skimr::skim(fr)
-```
-
-# Flora
-
-## Flora data load
-```{r flora_load_data}
-flora <- ckanr::resource_show(
-    "913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>% 
-    read.csv(., as.is=TRUE, encoding = "utf8", fileEncoding = "latin1")
-```
-
-## Flora data overview
-```{r flora_skim}
-skimr::skim(flora)
-```
-
-## Flora map
-```{r flora_map}
-leaflet(width=800, height=600) %>% 
-    addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
-    addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
-    clearBounds() %>%
-    addAwesomeMarkers(
-        data = flora,
-        lng = ~Gda94Long, lat=~Gda94Lat,
-        icon = leaflet::makeAwesomeIcon(icon="leaf"),
-        label = ~paste(Taxon),
-        popup = ~paste("<h3>", Taxon, "</h3>", 
-                     "<strong>Encountered on</strong>", CountDate, "<br/>",
-                     HabNotes, "<br/>",
-                     PopNotes, "<br/>", 
-                     Location),
-        group = "Flora",
-        clusterOptions = markerClusterOptions()) %>%
-    addLayersControl(
-        baseGroups = c("Aerial", "Place names"),
-        overlayGroups = c("Flora"),
-        options = layersControlOptions(collapsed = FALSE))
-
-
-```
+[TEC dataset](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database)
+on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
 # TEC
 
@@ -187,4 +120,20 @@ occ <- tec$OCCURRENCES %>%
 ## TEC data overview
 ```{r tec_skim}
 occ %>% skimr::skim()
+```
+
+
+## TEC data upload
+Create resource once-off to get a resource ID.
+Subsequently, upload the compiled workbook.
+Note, this process lags one compilation of this workbook, as the HTML output
+is generated after the R code is run.
+
+```{r tec_upload}
+# d <- ckanr::package_show("threatened-ecological-communities-database")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "html", 
+#                      name = "TEC Data ETL", 
+#                      upload = file.edit("data_etl_tec.html"))
+ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html")
 ```

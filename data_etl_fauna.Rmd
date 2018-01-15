@@ -1,0 +1,100 @@
+---
+title: "Data ETL: Fauna"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# devtools::install_github("ropenscilabs/skimr")
+# devtools::install_github("tidyverse/readr")
+# install from github: "brianb/mdbtools"
+# devtools::install_github("ropensci/ckanr")
+library(tidyverse)
+library(skimr)
+library(leaflet)
+library(Hmisc)
+library(ckanr)
+
+# Configure ckanr to data.dpaw.wa.gov.au
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), 
+                   key = Sys.getenv("CKAN_API_KEY"))
+
+#' Download, extract and open a zipped Access database from a CKAN dataset
+#' 
+#' @param resource_id The CKAN resource ID of a zipped Access DB
+#' @param destdir The local destination directory for the extracted file, 
+#'  will be created if not existing. Default: "data"
+#' @param dateformat The parameter dateformat for Hmisc::mdb.get(), 
+#'  default: '%Y-%m-%d'
+#' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
+#' @returns The Hmisc::mdb.get connection
+dl_mdbzip <- function(resource_id, 
+                      destdir="data", 
+                      dateformat = '%Y-%m-%d', 
+                      asis = TRUE) {
+    dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
+    tmp <- tempfile()
+    res_url <- ckanr::resource_show(resource_id)$url
+    utils::download.file(res_url, tmp)
+    dbfile <- utils::unzip(tmp, exdir = destdir)
+    unlink(tmp)
+    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
+    con
+}
+```
+# SCB data background
+TODO: Context
+
+[Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
+on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
+
+# Fauna
+
+## Fauna data load
+Download the zip archive containing the MS Access database, 
+extract the archive and open a database connection.
+
+Access database not supplied, only front-end db.
+
+TODO: get actual database.
+
+```{r fauna_data_load}
+fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f")
+fauna_aux <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+
+# TODO: extract other tables
+fr <- fauna_aux$`Fauna Records` %>%
+    dplyr::transmute(
+        db_no = DBNo %>% as.integer,
+        dist_db = DistDB %>% as.integer,
+        # TODO: parse 79 remaining columns
+    )
+```
+
+## Fauna data overview
+```{r fauna_skim}
+skimr::skim(fr)
+```
+
+## Fauna data upload
+Create resource once-off to get a resource ID.
+Subsequently, upload the compiled workbook.
+Note, this process lags one compilation of this workbook, as the HTML output
+is generated after the R code is run.
+
+```{r fauna_upload}
+# d <- ckanr::package_show("threatened-and-priority-fauna-database")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "html",
+#                      name = "Fauna Data ETL",
+#                      upload = "data_etl_fauna.html")
+ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", "data_etl_fauna.html")
+```
