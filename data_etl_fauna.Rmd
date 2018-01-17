@@ -244,11 +244,11 @@ leaflet(width = 800, height = 600) %>%
     popup = ~ paste(
       "<h3>", species_id, "</h3>",
       "<strong>Encountered on</strong>", date, "<br/>",
-      "<strong>by</strong>", observer, "<br/>",
+      "<strong>by</strong>", observer_name, "<br/>",
       "<strong>through</strong>", observation_method, "(", observation_type, ")<br/>",
       "<strong>at </strong>", site, "(", shire_label, ")<br/>",
-      "<strong>Vegetation type</strong>", vegetation_type, "(", vegetation_type_id, ")<br/>",
       "<strong>Tenure</strong>", tenure, "(", tenure_id, ")<br/>",
+      "<strong>Vegetation type</strong>", vegetation_type, "(", vegetation_type_id, ")<br/>",
       "<strong>Certainty</strong>", certainty, "(", certainty_id, ")<br/>"
     ),
     group = "Fauna",
