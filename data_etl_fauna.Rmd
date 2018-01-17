@@ -25,30 +25,32 @@ library(Hmisc)
 library(ckanr)
 
 # Configure ckanr to data.dpaw.wa.gov.au
-ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), 
-                   key = Sys.getenv("CKAN_API_KEY"))
+ckanr::ckanr_setup(
+  url = Sys.getenv("CKAN_URL"),
+  key = Sys.getenv("CKAN_API_KEY")
+)
 
 #' Download, extract and open a zipped Access database from a CKAN dataset
-#' 
+#'
 #' @param resource_id The CKAN resource ID of a zipped Access DB
-#' @param destdir The local destination directory for the extracted file, 
+#' @param destdir The local destination directory for the extracted file,
 #'  will be created if not existing. Default: "data"
-#' @param dateformat The parameter dateformat for Hmisc::mdb.get(), 
+#' @param dateformat The parameter dateformat for Hmisc::mdb.get(),
 #'  default: '%Y-%m-%d'
 #' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
 #' @returns The Hmisc::mdb.get connection
-dl_mdbzip <- function(resource_id, 
-                      destdir="data", 
-                      dateformat = '%Y-%m-%d', 
+dl_mdbzip <- function(resource_id,
+                      destdir="data",
+                      dateformat = "%Y-%m-%d",
                       asis = TRUE) {
-    dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
-    tmp <- tempfile()
-    res_url <- ckanr::resource_show(resource_id)$url
-    utils::download.file(res_url, tmp)
-    dbfile <- utils::unzip(tmp, exdir = destdir)
-    unlink(tmp)
-    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
-    con
+  dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
+  tmp <- tempfile()
+  res_url <- ckanr::resource_show(resource_id)$url
+  utils::download.file(res_url, tmp)
+  dbfile <- utils::unzip(tmp, exdir = destdir)
+  unlink(tmp)
+  con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
+  con
 }
 ```
 # SCB data background
@@ -61,151 +63,204 @@ on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 The zip archive containing the MS Access database is downloaded from the data 
 catalogue, the archive is extracted, and a database connection is opened.
 
-Lookup tables are joined to the main tables.
-
 ```{r fauna_data_load}
 fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f")
 fauna_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+```
+
+Some helpers are defined.
+
+```{r etl_helpers}
+# Date conventions
+orders <- c("mdyHMS")
+tz <- "Australia/Perth"
 
 # Prepare column def
 as_def <- . %>% paste(., " = ", ., " %>% as.character, \n")
 # fnames <- fauna_data$`Fauna Records` %>% names
 # fnames %>% purrr::map(as_def) %>% unlist %>% cat
-
-shires <- fauna_data$Shires %>%
-    dplyr::transmute(
-        LGACode = LGACode %>% as.integer,
-        shire_name = LGAName %>% as.character,
-        shire_label = LGAName2 %>% as.character
-    )
-orders <- c("mdyhms")
-tz <- "Australia/Perth"
-
-fauna_raw <- fauna_data$`Fauna Records`
-fauna <- fauna_raw %>%
-    dplyr::transmute(
-        db_no = DBNo %>% as.integer,
-        dist_db = DistDB %>% as.integer,
-        DBNo = DBNo  %>% as.character, 
-        DistDB = DistDB  %>% as.character, 
-        DistDBNo = DistDBNo  %>% as.character, 
-        SpCode = SpCode  %>% as.character, 
-        NameId = NameId  %>% as.character,
-        o_date = parse_date_time(Date, orders=orders, tz=tz),
-        o_time = parse_date_time(Time, orders=orders, tz=tz),
-        date = with_tz(o_date + hours(hour(o_time)) + minutes(minute(o_time)), tzone = tz),
-        Observer = Observer  %>% as.character, 
-        OrgRole = OrgRole  %>% as.character, 
-        Address = Address  %>% as.character, 
-        Phone = Phone  %>% as.character, 
-        Certainty = Certainty  %>% as.character, 
-        NumSeen = NumSeen  %>% as.character, 
-        Features = Features  %>% as.character, 
-        AdultM = AdultM  %>% as.character, 
-        AdultF = AdultF  %>% as.character, 
-        AdultU = AdultU  %>% as.character, 
-        JuvM = JuvM  %>% as.character, 
-        JuvF = JuvF  %>% as.character, 
-        JuvU = JuvU  %>% as.character, 
-        Location = Location.  %>% as.character, 
-        LocName = LocName  %>% as.character, 
-        TenCode = TenCode  %>% as.integer, 
-        LGACode = LGACode  %>% as.integer, 
-        DistrictNo = DistrictNo  %>% as.character, 
-        Site = Site  %>% as.character, 
-        Lat = Lat  %>% as.double, 
-        Long = Long  %>% as.double, 
-        MapZone = MapZone  %>% as.character, 
-        SightNorth = SightNorth  %>% as.character, 
-        SightEast = SightEast  %>% as.character, 
-        Datum = Datum  %>% as.character, 
-        Resolution = Resolution  %>% as.character, 
-        Landform = Landform  %>% as.character, 
-        VegType = VegType  %>% as.character, 
-        Fire = Fire  %>% as.character, 
-        Sp1 = Sp1  %>% as.character, 
-        Sp2 = Sp2  %>% as.character, 
-        Sp3 = Sp3  %>% as.character, 
-        Sp4 = Sp4  %>% as.character, 
-        Sp5 = Sp5  %>% as.character, 
-        Sp6 = Sp6  %>% as.character, 
-        observation_method = ObservMethod  %>% as.character, 
-        observation_type = ObservType  %>% as.character, 
-        SecSign = SecSign  %>% as.character, 
-        Observation = Observation  %>% as.character, 
-        Breeding = Breeding  %>% as.character, 
-        Specimen = Specimen  %>% as.character, 
-        Identification = Identification  %>% as.character, 
-        SpHeld = SpHeld  %>% as.character, 
-        Map = Map  %>% as.character, 
-        MudMap = MudMap  %>% as.character, 
-        Photo = Photo  %>% as.character, 
-        Notes = Notes  %>% as.character, 
-        Comments = Comments  %>% as.character, 
-        entered_by = EnName  %>% as.character, 
-        entered_on = parse_date_time(EnDate, orders=orders, tz=tz),
-        changed_by = ChName  %>% as.character, 
-        changed_on =  parse_date_time(ChDate, orders=orders, tz=tz),
-        SpVoucher = SpVoucher  %>% as.character, 
-        SpCatNum = SpCatNum  %>% as.character, 
-        UnPublished = UnPublished  %>% as.logical, 
-        ReportTitle = ReportTitle  %>% as.character, 
-        Author = Author  %>% as.character, 
-        MFeggsH = MFeggsH  %>% as.character, 
-        MFeggsU = MFeggsU  %>% as.character, 
-        MFmoundU = MFmoundU  %>% as.character, 
-        MFmoundCA = MFmoundCA  %>% as.character, 
-        MFmoundRA = MFmoundRA  %>% as.character, 
-        MFmoundI = MFmoundI  %>% as.character, 
-        MFMage = MFMage  %>% as.character, 
-        MFMdiam = MFMdiam  %>% as.character, 
-        MFMheight = MFMheight  %>% as.character, 
-        MFMwidth = MFMwidth  %>% as.character, 
-        MFMdepth = MFMdepth  %>% as.character, 
-        MFMsoil = MFMsoil  %>% as.character, 
-        MFMcomment = MFMcomment  %>% as.character, 
-        MFextract = MFextract  %>% as.character, 
-        Field1 = Field1  %>% as.character, 
-        Field2 = Field2  %>% as.character, 
-        Field3 = Field3  %>% as.character, 
-        Field4 = Field4  %>% as.character, 
-        Field5 = Field5  %>% as.character
-        ) %>%
-    dplyr::left_join(shires, by = "LGACode") %>% 
-    dplyr::select(-LGACode, -o_date, -o_time)
 ```
 
-## Fauna data overview
+## Lookup tables
+Lookup table columns are renamed to facilitate joining.
+
+```{r lookup_tables}
+# Lookup tables
+shires <- fauna_data$Shires %>%
+  dplyr::transmute(
+    lga_id = LGACode %>% as.integer(),
+    shire_name = LGAName %>% as.character(),
+    shire_label = LGAName2 %>% as.character()
+  )
+
+tenure <- fauna_data$`Land Tenure` %>%
+  dplyr::transmute(
+    tenure_id = TenCode %>% as.character(),
+    tenure = Tenure %>% as.character()
+  )
+
+vegetation_types <- fauna_data$`Vegetation Types` %>%
+  dplyr::mutate(
+    vegetation_type_id = VegCode %>% as.character(),
+    vegetation_type = VegTypeName %>% as.character()
+  )
+
+certainty <- fauna_data$Certainty %>%
+  dplyr::transmute(
+    certainty_id = Code %>% as.integer(),
+    certainty = Certainty %>% as.character()
+  ) 
+```
+
+## Fauna occurrence
+Fauna data is parsed into matching data types, dates are recognised, and lookup
+values are joined while lookup IDs are retained to facilitate later data ingestion
+into other systems.
+
+Legacy column names are capitalised, while new or reformatted column are lower-cased.
+
+```{r fauna_occurrence}
+# Species occurrence: fauna encounters
+fauna_raw <- fauna_data$`Fauna Records`
+fauna <- fauna_raw %>%
+  dplyr::transmute(
+    id = DBNo %>% as.integer(),
+    dist_db = DistDB %>% as.integer(),
+    dist_db_no = DistDBNo %>% as.character(),
+    species_id = SpCode %>% as.character(),
+    # name_id = NameId %>% as.character(), # they're all NA
+    o_date = parse_date_time(Date, orders = orders, tz = tz),
+    o_time = parse_date_time(Time, orders = orders, tz = tz),
+    date = with_tz(o_date + hours(hour(o_time)) + minutes(minute(o_time)), tzone = tz),
+    observer_name = Observer %>% as.character(),
+    observer_role = OrgRole %>% as.character(),
+    observer_address = Address %>% as.character(),
+    observer_phone = Phone %>% as.character(),
+    certainty_id = Certainty %>% as.integer(),
+    number_seen = NumSeen %>% as.integer(),
+    animal_features = Features %>% as.character(),
+    number_adult_males = AdultM %>% as.integer(),
+    number_adult_females = AdultF %>% as.integer(),
+    number_adult_unknown = AdultU %>% as.integer(),
+    number_juvenile_males = JuvM %>% as.integer(),
+    number_juvenile_females = JuvF %>% as.integer(),
+    number_juvenile_unknown = JuvU %>% as.integer(),
+    location_id = Location. %>% as.character(),
+    location_name = LocName %>% as.character(),
+    tenure_id = TenCode %>% as.character(),
+    lga_id = LGACode %>% as.integer(),
+    district_id = DistrictNo %>% as.character(),
+    site = Site %>% as.character(),
+    latitude = Lat %>% as.double(),
+    longitude = Long %>% as.double(),
+    map_zone = MapZone %>% as.character(),
+    northing = SightNorth %>% as.character(),
+    easting = SightEast %>% as.character(),
+    map_datum = Datum %>% as.character(),
+    resolution = Resolution %>% as.character(),
+    landform_id = Landform %>% as.character(),
+    vegetation_type_id = VegType %>% as.character(),
+    fire_history = Fire %>% as.character(),
+    Sp1 = Sp1 %>% as.character(),
+    Sp2 = Sp2 %>% as.character(),
+    Sp3 = Sp3 %>% as.character(),
+    Sp4 = Sp4 %>% as.character(),
+    Sp5 = Sp5 %>% as.character(),
+    Sp6 = Sp6 %>% as.character(),
+    observation_method = ObservMethod %>% as.character(),
+    observation_type = ObservType %>% as.character(),
+    secondary_signs = SecSign %>% as.character(),
+    observation_comments = Observation %>% as.character(),
+    breeding_status = Breeding %>% as.character(),
+    specimen_status = Specimen %>% as.character(),
+    species_id_confirmed_by = Identification %>% as.character(),
+    specimen_location = SpHeld %>% as.character(),
+    Map = Map %>% as.character(), # TODO parse bool
+    MudMap = MudMap %>% as.character(), # TODO parse bool
+    photo_taken = Photo %>% as.character(), # TODO parse bool
+    notes = Notes %>% as.character(),
+    comments = Comments %>% as.character(),
+    entered_by = EnName %>% as.character(),
+    entered_on = parse_date_time(EnDate, orders = orders, tz = tz),
+    changed_by = ChName %>% as.character(),
+    changed_on = parse_date_time(ChDate, orders = orders, tz = tz),
+    species_voucher = SpVoucher %>% as.logical(),
+    SpCatNum = SpCatNum %>% as.character(),
+    UnPublished = UnPublished %>% as.logical(),
+    ReportTitle = ReportTitle %>% as.character(),
+    Author = Author %>% as.character(),
+    MFeggsH = MFeggsH %>% as.character(),
+    MFeggsU = MFeggsU %>% as.character(),
+    MFmoundU = MFmoundU %>% as.character(),
+    MFmoundCA = MFmoundCA %>% as.character(),
+    MFmoundRA = MFmoundRA %>% as.character(),
+    MFmoundI = MFmoundI %>% as.character(),
+    MFMage = MFMage %>% as.character(),
+    MFMdiam = MFMdiam %>% as.character(),
+    MFMheight = MFMheight %>% as.character(),
+    MFMwidth = MFMwidth %>% as.character(),
+    MFMdepth = MFMdepth %>% as.character(),
+    MFMsoil = MFMsoil %>% as.character(),
+    MFMcomment = MFMcomment %>% as.character(),
+    MFextract = MFextract %>% as.character(),
+    Field1 = Field1 %>% as.character(),
+    Field2 = Field2 %>% as.character(),
+    Field3 = Field3 %>% as.character(),
+    Field4 = Field4 %>% as.character(),
+    Field5 = Field5 %>% as.character()
+  ) %>%
+  dplyr::left_join(shires, by = "lga_id") %>%
+  dplyr::left_join(tenure, by = "tenure_id") %>%
+  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
+  dplyr::left_join(certainty, by = "certainty_id") %>%
+  dplyr::select(-o_date, -o_time)
+```
+
+Columns to confirm:
+
+* SpCatNum
+
+
+## Fauna occurrence data overview
+A condensed overview over data values (completeness, ranges and distribution).
 ```{r fauna_skim}
 fauna_skim <- skimr::skim(fauna)
 fauna_skim
 ```
 
-## Fauna map
+## Fauna occurrence map
+An interactive map of fauna occurrences.
+
 ```{r fauna_map}
-leaflet(width = 800, height = 600) %>% 
-    addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
-    addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
-    clearBounds() %>%
-    addAwesomeMarkers(
-        data = fauna,
-        lng = ~Long, lat=~Lat,
-        icon = leaflet::makeAwesomeIcon(icon="leaf"),
-        label = ~paste(SpCode),
-        popup = ~paste(
-            "<h3>", SpCode, "</h3>",
-            "<strong>NameId</strong>", NameId, "<br/>",
-            "<strong>Encountered on</strong>", date, "<br/>",
-            "<strong>by</strong>", Observer, "<br/>",
-            "<strong>through</strong>", observation_method, "(", observation_type, ")<br/>",
-            "<strong>at </strong>", Site, "(", shire_label, ")<br/>"),
-        group = "Fauna",
-        clusterOptions = markerClusterOptions()) %>%
-    addLayersControl(
-        baseGroups = c("Aerial", "Place names"),
-        overlayGroups = c("Fauna"),
-        options = layersControlOptions(collapsed = FALSE))
+leaflet(width = 800, height = 600) %>%
+  addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  clearBounds() %>%
+  addAwesomeMarkers(
+    data = fauna,
+    lng = ~ longitude, lat = ~ latitude,
+    icon = leaflet::makeAwesomeIcon(icon = "leaf"),
+    label = ~ paste(species_id),
+    popup = ~ paste(
+      "<h3>", species_id, "</h3>",
+      "<strong>Encountered on</strong>", date, "<br/>",
+      "<strong>by</strong>", observer, "<br/>",
+      "<strong>through</strong>", observation_method, "(", observation_type, ")<br/>",
+      "<strong>at </strong>", site, "(", shire_label, ")<br/>",
+      "<strong>Vegetation type</strong>", vegetation_type, "(", vegetation_type_id, ")<br/>",
+      "<strong>Tenure</strong>", tenure, "(", tenure_id, ")<br/>",
+      "<strong>Certainty</strong>", certainty, "(", certainty_id, ")<br/>"
+    ),
+    group = "Fauna",
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    overlayGroups = c("Fauna"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
 ```
+
 ## Fauna data upload
 Create resource once-off to get a resource ID.
 Subsequently, upload the compiled workbook.
@@ -220,3 +275,4 @@ is generated after the R code is run.
 #                      upload = "data_etl_fauna.html")
 ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", "data_etl_fauna.html")
 ```
+
