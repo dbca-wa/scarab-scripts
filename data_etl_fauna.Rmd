@@ -12,7 +12,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 # devtools::install_github("ropenscilabs/skimr")
 # devtools::install_github("tidyverse/readr")
 # install from github: "brianb/mdbtools"
@@ -64,7 +64,7 @@ The zip archive containing the MS Access database is downloaded from the data
 catalogue, the archive is extracted, and a database connection is opened.
 
 ```{r fauna_data_load}
-fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f")
+# fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f") # no data
 fauna_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
 ```
 
@@ -77,8 +77,17 @@ tz <- "Australia/Perth"
 
 # Prepare column def
 as_def <- . %>% paste(., " = ", ., " %>% as.character, \n")
-# fnames <- fauna_data$`Fauna Records` %>% names
-# fnames %>% purrr::map(as_def) %>% unlist %>% cat
+make_coldef <- . %>% names %>% purrr::map(as_def) %>% unlist %>% cat
+
+#' Normalise corporate filenumber into <agency>-<year>-<number> or ""
+as_filenumber <- function(body, prefix="DBCA", sep="-") {
+    if (is.null(body) || body == "") return("")
+    urlized_body <- stringr::str_replace_all(body, "F|/", "-")
+    paste0(prefix, sep, urlized_body)
+}
+
+#' Parse a string into a list of integer numbers
+str_to_int_array <- . %>% strsplit(., ",")[[1]] %>% as.list
 ```
 
 ## Lookup tables
@@ -110,24 +119,110 @@ certainty <- fauna_data$Certainty %>%
     certainty_id = Code %>% as.integer(),
     certainty = Certainty %>% as.character()
   ) 
+
+users <- tibble::tibble(
+    username = c("AmyM", "AbbyT", "BrianaWingfield", 
+                 "ChristineFreegard", "GeorginaA", "KellieMantle", 
+                 "NickyMarlow", "PeterMawson", "PeterOrell"),
+    initials = c("AM", "AT", "BW", 
+                 "CF", "GA", "KM", 
+                 "NM", "PM", "PO"),
+    name = c("Amy Mutton", "Abby Thomas", "Briana Wingfield", 
+             "Christine Freegard", "Georgina Anderson", "Kellie Mantle", 
+             "Nicky Marlow", "Peter Mawson", "Peter Orell")
+)
+
+group <- fauna_data$`Group List`
+# skimr::skim(group)
+
+# TODO secondary signs
+# TODO resolution > fauna$resolution - location accuracy
 ```
 
-## Fauna occurrence
-Fauna data is parsed into matching data types, dates are recognised, and lookup
+## Species names
+Data is parsed into matching data types, dates are recognised, and lookup
 values are joined while lookup IDs are retained to facilitate later data ingestion
 into other systems.
 
 Legacy column names are capitalised, while new or reformatted column are lower-cased.
 
+```{r fauna_species}
+# TODO species notes
+
+# Generate column config:
+# fauna_data$`Species List` %>% make_coldef()
+species <- fauna_data$`Species List` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    short_code = ShCode %>% as.character(),
+    family = Family %>% as.character(),
+    genus = Genus %>% as.character(),
+    species = Species %>% as.character(),
+    authority_species = Authority.sp %>% as.character(),
+    subspecies = Subspecies %>% as.character(),
+    authority_subspecies = Authority.ssp %>% as.character(),
+    scientific_name = ScName %>% as.character(),
+    common_name = ComName %>% as.character(),
+    file_number_calm = CALMFileNum %>% as.character() %>% map(~as_filenumber(., prefix = "CALM")),
+    file_number_dec = DECFileNum   %>% as.character() %>% map(~as_filenumber(., prefix = "DEC")),
+    file_number_dpaw = DPaWFileNum %>% as.character() %>% map(~as_filenumber(., prefix = "DPAW")),
+    file_number_dbca = DBCAFileNum %>% as.character() %>% map(~as_filenumber(., prefix = "DBCA")),
+    phylo_group_id = PhyloGroup %>% as.character(),
+    category = Category %>% as.character(), # "J" "N" "E" "B" "F" "D" "I" "A" "G" "C" "H"
+    origin = Origin %>% as.character(), # N I
+    trans = Trans %>% as.character(), # E T
+    region_id_list = Region %>% map(~as.list(strsplit(., ",")[[1]] %>% as.integer)),
+    incl = Incl %>% as.logical(),
+    trap = Trap %>% as.logical(),
+    sight = Sight %>% as.logical(),
+    nbox = Nbox %>% as.logical(),
+    sign = Sign %>% as.logical(),
+    taxon_id = TaxonId %>% as.logical(),
+    BANo = BANo %>% as.logical(),
+    buffer = Buffer %>% as.character(), # NA 0 1 2 3
+    old_species_code = OldCode %>% as.character(),
+    est_life = EST.LIFE %>% as.integer(), # NA  0 10  7 15  6  8
+    name_id = NameID %>% as.character()
+  )
+
+species_skim <- skimr::skim(species)
+print(species_skim)
+DT::datatable(species)
+```
+
+There are `r nrow(species)` species names. The following columns are incomplete:
+
+```{r species_missing_values}
+species_skim %>% filter(stat == "missing", value > 0) %>% select(-stat, -level, -formatted)
+```
+
+The table `species` contains info on:
+
+* taxonomy (links to `name_id`, names, various hierarchy levels, 
+  paraphyletic groups e.g. `phylo_group`)
+* occurrence summary (e.g. region ID list, an unimplemented m2m relation)
+* some numeric fields: `est_life` `r unique(species$est_life)`
+* some lookups: 
+  * `category` (`r unique(species$category)`), 
+  * `origin` (`r unique(species$origin)`), 
+  * `trans` (`r unique(species$trans)`), 
+  * `buffer` (`r unique(species$buffer)`)
+* corporate file numbers (what's in those files?)
+* some logical checkboxes: incl, trap, sight, nbox, sign, taxon_id, BANo (T, F, NA)
+
+## Fauna occurrence
+
 ```{r fauna_occurrence}
-# Species occurrence: fauna encounters
+# Generate column config:
+# fauna_data$`Fauna Records` %>% make_coldef()
+
 fauna_raw <- fauna_data$`Fauna Records`
 fauna <- fauna_raw %>%
   dplyr::transmute(
     id = DBNo %>% as.integer(),
     dist_db = DistDB %>% as.integer(),
     dist_db_no = DistDBNo %>% as.character(),
-    species_id = SpCode %>% as.character(),
+    species_code = SpCode %>% as.character(),
     # name_id = NameId %>% as.character(), # they're all NA
     o_date = parse_date_time(Date, orders = orders, tz = tz),
     o_time = parse_date_time(Time, orders = orders, tz = tz),
@@ -202,12 +297,13 @@ fauna <- fauna_raw %>%
     MFMdepth = MFMdepth %>% as.character(),
     MFMsoil = MFMsoil %>% as.character(),
     MFMcomment = MFMcomment %>% as.character(),
-    MFextract = MFextract %>% as.character(),
-    Field1 = Field1 %>% as.character(),
-    Field2 = Field2 %>% as.character(),
-    Field3 = Field3 %>% as.character(),
-    Field4 = Field4 %>% as.character(),
-    Field5 = Field5 %>% as.character()
+    MFextract = MFextract %>% as.character()
+    # Field* are empty
+    # Field1 = Field1 %>% as.character(),
+    # Field2 = Field2 %>% as.character(),
+    # Field3 = Field3 %>% as.character(),
+    # Field4 = Field4 %>% as.character(),
+    # Field5 = Field5 %>% as.character()
   ) %>%
   dplyr::left_join(shires, by = "lga_id") %>%
   dplyr::left_join(tenure, by = "tenure_id") %>%
@@ -216,17 +312,45 @@ fauna <- fauna_raw %>%
   dplyr::select(-o_date, -o_time)
 ```
 
-Columns to confirm:
-
-* SpCatNum
-
-
 ## Fauna occurrence data overview
 A condensed overview over data values (completeness, ranges and distribution).
+
+
 ```{r fauna_skim}
 fauna_skim <- skimr::skim(fauna)
-fauna_skim
+print(fauna_skim)
 ```
+
+There are `r nrow(fauna)` species occurrence records (encounters). 
+The following columns are incomplete:
+
+```{r fauna_missing_values}
+fauna_skim %>% filter(stat == "missing", value > 0) %>% select(-stat, -level, -formatted) %>% DT::datatable(.)
+```
+
+The table `fauna` contains species occurrence records:
+* taxonomy,
+* location (coordinates and derived information) and time of observation,
+* observers, taxonomic ID confirmation,
+* data entry and last change date and operator,
+* info on type specimens,
+* info on surroundings of observation,
+* info on animal(s) like group size, age, breeding condition,
+* additional info (comments, whether photo was taken),
+* remaining unclear columns (TBC).
+
+### Remaining questions
+Clarify columns:
+
+* `SpCatNum`?
+* `Sp...`?
+* `MF...`?
+* `Field...` always empty?
+
+
+### Data migration strategy
+* Personnel: Create lookup table of `Personnel$Initials` to DBCA usernames as table `users`.
+* Names: observer, taxonomist, record entered by, record last changed by.
 
 ## Fauna occurrence map
 An interactive map of fauna occurrences.
@@ -240,9 +364,9 @@ leaflet(width = 800, height = 600) %>%
     data = fauna,
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
-    label = ~ paste(species_id),
+    label = ~ paste(species_code),
     popup = ~ paste(
-      "<h3>", species_id, "</h3>",
+      "<h3>", species_code, "</h3>",
       "<strong>Encountered on</strong>", date, "<br/>",
       "<strong>by</strong>", observer_name, "<br/>",
       "<strong>through</strong>", observation_method, "(", observation_type, ")<br/>",
@@ -261,6 +385,12 @@ leaflet(width = 800, height = 600) %>%
   )
 ```
 
+## Conservation status
+Gazettal, Listing Category, Listing Names, List Names.
+
+## Recovery Plans
+Recovery Plans, Recovery Actions, Research Topics, Research Priorities.
+
 ## Fauna data upload
 Create resource once-off to get a resource ID.
 Subsequently, upload the compiled workbook.
@@ -274,5 +404,26 @@ is generated after the R code is run.
 #                      name = "Fauna Data ETL",
 #                      upload = "data_etl_fauna.html")
 ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", "data_etl_fauna.html")
+
+species_fn <- "data/fauna_species.csv"
+species %>% 
+    dplyr::select(-region_id_list, -starts_with("file_number")) %>% 
+    write_delim(species_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "csv",
+#                      name = "Fauna Species Names",
+#                      upload = species_fn)
+ckanr::resource_update("eae0b480-c687-450c-a736-87d4e75c2a4d", species_fn)
+
+
+fauna_fn <- "data/fauna_occurrence.csv"
+fauna %>% write_delim(fauna_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "csv",
+#                      name = "Fauna Occurrence Data",
+#                      upload = fauna_fn)
+ckanr::resource_update("b73ae0de-f243-4bb3-bbce-25b65bb98e66", fauna_fn)
+
+
 ```
 
