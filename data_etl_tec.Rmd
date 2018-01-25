@@ -18,6 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # install from github: "brianb/mdbtools"
 # devtools::install_github("ropensci/ckanr")
 library(tidyverse)
+library(lubridate)
 library(skimr)
 library(leaflet)
 library(Hmisc)
@@ -62,7 +63,7 @@ tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 ```
 
-### Helpers
+## Helpers
 ```{r helpers}
 # Date conventions
 orders <- c("mdyHMS")
@@ -118,6 +119,9 @@ communities <- tec$COMMUNITIES %>%
 # make_coldef(communities)
 communities %>% skim()
 communities %>% DT::datatable(.)
+
+communities_short <- communities %>% 
+    dplyr::select(community_id, community_label, community_name)
 ```
 
 ## Occurrences
@@ -126,7 +130,7 @@ occurrences <- tec$OCCURRENCES %>%
     tibble::as.tibble() %>%
     dplyr::transmute(
     id = OCC.UNIQUE.ID %>% as.integer,
-    com_no = COM.NO %>% as.integer,
+    community_id = COM.NO %>% as.integer,
     occ_no = OCC.NO %>% as.integer,
     confidential = OCC.CONFIDENTIAL %>% as.integer,
     source_code = OCC.SOURCE.CODE %>% as.character,
@@ -166,9 +170,51 @@ occurrences <- tec$OCCURRENCES %>%
     status_code = OCC.STATUS.CODE %>% as.logical,
     no_boundary = OCC.NO.BOUNDARY %>% as.integer,
     commenwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character
-    )
+    ) %>%
+    dplyr::left_join(communities_short, by = "community_id")
 occurrences %>% skimr::skim()
 occurrences %>% head(10) %>% DT::datatable(.)
+```
+
+## Recovery Plans
+```{r recovery_plans}
+recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
+  dplyr::transmute(
+    recovery_plan_id = IRP.NO %>% as.character(),
+    community_id = COM.NO %>% as.character(),
+    endorsed_on = IRP.DATE.ENDORSED %>% parse_date_time(., orders = orders, tz = tz),
+    ends_on = IRP.END.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    author = IRP.AUTHOR %>% as.character(),
+    reviewed_on = IRP.DATE.REVIEWED %>% parse_date_time(., orders = orders, tz = tz),
+    comments = IRP.COMMENTS %>% as.character()
+  )
+# make_coldef(recovery_plans)
+recovery_plans %>% skim()
+```
+
+## Publications
+```{r publications}
+publications <- tec$PUBLICATIONS %>%
+  dplyr::transmute(
+    publication_id = PUB.NO %>% as.integer(),
+    title = PUB.TITLE %>% as.character(),
+    author = PUB.AUTHOR %>% as.character()
+    # empty:
+    # published_on = PUB.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    # published_with = PUB.PLACE %>% as.character()
+  )
+# make_coldef(publications)
+
+community_publications <- tec$COMMUNITY_PUBLICATIONS %>%
+    dplyr::transmute(
+        community_id = COM.NO  %>% as.integer(), 
+        publication_id = CP.PUB.NO  %>% as.integer(),
+    ) %>%
+    dplyr::left_join(publications, by = "publication_id") %>%
+    dplyr::left_join(communities_short, by = "community_id")
+# make_coldef(community_publications)
+community_publications %>% skim()
+community_publications %>% DT::datatable(.)
 ```
 
 ## TEC data upload
@@ -180,21 +226,34 @@ is generated after the R code is run.
 ```{r tec_upload}
 # d <- ckanr::package_show("threatened-ecological-communities-database")
 
-etl_fn <- "data_etl_tec.html"
 etl_title <- "TEC Data ETL"
+etl_fn <- "data_etl_tec.html"
 # r <- ckanr::resource_create(package_id = d$id, format = "html", name = etl_title, upload = etl_fn)
-ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", etl_fn)
+# etl_rid <- r$id
+etl_rid <- "80009375-19e2-45d3-a1ae-068143fa03a5"
+ckanr::resource_update(etl_rid, etl_fn)
 
+com_title <- "Threatened Ecological Communities"
 com_fn <- "data/communities.csv"
 communities %>% write_delim(com_fn, delim = ",")
-com_title <- "Threatened Ecological Communities"
 # r <- ckanr::resource_create(package_id = d$id, format = "csv", name = com_title, upload = com_fn)
-ckanr::resource_update("9782cc52-7be8-494a-a7da-51845c119a21", com_fn)
+# com_rid <- r$id
+com_rid <- "9782cc52-7be8-494a-a7da-51845c119a21"
+ckanr::resource_update(com_rid, com_fn)
 
+occ_title <- "Threatened Ecological Community Occurrences"
 occ_fn <- "data/occurrences.csv"
 occurrences %>% write_delim(occ_fn, delim = ",")
-off_title <- "Threatened Ecological Community Occurrences"
 # r <- ckanr::resource_create(package_id = d$id, format = "csv", name = occ_title, upload = occ_fn)
-ckanr::resource_update("65f43392-a8c5-41e2-a31e-cc4135e9274e", occ_fn)
+# occ_rid <- r$id
+occ_rid <- "65f43392-a8c5-41e2-a31e-cc4135e9274e"
+ckanr::resource_update(occ_rid, occ_fn)
 
+cpu_title <- "Threatened Ecological Community Publications"
+cpu_fn <- "data/community_publications.csv"
+community_publications %>% write_delim(cpu_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = cpu_title, upload = cpu_fn)
+# cpu_rid <- r$id
+cpu_rid <- "fa51cd96-864a-4c43-a0e1-fc24621bb628"
+ckanr::resource_update(cpu_rid, cpu_fn)
 ```
