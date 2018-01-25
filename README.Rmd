@@ -10,8 +10,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Welcome
-This repo will contain ETL, QA and analytical scripts, workbooks and apps consuming
-SCB data from legacy database snapshots kept on [data.dpaw.wa.gov.au](https://data.dpaw.wa.gov.au/organization/species-and-communities)
+This repo contains ETL, QA and analytical scripts, workbooks and apps consuming
+SCB data from legacy database snapshots kept on 
+[data.dpaw.wa.gov.au](https://data.dpaw.wa.gov.au/organization/species-and-communities)
 and later the SCB API.
 
 Tasks are tracked at [scarab](https://github.com/parksandwildlife/scarab/issues)

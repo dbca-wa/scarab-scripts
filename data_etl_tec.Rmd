@@ -51,8 +51,6 @@ dl_mdbzip <- function(resource_id,
 }
 ```
 # SCB data background
-TODO: Context
-
 [TEC dataset](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database)
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
@@ -61,16 +59,70 @@ on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 ## TEC data load
 ```{r tec_data_load}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
-tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
+# tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 ```
 
-## TEC data transformation
-```{r extract_tables}
-# Date formats
-orders <- c("m/d/y H:M:S")
+### Helpers
+```{r helpers}
+# Date conventions
+orders <- c("mdyHMS")
 tz <- "Australia/Perth"
 
-occ <- tec$OCCURRENCES %>% 
+# Prepare column def
+as_def <- . %>% paste(., "=", ., " %>% as.character, \n")
+make_coldef <- . %>% names %>% purrr::map(as_def) %>% unlist %>% cat
+```
+
+## Communities
+```{r communities}
+former_range <- tec$FORMER_RANGES %>%
+  dplyr::transmute(
+    former_range_id = FORMER.RANGE %>% as.character(),
+    former_range = FORMER.RANGE.DESC %>% as.character()
+  )
+# make_coldef(former_range)
+
+range_decline <- tec$RANGE_DECLINE %>%
+    dplyr::transmute(
+        range_decline_id = RANGE.DECLINE  %>% as.integer(), 
+        range_decline = RANGE.DECLINE.DESC  %>% as.character()
+    )
+# make_coldef(range_decline)
+
+occurrence_decline <- tec$OCCURRENCES_DECLINE %>%
+    dplyr::transmute(
+        occurrence_decline_id = OCC.DECLINE  %>% as.integer(), 
+        occurrence_decline = OCC.DECLINE.DESC  %>% as.character()
+    )
+# make_coldef(occurrence_decline)
+
+communities <- tec$COMMUNITIES %>%
+    tibble::as.tibble() %>%
+  dplyr::transmute(
+    community_id = COM.NO %>% as.integer(),
+    community_label = COM.ID %>% as.character(),
+    community_name = COM.NAME %>% as.character(),
+    community_description = COM.DESC %>% as.character(),
+    former_range_id = COM.FORMER.RANGE %>% as.character(),
+    range_decline_id = COM.RANGE.DECLINE %>% as.integer(),
+    occurrence_decline_id = COM.OCC.DECLINE %>% as.integer(),
+    community_tec_listing = COM.TEC.LISTING %>% as.integer(),
+    community_original_area = COM.ORIG.AREA %>% as.double(),
+    community_area_accuracy = COM.AREA.ACC %>% as.double(),
+    preliminary = COM.PRELIMINARY %>% as.character(),
+    status = COM.STATUS %>% as.character()
+  ) %>%
+  dplyr::left_join(former_range, by = "former_range_id") %>%
+  dplyr::left_join(range_decline, by = "range_decline_id") %>%
+  dplyr::left_join(occurrence_decline, by = "occurrence_decline_id")
+# make_coldef(communities)
+communities %>% skim()
+communities %>% DT::datatable(.)
+```
+
+## Occurrences
+```{r occurrences}
+occurrences <- tec$OCCURRENCES %>% 
     tibble::as.tibble() %>%
     dplyr::transmute(
     id = OCC.UNIQUE.ID %>% as.integer,
@@ -115,13 +167,9 @@ occ <- tec$OCCURRENCES %>%
     no_boundary = OCC.NO.BOUNDARY %>% as.integer,
     commenwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character
     )
+occurrences %>% skimr::skim()
+occurrences %>% head(10) %>% DT::datatable(.)
 ```
-
-## TEC data overview
-```{r tec_skim}
-occ %>% skimr::skim()
-```
-
 
 ## TEC data upload
 Create resource once-off to get a resource ID.
@@ -131,9 +179,22 @@ is generated after the R code is run.
 
 ```{r tec_upload}
 # d <- ckanr::package_show("threatened-ecological-communities-database")
-# r <- ckanr::resource_create(package_id = d$id,
-#                      format = "html", 
-#                      name = "TEC Data ETL", 
-#                      upload = file.edit("data_etl_tec.html"))
-ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html")
+
+etl_fn <- "data_etl_tec.html"
+etl_title <- "TEC Data ETL"
+# r <- ckanr::resource_create(package_id = d$id, format = "html", name = etl_title, upload = etl_fn)
+ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", etl_fn)
+
+com_fn <- "data/communities.csv"
+communities %>% write_delim(com_fn, delim = ",")
+com_title <- "Threatened Ecological Communities"
+# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = com_title, upload = com_fn)
+ckanr::resource_update("9782cc52-7be8-494a-a7da-51845c119a21", com_fn)
+
+occ_fn <- "data/occurrences.csv"
+occurrences %>% write_delim(occ_fn, delim = ",")
+off_title <- "Threatened Ecological Community Occurrences"
+# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = occ_title, upload = occ_fn)
+ckanr::resource_update("65f43392-a8c5-41e2-a31e-cc4135e9274e", occ_fn)
+
 ```
