@@ -76,7 +76,7 @@ orders <- c("mdyHMS")
 tz <- "Australia/Perth"
 
 # Prepare column def
-as_def <- . %>% paste(., " = ", ., " %>% as.character, \n")
+as_def <- . %>% paste(., "=", ., " %>% as.character, \n")
 make_coldef <- . %>% names %>% purrr::map(as_def) %>% unlist %>% cat
 
 #' Normalise corporate filenumber into <agency>-<year>-<number> or ""
@@ -386,12 +386,147 @@ leaflet(width = 800, height = 600) %>%
 ```
 
 ## Conservation status
-Gazettal, Listing Category, Listing Names, List Names.
+Gazettal, Listing Category, Listing Names, List Names deal with assigning conservation status from 
+various legal listings to species.
+
+### Listing Names
+Lookups for legal acts.
+
+```{r listing_names}
+listing_names <- fauna_data$`Listing Names` %>%
+  dplyr::transmute(
+    list_code = ListCode %>% as.character(),
+    list_name = ListName %>% as.character(),
+    list_order = ListOrder %>% as.integer()
+  ) %>%
+  dplyr::arrange(list_order)
+listing_names %>% skim()
+```
+
+### DEC Listing Names
+```{r dec_listing_names}
+# make_coldef(dec_listing_names)
+dec_listing_names <- fauna_data$`DEC List Names` %>%
+  dplyr::transmute(
+    dec_listing_id = DECCode %>% as.character(),
+    dec_listing_name = DECList %>% as.character(),
+    dec_listing_order = DECOrder %>% as.integer()
+  ) %>% 
+  dplyr::arrange(dec_listing_order)
+dec_listing_names %>% skim()
+```
+
+### Conservation status
+Each act (listing) defines a number of possible conservation statuses.
+The table `Listing Category` contains all possible conservation statuses.
+Conservation status can be assigned (for a period of time) to a species.
+
+```{r listing_category}
+# make_coldef(listing_category)
+conservation_status <- fauna_data$`Listing Category` %>%
+  dplyr::transmute(
+    list_code = ListCode %>% as.character(),
+    status_code = StatCode %>% as.character(),
+    status = Status %>% as.character(),
+    status_expand = StatusExpand %>% as.character(),
+    explanations = Explanations %>% as.character(),
+    notes = Notes %>% as.character(),
+    order = Order %>% as.integer(),
+    dec_listing_id = DECCode %>% as.character()
+  ) %>% 
+  dplyr::arrange(order) %>%
+  dplyr::left_join(listing_names, by="list_code") %>%
+  dplyr::left_join(dec_listing_names, by="dec_listing_id")
+conservation_status %>% skim()
+conservation_status %>% head(10) %>% DT::datatable(.)
+```
+
+### Gazettal
+Gazettal is the act of assigning a conservation status to a species for a span of time.
+
+```{r gazettal}
+gazettal <- fauna_data$Gazettal %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    list_code = ListCode %>% as.character(),
+    status_code = StatCode %>% as.character(),
+    population = Popn %>% as.character(),
+    reasons = Reasons %>% as.character(),
+    authority = AUTHORITY %>% as.character(),
+    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
+    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
+    review_due = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    interim = INTERIM %>% as.character(),
+    translocation = TRANSLOCATION %>% as.character(),
+    comments = Comments %>% as.character()
+  )
+# make_coldef(gazettal)
+gazettal %>% skim()
+gazettal %>% head(10) %>% DT::datatable()
+
+```
 
 ## Recovery Plans
 Recovery Plans, Recovery Actions, Research Topics, Research Priorities.
 
-## Fauna data upload
+### Research Priorities
+```{r res_prio}
+res_prio <- fauna_data$`Research Priorities` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    research_priority = ResearchPriority %>% as.character(),
+    undertaken = Undertaken %>% as.logical(),
+    comments = Comments %>% as.character()
+  ) %>% 
+  left_join(species, by="species_code")
+# make_coldef(res_prio)
+res_prio %>% skim()
+```
+
+### Recovery Plans
+```{r recovery_plans}
+res_topics <- fauna_data$`Research Topics` %>%
+  dplyr::transmute(
+    research_topic_id = ID  %>% as.integer, 
+    research_topic = Research.Topics  %>% as.character
+  )
+
+rec_actions <- fauna_data$`Recovery Actions` %>%
+  dplyr::transmute(
+    recovery_action_id = ID  %>% as.integer, 
+    recovery_action = Recovery.Actions  %>% as.character, 
+  )
+
+recovery_plans <- fauna_data$`Recovery Plans` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    program_number = ProgramNo %>% as.integer(),
+    title = RecoveryPlan %>% as.character(),
+    scope = NationalorState %>% as.character(),
+    year_approved = YearApproved %>% as.character(),
+    objectives = Objectives %>% as.character(),
+    recovery_action_id = ActionTypes %>% as.integer(),
+    research_topic_id = ResearchTopics %>% as.integer(),
+    recovery_team = RecoveryTeam %>% as.character(),
+    is_active = Active %>% as.logical(),
+    team_scope = RTNationalorState %>% as.character(),
+    lead_org = LeadOrg %>% as.character(),
+    chair_org = ChairOrg %>% as.character(),
+    chair_name = ChairName %>% as.character(),
+    chair_contact = ChairContact %>% as.character(),
+    xo_name = ExecOName %>% as.character(),
+    xo_contact = ExecOContact %>% as.character(),
+    membership = Membership %>% as.character(),
+    rt_filenumber = RTFileNumber %>% as.character()
+  ) %>% 
+  dplyr::left_join(res_topics, by="research_topic_id") %>%
+  dplyr::left_join(rec_actions, by="recovery_action_id")
+# make_coldef(recovery_plans)
+recovery_plans %>% skim()
+recovery_plans %>% DT::datatable(.)
+```
+
+## Data upload
 Create resource once-off to get a resource ID.
 Subsequently, upload the compiled workbook.
 Note, this process lags one compilation of this workbook, as the HTML output
@@ -415,6 +550,39 @@ species %>%
 #                      upload = species_fn)
 ckanr::resource_update("eae0b480-c687-450c-a736-87d4e75c2a4d", species_fn)
 
+res_prio_fn <- "data/research_priorities.csv"
+res_prio %>%
+    dplyr::select(-region_id_list, -starts_with("file_number")) %>% 
+    write_delim(res_prio_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "html",
+#                      name = "Fauna Research Priorities",
+#                      upload = res_prio_fn)
+ckanr::resource_update("7a26d00c-f3da-46a3-9d74-42e4475bd6a9", res_prio_fn)
+
+cs_fn <- "data/conservation_status.csv"
+conservation_status %>% write_delim(cs_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "csv",
+#                      name = "Conservation Status List",
+#                      upload = cs_fn)
+ckanr::resource_update("2793b1a8-eb55-41e7-8f8f-9cbc79a01243", cs_fn)
+
+gaz_fn <- "data/gazettal.csv"
+gazettal %>% write_delim(gaz_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "csv",
+#                      name = "Conservation Status List",
+#                      upload = gaz_fn)
+ckanr::resource_update("ac089664-de5a-4efa-af3c-ada0ec77ef1f", gaz_fn)
+
+recplan_fn <- "data/recovery_plans.csv"
+recovery_plans %>% write_delim(recplan_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id,
+#                      format = "csv",
+#                      name = "Recovery Plans",
+#                      upload = recplan_fn)
+ckanr::resource_update("9f8426c3-20ed-4ba7-a551-05e1838ab1cb", recplan_fn)
 
 fauna_fn <- "data/fauna_occurrence.csv"
 fauna %>% write_delim(fauna_fn, delim = ",")
@@ -423,7 +591,4 @@ fauna %>% write_delim(fauna_fn, delim = ",")
 #                      name = "Fauna Occurrence Data",
 #                      upload = fauna_fn)
 ckanr::resource_update("b73ae0de-f243-4bb3-bbce-25b65bb98e66", fauna_fn)
-
-
 ```
-
