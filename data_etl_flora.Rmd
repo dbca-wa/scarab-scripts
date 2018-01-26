@@ -84,9 +84,11 @@ is generated after the R code is run.
 
 ```{r flora_upload}
 # d <- ckanr::package_show("threatened-and-priority-flora-database")
-# r <- ckanr::resource_create(package_id = d$id,
-#                      format = "html",
-#                      name = "Flora Data ETL",
-#                      upload = "data_etl_flora.html")
-ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb", "data_etl_flora.html")
+
+etl_title <- "Flora Data ETL"
+etl_fn <- "data_etl_flora.html"
+# r <- ckanr::resource_create(package_id = d$id, format = "html", name = etl_title, upload = etl_fn)
+# etl_rid <- r$id
+etl_rid <- "d1fccebb-02e2-4a40-aba4-c4d6ad012edb"
+ckanr::resource_update(etl_rid, etl_fn)
 ```
