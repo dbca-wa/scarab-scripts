@@ -39,15 +39,15 @@ ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"),
 #' @returns The Hmisc::mdb.get connection
 dl_mdbzip <- function(resource_id, 
                       destdir="data", 
-                      dateformat = '%Y-%m-%d', 
+                      dateformat = '%m-%d-%Y', 
                       asis = TRUE) {
     dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
     tmp <- tempfile()
     res_url <- ckanr::resource_show(resource_id)$url
     utils::download.file(res_url, tmp)
     dbfile <- utils::unzip(tmp, exdir = destdir)
-    unlink(tmp)
     con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
+    unlink(tmp)
     con
 }
 ```
@@ -181,13 +181,14 @@ occurrences %>% head(10) %>% DT::datatable(.)
 recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
   dplyr::transmute(
     recovery_plan_id = IRP.NO %>% as.character(),
-    community_id = COM.NO %>% as.character(),
+    community_id = COM.NO %>% as.integer(),
     endorsed_on = IRP.DATE.ENDORSED %>% parse_date_time(., orders = orders, tz = tz),
     ends_on = IRP.END.DATE %>% parse_date_time(., orders = orders, tz = tz),
     author = IRP.AUTHOR %>% as.character(),
     reviewed_on = IRP.DATE.REVIEWED %>% parse_date_time(., orders = orders, tz = tz),
     comments = IRP.COMMENTS %>% as.character()
-  )
+  ) %>% 
+  dplyr::left_join(communities_short, by = "community_id")
 # make_coldef(recovery_plans)
 recovery_plans %>% skim()
 ```
@@ -215,6 +216,46 @@ community_publications <- tec$COMMUNITY_PUBLICATIONS %>%
 # make_coldef(community_publications)
 community_publications %>% skim()
 community_publications %>% DT::datatable(.)
+```
+
+## Reviews
+```{r com_reviews}
+reviews <- tec$REVIEWS %>%
+  dplyr::transmute(
+    review_id = REV.NO %>% as.integer(),
+    review_date = REV.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    review_panel = REV.PANEL %>% as.character()
+  )
+# reviews %>% make_coldef()
+reviews %>% skim()
+
+community_reviews <- tec$COMMUNITY_REVIEWS %>%
+  dplyr::transmute(
+    community_id = COM.NO %>% as.integer(),
+    review_id = CR.REV.NO %>% as.integer()
+  ) %>%
+  dplyr::left_join(communities_short, by = "community_id") %>%
+  dplyr::left_join(reviews, by = "review_id")
+# community_reviews %>% make_coldef()
+community_reviews %>% skim()
+community_reviews %>% DT::datatable(.)
+```
+
+## Community Actions
+Are `COMMUNITY_ACTIONS` related to `ACTIONS`?
+```{r com_actions}
+community_actions <- tec$COMMUNITY_ACTIONS %>%
+  dplyr::transmute(
+    community_id = COM.NO %>% as.integer(),
+    com_action_id = CACT.NO %>% as.integer(),
+    com_action_date = CACT.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    com_action_code = CACT.ACTION.CODE %>% as.character(),
+    com_action_description = CACT.DESC %>% as.character()
+  ) %>%
+  dplyr::left_join(communities_short, by = "community_id")
+# community_actions %>% make_coldef()
+community_actions %>% skim()
+community_actions %>% DT::datatable(.)
 ```
 
 ## TEC data upload
@@ -256,4 +297,20 @@ community_publications %>% write_delim(cpu_fn, delim = ",")
 # cpu_rid <- r$id
 cpu_rid <- "fa51cd96-864a-4c43-a0e1-fc24621bb628"
 ckanr::resource_update(cpu_rid, cpu_fn)
+
+cr_title <- "Threatened Ecological Community Reviews"
+cr_fn <- "data/community_reviews.csv"
+community_reviews %>% write_delim(cr_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = cr_title, upload = cr_fn)
+# cr_rid <- r$id
+cr_rid <- "7c39b584-bc4b-4234-aff7-ddf4808692ed"
+ckanr::resource_update(cr_rid, cr_fn)
+
+ca_title <- "Threatened Ecological Community Actions"
+ca_fn <- "data/community_actions.csv"
+community_actions %>% write_delim(ca_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = ca_title, upload = ca_fn)
+# ca_rid <- r$id
+ca_rid <- "17d3c4e2-df98-4ff6-9d4d-99ba54808bb4"
+ckanr::resource_update(ca_rid, ca_fn)
 ```
