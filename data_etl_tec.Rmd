@@ -124,8 +124,54 @@ communities_short <- communities %>%
     dplyr::select(community_id, community_label, community_name)
 ```
 
+## Lookups
+There are many lookups without FK constraints at a database level.
+
+* Actions
+* Authorities
+* Boundaries Old
+* Projects
+* Reliability
+
+* Status
+
+* Zones
+
+## Configs
+Some tables contain configuration data. Tsk Tsk.
+
+* Settings: Datum preference
+* Sp Master INI old: external db config
+* mddDataTables/columns: external db tables
+* mddMasterLists: external db config
+* mddReportItems (empty)
+
+## Spatial entities
+There are several groups of spatial entities, which naturally match occurrences by their location.
+
+* IBRA regions
+* Beard: Districts within Regions within Provinces
+* CALM: Occurrences within Districts within Regions. How are the occurrences inferred / added?
+* CALM District Users
+* DOLA locations
+* Land use: Land Use, Land Use Codes, Occurrence Surr(?) Codes
+* Tenures: Purposes, Tenure Types, Tenures, Occurrence Tenures, Occurrence Shires, Shires
+* Maps: Maps, Occurrence Maps
+
+```{r calm_districts}
+calm_regions <- tec$CALM_REGIONS
+calm_districts <- tec$CALM_DISTRICTS
+calm_district_occurrences <- tec$DISTRICTS
+
+
+```
+
 ## Occurrences
+Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
+
 ```{r occurrences}
+# Beard Maps
+# Boundaries
 occurrences <- tec$OCCURRENCES %>% 
     tibble::as.tibble() %>%
     dplyr::transmute(
@@ -134,7 +180,7 @@ occurrences <- tec$OCCURRENCES %>%
     occ_no = OCC.NO %>% as.integer,
     confidential = OCC.CONFIDENTIAL %>% as.integer,
     source_code = OCC.SOURCE.CODE %>% as.character,
-    body_id = BDY.ID %>% as.integer,
+    boundary_id = BDY.ID %>% as.integer,
     br_code = OCC.BR.CODE %>% as.character,
     beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character,
     ibra_reg_code = OCC.IBRA.REG.CODE %>% as.character,
@@ -175,6 +221,57 @@ occurrences <- tec$OCCURRENCES %>%
 occurrences %>% skimr::skim()
 occurrences %>% head(10) %>% DT::datatable(.)
 ```
+
+
+## Fauna Occurrences
+There is another separate group of occurrences:
+
+* Occurrence Species
+* Occurrence Species INI (contains an external db config)
+* Occurrence Fauna
+* Species Roles
+* Fauna Taxa
+* Fauna Groups
+* Fauna Conservation Codes
+
+What is the overlap to the Threatened Fauna DB in terms of meaning and data flow?
+
+## Surveys
+A separate group related to surveys has the tables:
+
+* Threat Impacts
+* Threats
+* Surveys
+* Conditions
+* Survey Conditions
+* Survey Threats
+
+## Sites
+
+* Sites
+* Datum
+* Site Visits
+* Site Species
+
+Locations are somewhere in the `GIS_*` tables as points plus buffer. Where are the exact polygons?
+
+## Species Master Old
+Tables:
+
+* Spmaster Old
+* Flora Conservation Codes
+
+## Additional Data
+Tables:
+
+* Additional Data
+* Items
+
+## MDD tables
+
+* mddDataTables
+* mddDataColumns
+* mddReportItems
 
 ## Recovery Plans
 ```{r recovery_plans}
