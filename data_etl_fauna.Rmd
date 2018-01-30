@@ -168,6 +168,12 @@ resolution <- fauna_data$Resolution %>%
   )
 # make_coldef(resolution)
 
+category <- fauna_data$`Category List` %>%
+    dplyr::transmute(
+        category_id = Category  %>% as.character, 
+    phylogenetic_category = CategoryName  %>% as.character
+    )
+# category %>% make_coldef()
 ```
 
 ## Species names
@@ -197,26 +203,31 @@ species <- fauna_data$`Species List` %>%
     authority_species = Authority.sp %>% as.character(),
     subspecies = Subspecies %>% as.character(),
     authority_subspecies = Authority.ssp %>% as.character(),
-    file_number_calm = CALMFileNum %>% as.character() %>% map(~ as_filenumber(., prefix = "CALM")),
-    file_number_dec = DECFileNum %>% as.character() %>% map(~ as_filenumber(., prefix = "DEC")),
-    file_number_dpaw = DPaWFileNum %>% as.character() %>% map(~ as_filenumber(., prefix = "DPAW")),
-    file_number_dbca = DBCAFileNum %>% as.character() %>% map(~ as_filenumber(., prefix = "DBCA")),
-    category = Category %>% as.character(), # "J" "N" "E" "B" "F" "D" "I" "A" "G" "C" "H"
-    origin = Origin %>% as.character(), # N I
-    trans = Trans %>% as.character(), # E T
-    region_id_list = Region %>% map(~ as.list(strsplit(., ",")[[1]] %>% as.integer())),
+    file_number_calm = CALMFileNum %>% as.character() %>% 
+        map(~ as_filenumber(., prefix = "CALM")),
+    file_number_dec = DECFileNum %>% as.character() %>% 
+        map(~ as_filenumber(., prefix = "DEC")),
+    file_number_dpaw = DPaWFileNum %>% as.character() %>% 
+        map(~ as_filenumber(., prefix = "DPAW")),
+    file_number_dbca = DBCAFileNum %>% as.character() %>% 
+        map(~ as_filenumber(., prefix = "DBCA")),
+    category_id = Category %>% as.character(),
+    origin = Origin %>% as.character(), # N - native, I - introduced
+    # region_id_list = Region %>% map(~ as.list(strsplit(., ",")[[1]] %>% as.integer())),
     taxon_id = TaxonId %>% as.logical(),
-    incl = Incl %>% as.logical(),
-    trap = Trap %>% as.logical(),
-    sight = Sight %>% as.logical(),
-    nbox = Nbox %>% as.logical(),
-    sign = Sign %>% as.logical(),
-    BANo = BANo %>% as.logical(),
-    buffer = Buffer %>% as.character(), # NA 0 1 2 3
-    est_life = EST.LIFE %>% as.integer() # NA  0 10  7 15  6  8
+    # translocated = Trans %>% as.character(), # E - extant, T - translocated
+    # accept_new_records = Incl %>% as.logical(), # only FALSE in old records
+    # species_can_be_trapped = Trap %>% as.logical(),
+    # only_sighting_type_surveys = Sight %>% as.logical(),
+    # could_have_nest_box = Nbox %>% as.logical(),
+    # could_display_secondary_signs = Sign %>% as.logical(),
+    # can_associate_band_number = BANo %>% as.logical(),
+    # buffer = Buffer %>% as.character(), # NA 0 1 2 3 - unused
+    # estimated_lifespan = EST.LIFE %>% as.integer() # NA  0 10  7 15  6  8
   ) %>%
   dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
-  dplyr::left_join(species_notes, by = "species_code")
+  dplyr::left_join(species_notes, by = "species_code") %>%
+  dplyr::left_join(category, by = "category_id")
 species_skim <- skimr::skim(species)
 print(species_skim)
 DT::datatable(species)
@@ -235,20 +246,29 @@ species_skim %>% filter(stat == "missing", value > 0) %>% select(-stat, -level, 
 The table `species` contains info on:
 
 * taxonomy (links to `name_id`, names, various hierarchy levels, 
-  paraphyletic groups e.g. `phylo_group`)
+  paraphyletic groups e.g. `phylo_group`, category)
 * occurrence summary (e.g. region ID list, an unimplemented m2m relation)
 * some numeric fields: `est_life` `r unique(species$est_life)`
-* some lookups: 
-  * `category` (`r unique(species$category)`), 
-  * `origin` (`r unique(species$origin)`), 
-  * `trans` (`r unique(species$trans)`), 
-  * `buffer` (`r unique(species$buffer)`)
 * corporate file numbers (what's in those files?)
-* some logical checkboxes: incl, trap, sight, nbox, sign, taxon_id, BANo (T, F, NA)
-
-The field `region_id_list` should be a many-to-many relation to regions.
+* some now unused fields (see above for excluded fields)
+The field `region_id_list` should be a many-to-many relation to regions, but is superseded by spatial lookup of occurrence to spatial entity.
 
 ## Fauna occurrence
+
+### Critical Habitat, Population, Subpopulation
+* CH are Multipolygon Features.
+* Population is the sum of all subpopulations.
+* Subpopulation is a spatially and/or genetically distinct group of occurrences.
+
+### Occurrences
+* AnimalEncounters are species occurrences.
+* Opportunistic sightings by members of public currently end up in ThrFaunaDB.
+* Opportunistic sightings by members of public could come in via an app.
+* Data returns from wildlife licenses go into the Wildlife Licensing System.
+* The precursor of Wildlife Licensing System is a system called "Fauna Survey Return System", which is shown as layer in NatureMap.
+* Staff should (but don't always) use the Wildlife Licensing System for data returns.
+* Some staff use FaunaFile for data returns.
+* Staff could use BioSys for data returns.
 
 ```{r fauna_occurrence}
 # Generate column config:
@@ -258,8 +278,8 @@ fauna_raw <- fauna_data$`Fauna Records`
 fauna <- fauna_raw %>%
   dplyr::transmute(
     id = DBNo %>% as.integer(),
-    dist_db = DistDB %>% as.integer(),
-    dist_db_no = DistDBNo %>% as.character(),
+    # district_db = DistDB %>% as.integer(),
+    # district_db_no = DistDBNo %>% as.character(),
     species_code = SpCode %>% as.character(),
     # name_id = NameId %>% as.character(), # they're all NA
     o_date = parse_date_time(Date, orders = orders, tz = tz),
@@ -270,7 +290,7 @@ fauna <- fauna_raw %>%
     observer_address = Address %>% as.character(),
     observer_phone = Phone %>% as.character(),
     certainty_id = Certainty %>% as.integer(),
-    number_seen = NumSeen %>% as.integer(),
+    number_seen = NumSeen %>% as.integer(), # sum of number_*
     animal_features = Features %>% as.character(),
     number_adult_males = AdultM %>% as.integer(),
     number_adult_females = AdultF %>% as.integer(),
@@ -283,7 +303,7 @@ fauna <- fauna_raw %>%
     tenure_id = TenCode %>% as.character(),
     lga_id = LGACode %>% as.integer(),
     district_id = DistrictNo %>% as.character(),
-    site = Site %>% as.character(),
+    site_comment = Site %>% as.character(),
     latitude = Lat %>% as.double(),
     longitude = Long %>% as.double(),
     map_zone = MapZone %>% as.character(),
@@ -294,12 +314,12 @@ fauna <- fauna_raw %>%
     landform_id = Landform %>% as.character(),
     vegetation_type_id = VegType %>% as.character(),
     fire_history = Fire %>% as.character(),
-    Sp1 = Sp1 %>% as.character(),
-    Sp2 = Sp2 %>% as.character(),
-    Sp3 = Sp3 %>% as.character(),
-    Sp4 = Sp4 %>% as.character(),
-    Sp5 = Sp5 %>% as.character(),
-    Sp6 = Sp6 %>% as.character(),
+    associated_flora_species_1 = Sp1 %>% as.character(),
+    associated_flora_species_2 = Sp2 %>% as.character(),
+    associated_flora_species_3 = Sp3 %>% as.character(),
+    associated_flora_species_4 = Sp4 %>% as.character(),
+    associated_flora_species_5 = Sp5 %>% as.character(),
+    associated_flora_species_6 = Sp6 %>% as.character(),
     observation_method = ObservMethod %>% as.character(),
     observation_type = ObservType %>% as.character(),
     secondary_signs = SecSign %>% as.character(),
@@ -307,9 +327,8 @@ fauna <- fauna_raw %>%
     breeding_status = Breeding %>% as.character(),
     specimen_status = Specimen %>% as.character(),
     species_id_confirmed_by = Identification %>% as.character(),
-    specimen_location = SpHeld %>% as.character(),
-    Map = Map %>% as.character(), # TODO parse bool
-    MudMap = MudMap %>% as.character(), # TODO parse bool
+    map_provided = Map %>% as.character(), # TODO parse bool
+    mudmap_provided = MudMap %>% as.character(), # TODO parse bool
     photo_taken = Photo %>% as.character(), # TODO parse bool
     notes = Notes %>% as.character(),
     comments = Comments %>% as.character(),
@@ -317,25 +336,26 @@ fauna <- fauna_raw %>%
     entered_on = parse_date_time(EnDate, orders = orders, tz = tz),
     changed_by = ChName %>% as.character(),
     changed_on = parse_date_time(ChDate, orders = orders, tz = tz),
-    species_voucher = SpVoucher %>% as.logical(),
-    SpCatNum = SpCatNum %>% as.character(),
-    UnPublished = UnPublished %>% as.logical(),
-    ReportTitle = ReportTitle %>% as.character(),
-    Author = Author %>% as.character(),
-    MFeggsH = MFeggsH %>% as.character(),
-    MFeggsU = MFeggsU %>% as.character(),
-    MFmoundU = MFmoundU %>% as.character(),
-    MFmoundCA = MFmoundCA %>% as.character(),
-    MFmoundRA = MFmoundRA %>% as.character(),
-    MFmoundI = MFmoundI %>% as.character(),
-    MFMage = MFMage %>% as.character(),
-    MFMdiam = MFMdiam %>% as.character(),
-    MFMheight = MFMheight %>% as.character(),
-    MFMwidth = MFMwidth %>% as.character(),
-    MFMdepth = MFMdepth %>% as.character(),
-    MFMsoil = MFMsoil %>% as.character(),
-    MFMcomment = MFMcomment %>% as.character(),
-    MFextract = MFextract %>% as.character()
+    specimen_voucher_exists = SpVoucher %>% as.logical(),
+    specimen_voucher_location = SpHeld %>% as.character(), # specimen catalogue
+    specimen_voucher_catalogue_number = SpCatNum %>% as.character(),
+    occurence_not_published = UnPublished %>% as.logical(),
+    occurrence_citation = ReportTitle %>% as.character(),
+    # occurrence_citation_author = Author %>% as.character(),
+    malleefowl_MFeggsH = MFeggsH %>% as.character(),
+    malleefowl_MFeggsU = MFeggsU %>% as.character(),
+    malleefowl_MFmoundU = MFmoundU %>% as.character(),
+    malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
+    malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
+    malleefowl_MFmoundI = MFmoundI %>% as.character(),
+    malleefowl_MFMage = MFMage %>% as.character(),
+    malleefowl_MFMdiam = MFMdiam %>% as.character(),
+    malleefowl_MFMheight = MFMheight %>% as.character(),
+    malleefowl_MFMwidth = MFMwidth %>% as.character(),
+    malleefowl_MFMdepth = MFMdepth %>% as.character(),
+    malleefowl_MFMsoil = MFMsoil %>% as.character(),
+    malleefowl_MFMcomment = MFMcomment %>% as.character(),
+    malleefowl_MFextract = MFextract %>% as.character()
     # Field* are empty, skipping:
     # Field1 = Field1 %>% as.character(),
     # Field2 = Field2 %>% as.character(),
@@ -351,6 +371,10 @@ fauna <- fauna_raw %>%
   dplyr::left_join(resolution, by = "resolution_id") %>%
   dplyr::select(-o_date, -o_time)
 ```
+
+Fauna occurrence does link to the name that was current / legal at the time.
+Occurrence query should show hints linking to current / legal names and their history.
+
 
 ## Fauna occurrence data overview
 A condensed overview over data values (completeness, ranges and distribution).
@@ -380,19 +404,13 @@ The table `fauna` contains species occurrence records:
 * info on surroundings of observation,
 * info on animal(s) like group size, age, breeding condition,
 * additional info (comments, whether photo was taken),
-* remaining unclear columns (TBC).
-
-### Remaining questions
-Clarify columns:
-
-* `SpCatNum`?
-* `Sp...`?
-* `MF...`?
-* `Field...` always empty?
+* MalleeFowl-specific observations (MF*),
+* empty columns (Field*).
 
 ### Data migration strategy
 * Personnel: Create lookup table of `Personnel$Initials` to DBCA usernames as table `users`.
 * Names: observer, taxonomist, record entered by, record last changed by.
+* Names include menbers of public.
 
 ## Fauna occurrence map
 An interactive map of fauna occurrences.
@@ -413,7 +431,7 @@ leaflet(width = 800, height = 600) %>%
       "<strong>Encountered on</strong>", date, "<br/>",
       "<strong>by</strong>", observer_name, "<br/>",
       "<strong>through</strong>", observation_method, "(", observation_type, ")<br/>",
-      "<strong>at </strong>", site, "(", shire_label, ")<br/>",
+      "<strong>at </strong>", site_comment, "(", shire_label, ")<br/>",
       "<strong>Tenure</strong>", tenure, "(", tenure_id, ")<br/>",
       "<strong>Vegetation type</strong>", vegetation_type, "(", vegetation_type_id, ")<br/>",
       "<strong>Certainty</strong>", certainty, "(", certainty_id, ")<br/>"
@@ -577,8 +595,9 @@ As a relational data model, the dependencies can be expressed linearly (excludin
 * [Taxonomy] Species names
 * [Observations] Species Occurrence > Species Names
 * [Conservation] Conservation List > Conservation Status > Conservation Status Gazettal > Species names
-* [Conservation] Recovery Plan > Species Names
+* [Conservation] Recovery Plan / Conservation Advice > Species Names
 * [Conservation] Research Priorities > Species Names
+* [Conservation] Threats > Species Names
 
 The models fit broadly into three modules:
 
@@ -601,7 +620,9 @@ etl_title <- "Fauna Data ETL"
 ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", etl_fn)
 
 sp_fn <- "data/fauna_species.csv"
-species %>% dplyr::select(-region_id_list, -starts_with("file_number")) %>% write_delim(sp_fn, delim = ",")
+species %>% dplyr::select(
+    # -region_id_list, 
+    -starts_with("file_number")) %>% write_delim(sp_fn, delim = ",")
 sp_title <- "Fauna Species Names"
 # r <- ckanr::resource_create(package_id = d$id, format = "csv", name = sp_title, upload = sp_fn)
 ckanr::resource_update("eae0b480-c687-450c-a736-87d4e75c2a4d", sp_fn)
