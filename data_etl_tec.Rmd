@@ -74,7 +74,55 @@ as_def <- . %>% paste(., "=", ., " %>% as.character, \n")
 make_coldef <- . %>% names %>% purrr::map(as_def) %>% unlist %>% cat
 ```
 
+## Configuration
+Some tables store legacy configuration data. We won't need or import them.
+
+* Settings: Datum preference
+* Sp Master INI old: external db config
+* mddDataTables/columns: external db tables
+* mddMasterLists: external db config
+* mddReportItems (empty)
+
+## Taxonomy
+Tables:
+
+* WA_* WACensus data copies
+* jhb
+* SPMASTER_OLD, Flora conservation codes
+* Fauna taxa, Fauna conservation codes, Fauna Groups, Occ Fauna, Occ species, Species roles
+
+TODO how are taxonomy tables linked?
+
+## Spatial entities
+There are several groups of spatial entities, which naturally match occurrences by their location.
+
+* IBRA regions
+* Beard: Districts within Regions within Provinces
+* CALM: Occurrences within Districts within Regions. How are the occurrences inferred / added?
+* CALM District Users
+* DOLA locations
+* Bush forever sites
+* Zones (three broad zones in WA: rangelands, wheatbelt, southwest non-wheatbelt)
+* Land use: Land Use, Land Use Codes, Occurrence Surr(?) Codes
+* Tenures: Purposes, Tenure Types, Tenures, Occurrence Tenures, Occurrence Shires, Shires
+* Maps: Maps, Occurrence Maps
+
+```{r calm_districts}
+calm_regions <- tec$CALM_REGIONS
+calm_districts <- tec$CALM_DISTRICTS
+calm_district_occurrences <- tec$DISTRICTS
+```
+
+GIS exports:
+
+* GIS_*
+* Boundaries
+
+TODO where are the TEC site polygons?
+
 ## Communities
+Abbreviation: `com`
+
 ```{r communities}
 former_range <- tec$FORMER_RANGES %>%
   dplyr::transmute(
@@ -90,81 +138,41 @@ range_decline <- tec$RANGE_DECLINE %>%
     )
 # make_coldef(range_decline)
 
-occurrence_decline <- tec$OCCURRENCES_DECLINE %>%
+occ_decline <- tec$OCCURRENCES_DECLINE %>%
     dplyr::transmute(
-        occurrence_decline_id = OCC.DECLINE  %>% as.integer(), 
-        occurrence_decline = OCC.DECLINE.DESC  %>% as.character()
+        occ_decline_id = OCC.DECLINE  %>% as.integer(), 
+        occ_decline = OCC.DECLINE.DESC  %>% as.character()
     )
-# make_coldef(occurrence_decline)
+# make_coldef(occ_decline)
 
 communities <- tec$COMMUNITIES %>%
     tibble::as.tibble() %>%
   dplyr::transmute(
-    community_id = COM.NO %>% as.integer(),
-    community_label = COM.ID %>% as.character(),
-    community_name = COM.NAME %>% as.character(),
-    community_description = COM.DESC %>% as.character(),
+    com_id = COM.NO %>% as.integer(),
+    com_label = COM.ID %>% as.character(),
+    com_name = COM.NAME %>% as.character(),
+    com_description = COM.DESC %>% as.character(),
     former_range_id = COM.FORMER.RANGE %>% as.character(),
     range_decline_id = COM.RANGE.DECLINE %>% as.integer(),
-    occurrence_decline_id = COM.OCC.DECLINE %>% as.integer(),
-    community_tec_listing = COM.TEC.LISTING %>% as.integer(),
-    community_original_area = COM.ORIG.AREA %>% as.double(),
-    community_area_accuracy = COM.AREA.ACC %>% as.double(),
+    occ_decline_id = COM.OCC.DECLINE %>% as.integer(),
+    com_tec_listing = COM.TEC.LISTING %>% as.integer(),
+    com_original_area = COM.ORIG.AREA %>% as.double(),
+    com_area_accuracy = COM.AREA.ACC %>% as.double(),
     preliminary = COM.PRELIMINARY %>% as.character(),
     status = COM.STATUS %>% as.character()
   ) %>%
   dplyr::left_join(former_range, by = "former_range_id") %>%
   dplyr::left_join(range_decline, by = "range_decline_id") %>%
-  dplyr::left_join(occurrence_decline, by = "occurrence_decline_id")
+  dplyr::left_join(occ_decline, by = "occ_decline_id")
 # make_coldef(communities)
 communities %>% skim()
 communities %>% DT::datatable(.)
 
-communities_short <- communities %>% 
-    dplyr::select(community_id, community_label, community_name)
+com_short <- communities %>% 
+    dplyr::select(com_id, com_label, com_name)
 ```
 
-## Lookups
-There are many lookups without FK constraints at a database level.
 
-* Actions
-* Authorities
-* Boundaries Old
-* Projects
-* Reliability
-
-* Status
-
-* Zones
-
-## Configs
-Some tables contain configuration data. Tsk Tsk.
-
-* Settings: Datum preference
-* Sp Master INI old: external db config
-* mddDataTables/columns: external db tables
-* mddMasterLists: external db config
-* mddReportItems (empty)
-
-## Spatial entities
-There are several groups of spatial entities, which naturally match occurrences by their location.
-
-* IBRA regions
-* Beard: Districts within Regions within Provinces
-* CALM: Occurrences within Districts within Regions. How are the occurrences inferred / added?
-* CALM District Users
-* DOLA locations
-* Land use: Land Use, Land Use Codes, Occurrence Surr(?) Codes
-* Tenures: Purposes, Tenure Types, Tenures, Occurrence Tenures, Occurrence Shires, Shires
-* Maps: Maps, Occurrence Maps
-
-```{r calm_districts}
-calm_regions <- tec$CALM_REGIONS
-calm_districts <- tec$CALM_DISTRICTS
-calm_district_occurrences <- tec$DISTRICTS
-
-
-```
 
 ## Occurrences
 Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
@@ -176,7 +184,7 @@ occurrences <- tec$OCCURRENCES %>%
     tibble::as.tibble() %>%
     dplyr::transmute(
     id = OCC.UNIQUE.ID %>% as.integer,
-    community_id = COM.NO %>% as.integer,
+    com_id = COM.NO %>% as.integer,
     occ_no = OCC.NO %>% as.integer,
     confidential = OCC.CONFIDENTIAL %>% as.integer,
     source_code = OCC.SOURCE.CODE %>% as.character,
@@ -217,11 +225,10 @@ occurrences <- tec$OCCURRENCES %>%
     no_boundary = OCC.NO.BOUNDARY %>% as.integer,
     commenwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character
     ) %>%
-    dplyr::left_join(communities_short, by = "community_id")
+    dplyr::left_join(com_short, by = "com_id")
 occurrences %>% skimr::skim()
 occurrences %>% head(10) %>% DT::datatable(.)
 ```
-
 
 ## Fauna Occurrences
 There is another separate group of occurrences:
@@ -262,35 +269,31 @@ Tables:
 * Flora Conservation Codes
 
 ## Additional Data
-Tables:
+Linked to occ.
 
 * Additional Data
 * Items
 
-## MDD tables
-
-* mddDataTables
-* mddDataColumns
-* mddReportItems
-
 ## Recovery Plans
+
 ```{r recovery_plans}
 recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
   dplyr::transmute(
     recovery_plan_id = IRP.NO %>% as.character(),
-    community_id = COM.NO %>% as.integer(),
+    com_id = COM.NO %>% as.integer(),
     endorsed_on = IRP.DATE.ENDORSED %>% parse_date_time(., orders = orders, tz = tz),
     ends_on = IRP.END.DATE %>% parse_date_time(., orders = orders, tz = tz),
     author = IRP.AUTHOR %>% as.character(),
     reviewed_on = IRP.DATE.REVIEWED %>% parse_date_time(., orders = orders, tz = tz),
     comments = IRP.COMMENTS %>% as.character()
   ) %>% 
-  dplyr::left_join(communities_short, by = "community_id")
+  dplyr::left_join(com_short, by = "com_id")
 # make_coldef(recovery_plans)
 recovery_plans %>% skim()
 ```
 
 ## Publications
+
 ```{r publications}
 publications <- tec$PUBLICATIONS %>%
   dplyr::transmute(
@@ -305,17 +308,18 @@ publications <- tec$PUBLICATIONS %>%
 
 community_publications <- tec$COMMUNITY_PUBLICATIONS %>%
     dplyr::transmute(
-        community_id = COM.NO  %>% as.integer(), 
+        com_id = COM.NO  %>% as.integer(), 
         publication_id = CP.PUB.NO  %>% as.integer(),
     ) %>%
     dplyr::left_join(publications, by = "publication_id") %>%
-    dplyr::left_join(communities_short, by = "community_id")
+    dplyr::left_join(com_short, by = "com_id")
 # make_coldef(community_publications)
 community_publications %>% skim()
 community_publications %>% DT::datatable(.)
 ```
 
 ## Reviews
+
 ```{r com_reviews}
 reviews <- tec$REVIEWS %>%
   dplyr::transmute(
@@ -328,10 +332,10 @@ reviews %>% skim()
 
 community_reviews <- tec$COMMUNITY_REVIEWS %>%
   dplyr::transmute(
-    community_id = COM.NO %>% as.integer(),
+    com_id = COM.NO %>% as.integer(),
     review_id = CR.REV.NO %>% as.integer()
   ) %>%
-  dplyr::left_join(communities_short, by = "community_id") %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(reviews, by = "review_id")
 # community_reviews %>% make_coldef()
 community_reviews %>% skim()
@@ -340,16 +344,17 @@ community_reviews %>% DT::datatable(.)
 
 ## Community Actions
 Are `COMMUNITY_ACTIONS` related to `ACTIONS`?
+
 ```{r com_actions}
 community_actions <- tec$COMMUNITY_ACTIONS %>%
   dplyr::transmute(
-    community_id = COM.NO %>% as.integer(),
+    com_id = COM.NO %>% as.integer(),
     com_action_id = CACT.NO %>% as.integer(),
     com_action_date = CACT.DATE %>% parse_date_time(., orders = orders, tz = tz),
     com_action_code = CACT.ACTION.CODE %>% as.character(),
     com_action_description = CACT.DESC %>% as.character()
   ) %>%
-  dplyr::left_join(communities_short, by = "community_id")
+  dplyr::left_join(com_short, by = "com_id")
 # community_actions %>% make_coldef()
 community_actions %>% skim()
 community_actions %>% DT::datatable(.)
