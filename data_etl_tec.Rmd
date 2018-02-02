@@ -25,30 +25,32 @@ library(Hmisc)
 library(ckanr)
 
 # Configure ckanr to data.dpaw.wa.gov.au
-ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), 
-                   key = Sys.getenv("CKAN_API_KEY"))
+ckanr::ckanr_setup(
+  url = Sys.getenv("CKAN_URL"),
+  key = Sys.getenv("CKAN_API_KEY")
+)
 
 #' Download, extract and open a zipped Access database from a CKAN dataset
-#' 
+#'
 #' @param resource_id The CKAN resource ID of a zipped Access DB
-#' @param destdir The local destination directory for the extracted file, 
+#' @param destdir The local destination directory for the extracted file,
 #'  will be created if not existing. Default: "data"
-#' @param dateformat The parameter dateformat for Hmisc::mdb.get(), 
+#' @param dateformat The parameter dateformat for Hmisc::mdb.get(),
 #'  default: '%Y-%m-%d'
 #' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
 #' @returns The Hmisc::mdb.get connection
-dl_mdbzip <- function(resource_id, 
-                      destdir="data", 
-                      dateformat = '%m-%d-%Y', 
+dl_mdbzip <- function(resource_id,
+                      destdir="data",
+                      dateformat = "%m-%d-%Y",
                       asis = TRUE) {
-    dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
-    tmp <- tempfile()
-    res_url <- ckanr::resource_show(resource_id)$url
-    utils::download.file(res_url, tmp)
-    dbfile <- utils::unzip(tmp, exdir = destdir)
-    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
-    unlink(tmp)
-    con
+  dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
+  tmp <- tempfile()
+  res_url <- ckanr::resource_show(resource_id)$url
+  utils::download.file(res_url, tmp)
+  dbfile <- utils::unzip(tmp, exdir = destdir)
+  con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
+  unlink(tmp)
+  con
 }
 ```
 # SCB data background
@@ -71,7 +73,7 @@ tz <- "Australia/Perth"
 
 # Prepare column def
 as_def <- . %>% paste(., "=", ., " %>% as.character, \n")
-make_coldef <- . %>% names %>% purrr::map(as_def) %>% unlist %>% cat
+make_coldef <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat()
 ```
 
 ## Configuration
@@ -93,8 +95,9 @@ Tables:
 
 TODO how are taxonomy tables linked?
 
-## Spatial entities
-There are several groups of spatial entities, which naturally match occurrences by their location.
+## Spatial lookups
+There are several groups of spatial entities which are maintained outside of the SCB ecosystem.
+The link to WSCB entities can be inferred unambiguously through geospatial location and cached for performance.
 
 * IBRA regions
 * Beard: Districts within Regions within Provinces
@@ -113,12 +116,31 @@ calm_districts <- tec$CALM_DISTRICTS
 calm_district_occurrences <- tec$DISTRICTS
 ```
 
-GIS exports:
+## GIS exports
+Some tables refer to externally managed spatial data:
 
 * GIS_*
 * Boundaries
 
-TODO where are the TEC site polygons?
+## Spatial concepts
+* Each occurrence lies within a `boundary` polygon.
+* Not all occurrences have recorded boudaries.
+* Boundaries (where existing) are buffered by a distance (default 500m) into a `buffer` polygon.
+* Some buffers are reconstructed from a point plus a circular buffer, where boundaries are missing.
+* There is one buffer for each occurrence.
+* Point observations are somewhat misleadingly named `site`.
+* Sites can serve:
+
+  * To name a boundary
+  * To create a buffer
+  * To reference a point observation
+  * To reference a terrestrial quadrat (default 10m x 10m) which is surveyed for species occurrences
+* Some boundaries contain multiple sites.
+
+There are 122970 sites, 120118 boundaries, and 121366 buffers.
+
+TODO Wendy to upload zip archives of boundary, buffer and site shapefiles to the data catalogue.
+Florian to convert each to GeoJSON.
 
 ## Communities
 Abbreviation: `com`
@@ -132,21 +154,21 @@ former_range <- tec$FORMER_RANGES %>%
 # make_coldef(former_range)
 
 range_decline <- tec$RANGE_DECLINE %>%
-    dplyr::transmute(
-        range_decline_id = RANGE.DECLINE  %>% as.integer(), 
-        range_decline = RANGE.DECLINE.DESC  %>% as.character()
-    )
+  dplyr::transmute(
+    range_decline_id = RANGE.DECLINE %>% as.integer(),
+    range_decline = RANGE.DECLINE.DESC %>% as.character()
+  )
 # make_coldef(range_decline)
 
 occ_decline <- tec$OCCURRENCES_DECLINE %>%
-    dplyr::transmute(
-        occ_decline_id = OCC.DECLINE  %>% as.integer(), 
-        occ_decline = OCC.DECLINE.DESC  %>% as.character()
-    )
+  dplyr::transmute(
+    occ_decline_id = OCC.DECLINE %>% as.integer(),
+    occ_decline = OCC.DECLINE.DESC %>% as.character()
+  )
 # make_coldef(occ_decline)
 
 communities <- tec$COMMUNITIES %>%
-    tibble::as.tibble() %>%
+  tibble::as.tibble() %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     com_label = COM.ID %>% as.character(),
@@ -168,8 +190,8 @@ communities <- tec$COMMUNITIES %>%
 communities %>% skim()
 communities %>% DT::datatable(.)
 
-com_short <- communities %>% 
-    dplyr::select(com_id, com_label, com_name)
+com_short <- communities %>%
+  dplyr::select(com_id, com_label, com_name)
 ```
 
 
@@ -180,54 +202,70 @@ Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of
 ```{r occurrences}
 # Beard Maps
 # Boundaries
-occurrences <- tec$OCCURRENCES %>% 
-    tibble::as.tibble() %>%
-    dplyr::transmute(
-    id = OCC.UNIQUE.ID %>% as.integer,
-    com_id = COM.NO %>% as.integer,
-    occ_no = OCC.NO %>% as.integer,
-    confidential = OCC.CONFIDENTIAL %>% as.integer,
-    source_code = OCC.SOURCE.CODE %>% as.character,
-    boundary_id = BDY.ID %>% as.integer,
-    br_code = OCC.BR.CODE %>% as.character,
-    beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character,
-    ibra_reg_code = OCC.IBRA.REG.CODE %>% as.character,
-    dola_ref = OCC.DOLA.REF %>% as.character,
-    ctrc_sys = OCC.CTRC.SYS %>% as.integer,
-    ctrc_recommendation = OCC.CTRC.RECOMMENDATION %>% as.character,
-    cwealth_listing = OCC.CWEALTH.LISTING %>% as.character,
-    original_area = OCC.ORIGINAL.AREA %>% as.double,
-    area_accuracy = OCC.AREA.ACCURACY %>% as.double,
-    data = OCC.DATA %>% as.character,
-    other = OCC.OTHER %>% as.character,
-    soil = OCC.SOIL %>% as.character,
-    surf_geology = OCC.SURF.GEOLOGY %>% as.character,
-    land_element = OCC.LAND.ELEMENT %>% as.character,
-    water = OCC.WATER %>% as.character,
-    drainage = OCC.DRAINAGE %>% as.character,
-    com_structure = OCC.COM.STRUCTURE %>% as.character,
-    classification = OCC.CLASSIFICATION %>% as.character,
-    other_attr =  OCC.OTHER.ATTR %>% as.character,
-    beard_map_code = OCC.BEARD.MAP.CODE %>% as.character,
-    beard_desc = OCC.BEARD.DESC %>% as.character,
-    desc = OCC.DESC %>% as.character,
-    boundary_desc = OCC.BOUNDARY.DESC %>% as.character,
-    species_desc = OCC.SPECIES.DESC %>% as.character,
-    zone_code = OCC.ZONE.CODE %>% as.character,
-    username = USERNAME %>% as.character,
-    date_entered =  OCC.DATE.ENTERED %>% 
-        lubridate::parse_date_time(., orders = orders, tz=tz), 
-    date_edited = OCC.DATE.EDITED %>% as.character %>% 
-        lubridate::parse_date_time(., orders = orders, tz=tz),
-    buffer_radius = OCC.BUFFER.RADIUS %>% as.integer,
-    bush_forever_site_no = OCC.BUSH.FOREVER.SITE.NO %>% as.integer,
-    status_code = OCC.STATUS.CODE %>% as.logical,
-    no_boundary = OCC.NO.BOUNDARY %>% as.integer,
-    commenwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character
-    ) %>%
-    dplyr::left_join(com_short, by = "com_id")
+occurrences <- tec$OCCURRENCES %>%
+  tibble::as.tibble() %>%
+  dplyr::transmute(
+    # IDs
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    com_id = COM.NO %>% as.integer(),
+    occ_no = OCC.NO %>% as.integer(),
+    source_code = OCC.SOURCE.CODE %>% as.character(),
+
+    # spatial references
+    boundary_id = BDY.ID %>% as.integer(),
+    boundary_desc = OCC.BOUNDARY.DESC %>% as.character(),
+    # boundary_no = OCC.NO.BOUNDARY %>% as.integer, # empty
+    buffer_radius = OCC.BUFFER.RADIUS %>% as.integer(),
+    original_area = OCC.ORIGINAL.AREA %>% as.double(),
+    area_accuracy = OCC.AREA.ACCURACY %>% as.double(),
+
+    # occ details
+    species_desc = OCC.SPECIES.DESC %>% as.character(),
+    commonwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character(),
+    confidential = OCC.CONFIDENTIAL %>% as.integer(),
+    desc = OCC.DESC %>% as.character(),
+    status_code = OCC.STATUS.CODE %>% as.logical(),
+    ctrc_sys = OCC.CTRC.SYS %>% as.integer(), # FK CTRC_SYSTEMS
+    ctrc_recommendation = OCC.CTRC.RECOMMENDATION %>% as.character(),
+    cwealth_listing = OCC.CWEALTH.LISTING %>% as.character(),
+    data = OCC.DATA %>% as.character(),
+    other = OCC.OTHER %>% as.character(),
+    soil = OCC.SOIL %>% as.character(),
+    surf_geology = OCC.SURF.GEOLOGY %>% as.character(),
+    land_element = OCC.LAND.ELEMENT %>% as.character(),
+    water = OCC.WATER %>% as.character(),
+    drainage = OCC.DRAINAGE %>% as.character(),
+    com_structure = OCC.COM.STRUCTURE %>% as.character(),
+    classification = OCC.CLASSIFICATION %>% as.character(),
+    other_attr = OCC.OTHER.ATTR %>% as.character(),
+
+    # spatial lookups
+    br_code = OCC.BR.CODE %>% as.character(),
+    beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character(),
+    beard_map_code = OCC.BEARD.MAP.CODE %>% as.character(),
+    beard_desc = OCC.BEARD.DESC %>% as.character(),
+    ibra_reg_code = OCC.IBRA.REG.CODE %>% as.character(),
+    dola_ref = OCC.DOLA.REF %>% as.character(),
+    bush_forever_site_no = OCC.BUSH.FOREVER.SITE.NO %>% as.integer(),
+    zone_code = OCC.ZONE.CODE %>% as.character(),
+
+    # audit
+    created_by = USERNAME %>% as.character(),
+    created_on = OCC.DATE.ENTERED %>%
+      lubridate::parse_date_time(., orders = orders, tz = tz),
+    changed_on = OCC.DATE.EDITED %>%
+      as.character() %>%
+      lubridate::parse_date_time(., orders = orders, tz = tz)
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id")
 occurrences %>% skimr::skim()
 occurrences %>% head(10) %>% DT::datatable(.)
+
+unique(occurrences$ctrc_sys) %>% sort()
+
+occ_short <- occurrences %>% dplyr::select(
+  occ_id, boundary_id, boundary_desc, com_id, com_label, com_name
+)
 ```
 
 ## Fauna Occurrences
@@ -260,6 +298,71 @@ A separate group related to surveys has the tables:
 * Site Visits
 * Site Species
 
+```{r sites}
+sites <- tec$SITES %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    label = S.ID %>% as.character(),
+    datum = S.DATUM.CODE %>% as.character(),
+    latitude = S.LATITUDE %>% as.double(),
+    longitude = S.LONGITUDE %>% as.double(),
+    comments = S.COMMENTS %>% as.character(),
+    # S.LATITUDE.PREF = S.LATITUDE.PREF  %>% as.character, # wtf?
+    # S.LONGITUDE.PREF = S.LONGITUDE.PREF  %>% as.character, # wut?
+    created_by = USERNAME %>% as.character(),
+    changed_on = S.DATE.EDITED %>% parse_date_time(., orders = orders, tz = tz),
+    permanently_marked = S.PERMANENTLY.MARKED %>% as.character(), # "", "Y"
+    location = S.LOCATION %>% as.character(),
+    habitat = S.HABITAT %>% as.character(),
+    soil = S.SOIL %>% as.character(),
+    # rock_type = S.ROCK.TYPE %>% as.character(), # empty
+    # parent_material = S.PARENT.MATERIAL %>% as.character(), # empty
+    vegetation = S.VEGETATION %>% as.character(),
+    # rock_pile_notes = S.ROCK.PILE.NOTES %>% as.character(), # empty
+    site_notes = S.SITE.NOTES %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
+# sites %>% make_coldef
+# sites %>% skim
+
+# sites[15000:15250,] %>% skim # CKAN datapusher chokes on this chunk
+```
+
+There are `r nrow(sites)` point locations known as TEC sites.
+
+```{r sites_map, fig.height=5, fig.width=7}
+leaflet(width = 800, height = 600) %>%
+  addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  clearBounds() %>%
+  addAwesomeMarkers(
+    data = sites,
+    lng = ~ longitude, lat = ~ latitude,
+    icon = leaflet::makeAwesomeIcon(icon = "leaf"),
+    label = ~ paste(label),
+    popup = ~ paste(
+      "<h3>Site", label, "</h3>",
+      "<strong>Community</strong>", com_label, "<br/>",
+      "<strong>Created by</strong>", created_by, "on", changed_on, "<br/>",
+      "<strong>Comments</strong>", comments, "<br/>",
+      "<strong>Permanent</strong>", permanently_marked, "<br/>",
+      "<strong>Location</strong>", location, "<br/>",
+      "<strong>Habitat</strong>", habitat, "<br/>",
+      "<strong>Soil</strong>", soil, "<br/>",
+      "<strong>Vegetation</strong>", vegetation, "<br/>",
+      "<strong>Site notes</strong>", site_notes, "<br/>"
+    ),
+    group = "Site points",
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    overlayGroups = c("Site points"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+
 Locations are somewhere in the `GIS_*` tables as points plus buffer. Where are the exact polygons?
 
 ## Species Master Old
@@ -286,7 +389,7 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
     author = IRP.AUTHOR %>% as.character(),
     reviewed_on = IRP.DATE.REVIEWED %>% parse_date_time(., orders = orders, tz = tz),
     comments = IRP.COMMENTS %>% as.character()
-  ) %>% 
+  ) %>%
   dplyr::left_join(com_short, by = "com_id")
 # make_coldef(recovery_plans)
 recovery_plans %>% skim()
@@ -307,12 +410,12 @@ publications <- tec$PUBLICATIONS %>%
 # make_coldef(publications)
 
 community_publications <- tec$COMMUNITY_PUBLICATIONS %>%
-    dplyr::transmute(
-        com_id = COM.NO  %>% as.integer(), 
-        publication_id = CP.PUB.NO  %>% as.integer(),
-    ) %>%
-    dplyr::left_join(publications, by = "publication_id") %>%
-    dplyr::left_join(com_short, by = "com_id")
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    publication_id = CP.PUB.NO %>% as.integer(),
+  ) %>%
+  dplyr::left_join(publications, by = "publication_id") %>%
+  dplyr::left_join(com_short, by = "com_id")
 # make_coldef(community_publications)
 community_publications %>% skim()
 community_publications %>% DT::datatable(.)
@@ -367,7 +470,7 @@ Note, this process lags one compilation of this workbook, as the HTML output
 is generated after the R code is run.
 
 ```{r tec_upload}
-# d <- ckanr::package_show("threatened-ecological-communities-database")
+d <- ckanr::package_show("threatened-ecological-communities-database")
 
 etl_title <- "TEC Data ETL"
 etl_fn <- "data_etl_tec.html"
@@ -391,6 +494,13 @@ occurrences %>% write_delim(occ_fn, delim = ",")
 # occ_rid <- r$id
 occ_rid <- "65f43392-a8c5-41e2-a31e-cc4135e9274e"
 ckanr::resource_update(occ_rid, occ_fn)
+
+sit_title <- "Threatened Ecological Community Site Points"
+sit_fn <- "data/site_points.csv"
+sites %>% write_delim(sit_fn, delim = ",")
+# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = sit_title, upload = sit_fn)
+sit_rid <- "bf4c2973-e549-408b-a583-013052072d6c"
+ckanr::resource_update(sit_rid, sit_fn)
 
 cpu_title <- "Threatened Ecological Community Publications"
 cpu_fn <- "data/community_publications.csv"
@@ -416,3 +526,4 @@ community_actions %>% write_delim(ca_fn, delim = ",")
 ca_rid <- "17d3c4e2-df98-4ff6-9d4d-99ba54808bb4"
 ckanr::resource_update(ca_rid, ca_fn)
 ```
+

@@ -415,7 +415,7 @@ The table `fauna` contains species occurrence records:
 ## Fauna occurrence map
 An interactive map of fauna occurrences.
 
-```{r fauna_map}
+```{r fauna_map, fig.height=5, fig.width=7}
 leaflet(width = 800, height = 600) %>%
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
