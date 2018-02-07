@@ -29,29 +29,7 @@ ckanr::ckanr_setup(
   url = Sys.getenv("CKAN_URL"),
   key = Sys.getenv("CKAN_API_KEY")
 )
-
-#' Download, extract and open a zipped Access database from a CKAN dataset
-#'
-#' @param resource_id The CKAN resource ID of a zipped Access DB
-#' @param destdir The local destination directory for the extracted file,
-#'  will be created if not existing. Default: "data"
-#' @param dateformat The parameter dateformat for Hmisc::mdb.get(),
-#'  default: '%Y-%m-%d'
-#' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
-#' @returns The Hmisc::mdb.get connection
-dl_mdbzip <- function(resource_id,
-                      destdir="data",
-                      dateformat = "%m-%d-%Y",
-                      asis = TRUE) {
-  dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
-  tmp <- tempfile()
-  res_url <- ckanr::resource_show(resource_id)$url
-  utils::download.file(res_url, tmp)
-  dbfile <- utils::unzip(tmp, exdir = destdir)
-  con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
-  unlink(tmp)
-  con
-}
+source("helpers.R")
 ```
 
 # Conventions
@@ -85,11 +63,6 @@ tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 # Date conventions
 orders <- c("mdyHMS")
 tz <- "Australia/Perth"
-
-# Make column def (mkd)
-add_dettol <- . %>% stringr::str_to_lower(.) %>% stringr::str_replace_all(., "\\.", "_")
-as_def <- . %>% paste(add_dettol(.), "=", ., " %>% as.character, \n")
-mkd <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat(.)
 ```
 
 ## Configuration
@@ -153,9 +126,6 @@ Some tables refer to externally managed spatial data:
 * Some boundaries contain multiple sites.
 
 There are 122970 sites, 120118 boundaries, and 121366 buffers.
-
-TODO Wendy to upload zip archives of boundary, buffer and site shapefiles to the data catalogue.
-Florian to convert each to GeoJSON.
 
 ## Communities
 Abbreviation: `com`
@@ -239,7 +209,6 @@ com_recommendations <- tec$COMMUNITY_RECOMMENDATIONS %>%
 
 com_recommendations %>% DT::datatable(.)
 ```
-
 
 ## Community Publications
 
@@ -891,140 +860,35 @@ recovery_plans %>% skim()
 
 ## TEC data upload
 Create resource once-off to get a resource ID.
-Subsequently, upload the compiled workbook.
+Also upload the compiled workbook.
 Note, this process lags one compilation of this workbook, as the HTML output
-is generated after the R code is run.
+is generated after the R code is run - knit a workbook twice to update the data catalogue.
 
 ```{r tec_upload}
 d <- ckanr::package_show("threatened-ecological-communities-database")
-
-etl_title <- "TEC Data ETL"
-etl_fn <- "data_etl_tec.html"
-# r <- ckanr::resource_create(package_id = d$id, format = "html", name = etl_title, upload = etl_fn)
-# etl_rid <- r$id
-etl_rid <- "80009375-19e2-45d3-a1ae-068143fa03a5"
-ckanr::resource_update(etl_rid, etl_fn)
-
-com_title <- "Threatened Ecological Communities (TEC)"
-com_fn <- "data/communities.csv"
-communities %>% write_delim(com_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = com_title, upload = com_fn)
-# com_rid <- r$id
-com_rid <- "9782cc52-7be8-494a-a7da-51845c119a21"
-ckanr::resource_update(com_rid, com_fn)
-
-occ_title <- "TEC Occurrences"
-occ_fn <- "data/occurrences.csv"
-occurrences %>% write_delim(occ_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = occ_title, upload = occ_fn)
-# occ_rid <- r$id
-occ_rid <- "65f43392-a8c5-41e2-a31e-cc4135e9274e"
-ckanr::resource_update(occ_rid, occ_fn)
-
-sit_title <- "TEC Site Points"
-sit_fn <- "data/site_points.csv"
-sites %>% write_delim(sit_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = sit_title, upload = sit_fn)
-sit_rid <- "bf4c2973-e549-408b-a583-013052072d6c"
-ckanr::resource_update(sit_rid, sit_fn)
-
-cre_title <- "TEC Recommendations"
-cre_fn <- "data/community_recommendations.csv"
-com_recommendations %>% write_delim(cre_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = cre_title, upload = cre_fn)
-cre_rid <- "fd96a053-523c-401d-8755-9116c55f5744"
-ckanr::resource_update(cre_rid, cre_fn)
-
-cpu_title <- "TEC Publications"
-cpu_fn <- "data/community_publications.csv"
-com_publications %>% write_delim(cpu_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = cpu_title, upload = cpu_fn)
-# cpu_rid <- r$id
-cpu_rid <- "fa51cd96-864a-4c43-a0e1-fc24621bb628"
-ckanr::resource_update(cpu_rid, cpu_fn)
-
-cr_title <- "TEC Reviews"
-cr_fn <- "data/community_reviews.csv"
-com_reviews %>% write_delim(cr_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = cr_title, upload = cr_fn)
-# cr_rid <- r$id
-cr_rid <- "7c39b584-bc4b-4234-aff7-ddf4808692ed"
-ckanr::resource_update(cr_rid, cr_fn)
-
-ca_title <- "TEC Actions"
-ca_fn <- "data/community_actions.csv"
-com_actions %>% write_delim(ca_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = ca_title, upload = ca_fn)
-ca_rid <- "17d3c4e2-df98-4ff6-9d4d-99ba54808bb4"
-ckanr::resource_update(ca_rid, ca_fn)
-
-ch_title <- "TEC History"
-ch_fn <- "data/community_history.csv"
-com_history %>% write_delim(ch_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = ch_title, upload = ch_fn)
-ch_rid <- "479d7358-d42d-4c4b-93ee-1bac39d21024"
-ckanr::resource_update(ch_rid, ch_fn)
-
-oa_title <- "TEC Occurrence Actions"
-oa_fn <- "data/occurrence_actions.csv"
-occ_actions %>% write_delim(oa_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = oa_title, upload = oa_fn)
-oa_rid <- "25894a68-11de-4a58-b521-6a9abd06ee40"
-ckanr::resource_update(oa_rid, oa_fn)
-
-ore_title <- "TEC Occurrence Recommendations"
-ore_fn <- "data/occurrence_recommendations.csv"
-occ_recommendations %>% write_delim(ore_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = ore_title, upload = ore_fn)
-ore_rid <- "747464e4-2434-459a-b654-52861b37095c"
-ckanr::resource_update(ore_rid, ore_fn)
-
-# Bugger that. Let's make this easier.
-upload_to_ckan <- function(data, 
-                           resource_title, 
-                           dataset_id=NULL, 
-                           resource_id=NULL){
-    resource_filename <- resource_title %>% 
-        stringr::str_to_lower(.) %>% 
-        stringr::str_replace_all(., " ", "_") %>%
-        paste0(".csv") %>%
-        file.path("data", .)
-    
-    write_delim(data, resource_filename, delim = ",")
-    
-    if (is.null(resource_id)){
-        cat("No resource ID given, creating a new resource for", resource_title, ": ")
-        r <- ckanr::resource_create(package_id = dataset_id, 
-                                    format = "csv", 
-                                    name = resource_title, 
-                                    upload = resource_filename)
-        r$id
-    } else {
-        if (is.null(dataset_id)){
-            cat("Error: provide either resource ID to update, or dataset ID to create resource for.\n")
-        } else {
-            cat("Updating CKAN resource", resource_title, ": ")
-            r <- ckanr::resource_update(resource_id, 
-                                        resource_filename)
-            r$id
-        }
-        
-    }
-}
-
-upload_to_ckan(occ_extent, "TEC occurrence extent", dataset_id = d$id, resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed")
-upload_to_ckan(occ_additional_data, "TEC occurrence additional data", 
-               dataset_id = d$id, resource_id = "8dd3454c-1bf0-4575-adcb-154b700c4283")
-upload_to_ckan(occ_biol_process, "TEC biological process", dataset_id = d$id, resource_id = "5805a671-576a-4077-b595-35ca96d7ca96")
-upload_to_ckan(occ_nonbiol_process, "TEC nonbiological process", dataset_id = d$id, resource_id = "a5341117-2735-4694-8cd4-e806f4c06668")
-upload_to_ckan(fire_history, "TEC fire history", dataset_id = d$id, resource_id = "e062f57e-f6aa-4403-a682-875dab2f77f6")
-upload_to_ckan(occ_fauna, "TEC occurence fauna", dataset_id = d$id, resource_id = "a0eddc66-5fef-4252-b49f-691422a88f28")
-upload_to_ckan(occ_species, "TEC occurence species", dataset_id = d$id, resource_id = "e94f1e35-30da-4982-b851-ceb888eb41b3")
-upload_to_ckan(com_threats, "TEC community threats", dataset_id = d$id, resource_id = "5426c45b-1dee-4547-a6e3-bec81585e52e")
-upload_to_ckan(survey_threats, "TEC survey threats", dataset_id = d$id, resource_id = "5b795656-a240-402e-92b8-edbe54b3fee8")
-upload_to_ckan(site_visit, "TEC site visit", dataset_id = d$id, resource_id = "85cef94b-d12e-4aff-bd24-446d1c0757db")
-upload_to_ckan(voucher_specimens, "TEC voucher specimens", dataset_id = d$id, resource_id = "6b8fe493-8183-4fe8-a91a-67a569bf9c46")
-upload_to_ckan(gazettal_wa, "TEC gazettal WA", dataset_id = d$id, resource_id = "f0085651-8c38-496e-a6bd-1adc7ae2f06a")
-upload_to_ckan(gazettal_iucn, "TEC gazettal IUCN", dataset_id = d$id, resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a")
+ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
+upload_to_ckan(communities, "Threatened Ecological Communities (TEC)", d$id, resource_id = "9782cc52-7be8-494a-a7da-51845c119a21")
+upload_to_ckan(occurrences, "TEC Occurrences", d$id, resource_id = "65f43392-a8c5-41e2-a31e-cc4135e9274e")
+upload_to_ckan(sites, "TEC Site Points", d$id, resource_id = "bf4c2973-e549-408b-a583-013052072d6c")
+upload_to_ckan(com_recommendations, "TEC Recommendations", d$id, resource_id = "fd96a053-523c-401d-8755-9116c55f5744")
+upload_to_ckan(com_publications, "TEC Publications", d$id, resource_id = "fa51cd96-864a-4c43-a0e1-fc24621bb628")
+upload_to_ckan(com_reviews, "TEC Reviews", d$id, resource_id = "7c39b584-bc4b-4234-aff7-ddf4808692ed")
+upload_to_ckan(com_actions, "TEC Actions", d$id, resource_id = "17d3c4e2-df98-4ff6-9d4d-99ba54808bb4")
+upload_to_ckan(com_history, "TEC History", d$id, resource_id = "479d7358-d42d-4c4b-93ee-1bac39d21024")
+upload_to_ckan(occ_actions, "TEC Occurrence Actions", d$id, resource_id = "25894a68-11de-4a58-b521-6a9abd06ee40")
+upload_to_ckan(occ_recommendations, "TEC Occurrence Recommendations", d$id, resource_id = "747464e4-2434-459a-b654-52861b37095c")
+upload_to_ckan(occ_extent, "TEC occurrence extent", d$id, resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed")
+upload_to_ckan(occ_additional_data, "TEC occurrence additional data", d$id, resource_id = "8dd3454c-1bf0-4575-adcb-154b700c4283")
+upload_to_ckan(occ_biol_process, "TEC biological process", d$id, resource_id = "5805a671-576a-4077-b595-35ca96d7ca96")
+upload_to_ckan(occ_nonbiol_process, "TEC nonbiological process", d$id, resource_id = "a5341117-2735-4694-8cd4-e806f4c06668")
+upload_to_ckan(fire_history, "TEC fire history", d$id, resource_id = "e062f57e-f6aa-4403-a682-875dab2f77f6")
+upload_to_ckan(occ_fauna, "TEC occurence fauna", d$id, resource_id = "a0eddc66-5fef-4252-b49f-691422a88f28")
+upload_to_ckan(occ_species, "TEC occurence species", d$id, resource_id = "e94f1e35-30da-4982-b851-ceb888eb41b3")
+upload_to_ckan(com_threats, "TEC community threats", d$id, resource_id = "5426c45b-1dee-4547-a6e3-bec81585e52e")
+upload_to_ckan(survey_threats, "TEC survey threats", d$id, resource_id = "5b795656-a240-402e-92b8-edbe54b3fee8")
+upload_to_ckan(site_visit, "TEC site visit", d$id, resource_id = "85cef94b-d12e-4aff-bd24-446d1c0757db")
+upload_to_ckan(voucher_specimens, "TEC voucher specimens", d$id, resource_id = "6b8fe493-8183-4fe8-a91a-67a569bf9c46")
+upload_to_ckan(gazettal_wa, "TEC gazettal WA", d$id, resource_id = "f0085651-8c38-496e-a6bd-1adc7ae2f06a")
+upload_to_ckan(gazettal_iucn, "TEC gazettal IUCN", d$id, resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a")
 ```
 

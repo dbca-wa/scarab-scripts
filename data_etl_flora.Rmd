@@ -28,6 +28,7 @@ ckanr::ckanr_setup(
   url = Sys.getenv("CKAN_URL"),
   key = Sys.getenv("CKAN_API_KEY")
 )
+source("helpers.R")
 ```
 # SCB data background
 [Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
@@ -83,12 +84,7 @@ Note, this process lags one compilation of this workbook, as the HTML output
 is generated after the R code is run.
 
 ```{r flora_upload}
-# d <- ckanr::package_show("threatened-and-priority-flora-database")
-
-etl_title <- "Flora Data ETL"
-etl_fn <- "data_etl_flora.html"
-# r <- ckanr::resource_create(package_id = d$id, format = "html", name = etl_title, upload = etl_fn)
-# etl_rid <- r$id
-etl_rid <- "d1fccebb-02e2-4a40-aba4-c4d6ad012edb"
-ckanr::resource_update(etl_rid, etl_fn)
+d <- ckanr::package_show("threatened-and-priority-flora-database")
+ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb", "data_etl_flora.html")
+# upload_to_ckan(dataframe, "TPFL title", d$id, resource_id = NULL)
 ```
