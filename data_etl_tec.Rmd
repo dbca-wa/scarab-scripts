@@ -86,9 +86,10 @@ tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 orders <- c("mdyHMS")
 tz <- "Australia/Perth"
 
-# Prepare column def
-as_def <- . %>% paste(., "=", ., " %>% as.character, \n")
-make_coldef <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat()
+# Make column def (mkd)
+add_dettol <- . %>% stringr::str_to_lower(.) %>% stringr::str_replace_all(., "\\.", "_")
+as_def <- . %>% paste(add_dettol(.), "=", ., " %>% as.character, \n")
+mkd <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat(.)
 ```
 
 ## Configuration
@@ -633,15 +634,77 @@ A separate group related to surveys has the tables:
 
 ```{r surveys}
 # lookups
-impacts <- tec$THREAT_IMPACTS
-threats <- tec$THREATS
-conditions <- tec$CONDITIONS
+impacts <- tec$THREAT_IMPACTS %>% 
+    dplyr::transmute(
+    impact_code = IMP.CODE  %>% as.character, 
+    impact = IMP.DESC  %>% as.character
+)
+
+threats <- tec$THREATS %>% 
+    dplyr::transmute(
+        threat_code = THREAT.CODE  %>% as.character, 
+        threat = THREAT.DESC  %>% as.character
+    )
+
+conditions <- tec$CONDITIONS %>% 
+    dplyr::transmute(
+        condition_code = COND.CODE  %>% as.character, 
+        condition = COND.DESC  %>% as.character
+    )
 
 # primary
-com_threats <- tec$COMMUNITY_THREATS # join threats
-surveys <- tec$SURVEYS # join occ_short
-survey_threats <- tec$SURVEY_THREATS # join survey, threat, impact (x2)
-survey_conditions <- tec$SURVEY_CONDITIONS # join survey, condition
+com_threats <- tec$COMMUNITY_THREATS %>%
+    dplyr::transmute(
+        com_id = COM.NO  %>% as.integer(), 
+        id = CTHR.NO  %>% as.character, 
+     date = CTHR.DATE  %>% as.character, 
+     threat_code = CTHR.THREAT.CODE  %>% as.character, 
+     description = CTHR.DESC  %>% as.character
+    ) %>% 
+    dplyr::left_join(threats, by = "threat_code")
+
+surveys <- tec$SURVEYS %>%
+    dplyr::transmute(
+        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
+         survey_id = SUR.NO  %>% as.integer(), 
+         surveyed_on = SUR.DATE  %>% as.character, 
+         surveyed_by = SUR.SURVEYOR  %>% as.character, 
+         survey_comments = SUR.COMMENTS  %>% as.character, 
+         username = USERNAME  %>% as.character
+    ) %>%
+    dplyr::left_join(occ_short, by = "occ_id")
+
+survey_threats <- tec$SURVEY_THREATS %>%
+    dplyr::transmute(
+        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
+         survey_id = SUR.NO  %>% as.integer(), 
+         threat_rank = THR.RANK  %>% as.integer(), 
+         threat_code = THR.THREAT.CODE  %>% as.character, 
+         threat_percent = THR.PERCENT  %>% as.double(), 
+         historic_impact_code = THR.HIST.IMP.CODE  %>% as.character, 
+         potential_impact_code = THR.POT.IMP.CODE  %>% as.character, 
+         modification = THR.MODIFICATION  %>% as.character, 
+         comments = THR.COMMENTS  %>% as.character, 
+         username = USERNAME  %>% as.character, 
+    ) %>% 
+     dplyr::left_join(occ_short, by = "occ_id") %>%
+    dplyr::left_join(threats, by = "threat_code") %>%
+    dplyr::left_join(impacts, by = c("historic_impact_code" = "impact_code")) %>%
+    dplyr::rename(historic_impact = impact) %>%
+    dplyr::left_join(impacts, by = c("potential_impact_code" = "impact_code")) %>%
+    dplyr::rename(potential_impact = impact)
+
+survey_conditions <- tec$SURVEY_CONDITIONS %>%
+    dplyr::transmute(
+        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
+         survey_id = SUR.NO  %>% as.integer(), 
+         condition_code = SCON.COND.CODE  %>% as.character, 
+         condition_percent = SCON.PERCENT  %>% as.double(), 
+         comments = SCON.COMMENTS  %>% as.character, 
+         username = USERNAME  %>% as.character
+    ) %>%
+    dplyr::left_join(occ_short, by = "occ_id") %>%
+    dplyr::left_join(conditions, by = "condition_code")
 ```
 
 ## Sites
@@ -652,14 +715,19 @@ survey_conditions <- tec$SURVEY_CONDITIONS # join survey, condition
 * Site Species
 
 ```{r sites}
-datum <- tec$DATUM
-
+datum <- tec$DATUM %>%
+    dplyr::transmute(
+        datum_code = DATUM.CODE  %>% as.character, 
+        datum = DATUM.DESC  %>% as.character, 
+        semi_major_axis = SEMI.MAJOR.AXIS  %>% as.double(), 
+        inverse_flattening = INVERSE.FLATTENING  %>% as.double()
+    )
 
 sites <- tec$SITES %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
-    label = S.ID %>% as.character(),
-    datum = S.DATUM.CODE %>% as.character(),
+    site_code = S.ID %>% as.character(),
+    datum_code = S.DATUM.CODE %>% as.character(),
     latitude = S.LATITUDE %>% as.double(),
     longitude = S.LONGITUDE %>% as.double(),
     comments = S.COMMENTS %>% as.character(),
@@ -677,16 +745,46 @@ sites <- tec$SITES %>%
     # rock_pile_notes = S.ROCK.PILE.NOTES %>% as.character(), # empty
     site_notes = S.SITE.NOTES %>% as.character()
   ) %>%
-  dplyr::left_join(occ_short, by = "occ_id")
-# sites %>% make_coldef
-# sites %>% skim
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+dplyr::left_join(datum, by = "datum_code")
 
 # sites[15000:15250,] %>% skim # CKAN datapusher chokes on this chunk
 
-site_visit <- tec$SITE_VISITS
+site_visit <- tec$SITE_VISITS %>%
+    dplyr::transmute(
+        site_visit_id = SITE.VISIT.ID  %>% as.integer(), 
+        site_code = S.ID %>% as.character(),
+        site_visit_date = SV.VISIT.DATE  %>% as.character, 
+        project_code = SV.PROJ.CODE  %>% as.character, 
+        site_visit_described_by = SV.DESCRIBED.BY  %>% as.character, 
+        site_visit_described_by_notes = SV.DESCRIBED.BY.NOTES  %>% as.character, 
+        seasonal_conditions = SV.SEASONAL.CONDITIONS  %>% as.character, 
+        observation_type = SV.OBSERVATION.TYPE  %>% as.character, 
+        observation_quality = SV.OBSERVATION.QUALITY  %>% as.character, 
+        plant_id_quality = SV.PLANT.ID.QUALITY  %>% as.character, 
+        site_dimensions = SV.SITE.DIMENSIONS  %>% as.character, 
+        site_uniformity = SV.SITE.UNIFORMITY  %>% as.character, 
+        site_status = SV.SITE.STATUS  %>% as.character, 
+        photo_numbers = SV.PHOTO  %>% as.character, 
+         vegetation_condition = SV.VEGETATION.CONDITION  %>% as.character, 
+         fire_age = SV.FIRE.AGE  %>% as.character, 
+         fire_notes = SV.FIRE.NOTES  %>% as.character, 
+         observation_notes = SV.OBSERVATION.NOTES  %>% as.character
+    )
 
 # coll code and number indicates voucher specimens
-voucher_specimens <- tec$SITE_SPECIES # join site_visit, taxonomy (which?)
+voucher_specimens <- tec$SITE_SPECIES %>%
+    dplyr::transmute(
+        site_species_id = SITE.SPECIES.ID  %>% as.character, 
+        site_visit_id = SITE.VISIT.ID  %>% as.integer(), 
+        name_id = SSP.NAME.ID  %>% as.character, 
+        species_code = SSP.SPCODE  %>% as.character, 
+        height = SSP.HEIGHT  %>% as.character, 
+        collector_code = SSP.COLLECTOR.CODE  %>% as.character, 
+        collection_number = SSP.COLLECTION.NUMBER  %>% as.character, 
+        notes = SSP.NOTES  %>% as.character
+        ) %>%
+    dplyr::left_join(site_visit, by = "site_visit_id")
 ```
 
 There are `r nrow(sites)` point locations known as TEC sites.
@@ -700,9 +798,9 @@ leaflet(width = 800, height = 600) %>%
     data = sites,
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
-    label = ~ paste(label),
+    label = ~ paste(site_code),
     popup = ~ paste(
-      "<h3>Site", label, "</h3>",
+      "<h3>Site", site_code, "</h3>",
       "<strong>Community</strong>", com_label, "<br/>",
       "<strong>Created by</strong>", created_by, "on", changed_on, "<br/>",
       "<strong>Comments</strong>", comments, "<br/>",
@@ -729,14 +827,48 @@ The data model of gazettals requires clarification.
 
 ```{r gazettal}
 # lookups
-category_type <- tec$CATEGORY_TYPES
-authorities <- tec$AUTHORITIES # where used?
-criteria_codes <- tec$CRITERIA_CODES
-endorsement <- tec$ENDORSED_BY
+library(magrittr)
+category_type <- tec$CATEGORY_TYPES %>% 
+    dplyr::transmute(
+        category_type_code = CT.TYPE  %>% as.character, 
+        category_type = CT.DESC  %>% as.character, 
+        authority = CT.AUTHORITY.CODE  %>% as.character
+    )
+
+conservation_status <- tec$CRITERIA_CODES %>%
+    dplyr::transmute(
+    conservation_status_code = CRIT.CODE  %>% as.character,
+    conservation_status_explanation = CRIT.DESC  %>% as.character
+    )
+
+# If only there were like, a function to turn uppercase into lower- or title case...
+authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities. yeah.
+endorsement <- tec$ENDORSED_BY # another lookup for lower case. 
 
 # primary
-categories <- tec$CATEGORIES # join com_short, cat type, endorsement
-category_criteria <- tec$CATEGORY_CRITERIA # join com_short, criteria codes
+gazettal_wa <- tec$CATEGORIES %>%
+    dplyr::transmute(
+        com_id = COM.NO  %>% as.integer(), 
+        cat_effect_date = CAT.EFFECT.DATE  %>% as.character, 
+        category_type_code = CAT.CT.TYPE  %>% as.character, 
+        cat_comment = CAT.COMMENT  %>% as.character, 
+        cat_review_date = CAT.REVIEW.DATE  %>% as.character, 
+        cat_endorsed_code = CAT.ENDORSED.CODE  %>% as.character, 
+        cat_endorsed_date = CAT.ENDORSED.DATE  %>% as.character, 
+        cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER  %>% as.character
+    ) %>%
+    dplyr::left_join(com_short, by = "com_id") %>%
+    dplyr::left_join(category_type, by = "category_type_code")
+    
+gazettal_iucn <- tec$CATEGORY_CRITERIA %>% 
+    dplyr::transmute(
+        com_id = COM.NO  %>% as.integer(), 
+        effective_from = CAT.EFFECT.DATE  %>% as.character, 
+        conservation_status_code = CC.CRIT.CODE  %>% as.character
+    ) %>%
+    dplyr::left_join(com_short, by = "com_id") %>%
+    dplyr::left_join(conservation_status, by = "conservation_status_code")
+# join com_short, criteria codes
 ```
 
 ## Recovery Plans
@@ -836,7 +968,7 @@ ckanr::resource_update(ch_rid, ch_fn)
 oa_title <- "TEC Occurrence Actions"
 oa_fn <- "data/occurrence_actions.csv"
 occ_actions %>% write_delim(oa_fn, delim = ",")
-r <- ckanr::resource_create(package_id = d$id, format = "csv", name = oa_title, upload = oa_fn)
+# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = oa_title, upload = oa_fn)
 oa_rid <- "25894a68-11de-4a58-b521-6a9abd06ee40"
 ckanr::resource_update(oa_rid, oa_fn)
 
@@ -847,12 +979,52 @@ occ_recommendations %>% write_delim(ore_fn, delim = ",")
 ore_rid <- "747464e4-2434-459a-b654-52861b37095c"
 ckanr::resource_update(ore_rid, ore_fn)
 
-# occ_extent
-# occ_additional_data
-# occ_biol_process
-# occ_nonbiol_process
-# fire_history
-# occ_fauna
-# occ_species
+# Bugger that. Let's make this easier.
+upload_to_ckan <- function(data, 
+                           resource_title, 
+                           dataset_id=NULL, 
+                           resource_id=NULL){
+    resource_filename <- resource_title %>% 
+        stringr::str_to_lower(.) %>% 
+        stringr::str_replace_all(., " ", "_") %>%
+        paste0(".csv") %>%
+        file.path("data", .)
+    
+    write_delim(data, resource_filename, delim = ",")
+    
+    if (is.null(resource_id)){
+        cat("No resource ID given, creating a new resource for", resource_title, ": ")
+        r <- ckanr::resource_create(package_id = dataset_id, 
+                                    format = "csv", 
+                                    name = resource_title, 
+                                    upload = resource_filename)
+        r$id
+    } else {
+        if (is.null(dataset_id)){
+            cat("Error: provide either resource ID to update, or dataset ID to create resource for.\n")
+        } else {
+            cat("Updating CKAN resource", resource_title, ": ")
+            r <- ckanr::resource_update(resource_id, 
+                                        resource_filename)
+            r$id
+        }
+        
+    }
+}
+
+upload_to_ckan(occ_extent, "TEC occurrence extent", dataset_id = d$id, resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed")
+upload_to_ckan(occ_additional_data, "TEC occurrence additional data", 
+               dataset_id = d$id, resource_id = "8dd3454c-1bf0-4575-adcb-154b700c4283")
+upload_to_ckan(occ_biol_process, "TEC biological process", dataset_id = d$id, resource_id = "5805a671-576a-4077-b595-35ca96d7ca96")
+upload_to_ckan(occ_nonbiol_process, "TEC nonbiological process", dataset_id = d$id, resource_id = "a5341117-2735-4694-8cd4-e806f4c06668")
+upload_to_ckan(fire_history, "TEC fire history", dataset_id = d$id, resource_id = "e062f57e-f6aa-4403-a682-875dab2f77f6")
+upload_to_ckan(occ_fauna, "TEC occurence fauna", dataset_id = d$id, resource_id = "a0eddc66-5fef-4252-b49f-691422a88f28")
+upload_to_ckan(occ_species, "TEC occurence species", dataset_id = d$id, resource_id = "e94f1e35-30da-4982-b851-ceb888eb41b3")
+upload_to_ckan(com_threats, "TEC community threats", dataset_id = d$id, resource_id = "5426c45b-1dee-4547-a6e3-bec81585e52e")
+upload_to_ckan(survey_threats, "TEC survey threats", dataset_id = d$id, resource_id = "5b795656-a240-402e-92b8-edbe54b3fee8")
+upload_to_ckan(site_visit, "TEC site visit", dataset_id = d$id, resource_id = "85cef94b-d12e-4aff-bd24-446d1c0757db")
+upload_to_ckan(voucher_specimens, "TEC voucher specimens", dataset_id = d$id, resource_id = "6b8fe493-8183-4fe8-a91a-67a569bf9c46")
+upload_to_ckan(gazettal_wa, "TEC gazettal WA", dataset_id = d$id, resource_id = "f0085651-8c38-496e-a6bd-1adc7ae2f06a")
+upload_to_ckan(gazettal_iucn, "TEC gazettal IUCN", dataset_id = d$id, resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a")
 ```
 
