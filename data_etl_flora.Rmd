@@ -34,6 +34,8 @@ on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 TPFL production data lives in an Oracle database. An MS Access database (510 MB) is generated from 
 the Oracle database, zipped (36 MB) and uploaded as a resource underneath the Flora dataset.
 
+The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
+
 # Flora
 
 ## Flora data load

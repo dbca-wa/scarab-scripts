@@ -47,6 +47,8 @@ The following conventions shall be used to create table and column names in this
 [TEC dataset](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database)
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
+The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
+
 # TEC
 
 ## TEC data load

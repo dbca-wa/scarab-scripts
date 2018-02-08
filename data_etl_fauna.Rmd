@@ -32,6 +32,8 @@ source("helpers.R")
 [Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
+The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
+
 # Fauna
 
 ## Fauna data load
