@@ -73,25 +73,165 @@ leaflet(width = 800, height = 600) %>%
   )
 ```
 
+## Species populations
+Table `DRF_POPULATION` contains many columns that are shared with `DRF_RFR_FORMS` (species occurrences).
+
+```{r pop}
+populations <- tpfl$DRF_POPULATION %>%
+  dplyr::transmute(
+    pop_id = POP.ID %>% as.character(),
+    pop_number = POP.NUMBER %>% as.character(),
+    subpop_code = SUBPOP.CODE %>% as.character(),
+    taxonid = TAXONID %>% as.character(),
+    spname = SPNAME %>% as.character(),
+    parent_pop_id = PARENT.POP.ID %>% as.character(),
+    pop_rec_type_ind = POP.REC.TYPE.IND %>% as.character(),
+    creation_sheetno = CREATION.SHEETNO %>% as.character(),
+    first_observed_date = FIRST.OBSERVED.DATE %>% as.character(),
+    confirmed = CONFIRMED %>% as.character(),
+    status = STATUS %>% as.character(),
+    pop_comments = POP.COMMENTS %>% as.character(),
+    assoc_sp_accum = ASSOC.SP.ACCUM %>% as.character(),
+    location = LOCATION %>% as.character(),
+    district = DISTRICT %>% as.character(),
+    landdistrict = LANDDISTRICT %>% as.character(),
+    lga_code = LGA.CODE %>% as.character(),
+    nearplace = NEARPLACE %>% as.character(),
+    distance = DISTANCE %>% as.character(),
+    direction = DIRECTION %>% as.character(),
+    purpose1 = PURPOSE1 %>% as.character(),
+    purpose2 = PURPOSE2 %>% as.character(),
+    vesting = VESTING %>% as.character(),
+    land_loc_no = LAND.LOC.NO %>% as.character(),
+    reserve = RESERVE %>% as.character(),
+    class = CLASS %>% as.character(),
+    utility_ref = UTILITY.REF %>% as.character(),
+    land_manager = LAND.MANAGER %>% as.character(),
+    land_mgr_address = LAND.MGR.ADDRESS %>% as.character(),
+    land_mgr_phone = LAND.MGR.PHONE %>% as.character(),
+    co_ord_type_code = CO.ORD.TYPE.CODE %>% as.character(),
+    co_ord_source_code = CO.ORD.SOURCE.CODE %>% as.character(),
+    gda94lat = GDA94LAT %>% as.character(),
+    gda94long = GDA94LONG %>% as.character(),
+    loc_sect_date = LOC.SECT.DATE %>% as.character(),
+    datum = DATUM %>% as.character(),
+    latdeg = LATDEG %>% as.character(),
+    latmin = LATMIN %>% as.character(),
+    latsec = LATSEC %>% as.character(),
+    longdeg = LONGDEG %>% as.character(),
+    longmin = LONGMIN %>% as.character(),
+    longsec = LONGSEC %>% as.character(),
+    gps_zone = GPS.ZONE %>% as.character(),
+    northing = NORTHING %>% as.character(),
+    easting = EASTING %>% as.character(),
+    no_of_satellites = NO.OF.SATELLITES %>% as.character(),
+    resolution = RESOLUTION %>% as.character(),
+    map_used = MAP.USED %>% as.character(),
+    map_scale = MAP.SCALE %>% as.character(),
+    dec_latitude = DEC.LATITUDE %>% as.character(),
+    dec_longitude = DEC.LONGITUDE %>% as.character(),
+    count_sect_date = COUNT.SECT.DATE %>% as.character(),
+    svy_extent = SVY.EXTENT %>% as.character(),
+    svy_effort_area = SVY.EFFORT.AREA %>% as.character(),
+    svy_effort_time = SVY.EFFORT.TIME %>% as.character(),
+    svy_effort = SVY.EFFORT %>% as.character(),
+    quality_ind = QUALITY.IND %>% as.character(),
+    count_mthd_code = COUNT.MTHD.CODE %>% as.character(),
+    mature_plants = MATURE.PLANTS %>% as.character(),
+    mature_dead = MATURE.DEAD %>% as.character(),
+    juvenile_plants = JUVENILE.PLANTS %>% as.character(),
+    juvenile_dead = JUVENILE.DEAD %>% as.character(),
+    seedling_plants = SEEDLING.PLANTS %>% as.character(),
+    seedling_dead = SEEDLING.DEAD %>% as.character(),
+    cnt_plant_type_code = CNT.PLANT.TYPE.CODE %>% as.character(),
+    simple_live_tot = SIMPLE.LIVE.TOT %>% as.character(),
+    area_occupied = AREA.OCCUPIED %>% as.character(),
+    area_occupied_method = AREA.OCCUPIED.METHOD %>% as.character(),
+    quad_num = QUAD.NUM %>% as.character(),
+    quad_size = QUAD.SIZE %>% as.character(),
+    quad_tot_sq_m = QUAD.TOT.SQ.M %>% as.character(),
+    quad_num_mature = QUAD.NUM.MATURE %>% as.character(),
+    quad_num_juvenile = QUAD.NUM.JUVENILE %>% as.character(),
+    quad_num_seedlings = QUAD.NUM.SEEDLINGS %>% as.character(),
+    quad_num_total = QUAD.NUM.TOTAL %>% as.character(),
+    clonal = CLONAL %>% as.character(),
+    vegetative = VEGETATIVE %>% as.character(),
+    in_buds = IN.BUDS %>% as.character(),
+    in_flower = IN.FLOWER %>% as.character(),
+    immature_fruit = IMMATURE.FRUIT %>% as.character(),
+    fruit = FRUIT %>% as.character(),
+    dehisced_fruit = DEHISCED.FRUIT %>% as.character(),
+    flower_percentage = FLOWER.PERCENTAGE %>% as.character(),
+    hab_sect_date = HAB.SECT.DATE %>% as.character(),
+    population_condition = POPULATION.CONDITION %>% as.character(),
+    population_notes = POPULATION.NOTES %>% as.character(),
+    habitat_condition = HABITAT.CONDITION %>% as.character(),
+    habitat_notes = HABITAT.NOTES %>% as.character(),
+    soil_condition = SOIL.CONDITION %>% as.character(),
+    landform = LANDFORM %>% as.character(),
+    rock_type = ROCK.TYPE %>% as.character(),
+    gravel = GRAVEL %>% as.character(),
+    soil_type = SOIL.TYPE %>% as.character(),
+    soil_color = SOIL.COLOR %>% as.character(),
+    drainage = DRAINAGE %>% as.character(),
+    aspect = ASPECT %>% as.character(),
+    associated_species = ASSOCIATED.SPECIES %>% as.character(),
+    fire_intensity = FIRE.INTENSITY %>% as.character(),
+    fire_year = FIRE.YEAR %>% as.character(),
+    fire_season = FIRE.SEASON %>% as.character(),
+    fencing_status = FENCING.STATUS %>% as.character(),
+    fencing_comments = FENCING.COMMENTS %>% as.character(),
+    roadside_marker_status = ROADSIDE.MARKER.STATUS %>% as.character(),
+    rdside_mkr_comments = RDSIDE.MKR.COMMENTS %>% as.character(),
+    other_comments = OTHER.COMMENTS %>% as.character(),
+    vchr_sect_date = VCHR.SECT.DATE %>% as.character(),
+    voucher_location = VOUCHER.LOCATION %>% as.character(),
+    dupvouch_location = DUPVOUCH.LOCATION %>% as.character(),
+    collector_no = COLLECTOR.NO %>% as.character(),
+    barcode = BARCODE %>% as.character(),
+    vchr_status_code = VCHR.STATUS.CODE %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character(),
+    simple_dead_tot = SIMPLE.DEAD.TOT %>% as.character(),
+    observer_code = OBSERVER.CODE %>% as.character(),
+    obs_name = OBS.NAME %>% as.character(),
+    observer_phone = OBSERVER.PHONE %>% as.character(),
+    obs_role_code = OBS.ROLE.CODE %>% as.character(),
+    obs_org_code = OBS.ORG.CODE %>% as.character(),
+    obs_org_name = OBS.ORG.NAME %>% as.character(),
+    land_mgr_notes = LAND.MGR.NOTES %>% as.character()
+  )
+```
+
+There are `r nrow(populations)` known populations.
+
 ## Species occurrence
-Table `DRF_RFR_FORMS` combines data related to species occurrence:
+Table `DRF_RFR_FORMS` combines highly denormalised data related to species occurrence:
 
 * IDs (data collection form, taxon, population, subpopulation)
-* taxonomy (species observed, voucher specimens)
-* observation metadata (date, observer)
-* personnel data (observer details)
-* record metadata (created, updated, marked deleted)
 * location details (georeference comments)
+* a mixed bag of georeferences and free text hand waving about location
+* habitat description
+* habitat condition at time of survey
 * site details (quadrat info)
 * site visit details (survey effort, site conditions)
-* a mixed bag of georeferences
+* observation metadata (date, observer)
+* personnel data (observer details)
 * measurements (number of individuals by age group, various measurements)
+* taxonomy (species observed, voucher specimens)
+* record metadata (created, updated, marked deleted)
 
-On each level, description and condition are mixed.
+TODO: parse data types
 
-```{r occurrence}
+```{r occ}
 occurrence <- tpfl$DRF_RFR_FORMS %>%
   dplyr::transmute(
+    # IDs
     sheetno = SHEETNO %>% as.integer(),
     taxon_id = TAXONID %>% as.character(),
     species_name = SPNAME %>% as.character(),
@@ -136,11 +276,6 @@ occurrence <- tpfl$DRF_RFR_FORMS %>%
     # dec_latitude = DEC.LATITUDE %>% as.character(),
     # dec_longitude = DEC.LONGITUDE %>% as.character(),
 
-    # habitat condition
-    habitat_condition = HABITAT.CONDITION %>% as.character(),
-    habitat_notes = HABITAT.NOTES %>% as.character(),
-    soil_condition = SOIL.CONDITION %>% as.character(),
-
     # habitat description
     landform = LANDFORM %>% as.character(),
     rock_type = ROCK.TYPE %>% as.character(),
@@ -159,6 +294,11 @@ occurrence <- tpfl$DRF_RFR_FORMS %>%
     roadside_marker_status = ROADSIDE.MARKER.STATUS %>% as.character(),
     rdside_mkr_comments = RDSIDE.MKR.COMMENTS %>% as.character(),
     other_comments = OTHER.COMMENTS %>% as.character(),
+
+    # habitat condition
+    habitat_condition = HABITAT.CONDITION %>% as.character(),
+    habitat_notes = HABITAT.NOTES %>% as.character(),
+    soil_condition = SOIL.CONDITION %>% as.character(),
 
     # site quadrat info
     quad_num = QUAD.NUM %>% as.character(),
@@ -271,6 +411,336 @@ leaflet(width = 800, height = 600) %>%
   )
 ```
 
+## Occurrence vegetation classes
+Dominant vegetation classes in occurrences.
+
+```{r occ_vegclass}
+occ_vegclass <- tpfl$DRF_SHEET_VEG_CLASSES %>%
+  dplyr::transmute(
+    veg_class_id = VEG.CLASS.ID %>% as.integer(),
+    veg_class_code = VEG.CLASS.CODE %>% as.character(),
+    sheetno = SHEETNO %>% as.character(),
+    veg_class_dom1 = VEG.CLASS.DOM1 %>% as.character(),
+    veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
+  )
+occ_vegclass[1:100, ] %>% DT::datatable(.)
+```
+
+## Occurrence threats
+
+```{r occ_threats}
+occ_threats <- tpfl$DRF_SHEET_THREATS %>%
+  dplyr::transmute(
+    sheet_threat_id = SHEET.THREAT.ID %>% as.character(),
+    sheetno = SHEETNO %>% as.character(),
+    threat_code = THREAT.CODE %>% as.character(),
+    cur_impact = CUR.IMPACT %>% as.character(),
+    pot_impact = POT.IMPACT %>% as.character(),
+    onset = ONSET %>% as.character(),
+    agent_code = AGENT.CODE %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    status = STATUS %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character()
+  )
+occ_threats[1:100, ] %>% DT::datatable(.)
+```
+
+## Occurrence fire details
+
+```{r occ_fire}
+occ_fire <- tpfl$DRF_FIRE_DETAILS %>%
+  dplyr::transmute(
+    fire_det_id = FIRE.DET.ID %>% as.character(),
+    sheet_no = SHEET.NO %>% as.character(),
+    sit_id = SIT.ID %>% as.character(),
+    quadrat_name = QUADRAT.NAME %>% as.character(),
+    fire_date = FIRE.DATE %>% as.character(),
+    other_treatment_date = OTHER.TREATMENT.DATE %>% as.character(),
+    other_treatment_type = OTHER.TREATMENT.TYPE %>% as.character(),
+    unburnt_postburn = UNBURNT.POSTBURN %>% as.character(),
+    months_since_fire = MONTHS.SINCE.FIRE %>% as.character(),
+    fire_type = FIRE.TYPE %>% as.character(),
+    burnt_pct = BURNT.PCT %>% as.character(),
+    fuel_age = FUEL.AGE %>% as.character(),
+    flammability = FLAMMABILITY %>% as.character(),
+    seedlings_new = SEEDLINGS.NEW %>% as.character(),
+    seedlings_old = SEEDLINGS.OLD %>% as.character(),
+    juveniles = JUVENILES %>% as.character(),
+    adults_pre_burn_alive = ADULTS.PRE.BURN.ALIVE %>% as.character(),
+    adults_pre_burn_dead = ADULTS.PRE.BURN.DEAD %>% as.character(),
+    adults_post_burn_unburnt = ADULTS.POST.BURN.UNBURNT %>% as.character(),
+    adults_post_burn_burnt = ADULTS.POST.BURN.BURNT %>% as.character(),
+    adults_post_burn_respr = ADULTS.POST.BURN.RESPR %>% as.character(),
+    adults_post_burn_dead = ADULTS.POST.BURN.DEAD %>% as.character(),
+    flowering_pct_seeder = FLOWERING.PCT.SEEDER %>% as.character(),
+    flowering_pct_respr = FLOWERING.PCT.RESPR %>% as.character(),
+    fruiting_pct_seeder = FRUITING.PCT.SEEDER %>% as.character(),
+    fruiting_pct_respr = FRUITING.PCT.RESPR %>% as.character(),
+    dehisced_fruit_pct = DEHISCED.FRUIT.PCT %>% as.character(),
+    native_alive_pct = NATIVE.ALIVE.PCT %>% as.character(),
+    weed_cover_pct = WEED.COVER.PCT %>% as.character(),
+    bare_ground_pct = BARE.GROUND.PCT %>% as.character(),
+    litter_depth = LITTER.DEPTH %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character()
+  )
+occ_fire[1:100, ] %>% DT::datatable(.)
+```
+
+## Population forms
+TODO what's that?
+
+```{r pop_forms}
+pop_forms <- tpfl$DRF_POP_FORMS %>%
+  dplyr::transmute(
+    pop_forms_id = POP.FORMS.ID %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    sheetno = SHEETNO %>% as.character(),
+    prev_pop_id = PREV.POP.ID %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deact = REASON.DEACT %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    current_rec = CURRENT.REC %>% as.character(),
+    chg_type_code = CHG.TYPE.CODE %>% as.character(),
+    deact_by = DEACT.BY %>% as.character()
+  )
+pop_forms[1:100, ] %>% DT::datatable(.)
+```
+
+## Population threats
+
+```{r pop_threats}
+pop_threats <- tpfl$DRF_POP_THREATS %>%
+  dplyr::transmute(
+    pop_threat_id = POP.THREAT.ID %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    threat_code = THREAT.CODE %>% as.character(),
+    cur_impact = CUR.IMPACT %>% as.character(),
+    pot_impact = POT.IMPACT %>% as.character(),
+    onset = ONSET %>% as.character(),
+    agent_code = AGENT.CODE %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    status = STATUS %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character(),
+    sheetno = SHEETNO %>% as.character(),
+    observation_date = OBSERVATION.DATE %>% as.character()
+  )
+pop_threats[1:100, ] %>% DT::datatable(.)
+```
+
+## Population management actions
+
+```{r pop_mgmtactions}
+pop_mgmtactions <- tpfl$DRF_POP_MGMT_ACTIONS %>%
+  dplyr::transmute(
+    action_id = ACTION.ID %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    mgmt_act_code = MGMT.ACT.CODE %>% as.character(),
+    action_notes = ACTION.NOTES %>% as.character(),
+    priority_code = PRIORITY.CODE %>% as.character(),
+    status = STATUS %>% as.character(),
+    action_date = ACTION.DATE %>% as.character(),
+    r_plan = R.PLAN %>% as.character(),
+    finalised_on = FINALISED.ON %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character()
+  )
+pop_mgmtactions[1:100, ] %>% DT::datatable(.)
+```
+
+## Population fire summaries
+
+```{r pop_fire_summ}
+pop_fire_summ <- tpfl$DRF_FIRE_SUMMARIES %>%
+  dplyr::transmute(
+    fire_sum_id = FIRE.SUM.ID %>% as.character(),
+    summary_level = SUMMARY.LEVEL %>% as.character(),
+    publish = PUBLISH %>% as.character(),
+    taxonid = TAXONID %>% as.character(),
+    spname = SPNAME %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    sit_id = SIT.ID %>% as.character(),
+    quadrat = QUADRAT %>% as.character(),
+    summary_date = SUMMARY.DATE %>% as.character(),
+    completed_date = COMPLETED.DATE %>% as.character(),
+    observer_name = OBSERVER.NAME %>% as.character(),
+    adult_survival_pct = ADULT.SURVIVAL.PCT %>% as.character(),
+    seedling_survival_pct = SEEDLING.SURVIVAL.PCT %>% as.character(),
+    recruitment = RECRUITMENT %>% as.character(),
+    fire_response_type = FIRE.RESPONSE.TYPE %>% as.character(),
+    juvenile_period_seeder = JUVENILE.PERIOD.SEEDER %>% as.character(),
+    juvenile_period_respr = JUVENILE.PERIOD.RESPR %>% as.character(),
+    peak_flowering = PEAK.FLOWERING %>% as.character(),
+    mature_age = MATURE.AGE %>% as.character(),
+    minimum_fire_interval = MINIMUM.FIRE.INTERVAL %>% as.character(),
+    seeder_type = SEEDER.TYPE %>% as.character(),
+    germination = GERMINATION %>% as.character(),
+    resprouter_type = RESPROUTER.TYPE %>% as.character(),
+    senescence = SENESCENCE %>% as.character(),
+    longevity = LONGEVITY %>% as.character(),
+    data_source = DATA.SOURCE %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character()
+  )
+pop_fire_summ[1:100, ] %>% DT::datatable(.)
+```
+
+## Liaisons
+
+```{r liaisons}
+liaisons <- tpfl$DRF_LIAISONS %>%
+  dplyr::transmute(
+    liaisons_id = LIAISONS.ID %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    notify_date = NOTIFY.DATE %>% as.character(),
+    othernames = OTHERNAMES %>% as.character(),
+    initials = INITIALS %>% as.character(),
+    surname = SURNAME %>% as.character(),
+    address = ADDRESS %>% as.character(),
+    phone_no = PHONE.NO %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    notification_type = NOTIFICATION.TYPE %>% as.character(),
+    notifier_name = NOTIFIER.NAME %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character()
+  )
+liaisons[1:100, ] %>% DT::datatable(.)
+```
+
+## Population vegetation classes
+
+```{r pop_vegclass}
+pop_vegclass <- tpfl$DRF_POP_VEG_CLASSES %>%
+  dplyr::transmute(
+    veg_class_id = VEG.CLASS.ID %>% as.character(),
+    veg_class_code = VEG.CLASS.CODE %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    veg_class_dom1 = VEG.CLASS.DOM1 %>% as.character(),
+    veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
+  )
+pop_vegclass[1:100, ] %>% DT::datatable(.)
+```
+
+## Population section maps
+
+```{r pop_sectionmap}
+pop_sectionmap <- tpfl$DRF_POP_SECTION_MAP %>%
+  dplyr::transmute(
+    section_id = SECTION.ID %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    sect_code = SECT.CODE %>% as.character(),
+    sheetno = SHEETNO %>% as.character(),
+    pop_man_upd = POP.MAN.UPD %>% as.character(),
+    sheet_man_upd = SHEET.MAN.UPD %>% as.character(),
+    current_rec = CURRENT.REC %>% as.character(),
+    is_active = IS.ACTIVE %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    deact_date = DEACT.DATE %>% as.character()
+  )
+pop_sectionmap[1:100, ] %>% DT::datatable(.)
+```
+
+## Conservation listings
+
+```{r cons_listings}
+cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
+  dplyr::transmute(
+    txn_list_id = TXN.LIST.ID %>% as.character(),
+    taxon_id = TAXONID %>% as.integer(),
+    name = NAME %>% as.character(),
+    list_code = LIST.CODE %>% as.character(),
+    status_code = STATUS.CODE %>% as.character(),
+    wa_iucn_rank_list_code = WA.IUCN.RANK.LIST.CODE %>% as.character(),
+    wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
+    iucn_criteria = IUCN.CRITERIA %>% as.character(),
+    date_listed = DATE.LISTED %>% as.character(),
+    reasons = REASONS %>% as.character(),
+    authority = AUTHORITY %>% as.character(),
+    date_delisted = DATE.DELISTED %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    distribution = DISTRIBUTION %>% as.character(),
+    fl_period = FL.PERIOD %>% as.character(),
+    prev_taxonid = PREV.TAXONID %>% as.character(),
+    prev_name = PREV.NAME %>% as.character(),
+    fam_no = FAM.NO %>% as.character(),
+    r_plan = R.PLAN %>% as.character(),
+    rp_comments = RP.COMMENTS %>% as.character(),
+    rp_exp_date = RP.EXP.DATE %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character(),
+    file_last_updated = FILE.LAST.UPDATED %>% as.character(),
+    file_comments = FILE.COMMENTS %>% as.character(),
+    file_no = FILE.NO %>% as.character()
+  )
+cons_listings[1:100, ] %>% DT::datatable(.)
+```
+
+## Conservation priority
+
+```{r cons_prio}
+cons_prio <- tpfl$DRF_P2K_PRIORITY %>%
+  dplyr::transmute(
+    species = SPECIES %>% as.character(),
+    taxon_id = TAXONID %>% as.integer(),
+    change = CHANGE %>% as.character(),
+    change_date = CHANGE.DATE %>% as.character(),
+    add_date = ADD.DATE %>% as.character(),
+    delete_date = DELETE.DATE %>% as.character(),
+    informal = INFORMAL %>% as.character(),
+    authority = AUTHORITY %>% as.character(),
+    pr_code = PR.CODE %>% as.character(),
+    wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
+    iucn_criteria = IUCN.CRITERIA %>% as.character(),
+    date_iucn_change = DATE.IUCN.CHANGE %>% as.character(),
+    epbc_rank = EPBC.RANK %>% as.character(),
+    calm_reg = CALM.REG %>% as.character(),
+    district = DISTRICT %>% as.character(),
+    dist = DIST %>% as.character(),
+    fl_period = FL.PERIOD %>% as.character(),
+    old_name = OLD.NAME %>% as.character(),
+    fam_no = FAM.NO %>% as.character(),
+    file_no = FILE.NO %>% as.character(),
+    manplan = MANPLAN %>% as.character(),
+    row_no = ROW.NO %>% as.character()
+  )
+cons_prio[1:100, ] %>% DT::datatable(.)
+```
+
 ## Flora data upload
 Create resource once-off to get a resource ID.
 Subsequently, upload the compiled workbook.
@@ -281,7 +751,17 @@ is generated after the R code is run.
 d <- ckanr::package_show("threatened-and-priority-flora-database")
 ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb", "data_etl_flora.html")
 upload_to_ckan(occurrence, "TPFL Species Occurrence", d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
+upload_to_ckan(populations, "TPFL Populations", d$id, resource_id = "477dbe8c-5bcb-4a5d-90d9-a28869d376b8")
+upload_to_ckan(occ_vegclass, "TPFL Occurrence vegetation classes", d$id, resource_id = "bb8814ff-c423-40d5-b18d-9977a66351b7")
+upload_to_ckan(occ_threats, "TPFL Occurrence threats", d$id, resource_id = "a58b7214-6db1-409b-a08f-d4e28ac0c139")
+upload_to_ckan(occ_fire, "TPFL Occurrence fire details", d$id, resource_id = "9591a80a-cd51-4f57-bc6c-1d0024b49a58")
+upload_to_ckan(pop_forms, "TPFL Population forms", d$id, resource_id = "f881dbd9-31f6-4c9b-a224-62380b2f7e83")
+upload_to_ckan(pop_threats, "TPFL Population threats", d$id, resource_id = "3a1f3e73-7b02-4534-955b-b403ae5577ad")
+upload_to_ckan(pop_mgmtactions, "TPFL Population management actions", d$id, resource_id = "3df48c1e-9fbd-48bf-8b75-ab9dbb71cfc3")
+upload_to_ckan(pop_fire_summ, "TPFL Population fire summaries", d$id, resource_id = "426571af-7c1a-462b-9325-6203383546c3")
+upload_to_ckan(liaisons, "TPFL Liaisons", d$id, resource_id = "610b31a2-d2f0-4c26-9a48-8d7fc8d58265")
+upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes", d$id, resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
+upload_to_ckan(pop_sectionmap, "TPFL Population section maps", d$id, resource_id = "6d557642-cd1f-4cca-8f22-0149d244dd83")
+upload_to_ckan(cons_listings, "TPFL Conservation listings", d$id, resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
+upload_to_ckan(cons_prio, "TPFL Conservation priority", d$id, resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")
 ```
-
-
-

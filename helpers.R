@@ -3,8 +3,7 @@
 #' @param resource_id The CKAN resource ID of a zipped Access DB
 #' @param destdir The local destination directory for the extracted file,
 #'  will be created if not existing. Default: "data"
-#' @param dateformat The parameter dateformat for Hmisc::mdb.get(),
-#'  default: '%Y-%m-%d'
+#' @param dateformat The parameter dateformat for Hmisc::mdb.get(), default: '%Y-%m-%d'
 #' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
 #' @returns The Hmisc::mdb.get connection
 dl_mdbzip <- function(resource_id,
