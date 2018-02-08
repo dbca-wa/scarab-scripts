@@ -26,6 +26,16 @@ add_dettol <- . %>% stringr::str_to_lower(.) %>% stringr::str_replace_all(., "\\
 as_def <- . %>% paste(add_dettol(.), "=", ., " %>% as.character, \n")
 mkd <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat(.)
 
+#' Normalise corporate filenumber into <agency>-<year>-<number> or ""
+as_filenumber <- function(body, prefix="DBCA", sep="-") {
+    if (is.null(body) || body == "") return("")
+    urlized_body <- stringr::str_replace_all(body, "F|/", "-")
+    paste0(prefix, sep, urlized_body)
+}
+
+#' Parse a string into a list of integer numbers
+str_to_int_array <- . %>% strsplit(., ",")[[1]] %>% as.list
+
 #' Create or update a CKAN resource.
 #'
 #'

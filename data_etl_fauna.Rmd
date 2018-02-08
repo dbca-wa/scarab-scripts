@@ -25,33 +25,8 @@ library(Hmisc)
 library(ckanr)
 
 # Configure ckanr to data.dpaw.wa.gov.au
-ckanr::ckanr_setup(
-  url = Sys.getenv("CKAN_URL"),
-  key = Sys.getenv("CKAN_API_KEY")
-)
-
-#' Download, extract and open a zipped Access database from a CKAN dataset
-#'
-#' @param resource_id The CKAN resource ID of a zipped Access DB
-#' @param destdir The local destination directory for the extracted file,
-#'  will be created if not existing. Default: "data"
-#' @param dateformat The parameter dateformat for Hmisc::mdb.get(),
-#'  default: '%Y-%m-%d'
-#' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
-#' @returns The Hmisc::mdb.get connection
-dl_mdbzip <- function(resource_id,
-                      destdir="data",
-                      dateformat = "%Y-%m-%d",
-                      asis = TRUE) {
-  dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
-  tmp <- tempfile()
-  res_url <- ckanr::resource_show(resource_id)$url
-  utils::download.file(res_url, tmp)
-  dbfile <- utils::unzip(tmp, exdir = destdir)
-  unlink(tmp)
-  con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
-  con
-}
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+source("helpers.R")
 ```
 # SCB data background
 [Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
@@ -63,7 +38,7 @@ on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 The zip archive containing the MS Access database is downloaded from the data 
 catalogue, the archive is extracted, and a database connection is opened.
 
-```{r fauna_data_load}
+```{r fauna_data_load, message=FALSE}
 # fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f") # no data
 fauna_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
 ```
@@ -74,20 +49,6 @@ Some helpers are defined.
 # Date conventions
 orders <- c("mdyHMS")
 tz <- "Australia/Perth"
-
-# Prepare column def
-as_def <- . %>% paste(., "=", ., " %>% as.character, \n")
-make_coldef <- . %>% names %>% purrr::map(as_def) %>% unlist %>% cat
-
-#' Normalise corporate filenumber into <agency>-<year>-<number> or ""
-as_filenumber <- function(body, prefix="DBCA", sep="-") {
-    if (is.null(body) || body == "") return("")
-    urlized_body <- stringr::str_replace_all(body, "F|/", "-")
-    paste0(prefix, sep, urlized_body)
-}
-
-#' Parse a string into a list of integer numbers
-str_to_int_array <- . %>% strsplit(., ",")[[1]] %>% as.list
 ```
 
 ## Lookup tables
@@ -118,18 +79,24 @@ certainty <- fauna_data$Certainty %>%
   dplyr::transmute(
     certainty_id = Code %>% as.integer(),
     certainty = Certainty %>% as.character()
-  ) 
+  )
 
 users <- tibble::tibble(
-    username = c("AmyM", "AbbyT", "BrianaWingfield", 
-                 "ChristineFreegard", "GeorginaA", "KellieMantle", 
-                 "NickyMarlow", "PeterMawson", "PeterOrell"),
-    initials = c("AM", "AT", "BW", 
-                 "CF", "GA", "KM", 
-                 "NM", "PM", "PO"),
-    name = c("Amy Mutton", "Abby Thomas", "Briana Wingfield", 
-             "Christine Freegard", "Georgina Anderson", "Kellie Mantle", 
-             "Nicky Marlow", "Peter Mawson", "Peter Orell")
+  username = c(
+    "AmyM", "AbbyT", "BrianaWingfield",
+    "ChristineFreegard", "GeorginaA", "KellieMantle",
+    "NickyMarlow", "PeterMawson", "PeterOrell"
+  ),
+  initials = c(
+    "AM", "AT", "BW",
+    "CF", "GA", "KM",
+    "NM", "PM", "PO"
+  ),
+  name = c(
+    "Amy Mutton", "Abby Thomas", "Briana Wingfield",
+    "Christine Freegard", "Georgina Anderson", "Kellie Mantle",
+    "Nicky Marlow", "Peter Mawson", "Peter Orell"
+  )
 )
 
 phylo_class <- fauna_data$`Class List` %>%
@@ -140,7 +107,6 @@ phylo_class <- fauna_data$`Class List` %>%
     order = ClassOrder %>% as.character()
   ) %>%
   dplyr::arrange(order)
-# make_coldef(phylo_class)
 
 phylo_group <- fauna_data$`Group List` %>%
   dplyr::transmute(
@@ -150,7 +116,6 @@ phylo_group <- fauna_data$`Group List` %>%
     # order = GroupOrder %>% as.character()
   ) %>%
   dplyr::left_join(phylo_class, by = "phylo_class_id")
-# make_coldef(group)
 # skimr::skim(group)
 
 species_notes <- fauna_data$`Species Notes` %>%
@@ -158,7 +123,6 @@ species_notes <- fauna_data$`Species Notes` %>%
     species_code = SpCode %>% as.character(),
     species_notes = Notes %>% as.character()
   )
-# make_coldef(species_notes)
 
 resolution <- fauna_data$Resolution %>%
   dplyr::transmute(
@@ -166,14 +130,12 @@ resolution <- fauna_data$Resolution %>%
     resolution_geographic_coords = ResolutionLL %>% as.character(),
     resolution_projected_coords = ResolutionUTM %>% as.character()
   )
-# make_coldef(resolution)
 
 category <- fauna_data$`Category List` %>%
-    dplyr::transmute(
-        category_id = Category  %>% as.character, 
-    phylogenetic_category = CategoryName  %>% as.character
-    )
-# category %>% make_coldef()
+  dplyr::transmute(
+    category_id = Category %>% as.character(),
+    phylogenetic_category = CategoryName %>% as.character()
+  )
 ```
 
 ## Species names
@@ -185,9 +147,6 @@ Legacy column names are capitalised, while new or reformatted column are lower-c
 
 ```{r fauna_species}
 # TODO species notes
-
-# Generate column config:
-# fauna_data$`Species List` %>% make_coldef()
 species <- fauna_data$`Species List` %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
@@ -203,14 +162,18 @@ species <- fauna_data$`Species List` %>%
     authority_species = Authority.sp %>% as.character(),
     subspecies = Subspecies %>% as.character(),
     authority_subspecies = Authority.ssp %>% as.character(),
-    file_number_calm = CALMFileNum %>% as.character() %>% 
-        map(~ as_filenumber(., prefix = "CALM")),
-    file_number_dec = DECFileNum %>% as.character() %>% 
-        map(~ as_filenumber(., prefix = "DEC")),
-    file_number_dpaw = DPaWFileNum %>% as.character() %>% 
-        map(~ as_filenumber(., prefix = "DPAW")),
-    file_number_dbca = DBCAFileNum %>% as.character() %>% 
-        map(~ as_filenumber(., prefix = "DBCA")),
+    file_number_calm = CALMFileNum %>%
+      as.character() %>%
+      map(~ as_filenumber(., prefix = "CALM")),
+    file_number_dec = DECFileNum %>%
+      as.character() %>%
+      map(~ as_filenumber(., prefix = "DEC")),
+    file_number_dpaw = DPaWFileNum %>%
+      as.character() %>%
+      map(~ as_filenumber(., prefix = "DPAW")),
+    file_number_dbca = DBCAFileNum %>%
+      as.character() %>%
+      map(~ as_filenumber(., prefix = "DBCA")),
     category_id = Category %>% as.character(),
     origin = Origin %>% as.character(), # N - native, I - introduced
     # region_id_list = Region %>% map(~ as.list(strsplit(., ",")[[1]] %>% as.integer())),
@@ -233,8 +196,11 @@ print(species_skim)
 DT::datatable(species)
 
 # Just the essentials: species code, name_id, names.
-species_names <- species %>% 
-    dplyr::select(species_code, name_id, scientific_name, common_name)
+species_names <- species %>%
+  dplyr::select(species_code, name_id, scientific_name, common_name)
+
+# Without things that break saving to CSV
+species_save <- species %>% dplyr::select(-starts_with("file_number"))
 ```
 
 There are `r nrow(species)` species names. The following columns are incomplete:
@@ -375,7 +341,6 @@ fauna <- fauna_raw %>%
 Fauna occurrence does link to the name that was current / legal at the time.
 Occurrence query should show hints linking to current / legal names and their history.
 
-
 ## Fauna occurrence data overview
 A condensed overview over data values (completeness, ranges and distribution).
 
@@ -389,10 +354,10 @@ There are `r nrow(fauna)` species occurrence records (encounters).
 The following columns are incomplete:
 
 ```{r fauna_missing_values}
-fauna_skim %>% 
-    filter(stat == "missing", value > 0) %>% 
-    select(-stat, -level, -formatted) %>% 
-    DT::datatable(.)
+fauna_skim %>%
+  filter(stat == "missing", value > 0) %>%
+  select(-stat, -level, -formatted) %>%
+  DT::datatable(.)
 ```
 
 The table `fauna` contains species occurrence records:
@@ -466,13 +431,12 @@ listing_names %>% skim()
 
 ### DEC Listing Names
 ```{r dec_listing_names}
-# make_coldef(dec_listing_names)
 dec_listing_names <- fauna_data$`DEC List Names` %>%
   dplyr::transmute(
     dec_listing_id = DECCode %>% as.character(),
     dec_listing_name = DECList %>% as.character(),
     dec_listing_order = DECOrder %>% as.integer()
-  ) %>% 
+  ) %>%
   dplyr::arrange(dec_listing_order)
 dec_listing_names %>% skim()
 ```
@@ -494,10 +458,10 @@ conservation_status <- fauna_data$`Listing Category` %>%
     notes = Notes %>% as.character(),
     order = Order %>% as.integer(),
     dec_listing_id = DECCode %>% as.character()
-  ) %>% 
+  ) %>%
   dplyr::arrange(order) %>%
-  dplyr::left_join(listing_names, by="list_code") %>%
-  dplyr::left_join(dec_listing_names, by="dec_listing_id")
+  dplyr::left_join(listing_names, by = "list_code") %>%
+  dplyr::left_join(dec_listing_names, by = "dec_listing_id")
 conservation_status %>% skim()
 conservation_status %>% head(10) %>% DT::datatable(.)
 ```
@@ -520,12 +484,10 @@ gazettal <- fauna_data$Gazettal %>%
     interim = INTERIM %>% as.character(),
     translocation = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
-  ) %>% 
-  dplyr::left_join(species_names, by="species_code")
-# make_coldef(gazettal)
+  ) %>%
+  dplyr::left_join(species_names, by = "species_code")
 gazettal %>% skim()
 gazettal %>% head(10) %>% DT::datatable()
-
 ```
 
 ## Recovery Plans
@@ -539,9 +501,8 @@ res_prio <- fauna_data$`Research Priorities` %>%
     research_priority = ResearchPriority %>% as.character(),
     undertaken = Undertaken %>% as.logical(),
     comments = Comments %>% as.character()
-  ) %>% 
+  ) %>%
   left_join(species_names, by = "species_code")
-# make_coldef(res_prio)
 res_prio %>% skim()
 ```
 
@@ -549,14 +510,14 @@ res_prio %>% skim()
 ```{r recovery_plans}
 res_topics <- fauna_data$`Research Topics` %>%
   dplyr::transmute(
-    research_topic_id = ID  %>% as.integer, 
-    research_topic = Research.Topics  %>% as.character
+    research_topic_id = ID %>% as.integer(),
+    research_topic = Research.Topics %>% as.character()
   )
 
 rec_actions <- fauna_data$`Recovery Actions` %>%
   dplyr::transmute(
-    recovery_action_id = ID  %>% as.integer, 
-    recovery_action = Recovery.Actions  %>% as.character, 
+    recovery_action_id = ID %>% as.integer(),
+    recovery_action = Recovery.Actions %>% as.character(),
   )
 
 recovery_plans <- fauna_data$`Recovery Plans` %>%
@@ -580,11 +541,10 @@ recovery_plans <- fauna_data$`Recovery Plans` %>%
     xo_contact = ExecOContact %>% as.character(),
     membership = Membership %>% as.character(),
     rt_filenumber = RTFileNumber %>% as.character()
-  ) %>% 
+  ) %>%
   dplyr::left_join(res_topics, by = "research_topic_id") %>%
   dplyr::left_join(rec_actions, by = "recovery_action_id") %>%
   dplyr::left_join(species_names, by = "species_code")
-# make_coldef(recovery_plans)
 recovery_plans %>% skim()
 recovery_plans %>% DT::datatable(.)
 ```
@@ -613,47 +573,13 @@ Note, this process lags one compilation of this workbook, as the HTML output
 is generated after the R code is run.
 
 ```{r fauna_upload}
-# d <- ckanr::package_show("threatened-and-priority-fauna-database")
-etl_fn <- "data_etl_fauna.html"
-etl_title <- "Fauna Data ETL"
-# r <- ckanr::resource_create(package_id = d$id, format = "html", name = etl_title, upload = etl_fn)
-ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", etl_fn)
-
-sp_fn <- "data/fauna_species.csv"
-species %>% dplyr::select(
-    # -region_id_list, 
-    -starts_with("file_number")) %>% write_delim(sp_fn, delim = ",")
-sp_title <- "Fauna Species Names"
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = sp_title, upload = sp_fn)
-ckanr::resource_update("eae0b480-c687-450c-a736-87d4e75c2a4d", sp_fn)
-
-rp_fn <- "data/research_priorities.csv"
-res_prio %>% write_delim(rp_fn, delim = ",")
-rp_title <- "Fauna Research Priorities"
-# r <- ckanr::resource_create(package_id = d$id, format = "html", name = rp_title, upload = rp_fn)
-ckanr::resource_update("7a26d00c-f3da-46a3-9d74-42e4475bd6a9", rp_fn)
-
-cs_fn <- "data/conservation_status.csv"
-cs_title <- "Conservation Status List"
-conservation_status %>% write_delim(cs_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = cs_title, upload = cs_fn)
-ckanr::resource_update("2793b1a8-eb55-41e7-8f8f-9cbc79a01243", cs_fn)
-
-gaz_fn <- "data/gazettal.csv"
-gaz_title <- "Conservation Status List"
-gazettal %>% write_delim(gaz_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = gaz_title, upload = gaz_fn)
-ckanr::resource_update("ac089664-de5a-4efa-af3c-ada0ec77ef1f", gaz_fn)
-
-rp_fn <- "data/recovery_plans.csv"
-rp_title <- "Recovery Plans"
-recovery_plans %>% write_delim(rp_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = rp_title, upload = rp_fn)
-ckanr::resource_update("9f8426c3-20ed-4ba7-a551-05e1838ab1cb", rp_fn)
-
-fauna_fn <- "data/fauna_occurrence.csv"
-fauna_title <- "Fauna Occurrence Data"
-fauna %>% write_delim(fauna_fn, delim = ",")
-# r <- ckanr::resource_create(package_id = d$id, format = "csv", name = fauna_title, upload = fauna_fn)
-ckanr::resource_update("b73ae0de-f243-4bb3-bbce-25b65bb98e66", fauna_fn)
+d <- ckanr::package_show("threatened-and-priority-fauna-database")
+ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", "data_etl_fauna.html")
+upload_to_ckan(species_save, "Threatened Fauna Species Names", d$id, resource_id = "eae0b480-c687-450c-a736-87d4e75c2a4d")
+upload_to_ckan(res_prio, "Threatened Fauna Research Priorities", d$id, resource_id = "7a26d00c-f3da-46a3-9d74-42e4475bd6a9")
+upload_to_ckan(conservation_status, "Threatened Fauna Conservation Status", d$id, resource_id = "2793b1a8-eb55-41e7-8f8f-9cbc79a01243")
+upload_to_ckan(gazettal, "Threatened Fauna Conservation Status Gazettal", d$id, resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f")
+upload_to_ckan(recovery_plans, "Threatened Fauna Recovery Plans", d$id, resource_id = "9f8426c3-20ed-4ba7-a551-05e1838ab1cb")
+upload_to_ckan(fauna, "Threatened Fauna Occurrence", d$id, resource_id = "b73ae0de-f243-4bb3-bbce-25b65bb98e66")
 ```
+

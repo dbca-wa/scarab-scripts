@@ -25,10 +25,7 @@ library(Hmisc)
 library(ckanr)
 
 # Configure ckanr to data.dpaw.wa.gov.au
-ckanr::ckanr_setup(
-  url = Sys.getenv("CKAN_URL"),
-  key = Sys.getenv("CKAN_API_KEY")
-)
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
 ```
 
@@ -153,10 +150,10 @@ occ_decline <- tec$OCCURRENCES_DECLINE %>%
 # make_coldef(occ_decline)
 
 status <- tec$STATUS %>%
-    dplyr::transmute(
-        status_code = STATUS.CODE  %>% as.character, 
-        status = STATUS.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    status_code = STATUS.CODE %>% as.character(),
+    status = STATUS.DESC %>% as.character()
+  )
 # status %>% make_coldef()
 # unique(status$status_code) # "BELIEVED"   "IDENTIFIED" - where used?
 
@@ -179,7 +176,7 @@ communities <- tec$COMMUNITIES %>%
   dplyr::left_join(former_range, by = "former_range_code") %>%
   dplyr::left_join(range_decline, by = "range_decline_id") %>%
   dplyr::left_join(occ_decline, by = "occ_decline_id") %>%
-    dplyr::select(-former_range_code, -range_decline_id, -occ_decline_id)
+  dplyr::select(-former_range_code, -range_decline_id, -occ_decline_id)
 
 communities %>% skim()
 communities %>% DT::datatable(.)
@@ -191,21 +188,21 @@ com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
 
 ```{r com_recommendations}
 recommendations <- tec$RECOMMENDATIONS %>%
-    dplyr::transmute(
-        recommendation_code = REC.CODE  %>% as.character, 
-        recommendation = REC.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    recommendation_code = REC.CODE %>% as.character(),
+    recommendation = REC.DESC %>% as.character()
+  )
 
 com_recommendations <- tec$COMMUNITY_RECOMMENDATIONS %>%
-    dplyr::transmute(
-        com_id = COM.NO  %>% as.integer(), 
-         recommendation_id = CREC.NO  %>% as.integer(), 
-         recommended_on = CREC.DATE  %>% as.character, 
-         recommendation_code = CREC.REC.CODE  %>% as.character, 
-         com_recommendation = CREC.DESC  %>% as.character
-    ) %>%
-    dplyr::left_join(com_short, by = "com_id") %>%
-    dplyr::left_join(recommendations, by = "recommendation_code")
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    recommendation_id = CREC.NO %>% as.integer(),
+    recommended_on = CREC.DATE %>% as.character(),
+    recommendation_code = CREC.REC.CODE %>% as.character(),
+    com_recommendation = CREC.DESC %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(recommendations, by = "recommendation_code")
 
 com_recommendations %>% DT::datatable(.)
 ```
@@ -258,11 +255,11 @@ com_reviews %>% DT::datatable(.)
 ## Community Actions
 
 ```{r com_actions}
-actions <- tec$ACTIONS %>% 
-    dplyr::transmute(
-        action_id = ACTION.CODE  %>% as.character, 
-        description = ACTION.DESC  %>% as.character
-)
+actions <- tec$ACTIONS %>%
+  dplyr::transmute(
+    action_id = ACTION.CODE %>% as.character(),
+    description = ACTION.DESC %>% as.character()
+  )
 
 com_actions <- tec$COMMUNITY_ACTIONS %>%
   dplyr::transmute(
@@ -281,22 +278,22 @@ com_actions %>% DT::datatable(.)
 ## Community History, Area Decline
 
 ```{r com_history}
-area_decline <- tec$AREA_DECLINE %>% 
-    dplyr::transmute(
-        area_decline_id = AD.CODE  %>% as.integer(), 
-        area_decline = AD.DESC  %>% as.character
-    )
+area_decline <- tec$AREA_DECLINE %>%
+  dplyr::transmute(
+    area_decline_id = AD.CODE %>% as.integer(),
+    area_decline = AD.DESC %>% as.character()
+  )
 
-com_history <- tec$HISTORY  %>%
-    dplyr::transmute(
-        com_id = COM.NO  %>% as.integer(), 
-        history_id = HIST.NO  %>% as.character, 
-        history_date = HIST.DATE  %>% as.character, 
-        area_decline_id = HIST.AD.CODE  %>% as.integer, 
-        comment = HIST.COMMENT  %>% as.character
-    ) %>% 
-    dplyr::left_join(com_short, by = "com_id") %>%
-    dplyr::left_join(area_decline, by = "area_decline_id")
+com_history <- tec$HISTORY %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    history_id = HIST.NO %>% as.character(),
+    history_date = HIST.DATE %>% as.character(),
+    area_decline_id = HIST.AD.CODE %>% as.integer(),
+    comment = HIST.COMMENT %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(area_decline, by = "area_decline_id")
 
 com_history %>% DT::datatable(.)
 ```
@@ -307,21 +304,21 @@ Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of
 ```{r occ}
 # what's that?
 classifications <- tec$CLASSIFICATIONS %>%
-    dplyr::transmute(
-        classification_code = CLASS.CODE  %>% as.character, 
-        classification = CLASS.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    classification_code = CLASS.CODE %>% as.character(),
+    classification = CLASS.DESC %>% as.character()
+  )
 
 # Occurrence confidentiality
-confidentiality <- tec$OCC_CONFIDENTIAL_CODES %>% 
-    dplyr::transmute(
-        confidential_id = OCC.CONFIDENTIAL  %>% as.integer(), 
-        is_confidential = OCC.CONFID.DESC  %>% as.character()
-)
+confidentiality <- tec$OCC_CONFIDENTIAL_CODES %>%
+  dplyr::transmute(
+    confidential_id = OCC.CONFIDENTIAL %>% as.integer(),
+    is_confidential = OCC.CONFID.DESC %>% as.character()
+  )
 
 reliability <- tec$RELIABILITY %>% dplyr::transmute(
-    reliability_id = BR.CODE  %>% as.character, 
-    reliability = BR.DESC  %>% as.character
+  reliability_id = BR.CODE %>% as.character(),
+  reliability = BR.DESC %>% as.character()
 )
 
 occurrences <- tec$OCCURRENCES %>%
@@ -381,15 +378,15 @@ occurrences <- tec$OCCURRENCES %>%
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(confidentiality, by = "confidential_id") %>%
-    dplyr::left_join(reliability, by = "reliability_id") %>%
+  dplyr::left_join(reliability, by = "reliability_id") %>%
   dplyr::select(-confidential_id, reliability_id)
 occurrences %>% skimr::skim()
 occurrences %>% head(100) %>% DT::datatable(.)
 
 # unique(occurrences$ctrc_sys) %>% sort()
 
-occ_short <- occurrences %>% 
-    dplyr::select(occ_id, boundary_id, boundary_desc, com_id, com_label, com_name)
+occ_short <- occurrences %>%
+  dplyr::select(occ_id, boundary_id, boundary_desc, com_id, com_label, com_name)
 ```
 
 ## Occurrence Actions
@@ -413,16 +410,16 @@ occ_actions %>% DT::datatable(.)
 ## Occcurrence Recommendations
 ```{r occ_recommendations}
 occ_recommendations <- tec$OCCURRENCE_RECOMMENDATIONS %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer, 
-         rank = OREC.RANK  %>% as.character, 
-         recommended_on = OREC.DATE  %>% as.character, 
-         recommendation_code = OREC.REC.CODE  %>% as.character, 
-         recommendation = OREC.DESC  %>% as.character, 
-         username = USERNAME  %>% as.character
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id") %>%
-    dplyr::left_join(recommendations, by = "recommendation_code")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    rank = OREC.RANK %>% as.character(),
+    recommended_on = OREC.DATE %>% as.character(),
+    recommendation_code = OREC.REC.CODE %>% as.character(),
+    recommendation = OREC.DESC %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(recommendations, by = "recommendation_code")
 
 occ_recommendations %>% DT::datatable(.)
 ```
@@ -431,26 +428,26 @@ occ_recommendations %>% DT::datatable(.)
 
 ```{r occ_extent}
 sources <- tec$SOURCES %>%
-    dplyr::transmute(
-        source_code = SOURCE.CODE  %>% as.character, 
-        source = SOURCE.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    source_code = SOURCE.CODE %>% as.character(),
+    source = SOURCE.DESC %>% as.character()
+  )
 
 occ_extent <- tec$EXTENTS %>%
-    dplyr::transmute(
-    occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-    EXT.NO = EXT.NO  %>% as.character, 
-    EXT.DATE = EXT.DATE  %>% as.character, 
-    source_code = EXT.SOURCE.CODE  %>% as.character, 
-    EXT.AREA = EXT.AREA  %>% as.character, 
-    EXT.AREA.ACC = EXT.AREA.ACC  %>% as.character, 
-    area_decline_id = EXT.AD.CODE  %>% as.integer, 
-    EXT.COMMENT = EXT.COMMENT  %>% as.character, 
-    USERNAME = USERNAME  %>% as.character
-    ) %>% 
-    dplyr::left_join(occ_short, by = "occ_id") %>%
-    dplyr::left_join(sources, by = "source_code") %>%
-    dplyr::left_join(area_decline, by = "area_decline_id")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    EXT.NO = EXT.NO %>% as.character(),
+    EXT.DATE = EXT.DATE %>% as.character(),
+    source_code = EXT.SOURCE.CODE %>% as.character(),
+    EXT.AREA = EXT.AREA %>% as.character(),
+    EXT.AREA.ACC = EXT.AREA.ACC %>% as.character(),
+    area_decline_id = EXT.AD.CODE %>% as.integer(),
+    EXT.COMMENT = EXT.COMMENT %>% as.character(),
+    USERNAME = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(sources, by = "source_code") %>%
+  dplyr::left_join(area_decline, by = "area_decline_id")
 
 occ_extent %>% DT::datatable(.)
 ```
@@ -459,21 +456,21 @@ occ_extent %>% DT::datatable(.)
 
 ```{r occ_additional_data}
 items <- tec$ITEMS %>%
-    dplyr::transmute(
-    item_code = ITEM.CODE  %>% as.character, 
-    item = ITEM.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    item_code = ITEM.CODE %>% as.character(),
+    item = ITEM.DESC %>% as.character()
+  )
 
-occ_additional_data <- tec$ADDITIONAL_DATA %>% 
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-         additional_data_id = ADD.NO  %>% as.integer(), 
-         item_code = ADD.ITEM.CODE  %>% as.character, 
-         description = ADD.DESC  %>% as.character, 
-         username = USERNAME  %>% as.character
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id") %>%
-    dplyr::left_join(items, by = "item_code")
+occ_additional_data <- tec$ADDITIONAL_DATA %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    additional_data_id = ADD.NO %>% as.integer(),
+    item_code = ADD.ITEM.CODE %>% as.character(),
+    description = ADD.DESC %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(items, by = "item_code")
 
 occ_additional_data %>% DT::datatable(.)
 ```
@@ -489,13 +486,13 @@ occ_maps <- tec$OCCURRENCE_MAPS
 ## Biological Processes
 ```{r occ_biol_process}
 occ_biol_process <- tec$BIOL_PROCESSES %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-        biol_process_id = BIOL.NO  %>% as.integer(), 
-        biol_process = BIOL.PROCESS  %>% as.character, 
-        username = USERNAME  %>% as.character
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    biol_process_id = BIOL.NO %>% as.integer(),
+    biol_process = BIOL.PROCESS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
 
 occ_biol_process %>% DT::datatable(.)
 ```
@@ -503,13 +500,13 @@ occ_biol_process %>% DT::datatable(.)
 ## Non-biological Processes
 ```{r occ_nonbiol_process}
 occ_nonbiol_process <- tec$NON_BIOL_PROCESSES %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-     nonbiol_process_id = NBIO.NO  %>% as.integer(), 
-     nonbiol_process = NBIO.PROCESS  %>% as.character, 
-     username = USERNAME  %>% as.character
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    nonbiol_process_id = NBIO.NO %>% as.integer(),
+    nonbiol_process = NBIO.PROCESS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
 
 occ_nonbiol_process %>% DT::datatable(.)
 ```
@@ -518,14 +515,14 @@ occ_nonbiol_process %>% DT::datatable(.)
 
 ```{r occ_fire_history}
 fire_history <- tec$FIRE_HISTORY %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-         fire_history_id = FIRE.NO  %>% as.integer(), 
-         fire_history_date = FIRE.DATE  %>% as.character, 
-         fire_history_comment = FIRE.COMMENT  %>% as.character, 
-         username = USERNAME  %>% as.character
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    fire_history_id = FIRE.NO %>% as.integer(),
+    fire_history_date = FIRE.DATE %>% as.character(),
+    fire_history_comment = FIRE.COMMENT %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
 
 fire_history %>% DT::datatable(.)
 ```
@@ -546,47 +543,47 @@ What is the overlap to the Threatened Fauna DB in terms of meaning and data flow
 ```{r}
 # lookups
 fauna_conservation_codes <- tec$FAUNA_CONSERVATION_CODES %>%
-    dplyr::transmute(
-        conservation_code = CONSV.CODE  %>% as.character, 
-        conservation_code_description = CONSV.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    conservation_code = CONSV.CODE %>% as.character(),
+    conservation_code_description = CONSV.DESC %>% as.character()
+  )
 
 fauna_groups <- tec$FAUNA_GROUPS # paraphyletic groups
 
 species_roles <- tec$SPECIES_ROLES %>%
-    dplyr::transmute(
-        species_role_code = SP.ROLE.CODE  %>% as.character, 
-        species_role = SP.ROLE.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    species_role_code = SP.ROLE.CODE %>% as.character(),
+    species_role = SP.ROLE.DESC %>% as.character()
+  )
 
 fauna_taxa <- tec$FAUNA_TAXA # taxon_id
 
 # primary
-occ_fauna <- tec$OCCURRENCE_FAUNA  %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-     taxon_id = OF.TAXON.ID  %>% as.character, 
-     species_code = OF.SPCODE  %>% as.character, 
-     species_role_code = OF.SP.ROLE.CODE  %>% as.character, 
-     comments = OF.VOUCHER.NO  %>% as.character, 
-     username = USERNAME  %>% as.character, 
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id") %>%
-    dplyr::left_join(species_roles, by = "species_role_code")
-    
+occ_fauna <- tec$OCCURRENCE_FAUNA %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    taxon_id = OF.TAXON.ID %>% as.character(),
+    species_code = OF.SPCODE %>% as.character(),
+    species_role_code = OF.SP.ROLE.CODE %>% as.character(),
+    comments = OF.VOUCHER.NO %>% as.character(),
+    username = USERNAME %>% as.character(),
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(species_roles, by = "species_role_code")
+
 occ_fauna %>% DT::datatable(.)
 
 occ_species <- tec$OCCURRENCE_SPECIES %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-        taxon_id = SPEC.TAXON.ID  %>% as.character, 
-        species_code = SPEC.SPCODE  %>% as.character, 
-        species_role_code = SPEC.SP.ROLE.CODE  %>% as.character, 
-        comments = SPEC.VOUCHER.NO  %>% as.character, 
-        username = USERNAME  %>% as.character, 
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id") %>%
-    dplyr::left_join(species_roles, by = "species_role_code")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    taxon_id = SPEC.TAXON.ID %>% as.character(),
+    species_code = SPEC.SPCODE %>% as.character(),
+    species_role_code = SPEC.SP.ROLE.CODE %>% as.character(),
+    comments = SPEC.VOUCHER.NO %>% as.character(),
+    username = USERNAME %>% as.character(),
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(species_roles, by = "species_role_code")
 
 occ_species %>% DT::datatable(.)
 ```
@@ -603,77 +600,77 @@ A separate group related to surveys has the tables:
 
 ```{r surveys}
 # lookups
-impacts <- tec$THREAT_IMPACTS %>% 
-    dplyr::transmute(
-    impact_code = IMP.CODE  %>% as.character, 
-    impact = IMP.DESC  %>% as.character
-)
+impacts <- tec$THREAT_IMPACTS %>%
+  dplyr::transmute(
+    impact_code = IMP.CODE %>% as.character(),
+    impact = IMP.DESC %>% as.character()
+  )
 
-threats <- tec$THREATS %>% 
-    dplyr::transmute(
-        threat_code = THREAT.CODE  %>% as.character, 
-        threat = THREAT.DESC  %>% as.character
-    )
+threats <- tec$THREATS %>%
+  dplyr::transmute(
+    threat_code = THREAT.CODE %>% as.character(),
+    threat = THREAT.DESC %>% as.character()
+  )
 
-conditions <- tec$CONDITIONS %>% 
-    dplyr::transmute(
-        condition_code = COND.CODE  %>% as.character, 
-        condition = COND.DESC  %>% as.character
-    )
+conditions <- tec$CONDITIONS %>%
+  dplyr::transmute(
+    condition_code = COND.CODE %>% as.character(),
+    condition = COND.DESC %>% as.character()
+  )
 
 # primary
 com_threats <- tec$COMMUNITY_THREATS %>%
-    dplyr::transmute(
-        com_id = COM.NO  %>% as.integer(), 
-        id = CTHR.NO  %>% as.character, 
-     date = CTHR.DATE  %>% as.character, 
-     threat_code = CTHR.THREAT.CODE  %>% as.character, 
-     description = CTHR.DESC  %>% as.character
-    ) %>% 
-    dplyr::left_join(threats, by = "threat_code")
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    id = CTHR.NO %>% as.character(),
+    date = CTHR.DATE %>% as.character(),
+    threat_code = CTHR.THREAT.CODE %>% as.character(),
+    description = CTHR.DESC %>% as.character()
+  ) %>%
+  dplyr::left_join(threats, by = "threat_code")
 
 surveys <- tec$SURVEYS %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-         survey_id = SUR.NO  %>% as.integer(), 
-         surveyed_on = SUR.DATE  %>% as.character, 
-         surveyed_by = SUR.SURVEYOR  %>% as.character, 
-         survey_comments = SUR.COMMENTS  %>% as.character, 
-         username = USERNAME  %>% as.character
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    survey_id = SUR.NO %>% as.integer(),
+    surveyed_on = SUR.DATE %>% as.character(),
+    surveyed_by = SUR.SURVEYOR %>% as.character(),
+    survey_comments = SUR.COMMENTS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
 
 survey_threats <- tec$SURVEY_THREATS %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-         survey_id = SUR.NO  %>% as.integer(), 
-         threat_rank = THR.RANK  %>% as.integer(), 
-         threat_code = THR.THREAT.CODE  %>% as.character, 
-         threat_percent = THR.PERCENT  %>% as.double(), 
-         historic_impact_code = THR.HIST.IMP.CODE  %>% as.character, 
-         potential_impact_code = THR.POT.IMP.CODE  %>% as.character, 
-         modification = THR.MODIFICATION  %>% as.character, 
-         comments = THR.COMMENTS  %>% as.character, 
-         username = USERNAME  %>% as.character, 
-    ) %>% 
-     dplyr::left_join(occ_short, by = "occ_id") %>%
-    dplyr::left_join(threats, by = "threat_code") %>%
-    dplyr::left_join(impacts, by = c("historic_impact_code" = "impact_code")) %>%
-    dplyr::rename(historic_impact = impact) %>%
-    dplyr::left_join(impacts, by = c("potential_impact_code" = "impact_code")) %>%
-    dplyr::rename(potential_impact = impact)
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    survey_id = SUR.NO %>% as.integer(),
+    threat_rank = THR.RANK %>% as.integer(),
+    threat_code = THR.THREAT.CODE %>% as.character(),
+    threat_percent = THR.PERCENT %>% as.double(),
+    historic_impact_code = THR.HIST.IMP.CODE %>% as.character(),
+    potential_impact_code = THR.POT.IMP.CODE %>% as.character(),
+    modification = THR.MODIFICATION %>% as.character(),
+    comments = THR.COMMENTS %>% as.character(),
+    username = USERNAME %>% as.character(),
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(threats, by = "threat_code") %>%
+  dplyr::left_join(impacts, by = c("historic_impact_code" = "impact_code")) %>%
+  dplyr::rename(historic_impact = impact) %>%
+  dplyr::left_join(impacts, by = c("potential_impact_code" = "impact_code")) %>%
+  dplyr::rename(potential_impact = impact)
 
 survey_conditions <- tec$SURVEY_CONDITIONS %>%
-    dplyr::transmute(
-        occ_id = OCC.UNIQUE.ID  %>% as.integer(), 
-         survey_id = SUR.NO  %>% as.integer(), 
-         condition_code = SCON.COND.CODE  %>% as.character, 
-         condition_percent = SCON.PERCENT  %>% as.double(), 
-         comments = SCON.COMMENTS  %>% as.character, 
-         username = USERNAME  %>% as.character
-    ) %>%
-    dplyr::left_join(occ_short, by = "occ_id") %>%
-    dplyr::left_join(conditions, by = "condition_code")
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    survey_id = SUR.NO %>% as.integer(),
+    condition_code = SCON.COND.CODE %>% as.character(),
+    condition_percent = SCON.PERCENT %>% as.double(),
+    comments = SCON.COMMENTS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(conditions, by = "condition_code")
 ```
 
 ## Sites
@@ -685,12 +682,12 @@ survey_conditions <- tec$SURVEY_CONDITIONS %>%
 
 ```{r sites}
 datum <- tec$DATUM %>%
-    dplyr::transmute(
-        datum_code = DATUM.CODE  %>% as.character, 
-        datum = DATUM.DESC  %>% as.character, 
-        semi_major_axis = SEMI.MAJOR.AXIS  %>% as.double(), 
-        inverse_flattening = INVERSE.FLATTENING  %>% as.double()
-    )
+  dplyr::transmute(
+    datum_code = DATUM.CODE %>% as.character(),
+    datum = DATUM.DESC %>% as.character(),
+    semi_major_axis = SEMI.MAJOR.AXIS %>% as.double(),
+    inverse_flattening = INVERSE.FLATTENING %>% as.double()
+  )
 
 sites <- tec$SITES %>%
   dplyr::transmute(
@@ -715,45 +712,45 @@ sites <- tec$SITES %>%
     site_notes = S.SITE.NOTES %>% as.character()
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
-dplyr::left_join(datum, by = "datum_code")
+  dplyr::left_join(datum, by = "datum_code")
 
 # sites[15000:15250,] %>% skim # CKAN datapusher chokes on this chunk
 
 site_visit <- tec$SITE_VISITS %>%
-    dplyr::transmute(
-        site_visit_id = SITE.VISIT.ID  %>% as.integer(), 
-        site_code = S.ID %>% as.character(),
-        site_visit_date = SV.VISIT.DATE  %>% as.character, 
-        project_code = SV.PROJ.CODE  %>% as.character, 
-        site_visit_described_by = SV.DESCRIBED.BY  %>% as.character, 
-        site_visit_described_by_notes = SV.DESCRIBED.BY.NOTES  %>% as.character, 
-        seasonal_conditions = SV.SEASONAL.CONDITIONS  %>% as.character, 
-        observation_type = SV.OBSERVATION.TYPE  %>% as.character, 
-        observation_quality = SV.OBSERVATION.QUALITY  %>% as.character, 
-        plant_id_quality = SV.PLANT.ID.QUALITY  %>% as.character, 
-        site_dimensions = SV.SITE.DIMENSIONS  %>% as.character, 
-        site_uniformity = SV.SITE.UNIFORMITY  %>% as.character, 
-        site_status = SV.SITE.STATUS  %>% as.character, 
-        photo_numbers = SV.PHOTO  %>% as.character, 
-         vegetation_condition = SV.VEGETATION.CONDITION  %>% as.character, 
-         fire_age = SV.FIRE.AGE  %>% as.character, 
-         fire_notes = SV.FIRE.NOTES  %>% as.character, 
-         observation_notes = SV.OBSERVATION.NOTES  %>% as.character
-    )
+  dplyr::transmute(
+    site_visit_id = SITE.VISIT.ID %>% as.integer(),
+    site_code = S.ID %>% as.character(),
+    site_visit_date = SV.VISIT.DATE %>% as.character(),
+    project_code = SV.PROJ.CODE %>% as.character(),
+    site_visit_described_by = SV.DESCRIBED.BY %>% as.character(),
+    site_visit_described_by_notes = SV.DESCRIBED.BY.NOTES %>% as.character(),
+    seasonal_conditions = SV.SEASONAL.CONDITIONS %>% as.character(),
+    observation_type = SV.OBSERVATION.TYPE %>% as.character(),
+    observation_quality = SV.OBSERVATION.QUALITY %>% as.character(),
+    plant_id_quality = SV.PLANT.ID.QUALITY %>% as.character(),
+    site_dimensions = SV.SITE.DIMENSIONS %>% as.character(),
+    site_uniformity = SV.SITE.UNIFORMITY %>% as.character(),
+    site_status = SV.SITE.STATUS %>% as.character(),
+    photo_numbers = SV.PHOTO %>% as.character(),
+    vegetation_condition = SV.VEGETATION.CONDITION %>% as.character(),
+    fire_age = SV.FIRE.AGE %>% as.character(),
+    fire_notes = SV.FIRE.NOTES %>% as.character(),
+    observation_notes = SV.OBSERVATION.NOTES %>% as.character()
+  )
 
 # coll code and number indicates voucher specimens
 voucher_specimens <- tec$SITE_SPECIES %>%
-    dplyr::transmute(
-        site_species_id = SITE.SPECIES.ID  %>% as.character, 
-        site_visit_id = SITE.VISIT.ID  %>% as.integer(), 
-        name_id = SSP.NAME.ID  %>% as.character, 
-        species_code = SSP.SPCODE  %>% as.character, 
-        height = SSP.HEIGHT  %>% as.character, 
-        collector_code = SSP.COLLECTOR.CODE  %>% as.character, 
-        collection_number = SSP.COLLECTION.NUMBER  %>% as.character, 
-        notes = SSP.NOTES  %>% as.character
-        ) %>%
-    dplyr::left_join(site_visit, by = "site_visit_id")
+  dplyr::transmute(
+    site_species_id = SITE.SPECIES.ID %>% as.character(),
+    site_visit_id = SITE.VISIT.ID %>% as.integer(),
+    name_id = SSP.NAME.ID %>% as.character(),
+    species_code = SSP.SPCODE %>% as.character(),
+    height = SSP.HEIGHT %>% as.character(),
+    collector_code = SSP.COLLECTOR.CODE %>% as.character(),
+    collection_number = SSP.COLLECTION.NUMBER %>% as.character(),
+    notes = SSP.NOTES %>% as.character()
+  ) %>%
+  dplyr::left_join(site_visit, by = "site_visit_id")
 ```
 
 There are `r nrow(sites)` point locations known as TEC sites.
@@ -797,46 +794,46 @@ The data model of gazettals requires clarification.
 ```{r gazettal}
 # lookups
 library(magrittr)
-category_type <- tec$CATEGORY_TYPES %>% 
-    dplyr::transmute(
-        category_type_code = CT.TYPE  %>% as.character, 
-        category_type = CT.DESC  %>% as.character, 
-        authority = CT.AUTHORITY.CODE  %>% as.character
-    )
+category_type <- tec$CATEGORY_TYPES %>%
+  dplyr::transmute(
+    category_type_code = CT.TYPE %>% as.character(),
+    category_type = CT.DESC %>% as.character(),
+    authority = CT.AUTHORITY.CODE %>% as.character()
+  )
 
 conservation_status <- tec$CRITERIA_CODES %>%
-    dplyr::transmute(
-    conservation_status_code = CRIT.CODE  %>% as.character,
-    conservation_status_explanation = CRIT.DESC  %>% as.character
-    )
+  dplyr::transmute(
+    conservation_status_code = CRIT.CODE %>% as.character(),
+    conservation_status_explanation = CRIT.DESC %>% as.character()
+  )
 
 # If only there were like, a function to turn uppercase into lower- or title case...
 authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities. yeah.
-endorsement <- tec$ENDORSED_BY # another lookup for lower case. 
+endorsement <- tec$ENDORSED_BY # another lookup for lower case.
 
 # primary
 gazettal_wa <- tec$CATEGORIES %>%
-    dplyr::transmute(
-        com_id = COM.NO  %>% as.integer(), 
-        cat_effect_date = CAT.EFFECT.DATE  %>% as.character, 
-        category_type_code = CAT.CT.TYPE  %>% as.character, 
-        cat_comment = CAT.COMMENT  %>% as.character, 
-        cat_review_date = CAT.REVIEW.DATE  %>% as.character, 
-        cat_endorsed_code = CAT.ENDORSED.CODE  %>% as.character, 
-        cat_endorsed_date = CAT.ENDORSED.DATE  %>% as.character, 
-        cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER  %>% as.character
-    ) %>%
-    dplyr::left_join(com_short, by = "com_id") %>%
-    dplyr::left_join(category_type, by = "category_type_code")
-    
-gazettal_iucn <- tec$CATEGORY_CRITERIA %>% 
-    dplyr::transmute(
-        com_id = COM.NO  %>% as.integer(), 
-        effective_from = CAT.EFFECT.DATE  %>% as.character, 
-        conservation_status_code = CC.CRIT.CODE  %>% as.character
-    ) %>%
-    dplyr::left_join(com_short, by = "com_id") %>%
-    dplyr::left_join(conservation_status, by = "conservation_status_code")
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    cat_effect_date = CAT.EFFECT.DATE %>% as.character(),
+    category_type_code = CAT.CT.TYPE %>% as.character(),
+    cat_comment = CAT.COMMENT %>% as.character(),
+    cat_review_date = CAT.REVIEW.DATE %>% as.character(),
+    cat_endorsed_code = CAT.ENDORSED.CODE %>% as.character(),
+    cat_endorsed_date = CAT.ENDORSED.DATE %>% as.character(),
+    cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(category_type, by = "category_type_code")
+
+gazettal_iucn <- tec$CATEGORY_CRITERIA %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    effective_from = CAT.EFFECT.DATE %>% as.character(),
+    conservation_status_code = CC.CRIT.CODE %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(conservation_status, by = "conservation_status_code")
 # join com_short, criteria codes
 ```
 
@@ -891,4 +888,5 @@ upload_to_ckan(voucher_specimens, "TEC voucher specimens", d$id, resource_id = "
 upload_to_ckan(gazettal_wa, "TEC gazettal WA", d$id, resource_id = "f0085651-8c38-496e-a6bd-1adc7ae2f06a")
 upload_to_ckan(gazettal_iucn, "TEC gazettal IUCN", d$id, resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a")
 ```
+
 
