@@ -16,6 +16,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(lubridate)
+library(magrittr)
 library(tidyverse)
 library(skimr)
 library(leaflet)
@@ -36,8 +37,9 @@ This workbook serves to update BioSysTT via its API from KMI's WACensus views.
 
 # Read data from KMI
 
-```{r read_data_helpers}
+## Helpers
 
+```{r read_data_helpers}
 kmi_getFeature <- function(
     layer_name = "dpaw:herbie_hbvnames", 
     url = "https://kmi.dbca.wa.gov.au/geoserver/dpaw/ows"){
@@ -53,23 +55,22 @@ kmi_getFeature <- function(
     res <- httr::GET(url, ua, query = query)
     httr::content(res)
 }
-
-
 ```
 
+## Read all data from KMI
 
-```{r read_data}
+```{r read_data, eval=FALSE}
 f <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames")
-ft = f[["features"]][[1]][["properties"]]
 ```
 
 # Write data to BioSys TT
 
-```{r write_data_helpers}
+## Helpers
 
-wastd_upsert <- function(
-    serializer,
+```{r write_data_helpers}
+wastd_POST <- function(
     data,
+    serializer = "taxonomy",
     api_url = wastdr::get_wastdr_api_url(),
     api_token = wastdr::get_wastdr_api_token(),
     api_un = wastdr::get_wastdr_api_un(),
@@ -83,29 +84,38 @@ wastd_upsert <- function(
         auth <- httr::authenticate(api_un, api_pw, type = "basic")
       }
     
-    url <- paste0(api_url, serializer)
+    url <- paste0(api_url, serializer, "/")
     
     res <- httr::POST(url, auth, ua, encode = "json", body = data)
     
     res
 }
 
-wastd_upsert("taxonomy", api_url = "http://localhost:8220/api/1/", ft)
+wastd_batch_update_taxon <- function(kmi_featurecollection){
+    purrr::map(kmi_featurecollection[["features"]], "properties") %>%
+    purrr::map(wastd_POST, api_url = "http://localhost:8220/api/1/") %>%
+    httr::content(as="parsed", encoding = "utf-8")
+}
 ```
 
+## Example: update one Taxon
 
+```{r write_data_example, eval=FALSE}
+props <- purrr::map(f[["features"]], "properties")
+one_update <- wastd_POST(props[[1]], api_url = "http://localhost:8220/api/1/") %>% 
+    httr::content(as="parsed", encoding = "utf-8")
+all_updates <- purrr::map(props, wastd_POST, api_url = "http://localhost:8220/api/1/")
+```
 
-```{r write_data}
+## Batch upsert: Create or update all Taxa
 
-httr::POST(
-    
-)
-
+```{r rock_and_roll, eval=FALSE}
+updated <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames") %>%
+    wastd_batch_update_taxon(.)
 ```
 
 
 # Upload to CKAN
-
 
 ```{r upload_ckan}
 d <- ckanr::package_show("wacensus")
