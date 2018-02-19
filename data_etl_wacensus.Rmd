@@ -1,0 +1,114 @@
+---
+title: "WACensus ETL"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+  pdf_document: default
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(tidyverse)
+library(skimr)
+library(leaflet)
+library(Hmisc)
+library(ckanr)
+library(wastdr)
+source("helpers.R")
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+```
+
+# Context
+
+* WACensus, an Oracle database, is the point of truth for WA texonomic names at DBCA.
+* KMI publishes a few WACensus views as GeoServer views.
+* BioSysTT maintains a copy of those WACensus views.
+
+This workbook serves to update BioSysTT via its API from KMI's WACensus views.
+
+# Read data from KMI
+
+```{r read_data_helpers}
+
+kmi_getFeature <- function(
+    layer_name = "dpaw:herbie_hbvnames", 
+    url = "https://kmi.dbca.wa.gov.au/geoserver/dpaw/ows"){
+    ua <- httr::user_agent("http://github.com/dbca-scarab-scripts")
+    url <- "https://kmi.dbca.wa.gov.au/geoserver/dpaw/ows"
+    query <- list(
+        service = "WFS",
+        version = "2.0.0",
+        request = "GetFeature",
+        typeName = layer_name,
+        outputFormat="application/json"
+    )
+    res <- httr::GET(url, ua, query = query)
+    httr::content(res)
+}
+
+
+```
+
+
+```{r read_data}
+f <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames")
+ft = f[["features"]][[1]][["properties"]]
+```
+
+# Write data to BioSys TT
+
+```{r write_data_helpers}
+
+wastd_upsert <- function(
+    serializer,
+    data,
+    api_url = wastdr::get_wastdr_api_url(),
+    api_token = wastdr::get_wastdr_api_token(),
+    api_un = wastdr::get_wastdr_api_un(),
+    api_pw = wastdr::get_wastdr_api_pw()
+){
+    ua <- httr::user_agent("http://github.com/parksandwildlife/turtle-scripts")
+    
+    if (!is.null(api_token)) {
+        auth <- httr::add_headers(c(Authorization = api_token))
+      } else {
+        auth <- httr::authenticate(api_un, api_pw, type = "basic")
+      }
+    
+    url <- paste0(api_url, serializer)
+    
+    res <- httr::POST(url, auth, ua, encode = "json", body = data)
+    
+    res
+}
+
+wastd_upsert("taxonomy", api_url = "http://localhost:8220/api/1/", ft)
+```
+
+
+
+```{r write_data}
+
+httr::POST(
+    
+)
+
+```
+
+
+# Upload to CKAN
+
+
+```{r upload_ckan}
+d <- ckanr::package_show("wacensus")
+# r <- resource_create(package_id = d$id, name="WACensus ETL to BioSysTT", format="HTML", upload = "data_etl_wacensus.html")
+ckanr::resource_update("2893ad10-dfbf-460d-a508-5195edfd9a89", "data_etl_wacensus.html")
+```
