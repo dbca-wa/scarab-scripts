@@ -156,7 +156,7 @@ one_update
 
 ## Batch upsert: Create or update all Taxa
 
-Runs for about 50 minutes (one by one) or 25 minutes (chunked).
+Runs for about 50 minutes (one by one) or 25 minutes (after the upgrade to POST chunked).
 
 ```{r rock_and_roll, eval=FALSE}
 updated <- wastd_batch_update_taxon(f)
