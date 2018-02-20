@@ -24,6 +24,7 @@ library(Hmisc)
 library(ckanr)
 library(wastdr)
 source("helpers.R")
+wastdr::wastdr_setup()
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 ```
 
@@ -74,7 +75,8 @@ wastd_POST <- function(
     api_url = wastdr::get_wastdr_api_url(),
     api_token = wastdr::get_wastdr_api_token(),
     api_un = wastdr::get_wastdr_api_un(),
-    api_pw = wastdr::get_wastdr_api_pw()
+    api_pw = wastdr::get_wastdr_api_pw(),
+    verbose=FALSE
 ){
     ua <- httr::user_agent("http://github.com/parksandwildlife/turtle-scripts")
     
@@ -88,13 +90,37 @@ wastd_POST <- function(
     
     res <- httr::POST(url, auth, ua, encode = "json", body = data)
     
-    res
+    if (verbose) message("[wastd_POST] status ", res$status)
+    
+     structure(
+        list(
+          serializer = serializer,
+          response = res
+        ),
+        class = "wastd_api_post_response"
+    )
 }
 
-wastd_batch_update_taxon <- function(kmi_featurecollection){
-    purrr::map(kmi_featurecollection[["features"]], "properties") %>%
-    purrr::map(wastd_POST, api_url = "http://localhost:8220/api/1/") %>%
-    httr::content(as="parsed", encoding = "utf-8")
+print.wastd_api_post_response <- function(x, ...) {
+  cat("<WAStD API POST response ", x$serializer, ">\n",
+    "URL ", x$response$url, "\n",  
+    "Date ", x$response$headers$date, "\n",
+    "Status ", x$response$status_code, "\n",
+    sep = ""
+  )
+  invisible(x)
+}
+
+wastd_batch_update_taxon <- function(
+    kmi_featurecollection,
+    api_url = wastdr::get_wastdr_api_url()
+    ){
+    message("[wastd_batch_update_taxon] Updating Taxon...")
+    updated <- kmi_featurecollection[["features"]] %>%
+        purrr::map(., "properties") %>%
+        purrr::map(wastd_POST, api_url = api_url)
+    message("[wastd_batch_update_taxon] Finished. ", length(updated), " taxa updated.")
+    updated
 }
 ```
 
@@ -102,16 +128,17 @@ wastd_batch_update_taxon <- function(kmi_featurecollection){
 
 ```{r write_data_example, eval=FALSE}
 props <- purrr::map(f[["features"]], "properties")
-one_update <- wastd_POST(props[[1]], api_url = "http://localhost:8220/api/1/") %>% 
-    httr::content(as="parsed", encoding = "utf-8")
-all_updates <- purrr::map(props, wastd_POST, api_url = "http://localhost:8220/api/1/")
+one_update <- wastd_POST(props[[1]], api_url = "http://localhost:8220/api/1/", verbose=T)
+one_update$response %>% httr::content(.) %>% extract2("name")
+one_update
+
+# all_updates <- purrr::map(props, wastd_POST, api_url = "http://localhost:8220/api/1/")
 ```
 
 ## Batch upsert: Create or update all Taxa
 
 ```{r rock_and_roll, eval=FALSE}
-updated <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames") %>%
-    wastd_batch_update_taxon(.)
+updated <- wastd_batch_update_taxon(f, api_url = "http://localhost:8220/api/1/")
 ```
 
 
