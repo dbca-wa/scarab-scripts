@@ -26,6 +26,8 @@ library(wastdr)
 source("helpers.R")
 wastdr::wastdr_setup()
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+
+local_api <- "http://localhost:8220/api/1/"
 ```
 
 # Context
@@ -128,18 +130,33 @@ wastd_batch_update_taxon <- function(
 
 ```{r write_data_example, eval=FALSE}
 props <- purrr::map(f[["features"]], "properties")
-one_update <- wastd_POST(props[[1]], api_url = "http://localhost:8220/api/1/", verbose=T)
+# one_update <- wastd_POST(props[[1]], api_url = "http://localhost:8220/api/1/", verbose=T)
+one_update <- wastd_POST(props[[1]], verbose=T)
 one_update$response %>% httr::content(.) %>% extract2("name")
 one_update
 
-# all_updates <- purrr::map(props, wastd_POST, api_url = "http://localhost:8220/api/1/")
+# all_updates <- purrr::map(props, wastd_POST, api_url = local_api)
 ```
 
 ## Batch upsert: Create or update all Taxa
 
+### The slow way
+
+Runs for 50 minutes.
+
 ```{r rock_and_roll, eval=FALSE}
-updated <- wastd_batch_update_taxon(f, api_url = "http://localhost:8220/api/1/")
+updated <- wastd_batch_update_taxon(f)
 ```
+
+### The fast way
+
+Option: 
+
+* Read paginated GeoJSON from KMI
+* For each KMI page, combine extracted feature properties
+* POST combined properties as batch to BioSysTT
+
+This would probably run an order of magnitude faster than the one-by-one method used above.
 
 
 # Upload to CKAN
