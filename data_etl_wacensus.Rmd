@@ -38,9 +38,9 @@ local_api <- "http://localhost:8220/api/1/"
 
 This workbook serves to update BioSysTT via its API from KMI's WACensus views.
 
-# Read data from KMI
 
-## Helpers
+# Helpers
+Some helpers are defined.
 
 ```{r read_data_helpers}
 kmi_getFeature <- function(
@@ -58,19 +58,7 @@ kmi_getFeature <- function(
     res <- httr::GET(url, ua, query = query)
     httr::content(res)
 }
-```
 
-## Read all data from KMI
-
-```{r read_data, eval=FALSE}
-f <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames")
-```
-
-# Write data to BioSys TT
-
-## Helpers
-
-```{r write_data_helpers}
 wastd_POST <- function(
     data,
     serializer = "taxonomy",
@@ -115,20 +103,46 @@ print.wastd_api_post_response <- function(x, ...) {
 
 wastd_batch_update_taxon <- function(
     kmi_featurecollection,
-    api_url = wastdr::get_wastdr_api_url()
+    api_url = wastdr::get_wastdr_api_url(),
+    verbose = T
     ){
     message("[wastd_batch_update_taxon] Updating Taxon...")
-    updated <- kmi_featurecollection[["features"]] %>%
-        purrr::map(., "properties") %>%
-        purrr::map(wastd_POST, api_url = api_url)
-    message("[wastd_batch_update_taxon] Finished. ", length(updated), " taxa updated.")
-    updated
+
+    props <- purrr::map(kmi_featurecollection[["features"]], "properties")
+    
+    # One by one - very slow.    
+    # purrr::map(props, wastd_POST, api_url = api_url)
+    
+    chunksize <- 100
+    len <- length(props)
+
+    for (i in 0:(len/chunksize)){
+        start <- (i * chunksize) + 1
+        end <- min((start + chunksize) - 1, len)
+        message("Processing feature ", start, " to ", end)
+        
+        props[start:end] %>% 
+            purrr::map(., purrr::flatten) %>%
+            wastd_POST(., api_url = api_url, verbose = verbose)
+    }
+    
+    message("[wastd_batch_update_taxon] Finished. ", len, " taxa updated.")
 }
 ```
 
+## Read all data from KMI
+
+174 MB load in 5 seconds.
+
+```{r read_data}
+f <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames")
+```
+
+# Write data to BioSys TT
+
 ## Example: update one Taxon
 
-```{r write_data_example, eval=FALSE}
+```{r write_data_example}
 props <- purrr::map(f[["features"]], "properties")
 
 # one_update <- wastd_POST(props[[1]], api_url = local_api, verbose=T)
@@ -142,30 +156,12 @@ one_update
 
 ## Batch upsert: Create or update all Taxa
 
-### The slow way
-
-Runs for 50 minutes.
+Runs for about 50 minutes (one by one) or 25 minutes (chunked).
 
 ```{r rock_and_roll, eval=FALSE}
 updated <- wastd_batch_update_taxon(f)
 ```
 
-### The fast way
-
-Option: 
-
-* Read paginated GeoJSON from KMI
-* For each KMI page, combine extracted feature properties
-* POST combined properties as batch to BioSysTT
-
-This would probably run an order of magnitude faster than the one-by-one method used above.
-
-WIP.
-
-```{r speed_metal, eval=FALSE}
-ppp <- props[1:3] %>% map(., purrr::flatten_dfc)
-few_updates <- wastd_POST(ppp, verbose=T)
-```
 
 # Upload to CKAN
 
