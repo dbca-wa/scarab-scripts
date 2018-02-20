@@ -159,7 +159,7 @@ one_update
 Runs for about 50 minutes (one by one) or 25 minutes (after the upgrade to POST chunked).
 
 ```{r rock_and_roll, eval=FALSE}
-updated <- wastd_batch_update_taxon(f)
+wastd_batch_update_taxon(f)
 ```
 
 
