@@ -46,11 +46,10 @@ This workbook serves to update BioSysTT via its API from KMI's WACensus views.
 Some helpers are defined.
 
 ```{r read_data_helpers}
-kmi_getFeature <- function(
-                           layer_name = "dpaw:herbie_hbvnames",
+kmi_getFeature <- function(layer_name = "dpaw:herbie_hbvnames",
                            url = "https://kmi.dbca.wa.gov.au/geoserver/dpaw/ows") {
   ua <- httr::user_agent("http://github.com/dbca-scarab-scripts")
-  url <- "https://kmi.dbca.wa.gov.au/geoserver/dpaw/ows"
+  url <- "https://kmi.dbca.wa.gov.au/geoserver/public/ows"
   query <- list(
     service = "WFS",
     version = "2.0.0",
@@ -58,32 +57,25 @@ kmi_getFeature <- function(
     typeName = layer_name,
     outputFormat = "application/json"
   )
-  res <- httr::GET(url, ua, query = query)
-  httr::content(res)
+  url %>% httr::GET(ua, query = query) %>% httr::content(.)
 }
 
-wastd_POST <- function(
-                       data,
-                       serializer = "taxonomy",
+wastd_POST <- function(data,
+                       serializer = "names",
                        api_url = wastdr::get_wastdr_api_url(),
                        api_token = wastdr::get_wastdr_api_token(),
                        api_un = wastdr::get_wastdr_api_un(),
                        api_pw = wastdr::get_wastdr_api_pw(),
                        verbose=FALSE) {
   ua <- httr::user_agent("http://github.com/parksandwildlife/turtle-scripts")
-
   if (!is.null(api_token)) {
     auth <- httr::add_headers(c(Authorization = api_token))
   } else {
     auth <- httr::authenticate(api_un, api_pw, type = "basic")
   }
-
   url <- paste0(api_url, serializer, "/")
-
   res <- httr::POST(url, auth, ua, encode = "json", body = data)
-
   if (verbose) message("[wastd_POST] status ", res$status)
-
   structure(
     list(
       serializer = serializer,
@@ -103,31 +95,24 @@ print.wastd_api_post_response <- function(x, ...) {
   invisible(x)
 }
 
-wastd_batch_update_taxon <- function(
-                                     kmi_featurecollection,
+wastd_upsert_geojson <- function(kmi_featurecollection,
+                                     serializer = "names",
                                      api_url = wastdr::get_wastdr_api_url(),
+                                     chunksize = 500,
                                      verbose = T) {
-  message("[wastd_batch_update_taxon] Updating Taxon...")
-
+  message("[wastd_batch_update_taxon] Updating ", serializer, "...")
   props <- purrr::map(kmi_featurecollection[["features"]], "properties")
-
-  # One by one - very slow.
-  # purrr::map(props, wastd_POST, api_url = api_url)
-
-  chunksize <- 100
+  # purrr::map(props, wastd_POST, api_url = api_url) # One by one - very slow. Faster:
   len <- length(props)
-
-  for (i in 0:(len / chunksize)) {
+  for (i in seq_len(len / chunksize)) {
     start <- (i * chunksize) + 1
     end <- min((start + chunksize) - 1, len)
     message("Processing feature ", start, " to ", end)
-
     props[start:end] %>%
       purrr::map(., purrr::flatten) %>%
-      wastd_POST(., api_url = api_url, verbose = verbose)
+      wastd_POST(., serializer = serializer, api_url = api_url, verbose = verbose)
   }
-
-  message("[wastd_batch_update_taxon] Finished. ", len, " taxa updated.")
+  message("[wastd_upsert_geojson] Finished. ", len, " records updated.")
 }
 ```
 
@@ -136,15 +121,15 @@ wastd_batch_update_taxon <- function(
 174 MB load in 5 seconds.
 
 ```{r read_data}
-f <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames")
+hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
 
 # kmi <- GSManager$new(
-#   url = "https://kmi.dbca.wa.gov.au/geoserver/dpaw/ows",
-#   user = Sys.getenv("AD_UN"), 
-#   pwd = Sys.getenv("AD_PW"), 
+#   url = "https://kmi.dbca.wa.gov.au/geoserver/public/ows",
+#   user = Sys.getenv("AD_UN"),
+#   pwd = Sys.getenv("AD_PW"),
 #   logger = "INFO"
 # )
-# 
+#
 # hbvnames <- kmi$getLayer("herbie_hbvnames")
 ```
 
@@ -153,32 +138,25 @@ f <- kmi_getFeature(layer_name = "dpaw:herbie_hbvnames")
 ## Example: update one Taxon
 
 ```{r write_data_example}
-props <- purrr::map(f[["features"]], "properties")
+props <- purrr::map(hbvnames[["features"]], "properties")
 
-# one_update <- wastd_POST(props[[1]], api_url = local_api, verbose=T)
-one_update <- wastd_POST(props[[1]], verbose = T)
-
-one_update$response %>% httr::content(.) %>% extract2("name")
+# one_update <- wastd_POST(props[[1]], serializer = "names", api_url = local_api, verbose=T)
+one_update <- wastd_POST(props[[1]], serializer = "names", verbose = T)
 one_update
-
-# all_updates <- purrr::map(props, wastd_POST, api_url = local_api)
 ```
 
 ## Batch upsert: Create or update all Taxa
 
 Runs for about 50 minutes (one by one) or 25 minutes (after the upgrade to POST chunked).
-10:24
 
 ```{r rock_and_roll, eval=FALSE}
-wastd_batch_update_taxon(f)
+wastd_upsert_geojson(hbvnames, serializer = "names")
 ```
-
 
 # Upload to CKAN
 
 ```{r upload_ckan}
 d <- ckanr::package_show("wacensus")
-# r <- resource_create(package_id = d$id, name="WACensus ETL to BioSysTT", format="HTML", upload = "data_etl_wacensus.html")
+# r <- resource_create(package_id = d$id, name = "WACensus ETL to BioSysTT", format = "HTML", upload = "data_etl_wacensus.html")
 ckanr::resource_update("2893ad10-dfbf-460d-a508-5195edfd9a89", "data_etl_wacensus.html")
 ```
-
