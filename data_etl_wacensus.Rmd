@@ -117,48 +117,50 @@ wastd_upsert_geojson <- function(kmi_featurecollection,
 }
 ```
 
-## Read all data from KMI
-
-174 MB load in 5 seconds.
-
-```{r read_data}
-hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
-hbvsupra <- kmi_getFeature(layer_name = "public:herbie_hbvsupra_public")
-
-# kmi <- GSManager$new(
-#   url = "https://kmi.dbca.wa.gov.au/geoserver/public/ows",
-#   user = Sys.getenv("AD_UN"),
-#   pwd = Sys.getenv("AD_PW"),
-#   logger = "INFO"
-# )
-#
-# hbvnames <- kmi$getLayer("herbie_hbvnames_public")
-```
-
 # Write data to BioSys TT
 
 ## Example: update one Taxon
 
 ```{r write_data_example}
+hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
 namesprops <- purrr::map(hbvnames[["features"]], "properties")
-
 wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
-wastd_POST(namesprops[[1]], serializer = "names")
+# wastd_POST(namesprops[[1]], serializer = "names")
 
+hbvsupra <- kmi_getFeature(layer_name = "public:herbie_hbvsupra_public")
 supraprops <- purrr::map(hbvsupra[["features"]], "properties")
 wastd_POST(supraprops[[1]], serializer = "supra", api_url = local_api)
 
+hbvfam <- kmi_getFeature(layer_name = "public:herbie_hbvfamilies_public")
+famprops <- purrr::map(hbvfam[["features"]], "properties")
+wastd_POST(famprops[[1]], serializer = "families", api_url = local_api)
+
+hbvgen <- kmi_getFeature(layer_name = "public:herbie_hbvgenera_public")
+genprops <- purrr::map(hbvgen[["features"]], "properties")
+wastd_POST(genprops[[1]], serializer = "genera", api_url = local_api)
+
+hbvspecies <- kmi_getFeature(layer_name = "public:herbie_hbvspecies_public")
+speciesprops <- purrr::map(hbvspecies[["features"]], "properties")
+wastd_POST(speciesprops[[1]], serializer = "species", api_url = local_api)
+
+
+hbvxrefs <- kmi_getFeature(layer_name = "public:herbie_hbvxrefs_public")
+xrefsprops <- purrr::map(hbvxrefs[["features"]], "properties")
+wastd_POST(xrefsprops[[1]], serializer = "xrefs", api_url = local_api)
 ```
 
 ## Batch upsert: Create or update all Taxa
-
-Runs for about 50 minutes (one by one) or 25 minutes (after the upgrade to POST chunked).
-names: 11:53 - 
-roughly 1000 features per minute
+Loads roughly 1000 features per minute.
 
 ```{r rock_and_roll, eval=FALSE}
-wastd_upsert_geojson(hbvnames, serializer = "names", api_url = local_api, verbose = T)
-wastd_upsert_geojson(hbvsupra, serializer = "supra", api_url = local_api, verbose = T)
+"public:herbie_hbvnames_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
+"public:herbie_hbvsupra_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
+"public:herbie_hbvgroups_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
+"public:herbie_hbvfamilies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "families", verbose = T, api_url = local_api)
+"public:herbie_hbvgenera_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "genera", verbose = T, api_url = local_api)
+"public:herbie_hbvspecies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
+"public:herbie_hbvvernaculars_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
+"public:herbie_hbvxrefs_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
 ```
 
 # Upload to CKAN
