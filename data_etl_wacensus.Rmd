@@ -28,7 +28,7 @@ wastdr::wastdr_setup()
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 
 # devtools::install_github("eblondel/geosapi")
-library(geosapi)
+# library(geosapi)
 
 local_api <- "http://localhost:8220/api/1/"
 ```
@@ -74,8 +74,9 @@ wastd_POST <- function(data,
     auth <- httr::authenticate(api_un, api_pw, type = "basic")
   }
   url <- paste0(api_url, serializer, "/")
+  if (verbose==TRUE) message("[wastd_POST] url ", url)
   res <- httr::POST(url, auth, ua, encode = "json", body = data)
-  if (verbose) message("[wastd_POST] status ", res$status)
+  if (verbose==TRUE) message("[wastd_POST] status ", res$status)
   structure(
     list(
       serializer = serializer,
@@ -99,15 +100,15 @@ wastd_upsert_geojson <- function(kmi_featurecollection,
                                      serializer = "names",
                                      api_url = wastdr::get_wastdr_api_url(),
                                      chunksize = 500,
-                                     verbose = T) {
-  message("[wastd_batch_update_taxon] Updating ", serializer, "...")
+                                     verbose = TRUE) {
+  message("[wastd_upsert_geojson] Updating ", api_url, serializer, "...")
   props <- purrr::map(kmi_featurecollection[["features"]], "properties")
   # purrr::map(props, wastd_POST, api_url = api_url) # One by one - very slow. Faster:
   len <- length(props)
-  for (i in seq_len(len / chunksize)) {
+  for (i in 0:(len / chunksize)) {
     start <- (i * chunksize) + 1
     end <- min((start + chunksize) - 1, len)
-    message("Processing feature ", start, " to ", end)
+    message("[wastd_upsert_geojson] Processing feature ", start, " to ", end)
     props[start:end] %>%
       purrr::map(., purrr::flatten) %>%
       wastd_POST(., serializer = serializer, api_url = api_url, verbose = verbose)
@@ -122,6 +123,7 @@ wastd_upsert_geojson <- function(kmi_featurecollection,
 
 ```{r read_data}
 hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
+hbvsupra <- kmi_getFeature(layer_name = "public:herbie_hbvsupra_public")
 
 # kmi <- GSManager$new(
 #   url = "https://kmi.dbca.wa.gov.au/geoserver/public/ows",
@@ -130,7 +132,7 @@ hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
 #   logger = "INFO"
 # )
 #
-# hbvnames <- kmi$getLayer("herbie_hbvnames")
+# hbvnames <- kmi$getLayer("herbie_hbvnames_public")
 ```
 
 # Write data to BioSys TT
@@ -138,19 +140,25 @@ hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
 ## Example: update one Taxon
 
 ```{r write_data_example}
-props <- purrr::map(hbvnames[["features"]], "properties")
+namesprops <- purrr::map(hbvnames[["features"]], "properties")
 
-# one_update <- wastd_POST(props[[1]], serializer = "names", api_url = local_api, verbose=T)
-one_update <- wastd_POST(props[[1]], serializer = "names", verbose = T)
-one_update
+wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
+wastd_POST(namesprops[[1]], serializer = "names")
+
+supraprops <- purrr::map(hbvsupra[["features"]], "properties")
+wastd_POST(supraprops[[1]], serializer = "supra", api_url = local_api)
+
 ```
 
 ## Batch upsert: Create or update all Taxa
 
 Runs for about 50 minutes (one by one) or 25 minutes (after the upgrade to POST chunked).
+names: 11:53 - 
+roughly 1000 features per minute
 
 ```{r rock_and_roll, eval=FALSE}
-wastd_upsert_geojson(hbvnames, serializer = "names")
+wastd_upsert_geojson(hbvnames, serializer = "names", api_url = local_api, verbose = T)
+wastd_upsert_geojson(hbvsupra, serializer = "supra", api_url = local_api, verbose = T)
 ```
 
 # Upload to CKAN
