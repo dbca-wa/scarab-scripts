@@ -99,7 +99,7 @@ print.wastd_api_post_response <- function(x, ...) {
 wastd_upsert_geojson <- function(kmi_featurecollection,
                                      serializer = "names",
                                      api_url = wastdr::get_wastdr_api_url(),
-                                     chunksize = 500,
+                                     chunksize = 1000,
                                      verbose = TRUE) {
   message("[wastd_upsert_geojson] Updating ", api_url, serializer, "...")
   props <- purrr::map(kmi_featurecollection[["features"]], "properties")
@@ -121,7 +121,7 @@ wastd_upsert_geojson <- function(kmi_featurecollection,
 
 ## Example: update one Taxon
 
-```{r write_data_example}
+```{r write_data_example, eval=FALSE}
 hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
 namesprops <- purrr::map(hbvnames[["features"]], "properties")
 wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
@@ -150,9 +150,9 @@ wastd_POST(xrefsprops[[1]], serializer = "xrefs", api_url = local_api)
 ```
 
 ## Batch upsert: Create or update all Taxa
-Loads roughly 1000 features per minute.
+Rock and roll.
 
-```{r rock_and_roll, eval=FALSE}
+```{r rock_and_roll_local}
 "public:herbie_hbvnames_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
 "public:herbie_hbvsupra_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
 "public:herbie_hbvgroups_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
@@ -161,6 +161,17 @@ Loads roughly 1000 features per minute.
 "public:herbie_hbvspecies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
 "public:herbie_hbvvernaculars_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
 "public:herbie_hbvxrefs_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
+```
+
+```{r rock_and_roll_production}
+"public:herbie_hbvnames_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "names", verbose = T)
+"public:herbie_hbvsupra_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "supra", verbose = T)
+"public:herbie_hbvgroups_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "groups", verbose = T)
+"public:herbie_hbvfamilies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "families", verbose = T)
+"public:herbie_hbvgenera_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "genera", verbose = T)
+"public:herbie_hbvspecies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "species", verbose = T)
+"public:herbie_hbvvernaculars_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "vernaculars", verbose = T)
+"public:herbie_hbvxrefs_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "xrefs", verbose = T)
 ```
 
 # Upload to CKAN
