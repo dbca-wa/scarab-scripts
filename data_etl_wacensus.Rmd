@@ -43,7 +43,13 @@ This workbook serves to update BioSysTT via its API from KMI's WACensus views.
 
 
 # Helpers
-Some helpers are defined.
+Some helpers are defined 
+
+* to retrieve data from KMI's GeoServer,
+* to write to BioSysTT,
+* and to pipe bulk data from KMI (or any other GeoJSON) to BioSysTT.
+
+Once stable, these functions will become part of `wastdr`.
 
 ```{r read_data_helpers}
 kmi_getFeature <- function(layer_name = "dpaw:herbie_hbvnames",
@@ -125,34 +131,12 @@ wastd_upsert_geojson <- function(kmi_featurecollection,
 hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
 namesprops <- purrr::map(hbvnames[["features"]], "properties")
 wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
-# wastd_POST(namesprops[[1]], serializer = "names")
-
-hbvsupra <- kmi_getFeature(layer_name = "public:herbie_hbvsupra_public")
-supraprops <- purrr::map(hbvsupra[["features"]], "properties")
-wastd_POST(supraprops[[1]], serializer = "supra", api_url = local_api)
-
-hbvfam <- kmi_getFeature(layer_name = "public:herbie_hbvfamilies_public")
-famprops <- purrr::map(hbvfam[["features"]], "properties")
-wastd_POST(famprops[[1]], serializer = "families", api_url = local_api)
-
-hbvgen <- kmi_getFeature(layer_name = "public:herbie_hbvgenera_public")
-genprops <- purrr::map(hbvgen[["features"]], "properties")
-wastd_POST(genprops[[1]], serializer = "genera", api_url = local_api)
-
-hbvspecies <- kmi_getFeature(layer_name = "public:herbie_hbvspecies_public")
-speciesprops <- purrr::map(hbvspecies[["features"]], "properties")
-wastd_POST(speciesprops[[1]], serializer = "species", api_url = local_api)
-
-
-hbvxrefs <- kmi_getFeature(layer_name = "public:herbie_hbvxrefs_public")
-xrefsprops <- purrr::map(hbvxrefs[["features"]], "properties")
-wastd_POST(xrefsprops[[1]], serializer = "xrefs", api_url = local_api)
 ```
 
 ## Batch upsert: Create or update all Taxa
-Rock and roll.
+Local BioSysTT instance (dev):
 
-```{r rock_and_roll_local}
+```{r rock_and_roll_local, eval=FALSE}
 "public:herbie_hbvnames_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
 "public:herbie_hbvsupra_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
 "public:herbie_hbvgroups_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
@@ -161,9 +145,12 @@ Rock and roll.
 "public:herbie_hbvspecies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
 "public:herbie_hbvvernaculars_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
 "public:herbie_hbvxrefs_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
+"public:herbie_hbtparents_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "parents", verbose = T, api_url = local_api)
 ```
 
-```{r rock_and_roll_production}
+Production BioSysTT instance.
+
+```{r rock_and_roll_production, eval=FALSE}
 "public:herbie_hbvnames_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "names", verbose = T)
 "public:herbie_hbvsupra_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "supra", verbose = T)
 "public:herbie_hbvgroups_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "groups", verbose = T)
@@ -172,7 +159,20 @@ Rock and roll.
 "public:herbie_hbvspecies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "species", verbose = T)
 "public:herbie_hbvvernaculars_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "vernaculars", verbose = T)
 "public:herbie_hbvxrefs_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "xrefs", verbose = T)
+"public:herbie_hbtparents_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "parents", verbose = T)
 ```
+
+
+## Updating users
+Given a CSV with columns `name`, `phone`, `email` and `role`, we can update 
+users as follows.
+
+```{r update_users}
+# users <- readr::read_csv("staff.csv") %>% wastd_POST(., serializer = "users", api_url = local_api, verbose = TRUE)
+users <- readr::read_csv("staff.csv") %>% wastd_POST(., serializer = "users", verbose = TRUE)
+```
+
+The username is generated from the `snake_case`'d field `name`.
 
 # Upload to CKAN
 
