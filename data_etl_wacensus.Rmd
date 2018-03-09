@@ -167,7 +167,7 @@ Production BioSysTT instance.
 Given a CSV with columns `name`, `phone`, `email` and `role`, we can update 
 users as follows.
 
-```{r update_users}
+```{r update_users, eval=F}
 # users <- readr::read_csv("staff.csv") %>% wastd_POST(., serializer = "users", api_url = local_api, verbose = TRUE)
 users <- readr::read_csv("staff.csv") %>% wastd_POST(., serializer = "users", verbose = TRUE)
 ```
