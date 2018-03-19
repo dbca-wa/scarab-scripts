@@ -1,0 +1,86 @@
+---
+title: "Conservation Status"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+    toc_float: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ckanr)
+library(readr)
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+```
+
+# Context
+This workbook explores assumptions around conservation status management using TSC data.
+Assumptions are formulated as quoted statements, and their validity is explored through data analysis.
+
+# Glossary
+* Scope: WA=State, FED=Commonwealth/Federal, INT=International.
+* [IUCN](https://www.iucn.org/) IUCN: International Union for Conservation of Nature. 
+  IUCN publish the [Red List](http://www.iucnredlist.org/) which has an 
+  [API](http://apiv3.iucnredlist.org/).
+* "Gazettal" the assignment of a conservation status to a taxnonomic name.
+
+# Data
+* tfa = Threatened and priority fauna
+* tfl = Threatened and priority flora
+* tec = Threatened and priority communities
+* csg = conservation status gazettal
+* cs = conservation status (list)
+* iucn = IUCN reasons
+* wa = state
+* fed = federal
+* int = international
+
+
+```{r load_data, message=FALSE}
+tfa_csg_wa <- ckanr::resource_show("ac089664-de5a-4efa-af3c-ada0ec77ef1f")$url %>% readr::read_csv()
+tfa_cs_wa <- ckanr::resource_show("2793b1a8-eb55-41e7-8f8f-9cbc79a01243")$url %>% readr::read_csv()
+tfl_csg_wa <- ckanr::resource_show("0fbd9080-21d7-4fb1-ae43-4cc5791862c3")$url %>% readr::read_csv()
+tfl_csg_iucn <- ckanr::resource_show("668d2bd2-02bf-43fc-ad88-439185013d15")$url %>% readr::read_csv()
+tec_csg_wa <- ckanr::resource_show("f0085651-8c38-496e-a6bd-1adc7ae2f06a")$url %>% readr::read_csv()
+tec_csg_iucn <- ckanr::resource_show("9483f333-97fd-4975-a799-d44bf8bd252a")$url %>% readr::read_csv()
+```
+
+# International conservation listing
+"The Department does not interact with international conservation listings."
+
+Discuss: 
+
+* DBCA does not actively inform IUCN of WA gazettal.
+* Should DBCA publish WA conservation status to IUCN and the general public?
+* DBCA only needs a read-only copy of IUCN status.
+* There is no reason not to automate import of IUCN statuses as long as the taxonomic names are correct.
+
+# WA and FED use IUCN cons status codes
+"WA and FED both use the same IUCN conservation status codes."
+
+### WA cons status codes
+```{r wa_cons_status_codes}
+unique(tfa_csg_wa$status_code)
+tfa_cs_wa %>% dplyr::select(list_code, status_code, status) %>% knitr::kable
+unique(tec_csg_wa$category_type_code)
+```
+
+### FED cons status codes
+```{r fed_cons_status_codes}
+# tfa
+# tfl
+# tec
+```
+
+
+# Data upload
+```{r data_upload}
+d <- ckanr::package_show("wacensus")
+# r <- resource_create(package_id = d$id, name = "Conservation Status Analysis", format = "HTML", upload = "conservation_status.html")
+# ckanr::resource_update("2893ad10-dfbf-460d-a508-5195edfd9a89", "conservation_status.html")
+```
