@@ -11,8 +11,6 @@ output:
   pdf_document: default
 ---
 
-
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(lubridate)
@@ -24,12 +22,7 @@ library(Hmisc)
 library(ckanr)
 library(wastdr)
 source("helpers.R")
-wastdr::wastdr_setup()
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
-
-# devtools::install_github("eblondel/geosapi")
-# library(geosapi)
-
 local_api <- "http://localhost:8220/api/1/"
 ```
 
@@ -37,91 +30,9 @@ local_api <- "http://localhost:8220/api/1/"
 
 * WACensus, an Oracle database, is the point of truth for WA texonomic names at DBCA.
 * KMI publishes a few WACensus views as GeoServer views.
-* BioSysTT maintains a copy of those WACensus views.
+* TSC maintains a copy of those WACensus views.
 
-This workbook serves to update BioSysTT via its API from KMI's WACensus views.
-
-
-# Helpers
-Some helpers are defined 
-
-* to retrieve data from KMI's GeoServer,
-* to write to BioSysTT,
-* and to pipe bulk data from KMI (or any other GeoJSON) to BioSysTT.
-
-Once stable, these functions will become part of `wastdr`.
-
-```{r read_data_helpers}
-kmi_getFeature <- function(layer_name = "dpaw:herbie_hbvnames",
-                           url = "https://kmi.dbca.wa.gov.au/geoserver/dpaw/ows") {
-  ua <- httr::user_agent("http://github.com/dbca-scarab-scripts")
-  url <- "https://kmi.dbca.wa.gov.au/geoserver/public/ows"
-  query <- list(
-    service = "WFS",
-    version = "2.0.0",
-    request = "GetFeature",
-    typeName = layer_name,
-    outputFormat = "application/json"
-  )
-  url %>% httr::GET(ua, query = query) %>% httr::content(.)
-}
-
-wastd_POST <- function(data,
-                       serializer = "names",
-                       api_url = wastdr::get_wastdr_api_url(),
-                       api_token = wastdr::get_wastdr_api_token(),
-                       api_un = wastdr::get_wastdr_api_un(),
-                       api_pw = wastdr::get_wastdr_api_pw(),
-                       verbose=FALSE) {
-  ua <- httr::user_agent("http://github.com/parksandwildlife/turtle-scripts")
-  if (!is.null(api_token)) {
-    auth <- httr::add_headers(c(Authorization = api_token))
-  } else {
-    auth <- httr::authenticate(api_un, api_pw, type = "basic")
-  }
-  url <- paste0(api_url, serializer, "/")
-  if (verbose==TRUE) message("[wastd_POST] url ", url)
-  res <- httr::POST(url, auth, ua, encode = "json", body = data)
-  if (verbose==TRUE) message("[wastd_POST] status ", res$status)
-  structure(
-    list(
-      serializer = serializer,
-      response = res
-    ),
-    class = "wastd_api_post_response"
-  )
-}
-
-print.wastd_api_post_response <- function(x, ...) {
-  cat("<WAStD API POST response ", x$serializer, ">\n",
-    "URL ", x$response$url, "\n",
-    "Date ", x$response$headers$date, "\n",
-    "Status ", x$response$status_code, "\n",
-    sep = ""
-  )
-  invisible(x)
-}
-
-wastd_upsert_geojson <- function(kmi_featurecollection,
-                                     serializer = "names",
-                                     api_url = wastdr::get_wastdr_api_url(),
-                                     chunksize = 1000,
-                                     verbose = TRUE) {
-  message("[wastd_upsert_geojson] Updating ", api_url, serializer, "...")
-  props <- purrr::map(kmi_featurecollection[["features"]], "properties")
-  # purrr::map(props, wastd_POST, api_url = api_url) # One by one - very slow. Faster:
-  len <- length(props)
-  for (i in 0:(len / chunksize)) {
-    start <- (i * chunksize) + 1
-    end <- min((start + chunksize) - 1, len)
-    message("[wastd_upsert_geojson] Processing feature ", start, " to ", end)
-    props[start:end] %>%
-      purrr::map(., purrr::flatten) %>%
-      wastd_POST(., serializer = serializer, api_url = api_url, verbose = verbose)
-  }
-  message("[wastd_upsert_geojson] Finished. ", len, " records updated.")
-}
-```
+This workbook serves to update TSC via its API from KMI's WACensus views.
 
 # Write data to BioSys TT
 
@@ -134,42 +45,40 @@ wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
 ```
 
 ## Batch upsert: Create or update all Taxa
-Local BioSysTT instance (dev):
+Local TSC instance (dev):
 
 ```{r rock_and_roll_local, eval=FALSE}
-"public:herbie_hbvnames_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
-"public:herbie_hbvsupra_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
-"public:herbie_hbvgroups_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
-"public:herbie_hbvfamilies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "families", verbose = T, api_url = local_api)
-"public:herbie_hbvgenera_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "genera", verbose = T, api_url = local_api)
-"public:herbie_hbvspecies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
-"public:herbie_hbvvernaculars_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
-"public:herbie_hbvxrefs_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
-"public:herbie_hbtparents_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "parents", verbose = T, api_url = local_api)
+"public:herbie_hbvnames_public" %>% gs_getFeature %>% upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
+"public:herbie_hbvsupra_public" %>% gs_getFeature %>% upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
+"public:herbie_hbvgroups_public" %>% gs_getFeature %>% upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
+"public:herbie_hbvfamilies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "families", verbose = T, api_url = local_api)
+"public:herbie_hbvgenera_public" %>% kmi_getFeature %>% upsert_geojson(serializer = "genera", verbose = T, api_url = local_api)
+"public:herbie_hbvspecies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
+"public:herbie_hbvvernaculars_public" %>% gs_getFeature %>% upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
+"public:herbie_hbvxrefs_public" %>% gs_getFeature %>% upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
+"public:herbie_hbtparents_public" %>% gs_getFeature %>% upsert_geojson(serializer = "parents", verbose = T, api_url = local_api)
 ```
 
-Production BioSysTT instance.
+Production TSC instance.
 
 ```{r rock_and_roll_production, eval=FALSE}
-"public:herbie_hbvnames_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "names", verbose = T)
-"public:herbie_hbvsupra_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "supra", verbose = T)
-"public:herbie_hbvgroups_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "groups", verbose = T)
-"public:herbie_hbvfamilies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "families", verbose = T)
-"public:herbie_hbvgenera_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "genera", verbose = T)
-"public:herbie_hbvspecies_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "species", verbose = T)
-"public:herbie_hbvvernaculars_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "vernaculars", verbose = T)
-"public:herbie_hbvxrefs_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "xrefs", verbose = T)
-"public:herbie_hbtparents_public" %>% kmi_getFeature %>% wastd_upsert_geojson(serializer = "parents", verbose = T)
+"public:herbie_hbvnames_public" %>% gs_getFeature %>% upsert_geojson(serializer = "names", verbose = T)
+"public:herbie_hbvsupra_public" %>% gs_getFeature %>% upsert_geojson(serializer = "supra", verbose = T)
+"public:herbie_hbvgroups_public" %>% gs_getFeature %>% upsert_geojson(serializer = "groups", verbose = T)
+"public:herbie_hbvfamilies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "families", verbose = T)
+"public:herbie_hbvgenera_public" %>% gs_getFeature %>% upsert_geojson(serializer = "genera", verbose = T)
+"public:herbie_hbvspecies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "species", verbose = T)
+"public:herbie_hbvvernaculars_public" %>% gs_getFeature %>% upsert_geojson(serializer = "vernaculars", verbose = T)
+"public:herbie_hbvxrefs_public" %>% gs_getFeature %>% upsert_geojson(serializer = "xrefs", verbose = T)
+"public:herbie_hbtparents_public" %>% gs_getFeature %>% upsert_geojson(serializer = "parents", verbose = T)
 ```
 
 
 ## Updating users
-Given a CSV with columns `name`, `phone`, `email` and `role`, we can update 
-users as follows.
+Given a CSV with columns `name`, `phone`, `email` and `role`, we can update users as follows.
 
 ```{r update_users, eval=F}
-# users <- readr::read_csv("staff.csv") %>% wastd_POST(., serializer = "users", api_url = local_api, verbose = TRUE)
-users <- readr::read_csv("staff.csv") %>% wastd_POST(., serializer = "users", verbose = TRUE)
+readr::read_csv("data/staff.csv") %>% wastd_POST(., serializer = "users", verbose = TRUE)
 ```
 
 The username is generated from the `snake_case`'d field `name`.
