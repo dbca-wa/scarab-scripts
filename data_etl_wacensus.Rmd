@@ -22,6 +22,7 @@ library(Hmisc)
 library(ckanr)
 library(wastdr)
 source("helpers.R")
+if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 local_api <- "http://localhost:8220/api/1/"
 ```
@@ -62,15 +63,15 @@ Local TSC instance (dev):
 Production TSC instance.
 
 ```{r rock_and_roll_production, eval=FALSE}
-"public:herbie_hbvnames_public" %>% gs_getFeature %>% upsert_geojson(serializer = "names", verbose = T)
-"public:herbie_hbvsupra_public" %>% gs_getFeature %>% upsert_geojson(serializer = "supra", verbose = T)
-"public:herbie_hbvgroups_public" %>% gs_getFeature %>% upsert_geojson(serializer = "groups", verbose = T)
-"public:herbie_hbvfamilies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "families", verbose = T)
-"public:herbie_hbvgenera_public" %>% gs_getFeature %>% upsert_geojson(serializer = "genera", verbose = T)
-"public:herbie_hbvspecies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "species", verbose = T)
-"public:herbie_hbvvernaculars_public" %>% gs_getFeature %>% upsert_geojson(serializer = "vernaculars", verbose = T)
-"public:herbie_hbvxrefs_public" %>% gs_getFeature %>% upsert_geojson(serializer = "xrefs", verbose = T)
-"public:herbie_hbtparents_public" %>% gs_getFeature %>% upsert_geojson(serializer = "parents", verbose = T)
+"public:herbie_hbvnames_public" %>% gs_getFeature %>% upsert_geojson(serializer = "names")
+"public:herbie_hbvsupra_public" %>% gs_getFeature %>% upsert_geojson(serializer = "supra")
+"public:herbie_hbvgroups_public" %>% gs_getFeature %>% upsert_geojson(serializer = "groups")
+"public:herbie_hbvfamilies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "families")
+"public:herbie_hbvgenera_public" %>% gs_getFeature %>% upsert_geojson(serializer = "genera")
+"public:herbie_hbvspecies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "species")
+"public:herbie_hbvvernaculars_public" %>% gs_getFeature %>% upsert_geojson(serializer = "vernaculars")
+"public:herbie_hbvxrefs_public" %>% gs_getFeature %>% upsert_geojson(serializer = "xrefs")
+"public:herbie_hbtparents_public" %>% gs_getFeature %>% upsert_geojson(serializer = "parents")
 ```
 
 
