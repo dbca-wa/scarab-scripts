@@ -49,15 +49,33 @@ wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
 Local TSC instance (dev):
 
 ```{r rock_and_roll_local, eval=FALSE}
-"public:herbie_hbvnames_public" %>% gs_getFeature %>% upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
-"public:herbie_hbvsupra_public" %>% gs_getFeature %>% upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
-"public:herbie_hbvgroups_public" %>% gs_getFeature %>% upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
-"public:herbie_hbvfamilies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "families", verbose = T, api_url = local_api)
-"public:herbie_hbvgenera_public" %>% kmi_getFeature %>% upsert_geojson(serializer = "genera", verbose = T, api_url = local_api)
-"public:herbie_hbvspecies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
-"public:herbie_hbvvernaculars_public" %>% gs_getFeature %>% upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
-"public:herbie_hbvxrefs_public" %>% gs_getFeature %>% upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
-"public:herbie_hbtparents_public" %>% gs_getFeature %>% upsert_geojson(serializer = "parents", verbose = T, api_url = local_api)
+"public:herbie_hbvnames_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
+"public:herbie_hbvsupra_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
+"public:herbie_hbvgroups_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
+"public:herbie_hbvfamilies_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "families", verbose = T, api_url = local_api)
+"public:herbie_hbvgenera_public" %>% 
+    kmi_getFeature %>% 
+    upsert_geojson(serializer = "genera", verbose = T, api_url = local_api)
+"public:herbie_hbvspecies_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
+"public:herbie_hbvvernaculars_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
+"public:herbie_hbvxrefs_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
+"public:herbie_hbtparents_public" %>% 
+    gs_getFeature %>% 
+    upsert_geojson(serializer = "parents", verbose = T, api_url = local_api)
 ```
 
 Production TSC instance.
@@ -73,7 +91,6 @@ Production TSC instance.
 "public:herbie_hbvxrefs_public" %>% gs_getFeature %>% upsert_geojson(serializer = "xrefs")
 "public:herbie_hbtparents_public" %>% gs_getFeature %>% upsert_geojson(serializer = "parents")
 ```
-
 
 ## Updating users
 Given a CSV with columns `name`, `phone`, `email` and `role`, we can update users as follows.

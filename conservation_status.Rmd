@@ -15,6 +15,9 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 library(ckanr)
 library(readr)
+library(magrittr)
+library(knitr)
+library(dplyr)
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 ```
 
@@ -30,24 +33,24 @@ Assumptions are formulated as quoted statements, and their validity is explored 
 * "Gazettal" the assignment of a conservation status to a taxnonomic name.
 
 # Data
-* tfa = Threatened and priority fauna
-* tfl = Threatened and priority flora
-* tec = Threatened and priority communities
-* csg = conservation status gazettal
-* cs = conservation status (list)
-* iucn = IUCN reasons
-* wa = state
-* fed = federal
-* int = international
-
+* `tfa` = Threatened and priority fauna
+* `tfl` = Threatened and priority flora
+* `tec` = Threatened and priority communities
+* `csg` = conservation status gazettal
+* `cs` = conservation status (list)
+* `iucn` = IUCN reasons for conservation status gazettal
+* `wa` = state
+* `fed` = federal
+* `int` = international
 
 ```{r load_data, message=FALSE}
-tfa_csg_wa <- ckanr::resource_show("ac089664-de5a-4efa-af3c-ada0ec77ef1f")$url %>% readr::read_csv()
-tfa_cs_wa <- ckanr::resource_show("2793b1a8-eb55-41e7-8f8f-9cbc79a01243")$url %>% readr::read_csv()
-tfl_csg_wa <- ckanr::resource_show("0fbd9080-21d7-4fb1-ae43-4cc5791862c3")$url %>% readr::read_csv()
-tfl_csg_iucn <- ckanr::resource_show("668d2bd2-02bf-43fc-ad88-439185013d15")$url %>% readr::read_csv()
-tec_csg_wa <- ckanr::resource_show("f0085651-8c38-496e-a6bd-1adc7ae2f06a")$url %>% readr::read_csv()
-tec_csg_iucn <- ckanr::resource_show("9483f333-97fd-4975-a799-d44bf8bd252a")$url %>% readr::read_csv()
+load_ckan_csv <- .  %>% resource_show() %>% extract2("url") %>% read_csv()
+tfa_csg_wa <- "ac089664-de5a-4efa-af3c-ada0ec77ef1f" %>% load_ckan_csv
+tfa_cs_wa <- "2793b1a8-eb55-41e7-8f8f-9cbc79a01243" %>% load_ckan_csv
+tfl_csg_wa <- "0fbd9080-21d7-4fb1-ae43-4cc5791862c3" %>% load_ckan_csv
+tfl_csg_iucn <- "668d2bd2-02bf-43fc-ad88-439185013d15" %>% load_ckan_csv
+tec_csg_wa <- "f0085651-8c38-496e-a6bd-1adc7ae2f06a" %>% load_ckan_csv
+tec_csg_iucn <- "9483f333-97fd-4975-a799-d44bf8bd252a" %>% load_ckan_csv
 ```
 
 # International conservation listing
@@ -58,17 +61,60 @@ Discuss:
 * DBCA does not actively inform IUCN of WA gazettal.
 * Should DBCA publish WA conservation status to IUCN and the general public?
 * DBCA only needs a read-only copy of IUCN status.
+* DBCA currently manually maintains a copy of IUCN conservation status.
 * There is no reason not to automate import of IUCN statuses as long as the taxonomic names are correct.
 
 # WA and FED use IUCN cons status codes
 "WA and FED both use the same IUCN conservation status codes."
 
-### WA cons status codes
-```{r wa_cons_status_codes}
-unique(tfa_csg_wa$status_code)
-tfa_cs_wa %>% dplyr::select(list_code, status_code, status) %>% knitr::kable
-unique(tec_csg_wa$category_type_code)
+## WA cons status codes
+
+Status codes available to TFA:
+
+```{r wa_cs_tfa_all}
+tfa_cs_wa %>% select(list_code, status_code, status) %>% kable(.)
 ```
+
+Status codes currently assigned:
+
+```{r wa_cs_tfa_used}
+cs_used <- list(
+    tfa = unique(tfa_csg_wa$status_code),
+    tec = unique(tec_csg_wa$category_type_code)
+)
+cs_used
+
+# intersect(cs_used$tfa, cs_used$tec)
+# setdiff(cs_used$tfa, cs_used$tec)
+
+```
+
+
+### Combined
+
+```{r wa_cs_combined}
+tfa_wawca <- tfa_cs_wa %>% filter(list_code %in% c("WAWCA", "SPFN", "WAPF"))
+
+filter_tfa <- function(x) filter(tfa_cs_wa, list_code == x) %>% select(list_code, status_code)
+tfa_epbc <- "EPBC" %>% filter_tfa %>% rename(EPBC = list_code)
+tfa_iucn2012 <- "IUCN(2012)" %>% filter_tfa %>% rename(IUCN2012 = list_code)
+tfa_iucn2001 <- "IUCN(2001)" %>% filter_tfa %>% rename(IUCN2001 = list_code)
+tfa_iucn1994 <- "IUCN(1994)" %>% filter_tfa %>% rename(IUCN1994 = list_code)
+tfa_redlist <- "RedList" %>% filter_tfa %>% rename(RedList = list_code)
+tfa_ap <- "ActionPlan" %>% filter_tfa %>% rename(ActionPlan = list_code)
+
+tfa_status_comp <- tfa_wawca %>%
+    select(list_code, status_code) %>%
+    full_join(tfa_epbc, by="status_code") %>%
+    full_join(tfa_iucn2012, by="status_code") %>%
+    full_join(tfa_iucn2001, by="status_code") %>%
+    full_join(tfa_iucn1994, by="status_code") %>%
+    full_join(tfa_redlist, by="status_code") %>%
+    full_join(tfa_ap, by="status_code") 
+
+tfa_status_comp %>% kable(.)
+```
+
 
 ### FED cons status codes
 ```{r fed_cons_status_codes}
@@ -78,9 +124,33 @@ unique(tec_csg_wa$category_type_code)
 ```
 
 
+# Gazettal
+
+Is the following correct?
+
+* If a name splits/merges, cons status applies to successors interim until successors are gazetted or delisted.
+* On the rollover date from WAWCA to BCA, BCA status codes replace WAWCA codes without date overlap.
+* There is an exact 1:1 mapping of WAWCA to BCA status codes.
+* IU will be split into four migratory statuses, which are not mutually exclusive.
+* ActionPlan gazettals are read by an officer (offline and outside TSC), who then may choose to create
+  a WAGazettal.
+* There is no need for AP gazettals to be in TSC.
+
+* Federal gazettal is started from our end after TSSC approval of a WAGazettal.
+* If Federal gazettal is successful, we are notified.
+* TSC does not need to keep track of intermediary federal gazettal approval stages.
+
+* International gazettal is read-only to TSC.
+
+# Recovery Plans
+
+* Each plan has a team of users with rec plan specific roles and extra information. We need to maintain this Membership info.
+* TSC does not need to maintain teams - we can create rec plan team memberships for each team member.
+* Rec plans can pertain to one or several taxa.
+
 # Data upload
 ```{r data_upload}
 d <- ckanr::package_show("wacensus")
 # r <- resource_create(package_id = d$id, name = "Conservation Status Analysis", format = "HTML", upload = "conservation_status.html")
-# ckanr::resource_update("2893ad10-dfbf-460d-a508-5195edfd9a89", "conservation_status.html")
+ckanr::resource_update("3d875d8e-8192-4312-a749-9dd04dd6799b", "conservation_status.html")
 ```
