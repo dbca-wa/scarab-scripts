@@ -84,3 +84,6 @@ upload_to_ckan <- function(data,
     }
     r$id
 }
+
+#' Load a CSV from a CKAN resource ID, requires ckanr_setup
+load_ckan_csv <- .  %>% resource_show() %>% extract2("url") %>% read_csv()

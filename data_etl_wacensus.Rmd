@@ -20,7 +20,9 @@ library(skimr)
 library(leaflet)
 library(Hmisc)
 library(ckanr)
+library(readr)
 library(wastdr)
+library(dplyr)
 source("helpers.R")
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
@@ -100,6 +102,33 @@ readr::read_csv("data/staff.csv") %>% wastd_POST(., serializer = "users", verbos
 ```
 
 The username is generated from the `snake_case`'d field `name`.
+
+## TEC names
+
+```{r tec_names, eval=F}
+# com <- "9782cc52-7be8-494a-a7da-51845c119a21" %>% load_ckan_csv
+# com_taxa <- com %>%
+#     transmute(
+#         name_id = com_id + 1000000,
+#         name = paste(com_label, com_name),
+#         rank = 7,
+#         parent = 39480)
+# wastd_POST(com_taxa, "taxon", verbose = T)
+
+# And in one go:
+res <- wastd_GET("taxon", query=list(name_id__exact=1000000))
+
+"9782cc52-7be8-494a-a7da-51845c119a21" %>% 
+    load_ckan_csv %>%
+    transmute(
+        name_id = com_id + 1000000,
+        name = paste0("(", com_label, ") ", com_name),
+        rank = 7,
+        parent = 39480,
+        current = TRUE
+    ) %>%
+    wastd_POST("taxon")
+```
 
 # Upload to CKAN
 

@@ -25,6 +25,25 @@ ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"
 This workbook explores assumptions around conservation status management using TSC data.
 Assumptions are formulated as quoted statements, and their validity is explored through data analysis.
 
+## TEC names
+* A proponent (TEC group or external expert) nominates a com as prio or threatened.
+* The TECSC (TEC sci committee) approves the com nomination.
+* The Minister endorses the nomination.
+
+* The statuses [we have](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database/resource/aa2cc831-3c4d-408f-bb5b-61457b48e304) are home-cooked.
+* By September, we are encouraged to use IUCN statuses.
+* We need to preserve the history of statuses.
+* IUCN categories and criteria meaning does not match DBCA criteria meaning.
+* IUCN RLE (red list for ecosystems) defines categories (EN etc) and criteria (2Biii)
+* DBCA categories were defined in absence of any other official categories in the mid 1990s,
+  DBCA categories and criteria were signed off by the minister in the early 2000s for 69 com.
+* With BCA going into effect ca Sep 2018, new TEC nomionations will use IUCN RLE categories and criteria. Existing cat (and possibly crit) will be rolled over into BCA and replaced by RLE over time.
+
+
+Ask Val:
+* When do we notify FED of TEC gazettal
+* When do FED notify DBCA of their gazettal
+
 # Glossary
 * Scope: WA=State, FED=Commonwealth/Federal, INT=International.
 * [IUCN](https://www.iucn.org/) IUCN: International Union for Conservation of Nature. 
@@ -73,6 +92,7 @@ Status codes available to TFA:
 
 ```{r wa_cs_tfa_all}
 tfa_cs_wa %>% select(list_code, status_code, status) %>% kable(.)
+tec_cs_wa %>% kable(.)
 ```
 
 Status codes currently assigned:
