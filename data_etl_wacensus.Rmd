@@ -1,5 +1,5 @@
 ---
-title: "WACensus ETL"
+title: "TSC ETL"
 author: "Florian Mayer, DBCA"
 date: "`r Sys.time()`"
 always_allow_html: yes
@@ -12,7 +12,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
 library(lubridate)
 library(magrittr)
 library(tidyverse)
@@ -31,17 +31,17 @@ local_api <- "http://localhost:8220/api/1/"
 
 # Context
 
-* WACensus, an Oracle database, is the point of truth for WA texonomic names at DBCA.
+* WACensus, an Oracle database, is the point of truth for WA taxonomic names at DBCA.
 * KMI publishes a few WACensus views as GeoServer views.
 * TSC maintains a copy of those WACensus views.
 
-This workbook serves to update TSC via its API from KMI's WACensus views.
+This workbook serves to update TSC via its API from KMI's WACensus views and legacy SCB data.
 
-# Write data to BioSys TT
+# Species names from WACensus
 
 ## Example: update one Taxon
 
-```{r write_data_example, eval=FALSE}
+```{r write_data_example}
 hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
 namesprops <- purrr::map(hbvnames[["features"]], "properties")
 wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
@@ -50,62 +50,50 @@ wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
 ## Batch upsert: Create or update all Taxa
 Local TSC instance (dev):
 
-```{r rock_and_roll_local, eval=FALSE}
-"public:herbie_hbvnames_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "names", verbose = T, api_url = local_api)
-"public:herbie_hbvsupra_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "supra", verbose = T, api_url = local_api)
-"public:herbie_hbvgroups_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "groups", verbose = T, api_url = local_api)
-"public:herbie_hbvfamilies_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "families", verbose = T, api_url = local_api)
-"public:herbie_hbvgenera_public" %>% 
-    kmi_getFeature %>% 
-    upsert_geojson(serializer = "genera", verbose = T, api_url = local_api)
-"public:herbie_hbvspecies_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "species", verbose = T, api_url = local_api)
-"public:herbie_hbvvernaculars_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "vernaculars", verbose = T, api_url = local_api)
-"public:herbie_hbvxrefs_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "xrefs", verbose = T, api_url = local_api)
-"public:herbie_hbtparents_public" %>% 
-    gs_getFeature %>% 
-    upsert_geojson(serializer = "parents", verbose = T, api_url = local_api)
+```{r rock_and_roll_local}
+gjlocal <- function(data, ser) upsert_geojson(data, serializer = ser, verbose = T, api_url = local_api)
+"public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjlocal("names")
+"public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjlocal("supra")
+"public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjlocal("groups")
+"public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% gjlocal("families")
+"public:herbie_hbvgenera_public" %>% gs_getFeature() %>% gjlocal("genera")
+"public:herbie_hbvspecies_public" %>% gs_getFeature() %>% gjlocal("species")
+"public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% gjlocal("vernaculars")
+"public:herbie_hbvxrefs_public" %>% gs_getFeature() %>% gjlocal("xrefs")
+"public:herbie_hbtparents_public" %>% gs_getFeature() %>% gjlocal("parents")
 ```
 
 Production TSC instance.
 
-```{r rock_and_roll_production, eval=FALSE}
-"public:herbie_hbvnames_public" %>% gs_getFeature %>% upsert_geojson(serializer = "names")
-"public:herbie_hbvsupra_public" %>% gs_getFeature %>% upsert_geojson(serializer = "supra")
-"public:herbie_hbvgroups_public" %>% gs_getFeature %>% upsert_geojson(serializer = "groups")
-"public:herbie_hbvfamilies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "families")
-"public:herbie_hbvgenera_public" %>% gs_getFeature %>% upsert_geojson(serializer = "genera")
-"public:herbie_hbvspecies_public" %>% gs_getFeature %>% upsert_geojson(serializer = "species")
-"public:herbie_hbvvernaculars_public" %>% gs_getFeature %>% upsert_geojson(serializer = "vernaculars")
-"public:herbie_hbvxrefs_public" %>% gs_getFeature %>% upsert_geojson(serializer = "xrefs")
-"public:herbie_hbtparents_public" %>% gs_getFeature %>% upsert_geojson(serializer = "parents")
+```{r rock_and_roll_production}
+"public:herbie_hbvnames_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "names")
+"public:herbie_hbvsupra_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "supra")
+"public:herbie_hbvgroups_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "groups")
+"public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "families")
+"public:herbie_hbvgenera_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "genera")
+"public:herbie_hbvspecies_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "species")
+"public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "vernaculars")
+"public:herbie_hbvxrefs_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "xrefs")
+"public:herbie_hbtparents_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "parents")
 ```
 
-## Updating users
+# Users
 Given a CSV with columns `name`, `phone`, `email` and `role`, we can update users as follows.
+The source CSV is hand-built from different Excel spreadsheets from each location.
 
-```{r update_users, eval=F}
+```{r update_users}
 readr::read_csv("data/staff.csv") %>% wastd_POST(., serializer = "users", verbose = TRUE)
 ```
 
 The username is generated from the `snake_case`'d field `name`.
 
-## TEC names
+# TEC names
+TEC names were extracted in the TEC ETL workbook, then uploaded to the data catalogue.
+This step accesses the CSV with TEC names from the data catalogue, transforms it into the target
+format, then uploads it into TSC's API.
 
-```{r tec_names, eval=F}
+```{r tec_names}
+# In steps to view intermediary outputs
 # com <- "9782cc52-7be8-494a-a7da-51845c119a21" %>% load_ckan_csv
 # com_taxa <- com %>%
 #     transmute(
@@ -116,24 +104,24 @@ The username is generated from the `snake_case`'d field `name`.
 # wastd_POST(com_taxa, "taxon", verbose = T)
 
 # And in one go:
-res <- wastd_GET("taxon", query=list(name_id__exact=1000000))
-
-"9782cc52-7be8-494a-a7da-51845c119a21" %>% 
-    load_ckan_csv %>%
-    transmute(
-        name_id = com_id + 1000000,
-        name = paste0("(", com_label, ") ", com_name),
-        rank = 7,
-        parent = 39480,
-        current = TRUE
-    ) %>%
-    wastd_POST("taxon")
+"9782cc52-7be8-494a-a7da-51845c119a21" %>%
+  load_ckan_csv() %>%
+  transmute(
+    name_id = com_id + 1000000, # hack!
+    name = paste0("(", com_label, ") ", com_name), # hack!
+    rank = 7, # brittle!
+    parent = 39480, # brittle!
+    current = TRUE
+  ) %>%
+  wastd_POST("taxon")
 ```
 
 # Upload to CKAN
+This step uploads this workbook back to the data catalogue.
 
-```{r upload_ckan}
+```{r upload_ckan, eval=TRUE}
 d <- ckanr::package_show("wacensus")
 # r <- resource_create(package_id = d$id, name = "WACensus ETL to BioSysTT", format = "HTML", upload = "data_etl_wacensus.html")
 ckanr::resource_update("2893ad10-dfbf-460d-a508-5195edfd9a89", "data_etl_wacensus.html")
 ```
+

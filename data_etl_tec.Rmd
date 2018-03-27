@@ -25,8 +25,13 @@ library(Hmisc)
 library(ckanr)
 
 # Configure ckanr to data.dpaw.wa.gov.au
+if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
+
+# Date conventions
+orders <- c("mdyHMS")
+tz <- "Australia/Perth"
 ```
 
 # Conventions
@@ -55,13 +60,6 @@ The code for all SCB workbooks is under version control at [github](https://gith
 ```{r tec_data_load}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
-```
-
-## Helpers
-```{r helpers}
-# Date conventions
-orders <- c("mdyHMS")
-tz <- "Australia/Perth"
 ```
 
 ## Configuration
