@@ -18,6 +18,7 @@ library(readr)
 library(magrittr)
 library(knitr)
 library(dplyr)
+if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 ```
 
@@ -37,7 +38,8 @@ Assumptions are formulated as quoted statements, and their validity is explored 
 * IUCN RLE (red list for ecosystems) defines categories (EN etc) and criteria (2Biii)
 * DBCA categories were defined in absence of any other official categories in the mid 1990s,
   DBCA categories and criteria were signed off by the minister in the early 2000s for 69 com.
-* With BCA going into effect ca Sep 2018, new TEC nomionations will use IUCN RLE categories and criteria. Existing cat (and possibly crit) will be rolled over into BCA and replaced by RLE over time.
+* With BCA going into effect ca Sep 2018, new TEC nomionations will use IUCN RLE categories and criteria. 
+  Existing cat (and possibly crit) will be rolled over into BCA and replaced by RLE over time.
 
 
 Ask Val:
@@ -46,7 +48,7 @@ Ask Val:
 
 # Glossary
 * Scope: WA=State, FED=Commonwealth/Federal, INT=International.
-* [IUCN](https://www.iucn.org/) IUCN: International Union for Conservation of Nature. 
+* [IUCN](https://www.iucn.org/): International Union for Conservation of Nature. 
   IUCN publish the [Red List](http://www.iucnredlist.org/) which has an 
   [API](http://apiv3.iucnredlist.org/).
 * "Gazettal" the assignment of a conservation status to a taxnonomic name.
@@ -64,10 +66,12 @@ Ask Val:
 
 ```{r load_data, message=FALSE}
 load_ckan_csv <- .  %>% resource_show() %>% extract2("url") %>% read_csv()
-tfa_csg_wa <- "ac089664-de5a-4efa-af3c-ada0ec77ef1f" %>% load_ckan_csv
 tfa_cs_wa <- "2793b1a8-eb55-41e7-8f8f-9cbc79a01243" %>% load_ckan_csv
+tfa_csg_wa <- "ac089664-de5a-4efa-af3c-ada0ec77ef1f" %>% load_ckan_csv
+
 tfl_csg_wa <- "0fbd9080-21d7-4fb1-ae43-4cc5791862c3" %>% load_ckan_csv
 tfl_csg_iucn <- "668d2bd2-02bf-43fc-ad88-439185013d15" %>% load_ckan_csv
+
 tec_csg_wa <- "f0085651-8c38-496e-a6bd-1adc7ae2f06a" %>% load_ckan_csv
 tec_csg_iucn <- "9483f333-97fd-4975-a799-d44bf8bd252a" %>% load_ckan_csv
 ```
@@ -92,7 +96,7 @@ Status codes available to TFA:
 
 ```{r wa_cs_tfa_all}
 tfa_cs_wa %>% select(list_code, status_code, status) %>% kable(.)
-tec_cs_wa %>% kable(.)
+tec_csg_wa %>% kable(.)
 ```
 
 Status codes currently assigned:
@@ -152,7 +156,7 @@ Is the following correct?
 * On the rollover date from WAWCA to BCA, BCA status codes replace WAWCA codes without date overlap.
 * There is an exact 1:1 mapping of WAWCA to BCA status codes.
 * IU will be split into four migratory statuses, which are not mutually exclusive.
-* ActionPlan gazettals are read by an officer (offline and outside TSC), who then may choose to create
+* ActionPlan gazettals are read by an officer (offline and outside TSC), who then may choose to initiate
   a WAGazettal.
 * There is no need for AP gazettals to be in TSC.
 

@@ -107,13 +107,11 @@ format, then uploads it into TSC's API.
 "9782cc52-7be8-494a-a7da-51845c119a21" %>%
   load_ckan_csv() %>%
   transmute(
-    name_id = com_id + 1000000, # hack!
-    name = paste0("(", com_label, ") ", com_name), # hack!
-    rank = 7, # brittle!
-    parent = 39480, # brittle!
-    current = TRUE
+    code = com_label,
+    name = com_name,
+    description = com_description
   ) %>%
-  wastd_POST("taxon")
+  wastd_POST("community")
 ```
 
 # Upload to CKAN

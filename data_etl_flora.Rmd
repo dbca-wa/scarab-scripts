@@ -708,7 +708,7 @@ cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
     file_last_updated = FILE.LAST.UPDATED %>% as.character(),
     file_comments = FILE.COMMENTS %>% as.character(),
     file_no = FILE.NO %>% as.character()
-  )
+  ) %>% dplyr::arrange(taxon_id)
 cons_listings[1:100, ] %>% DT::datatable(.)
 ```
 
@@ -739,7 +739,7 @@ cons_prio <- tpfl$DRF_P2K_PRIORITY %>%
     file_no = FILE.NO %>% as.character(),
     manplan = MANPLAN %>% as.character(),
     row_no = ROW.NO %>% as.character()
-  )
+  ) %>% dplyr::arrange(taxon_id)
 cons_prio[1:100, ] %>% DT::datatable(.)
 ```
 
