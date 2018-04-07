@@ -577,12 +577,19 @@ is generated after the R code is run.
 ```{r fauna_upload}
 d <- ckanr::package_show("threatened-and-priority-fauna-database")
 ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", "data_etl_fauna.html")
-upload_to_ckan(species_save, "Threatened Fauna Species Names", d$id, resource_id = "eae0b480-c687-450c-a736-87d4e75c2a4d")
-upload_to_ckan(res_prio, "Threatened Fauna Research Priorities", d$id, resource_id = "7a26d00c-f3da-46a3-9d74-42e4475bd6a9")
-upload_to_ckan(conservation_status, "Threatened Fauna Conservation Status", d$id, resource_id = "2793b1a8-eb55-41e7-8f8f-9cbc79a01243")
-upload_to_ckan(gazettal, "Threatened Fauna Conservation Status Gazettal", d$id, resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f")
-upload_to_ckan(recovery_plans, "Threatened Fauna Recovery Plans", d$id, resource_id = "9f8426c3-20ed-4ba7-a551-05e1838ab1cb")
-upload_to_ckan(fauna, "Threatened Fauna Occurrence", d$id, resource_id = "b73ae0de-f243-4bb3-bbce-25b65bb98e66")
-upload_to_ckan(listing_names, "Conservation Lists (Fauna)", d$id, resource_id = "9c3f8cac-e8ed-4713-add2-067b83f410df")
+upload_to_ckan(species_save, "Threatened Fauna Species Names", d$id, 
+               resource_id = "eae0b480-c687-450c-a736-87d4e75c2a4d")
+upload_to_ckan(res_prio, "Threatened Fauna Research Priorities", d$id, 
+               resource_id = "7a26d00c-f3da-46a3-9d74-42e4475bd6a9")
+upload_to_ckan(conservation_status, "Threatened Fauna Conservation Status", d$id, 
+               resource_id = "2793b1a8-eb55-41e7-8f8f-9cbc79a01243")
+upload_to_ckan(gazettal, "Threatened Fauna Conservation Status Gazettal", d$id, 
+               resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f")
+upload_to_ckan(recovery_plans, "Threatened Fauna Recovery Plans", d$id, 
+               resource_id = "9f8426c3-20ed-4ba7-a551-05e1838ab1cb")
+upload_to_ckan(fauna, "Threatened Fauna Occurrence", d$id, 
+               resource_id = "b73ae0de-f243-4bb3-bbce-25b65bb98e66")
+upload_to_ckan(listing_names, "Conservation Lists (Fauna)", d$id, 
+               resource_id = "9c3f8cac-e8ed-4713-add2-067b83f410df")
 ```
 
