@@ -246,6 +246,7 @@ tec_gaz_cat %>%
             code = category_type_code, 
             label = category_type, 
             conservation_list = list_code) %>% 
+    dplyr::filter(!is.na(code)) %>%         # Discard cons cat "NA"
     dplyr::group_by(conservation_list) %>%  # One line per cons list
     tidyr::nest() %>%                       # One list col with all cons categories
     dplyr::rename(                          # Cons list col names as per TSC API
