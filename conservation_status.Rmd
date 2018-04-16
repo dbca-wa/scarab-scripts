@@ -80,22 +80,52 @@ Discuss:
 
 # Conservation lists
 ## Fauna
-Conservation lists and categories available:
+
+### Fauna lists and categories available
+
 ```{r tfa_cl, eval=T}
-tfa_cl %>% select(list_code, status_code, status) %>% kable(.)
+tfa_cl %>% 
+    select(list_code, status_code, status) %>% 
+    rename(category_code = status_code, category_label=status) %>% 
+    dplyr::arrange(list_code, category_code) %>% 
+    kable(.)
+```
+
+### Fauna lists and categories used
+
+```{r tfa_used, eval=T}
+tfa_gaz %>% dplyr::select(list_code, status_code) %>% unique() %>% dplyr::arrange(list_code) %>% kable(.)
 ```
 
 ## Flora
+### Flora lists 
+
 Conservation lists used:
 ```{r tfl_cl, eval=T}
-unique(tfl_gaz_list$list_code)
+tfl_gaz_list %>% 
+    dplyr::transmute(list_code=list_code, category_code = status_code) %>% 
+    unique() %>% 
+    dplyr::arrange(list_code, category_code) %>%
+    kable(.)
 ```
 
+### Flora lists and categories
+
 ## TEC
-TEC has only the DBCA-internal conservation list, which will be superseded by the IUCN RLE.
+
+### Community lists and categories
+TEC has only the DBCA-internal conservation list nicknamed "DBCA RedList for Ecosystems" by Florian, 
+which will be superseded by the IUCN RLE.
 
 ```{r tec_cl}
-tec_gaz_cat %>% select(category_type_code, category_type) %>% unique() %>% mutate(listcode="DBCA_RLE")
+tec_gaz_cat %>% 
+    dplyr::transmute(
+        list_code = "DBCA_RLE",
+        category_code = category_type_code, 
+        category_label = category_type) %>% 
+    unique() %>% 
+    dplyr::arrange(list_code, category_code) %>%
+    kable(.)
 ```
 
 Wendy and Val advise:
@@ -105,16 +135,17 @@ Wendy and Val advise:
 * The Minister endorses the nomination.
 
 * The conservation categories 
-  [we have](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database/resource/aa2cc831-3c4d-408f-bb5b-61457b48e304) are home-cooked.
-* By September, we are encouraged to use IUCN statuses.
-* We need to preserve the history of statuses.
+  [we have](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database/resource/aa2cc831-3c4d-408f-bb5b-61457b48e304) 
+  are self-made by DBCA in absence of internationally stadardised categories at that time.
+* By September, we are encouraged to use IUCN categories.
+* We need to preserve the legacy categories and their gazettal.
 * IUCN categories and criteria meaning does not match DBCA criteria meaning.
-* IUCN RLE (red list for ecosystems) defines categories (EN etc) and criteria (2Biii)
+* IUCN RLE (red list for ecosystems) defines categories (EN etc) and criteria (2Biii).
 * DBCA categories were defined in absence of any other official categories in the mid 1990s,
   DBCA categories and criteria were signed off by the minister in the early 2000s for 69 com.
 * With BCA going into effect ca Sep 2018, 
   new TEC nomionations will use IUCN RLE categories and criteria. 
-  Existing cat (and possibly crit) will be rolled over into BCA and replaced by RLE over time.
+* Existing cat (and possibly crit) will be rolled over into BCA and replaced by RLE over time.
 
 Ask Val:
 * When do we notify FED of TEC gazettal?
@@ -123,7 +154,7 @@ Ask Val:
 
 ## Combined
 
-Conservation categories used in legacy data:
+Conservation categories actually used in legacy data:
 
 ```{r wa_cat_used, eval=T}
 cs_used <- list(
@@ -160,7 +191,7 @@ tfl_gaz_list %>% head(.) %>% kable(.)
 tec_gaz_cat %>% head(.) %>% kable(.)
 ```
 
-# Taxonomic changes and Gazettal
+# Taxonomic name changes and Gazettal
 Is the following correct?
 
 * If a name splits/merges, cons status applies to successors interim until successors are gazetted or delisted.
@@ -177,6 +208,7 @@ Is the following correct?
 * TSC does not need to keep track of intermediary federal gazettal approval stages.
 
 * International gazettal is read-only to TSC.
+
 
 ```{r wa_gaz_combined, eval=T}
 tfa_wawca <- tfa_cl %>% filter(list_code %in% c("WAWCA", "SPFN", "WAPF"))
@@ -222,7 +254,7 @@ Fauna cons lists and categories are uploaded to TSC.
 #         ) %>% 
 #     wastdr::wastd_POST("conservationlist", api_url = local_api)
 
-# Fauna conservation lists and categories
+# TFA Fauna conservation lists and categories
 "2793b1a8-eb55-41e7-8f8f-9cbc79a01243" %>% 
     load_ckan_csv %>%                       # Same as tfa_cl
     dplyr::transmute(                       # Cons category col names
@@ -238,6 +270,21 @@ Fauna cons lists and categories are uploaded to TSC.
     transpose(.) %>%                        # Transpose to let iteration return rows of code and conscat_set
     wastdr::wastd_POST(., serializer = "conservationlist")  # , api_url = local_api)
 
+# TFL
+tfl_gaz_list %>% 
+    dplyr::transmute(conservation_list=list_code, code = status_code) %>% 
+    dplyr::group_by(conservation_list) %>%  # One line per cons list
+    dplyr::filter(!is.na(code)) %>% 
+    tidyr::nest() %>%                       # One list col with all cons categories
+    dplyr::rename(                          # Cons list col names as per TSC API
+        code = conservation_list,
+        conservationcategory_set = data
+    ) %>% 
+    transpose(.) %>%                        # Transpose to let iteration return rows of code and conscat_set
+    wastdr::wastd_POST(., serializer = "conservationlist")  # , api_url = local_api)
+
+
+# TEC
 tec_gaz_cat %>% 
     select(category_type_code, category_type) %>% 
     unique() %>% 
