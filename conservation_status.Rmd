@@ -46,23 +46,19 @@ Nomenclature:
 * `gaz` = conservation status gazettal
 * `cl` = conservation list
 * `cat` = conservation category (EN, VU etc)
-* `crit` = IUCN criteria for conservation status gazettal (2biii)
+* `crit` = IUCN criteria for conservation status gazettal (2b(iii))
 * `wa` = state
-* `cmw` = commonwealth
-* `int` = international
+* `cwth` = commonwealth
+* `iucn` = international
 
 ```{r load_data, , eval=T, message=FALSE}
 load_ckan_csv <- .  %>% resource_show() %>% extract2("url") %>% read_csv()
 tfa_cl <- "2793b1a8-eb55-41e7-8f8f-9cbc79a01243" %>% load_ckan_csv
 tfa_gaz <- "ac089664-de5a-4efa-af3c-ada0ec77ef1f" %>% load_ckan_csv
-tfa_cc <- "2793b1a8-eb55-41e7-8f8f-9cbc79a01243" %>% load_ckan_csv
 
 tfl_gaz_list <- "0fbd9080-21d7-4fb1-ae43-4cc5791862c3" %>% load_ckan_csv
 tfl_gaz_prio <- "668d2bd2-02bf-43fc-ad88-439185013d15" %>% load_ckan_csv
 
-tec_cl <- NULL  # list1: home-brewed, list2: IUCN RLE
-tec_cat <- NULL
-tec_crit <- NULL
 tec_gaz_cat <- "f0085651-8c38-496e-a6bd-1adc7ae2f06a" %>% load_ckan_csv
 tec_gaz_crit <- "9483f333-97fd-4975-a799-d44bf8bd252a" %>% load_ckan_csv
 ```
@@ -85,16 +81,21 @@ Discuss:
 
 ```{r tfa_cl, eval=T}
 tfa_cl %>% 
-    select(list_code, status_code, status) %>% 
-    rename(category_code = status_code, category_label=status) %>% 
+    dplyr::select(list_code, category_code, category_label) %>%
     dplyr::arrange(list_code, category_code) %>% 
     kable(.)
 ```
 
 ### Fauna lists and categories used
 
+The following values need mapping to the new codes in TSC.
+
 ```{r tfa_used, eval=T}
-tfa_gaz %>% dplyr::select(list_code, status_code) %>% unique() %>% dplyr::arrange(list_code) %>% kable(.)
+tfa_gaz %>% 
+    dplyr::select(list_code, category_code) %>% 
+    unique() %>% 
+    dplyr::arrange(list_code, category_code) %>% 
+    kable(.)
 ```
 
 ## Flora
@@ -103,7 +104,7 @@ tfa_gaz %>% dplyr::select(list_code, status_code) %>% unique() %>% dplyr::arrang
 Conservation lists used:
 ```{r tfl_cl, eval=T}
 tfl_gaz_list %>% 
-    dplyr::transmute(list_code=list_code, category_code = status_code) %>% 
+    dplyr::select(list_code, category_code) %>% 
     unique() %>% 
     dplyr::arrange(list_code, category_code) %>%
     kable(.)
@@ -158,9 +159,9 @@ Conservation categories actually used in legacy data:
 
 ```{r wa_cat_used, eval=T}
 cs_used <- list(
-    tfa = unique(tfa_gaz$status_code),
-    tfl = unique(tfl_gaz_list$status_code),
-    tec = unique(tec_gaz_cat$category_type_code)
+    tfa = unique(tfa_gaz$category_code),
+    tfl = unique(tfl_gaz_list$category_code),
+    tec = unique(tec_gaz_cat$category_code)
 )
 cs_used
 

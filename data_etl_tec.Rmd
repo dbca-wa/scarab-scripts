@@ -794,29 +794,29 @@ The data model of gazettals requires clarification.
 ```{r gazettal}
 # lookups
 library(magrittr)
-category_type <- tec$CATEGORY_TYPES %>%
+tec_cons_categories <- tec$CATEGORY_TYPES %>%
   dplyr::transmute(
-    category_type_code = CT.TYPE %>% as.character(),
-    category_type = CT.DESC %>% as.character(),
+    category_code = CT.TYPE %>% as.character(),
+    category_label = CT.DESC %>% as.character(),
     authority = CT.AUTHORITY.CODE %>% as.character()
   )
 
-conservation_status <- tec$CRITERIA_CODES %>%
+tec_cons_criteria <- tec$CRITERIA_CODES %>%
   dplyr::transmute(
-    conservation_status_code = CRIT.CODE %>% as.character(),
-    conservation_status_explanation = CRIT.DESC %>% as.character()
+    criterion_code = CRIT.CODE %>% as.character(),
+    criterion_description = CRIT.DESC %>% as.character()
   )
 
-# If only there were like, a function to turn uppercase into lower- or title case...
-authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities. yeah.
+# Using a built-in function to turn uppercase into lowercase? Nah. Hold my beer.
+authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities.
 endorsement <- tec$ENDORSED_BY # another lookup for lower case.
 
 # primary
-gazettal_wa <- tec$CATEGORIES %>%
+tec_cons_listing_categories <- tec$CATEGORIES %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
-    cat_effect_date = CAT.EFFECT.DATE %>% as.character(),
-    category_type_code = CAT.CT.TYPE %>% as.character(),
+    effective_from = CAT.EFFECT.DATE %>% as.character(),
+    category_code = CAT.CT.TYPE %>% as.character(),
     cat_comment = CAT.COMMENT %>% as.character(),
     cat_review_date = CAT.REVIEW.DATE %>% as.character(),
     cat_endorsed_code = CAT.ENDORSED.CODE %>% as.character(),
@@ -824,16 +824,16 @@ gazettal_wa <- tec$CATEGORIES %>%
     cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
-  dplyr::left_join(category_type, by = "category_type_code")
+  dplyr::left_join(tec_cons_categories, by = "category_code")
 
-gazettal_iucn <- tec$CATEGORY_CRITERIA %>%
+tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     effective_from = CAT.EFFECT.DATE %>% as.character(),
-    conservation_status_code = CC.CRIT.CODE %>% as.character()
+    criterion_code = CC.CRIT.CODE %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
-  dplyr::left_join(conservation_status, by = "conservation_status_code")
+  dplyr::left_join(tec_cons_criteria, by = "criterion_code")
 # join com_short, criteria codes
 ```
 
@@ -864,29 +864,52 @@ is generated after the R code is run - knit a workbook twice to update the data 
 ```{r tec_upload}
 d <- ckanr::package_show("threatened-ecological-communities-database")
 ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
-upload_to_ckan(communities, "Threatened Ecological Communities (TEC)", d$id, resource_id = "9782cc52-7be8-494a-a7da-51845c119a21")
-upload_to_ckan(occurrences, "TEC Occurrences", d$id, resource_id = "65f43392-a8c5-41e2-a31e-cc4135e9274e")
-upload_to_ckan(sites, "TEC Site Points", d$id, resource_id = "bf4c2973-e549-408b-a583-013052072d6c")
-upload_to_ckan(com_recommendations, "TEC Recommendations", d$id, resource_id = "fd96a053-523c-401d-8755-9116c55f5744")
-upload_to_ckan(com_publications, "TEC Publications", d$id, resource_id = "fa51cd96-864a-4c43-a0e1-fc24621bb628")
-upload_to_ckan(com_reviews, "TEC Reviews", d$id, resource_id = "7c39b584-bc4b-4234-aff7-ddf4808692ed")
-upload_to_ckan(com_actions, "TEC Actions", d$id, resource_id = "17d3c4e2-df98-4ff6-9d4d-99ba54808bb4")
-upload_to_ckan(com_history, "TEC History", d$id, resource_id = "479d7358-d42d-4c4b-93ee-1bac39d21024")
-upload_to_ckan(occ_actions, "TEC Occurrence Actions", d$id, resource_id = "25894a68-11de-4a58-b521-6a9abd06ee40")
-upload_to_ckan(occ_recommendations, "TEC Occurrence Recommendations", d$id, resource_id = "747464e4-2434-459a-b654-52861b37095c")
-upload_to_ckan(occ_extent, "TEC occurrence extent", d$id, resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed")
-upload_to_ckan(occ_additional_data, "TEC occurrence additional data", d$id, resource_id = "8dd3454c-1bf0-4575-adcb-154b700c4283")
-upload_to_ckan(occ_biol_process, "TEC biological process", d$id, resource_id = "5805a671-576a-4077-b595-35ca96d7ca96")
-upload_to_ckan(occ_nonbiol_process, "TEC nonbiological process", d$id, resource_id = "a5341117-2735-4694-8cd4-e806f4c06668")
-upload_to_ckan(fire_history, "TEC fire history", d$id, resource_id = "e062f57e-f6aa-4403-a682-875dab2f77f6")
-upload_to_ckan(occ_fauna, "TEC occurence fauna", d$id, resource_id = "a0eddc66-5fef-4252-b49f-691422a88f28")
-upload_to_ckan(occ_species, "TEC occurence species", d$id, resource_id = "e94f1e35-30da-4982-b851-ceb888eb41b3")
-upload_to_ckan(com_threats, "TEC community threats", d$id, resource_id = "5426c45b-1dee-4547-a6e3-bec81585e52e")
-upload_to_ckan(survey_threats, "TEC survey threats", d$id, resource_id = "5b795656-a240-402e-92b8-edbe54b3fee8")
-upload_to_ckan(site_visit, "TEC site visit", d$id, resource_id = "85cef94b-d12e-4aff-bd24-446d1c0757db")
-upload_to_ckan(voucher_specimens, "TEC voucher specimens", d$id, resource_id = "6b8fe493-8183-4fe8-a91a-67a569bf9c46")
-upload_to_ckan(gazettal_wa, "TEC gazettal WA", d$id, resource_id = "f0085651-8c38-496e-a6bd-1adc7ae2f06a")
-upload_to_ckan(gazettal_iucn, "TEC gazettal IUCN", d$id, resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a")
+upload_to_ckan(communities, "Threatened Ecological Communities (TEC)", 
+               d$id, resource_id = "9782cc52-7be8-494a-a7da-51845c119a21")
+upload_to_ckan(occurrences, "TEC Occurrences", 
+               d$id, resource_id = "65f43392-a8c5-41e2-a31e-cc4135e9274e")
+upload_to_ckan(sites, "TEC Site Points", 
+               d$id, resource_id = "bf4c2973-e549-408b-a583-013052072d6c")
+upload_to_ckan(com_recommendations, "TEC Recommendations", 
+               d$id, resource_id = "fd96a053-523c-401d-8755-9116c55f5744")
+upload_to_ckan(com_publications, "TEC Publications", 
+               d$id, resource_id = "fa51cd96-864a-4c43-a0e1-fc24621bb628")
+upload_to_ckan(com_reviews, "TEC Reviews", 
+               d$id, resource_id = "7c39b584-bc4b-4234-aff7-ddf4808692ed")
+upload_to_ckan(com_actions, "TEC Actions", 
+               d$id, resource_id = "17d3c4e2-df98-4ff6-9d4d-99ba54808bb4")
+upload_to_ckan(com_history, "TEC History", 
+               d$id, resource_id = "479d7358-d42d-4c4b-93ee-1bac39d21024")
+upload_to_ckan(occ_actions, "TEC Occurrence Actions", 
+               d$id, resource_id = "25894a68-11de-4a58-b521-6a9abd06ee40")
+upload_to_ckan(occ_recommendations, "TEC Occurrence Recommendations", 
+               d$id, resource_id = "747464e4-2434-459a-b654-52861b37095c")
+upload_to_ckan(occ_extent, "TEC occurrence extent", 
+               d$id, resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed")
+upload_to_ckan(occ_additional_data, "TEC occurrence additional data", 
+               d$id, resource_id = "8dd3454c-1bf0-4575-adcb-154b700c4283")
+upload_to_ckan(occ_biol_process, "TEC biological process", 
+               d$id, resource_id = "5805a671-576a-4077-b595-35ca96d7ca96")
+upload_to_ckan(occ_nonbiol_process, "TEC nonbiological process", 
+               d$id, resource_id = "a5341117-2735-4694-8cd4-e806f4c06668")
+upload_to_ckan(fire_history, "TEC fire history", 
+               d$id, resource_id = "e062f57e-f6aa-4403-a682-875dab2f77f6")
+upload_to_ckan(occ_fauna, "TEC occurence fauna", 
+               d$id, resource_id = "a0eddc66-5fef-4252-b49f-691422a88f28")
+upload_to_ckan(occ_species, "TEC occurence species", 
+               d$id, resource_id = "e94f1e35-30da-4982-b851-ceb888eb41b3")
+upload_to_ckan(com_threats, "TEC community threats", 
+               d$id, resource_id = "5426c45b-1dee-4547-a6e3-bec81585e52e")
+upload_to_ckan(survey_threats, "TEC survey threats", 
+               d$id, resource_id = "5b795656-a240-402e-92b8-edbe54b3fee8")
+upload_to_ckan(site_visit, "TEC site visit", 
+               d$id, resource_id = "85cef94b-d12e-4aff-bd24-446d1c0757db")
+upload_to_ckan(voucher_specimens, "TEC voucher specimens", 
+               d$id, resource_id = "6b8fe493-8183-4fe8-a91a-67a569bf9c46")
+upload_to_ckan(tec_cons_listing_categories, "TEC Conservation Listing Categories", 
+               d$id, resource_id = "f0085651-8c38-496e-a6bd-1adc7ae2f06a")
+upload_to_ckan(tec_cons_listing_criteria, "TEC Conservation Listing Criteria", 
+               d$id, resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a")
 ```
 
 

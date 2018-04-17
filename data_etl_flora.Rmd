@@ -675,15 +675,15 @@ pop_sectionmap[1:100, ] %>% DT::datatable(.)
 ## Conservation listings
 
 ```{r cons_listings}
-cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
+flora_cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
     taxon_id = TAXONID %>% as.integer(),
     name = NAME %>% as.character(),
     list_code = LIST.CODE %>% as.character(),
-    status_code = STATUS.CODE %>% as.character(),
-    wa_iucn_rank_list_code = WA.IUCN.RANK.LIST.CODE %>% as.character(),
-    wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
+    category_code = STATUS.CODE %>% as.character(),
+    wa_criterion_code = WA.IUCN.RANK.LIST.CODE %>% as.character(),
+    wa_criterion_label = WA.IUCN.RANK %>% as.character(),
     iucn_criteria = IUCN.CRITERIA %>% as.character(),
     date_listed = DATE.LISTED %>% as.character(),
     reasons = REASONS %>% as.character(),
@@ -709,7 +709,7 @@ cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
     file_comments = FILE.COMMENTS %>% as.character(),
     file_no = FILE.NO %>% as.character()
   ) %>% dplyr::arrange(taxon_id)
-cons_listings[1:100, ] %>% DT::datatable(.)
+flora_cons_listings[1:100, ] %>% DT::datatable(.)
 ```
 
 ## Conservation priority
@@ -753,32 +753,32 @@ is generated after the R code is run.
 d <- ckanr::package_show("threatened-and-priority-flora-database")
 ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb", 
                        "data_etl_flora.html")
-upload_to_ckan(occurrence, "TPFL Species Occurrence", d$id, 
-               resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
-upload_to_ckan(populations, "TPFL Populations", d$id, 
-               resource_id = "477dbe8c-5bcb-4a5d-90d9-a28869d376b8")
-upload_to_ckan(occ_vegclass, "TPFL Occurrence vegetation classes", d$id, 
-               resource_id = "bb8814ff-c423-40d5-b18d-9977a66351b7")
-upload_to_ckan(occ_threats, "TPFL Occurrence threats", d$id, 
-               resource_id = "a58b7214-6db1-409b-a08f-d4e28ac0c139")
-upload_to_ckan(occ_fire, "TPFL Occurrence fire details", d$id, 
-               resource_id = "9591a80a-cd51-4f57-bc6c-1d0024b49a58")
-upload_to_ckan(pop_forms, "TPFL Population forms", d$id, 
-               resource_id = "f881dbd9-31f6-4c9b-a224-62380b2f7e83")
-upload_to_ckan(pop_threats, "TPFL Population threats", d$id, 
-               resource_id = "3a1f3e73-7b02-4534-955b-b403ae5577ad")
-upload_to_ckan(pop_mgmtactions, "TPFL Population management actions", d$id, 
-               resource_id = "3df48c1e-9fbd-48bf-8b75-ab9dbb71cfc3")
-upload_to_ckan(pop_fire_summ, "TPFL Population fire summaries", d$id, 
-               resource_id = "426571af-7c1a-462b-9325-6203383546c3")
-upload_to_ckan(liaisons, "TPFL Liaisons", d$id, 
-               resource_id = "610b31a2-d2f0-4c26-9a48-8d7fc8d58265")
-upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes", d$id, 
-               resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
-upload_to_ckan(pop_sectionmap, "TPFL Population section maps", d$id, 
-               resource_id = "6d557642-cd1f-4cca-8f22-0149d244dd83")
-upload_to_ckan(cons_listings, "TPFL Conservation listings", d$id, 
-               resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
-upload_to_ckan(cons_prio, "TPFL Conservation priority", d$id, 
-               resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")
+upload_to_ckan(occurrence, "TPFL Species Occurrence", 
+               d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
+upload_to_ckan(populations, "TPFL Populations", 
+               d$id, resource_id = "477dbe8c-5bcb-4a5d-90d9-a28869d376b8")
+upload_to_ckan(occ_vegclass, "TPFL Occurrence vegetation classes", 
+               d$id, resource_id = "bb8814ff-c423-40d5-b18d-9977a66351b7")
+upload_to_ckan(occ_threats, "TPFL Occurrence threats", 
+               d$id, resource_id = "a58b7214-6db1-409b-a08f-d4e28ac0c139")
+upload_to_ckan(occ_fire, "TPFL Occurrence fire details", 
+               d$id, resource_id = "9591a80a-cd51-4f57-bc6c-1d0024b49a58")
+upload_to_ckan(pop_forms, "TPFL Population forms", 
+               d$id, resource_id = "f881dbd9-31f6-4c9b-a224-62380b2f7e83")
+upload_to_ckan(pop_threats, "TPFL Population threats", 
+               d$id, resource_id = "3a1f3e73-7b02-4534-955b-b403ae5577ad")
+upload_to_ckan(pop_mgmtactions, "TPFL Population management actions", 
+               d$id, resource_id = "3df48c1e-9fbd-48bf-8b75-ab9dbb71cfc3")
+upload_to_ckan(pop_fire_summ, "TPFL Population fire summaries", 
+               d$id, resource_id = "426571af-7c1a-462b-9325-6203383546c3")
+upload_to_ckan(liaisons, "TPFL Liaisons", 
+               d$id, resource_id = "610b31a2-d2f0-4c26-9a48-8d7fc8d58265")
+upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes", 
+               d$id, resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
+upload_to_ckan(pop_sectionmap, "TPFL Population section maps", 
+               d$id, resource_id = "6d557642-cd1f-4cca-8f22-0149d244dd83")
+upload_to_ckan(flora_cons_listings, "TPFL Conservation Listings", 
+               d$id, resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
+upload_to_ckan(cons_prio, "TPFL Conservation priority", 
+               d$id, resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")
 ```
