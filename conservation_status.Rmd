@@ -170,6 +170,44 @@ cs_used
 
 ```
 
+## QA issues
+### Fauna
+### Flora
+### TEC
+What do the "endorsed by minister" values mean: 0 and -1?
+
+Which gazettals have old categories?
+
+```{tec_gaz_qa}
+# State-PD (presumed totally destroyed): 7 records
+tec_gaz_cat %>% filter(category_code=="PD") %>% DT::datatable(.)
+
+# EPBC-CRE: 10 records
+tec_gaz_cat %>% filter(category_code=="CRE") %>% DT::datatable(.)
+
+# EPBC-ENE: 39 records
+tec_gaz_cat %>% filter(category_code=="ENE") %>% DT::datatable(.)
+
+# EPBC-VUE: 1 record
+tec_gaz_cat %>% filter(category_code=="VUE") %>% DT::datatable(.)
+
+# Awaiting Endorsement: 33 records. Should have desired category_code and respective approval status.
+tec_gaz_cat %>% filter(category_code=="AE") %>% DT::datatable(.)
+
+# State-Premliminary: 23 records
+tec_gaz_cat %>% filter(category_code=="PRE") %>% DT::datatable(.)
+
+# State-NE (not evaluated): 4 records
+tec_gaz_cat %>% filter(category_code=="NE") %>% DT::datatable(.)
+
+# State-DL (de-list): 1 record
+tec_gaz_cat %>% filter(category_code=="DL") %>% DT::datatable(.)
+
+# State- LR(lower risk): 5 records
+tec_gaz_cat %>% filter(category_code=="LR") %>% DT::datatable(.)
+
+```
+
 # Gazettals
 A Conservation Status Gazettal is the assignment of one or several conservation criteria
 from one or several conservation lists to a taxon, optionally justified by a number of IUCN criteria.
