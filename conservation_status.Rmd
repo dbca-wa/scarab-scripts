@@ -51,7 +51,7 @@ Nomenclature:
 * `cwth` = commonwealth
 * `iucn` = international
 
-```{r load_data, , eval=T, message=FALSE}
+```{r load_data, message=FALSE}
 load_ckan_csv <- .  %>% resource_show() %>% extract2("url") %>% read_csv()
 tfa_cl <- "2793b1a8-eb55-41e7-8f8f-9cbc79a01243" %>% load_ckan_csv
 tfa_gaz <- "ac089664-de5a-4efa-af3c-ada0ec77ef1f" %>% load_ckan_csv
@@ -279,7 +279,7 @@ tfa_status_comp %>% kable(.)
 * TSC does not need to maintain teams - we can create rec plan team memberships for each team member.
 * Rec plans can pertain to one or several taxa.
 
-# Data upload
+# Data upload to TSC
 ## Conservation Lists, Categories, Criteria
 * Fauna cons lists and categories as extracted from legacy data are uploaded to TSC.
 * Curators consolidate and update the lists in TSC. These new, hand-curated lists
@@ -345,16 +345,93 @@ tec_gaz_cat %>%
     wastdr::wastd_POST(., serializer = "conservationlist")  # , api_url = local_api)
 ```
 
-```{r}
+We will not upload legacy lists, categories and criteria into TSC, but rather
+transfer the hand-curated lists from TSC into the local database.
+
+```{r, eval=F}
 conslists <- wastdr::wastd_GET("conservationlist")
 conslist_data <- conslists$response %>% httr::content(.) %>% magrittr::extract2("results")
 conslist_data %>% wastdr::wastd_POST("conservationlist", api_url = local_api)
 
-local_cl <- wastdr::wastd_GET("conservationlist", api_url = local_api)
-local_cl_data <- local_cl$response %>% httr::content(.) %>% magrittr::extract2("results")
-local_cl_data[[1]] 
-conslist_data[[1]] %>% wastdr::wastd_POST("conservationlist", api_url = local_api)
+# local_cl <- wastdr::wastd_GET("conservationlist", api_url = local_api)
+# local_cl_data <- local_cl$response %>% httr::content(.) %>% magrittr::extract2("results")
+# local_cl_data[[1]] 
+# conslist_data[[1]] %>% wastdr::wastd_POST("conservationlist", api_url = local_api)
 ```
+
+TODO: writable nested serializers for categories and criteria.
+
+## Conservation Listings
+
+### Fauna Cons Listings
+Coming soon.
+
+### Flora Cons Listings
+Coming soon.
+
+### TEC Cons Listings
+
+#### Data source
+[TEC conservation listings with categories](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database/resource/f0085651-8c38-496e-a6bd-1adc7ae2f06a).
+
+#### Source conservation lists
+* [WAPEC](https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/12/change/) 
+  and [categories](https://tsc.dbca.wa.gov.au/api/1/conservationcategory/?conservation_list=12)
+* [DBCA_RLE](https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/11/change/) 
+  and [categories](https://tsc.dbca.wa.gov.au/api/1/conservationcategory/?conservation_list=11)
+* [IUCN_RLE](https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/16/change/) 
+  and [categories](https://tsc.dbca.wa.gov.au/api/1/conservationcategory/?conservation_list=16)
+
+```{r}
+tsc_cat <- wastdr::wastd_GET("conservationcategory")$response %>% 
+    httr::content(.) %>% magrittr::extract2("results") %>%
+    {tibble::tibble(
+        id = map_int(., "id"),
+        list = map_int(., "conservation_list"),
+        code = map_chr(., "code")
+    )} %>% arrange(list)
+tsc_cat_tec <- tsc_cat %>% filter(list %in% c(11,12)) 
+tsc_cat_tec %>% kable
+```
+
+#### Required mappings
+* `tec_gaz_cat$category_code` to [community gazettal](https://tsc.dbca.wa.gov.au/api/1/communitygazettal/)
+`category` list of category IDs.
+
+#### Data example
+Source data
+```{r load_tec_cons_listings}
+tec_gaz_cat[1,] %>% kable
+tibble(code=unique(tec_gaz_cat$category_code)) %>% left_join(tsc_cat_tec, by=c("code"))
+
+```
+Target data
+[example comm listing](https://tsc.dbca.wa.gov.au/api/1/communitygazettal/2/)
+
+```{r, eval=F}
+listing = {
+    "id": 2,
+    "source": 0,
+    "source_id": null,
+    "scope": 0,
+    "status": 30,
+    "proposed_on": null,
+    "effective_from": null,
+    "effective_to": null,
+    "last_reviewed_on": null,
+    "review_due": null,
+    "comments": "",
+    "category_cache": "",
+    "criteria_cache": "",
+    "label_cache": "WA",
+    "community": 218,
+    "category": [
+        32
+    ],
+    "criteria": []
+}
+```
+
 
 # Upload to data catalogue
 This workbook is uploaded to the data catalogue.
