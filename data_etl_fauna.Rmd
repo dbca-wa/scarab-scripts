@@ -420,27 +420,27 @@ various legal listings to species.
 ### Listing Names
 Lookups for legal acts.
 
-```{r listing_names}
-listing_names <- fauna_data$`Listing Names` %>%
+```{r fauna_conservation_lists}
+fauna_conservation_lists <- fauna_data$`Listing Names` %>%
   dplyr::transmute(
     list_code = ListCode %>% as.character(),
     list_name = ListName %>% as.character(),
     list_order = ListOrder %>% as.integer()
   ) %>%
   dplyr::arrange(list_order)
-listing_names %>% skim()
+fauna_conservation_lists %>% skim()
 ```
 
 ### DEC Listing Names
-```{r dec_listing_names}
-dec_listing_names <- fauna_data$`DEC List Names` %>%
+```{r dec_fauna_conservation_lists}
+dec_fauna_conservation_lists <- fauna_data$`DEC List Names` %>%
   dplyr::transmute(
     dec_listing_id = DECCode %>% as.character(),
     dec_listing_name = DECList %>% as.character(),
     dec_listing_order = DECOrder %>% as.integer()
   ) %>%
   dplyr::arrange(dec_listing_order)
-dec_listing_names %>% skim()
+dec_fauna_conservation_lists %>% skim()
 ```
 
 ### Conservation status
@@ -450,11 +450,11 @@ Conservation status can be assigned (for a period of time) to a species.
 
 ```{r listing_category}
 # make_coldef(listing_category)
-conservation_status <- fauna_data$`Listing Category` %>%
+conservation_categories <- fauna_data$`Listing Category` %>%
   dplyr::transmute(
     list_code = ListCode %>% as.character(),
-    status_code = StatCode %>% as.character(),
-    status = Status %>% as.character(),
+    category_code = StatCode %>% as.character(),
+    category_label = Status %>% as.character(),
     status_expand = StatusExpand %>% as.character(),
     explanations = Explanations %>% as.character(),
     notes = Notes %>% as.character(),
@@ -462,21 +462,21 @@ conservation_status <- fauna_data$`Listing Category` %>%
     dec_listing_id = DECCode %>% as.character()
   ) %>%
   dplyr::arrange(order) %>%
-  dplyr::left_join(listing_names, by = "list_code") %>%
-  dplyr::left_join(dec_listing_names, by = "dec_listing_id")
-conservation_status %>% skim()
-conservation_status %>% head(10) %>% DT::datatable(.)
+  dplyr::left_join(fauna_conservation_lists, by = "list_code") %>%
+  dplyr::left_join(dec_fauna_conservation_lists, by = "dec_listing_id")
+conservation_categories %>% skim()
+conservation_categories %>% head(10) %>% DT::datatable(.)
 ```
 
 ### Gazettal
 Gazettal is the act of assigning a conservation status to a species for a span of time.
 
 ```{r gazettal}
-gazettal <- fauna_data$Gazettal %>%
+fauna_cons_listing <- fauna_data$Gazettal %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
     list_code = ListCode %>% as.character(),
-    status_code = StatCode %>% as.character(),
+    category_code = StatCode %>% as.character(),
     population = Popn %>% as.character(),
     reasons = Reasons %>% as.character(),
     authority = AUTHORITY %>% as.character(),
@@ -488,8 +488,8 @@ gazettal <- fauna_data$Gazettal %>%
     comments = Comments %>% as.character()
   ) %>%
   dplyr::left_join(species_names, by = "species_code")
-gazettal %>% skim()
-gazettal %>% head(10) %>% DT::datatable()
+fauna_cons_listing %>% skim()
+fauna_cons_listing %>% head(10) %>% DT::datatable()
 ```
 
 ## Recovery Plans
@@ -556,7 +556,7 @@ As a relational data model, the dependencies can be expressed linearly (excludin
 
 * [Taxonomy] Species names
 * [Observations] Species Occurrence > Species Names
-* [Conservation] Conservation List > Conservation Status > Conservation Status Gazettal > Species names
+* [Conservation] Conservation List > Conservation Status > fauna_cons_listing > Species names
 * [Conservation] Recovery Plan / Conservation Advice > Species Names
 * [Conservation] Research Priorities > Species Names
 * [Conservation] Threats > Species Names
@@ -581,15 +581,13 @@ upload_to_ckan(species_save, "Threatened Fauna Species Names", d$id,
                resource_id = "eae0b480-c687-450c-a736-87d4e75c2a4d")
 upload_to_ckan(res_prio, "Threatened Fauna Research Priorities", d$id, 
                resource_id = "7a26d00c-f3da-46a3-9d74-42e4475bd6a9")
-upload_to_ckan(conservation_status, "Threatened Fauna Conservation Status", d$id, 
+upload_to_ckan(conservation_categories, "Threatened Fauna Conservation Lists", d$id, 
                resource_id = "2793b1a8-eb55-41e7-8f8f-9cbc79a01243")
-upload_to_ckan(gazettal, "Threatened Fauna Conservation Status Gazettal", d$id, 
+upload_to_ckan(fauna_cons_listing, "Threatened Fauna Conservation Status Gazettal", d$id, 
                resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f")
 upload_to_ckan(recovery_plans, "Threatened Fauna Recovery Plans", d$id, 
                resource_id = "9f8426c3-20ed-4ba7-a551-05e1838ab1cb")
 upload_to_ckan(fauna, "Threatened Fauna Occurrence", d$id, 
                resource_id = "b73ae0de-f243-4bb3-bbce-25b65bb98e66")
-upload_to_ckan(listing_names, "Conservation Lists (Fauna)", d$id, 
-               resource_id = "9c3f8cac-e8ed-4713-add2-067b83f410df")
 ```
 
