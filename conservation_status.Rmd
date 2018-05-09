@@ -242,7 +242,9 @@ tfa_status_comp %>% kable(.)
 
 # Data upload
 ## Conservation Lists, Categories, Criteria
-Fauna cons lists and categories are uploaded to TSC.
+* Fauna cons lists and categories as extracted from legacy data are uploaded to TSC.
+* Curators consolidate and update the lists in TSC. These new, hand-curated lists
+  are now the point of truth.
 
 ```{r data_upload_tsc, eval=F}
 # Fauna Conservation lists alone
@@ -304,6 +306,18 @@ tec_gaz_cat %>%
     wastdr::wastd_POST(., serializer = "conservationlist")  # , api_url = local_api)
 ```
 
+```{r}
+conslists <- wastdr::wastd_GET("conservationlist")
+conslist_data <- conslists$response %>% httr::content(.) %>% magrittr::extract2("results")
+conslist_data %>% wastdr::wastd_POST("conservationlist", api_url = local_api)
+
+local_cl <- wastdr::wastd_GET("conservationlist", api_url = local_api)
+local_cl_data <- local_cl$response %>% httr::content(.) %>% magrittr::extract2("results")
+local_cl_data[[1]] 
+conslist_data[[1]] %>% wastdr::wastd_POST("conservationlist", api_url = local_api)
+```
+
+# Upload to data catalogue
 This workbook is uploaded to the data catalogue.
 
 ```{r data_upload_ckan}
