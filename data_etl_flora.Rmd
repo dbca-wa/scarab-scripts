@@ -387,7 +387,7 @@ occurrence <- tpfl$DRF_RFR_FORMS %>%
 ```
 
 
-```{r occ_map}
+```{r occ_map, fig.height=8, fig.width=10}
 leaflet(width = 800, height = 600) %>%
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
