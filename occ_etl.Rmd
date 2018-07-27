@@ -1,0 +1,63 @@
+---
+title: "Occurrence analysis"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+# devtools::install_github("ropenscilabs/skimr")
+# devtools::install_github("tidyverse/readr")
+# install from github: "brianb/mdbtools"
+# devtools::install_github("ropensci/ckanr")
+library(tidyverse)
+library(lubridate)
+library(skimr)
+library(leaflet)
+library(Hmisc)
+library(ckanr)
+
+# Configure ckanr to data.dpaw.wa.gov.au
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+source("helpers.R")
+```
+
+# Context
+This workbook analyses occurrence data of threatened species and communities as
+extracted from the legacy databases.
+
+Currently, data snapshots from the data catalogue as exported by the ETL workbooks are used. Soon, we will use occurrence data from BioSys.
+
+# Data download
+* Now: Occurrence data snapshots from data catalogue
+* Soon: Occurrence data from Biosys
+
+```{r}
+fauna_occ_rid <- "b73ae0de-f243-4bb3-bbce-25b65bb98e66"
+flora_occ_rid <- "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef"
+comm_occ_rid <- ""
+```
+
+# Analysis
+## Extent of Occurrence
+This section will calculate the Extent of Occurrence (EOO) 
+as convex hulls around all occurrences 
+of each `name_id` as recorded within the past 10 years.
+
+# Data upload
+## EOO to data catalogue upload
+Snapshots of the EOO polygons are uploaded to the data catalogue.
+```{r}
+d <- ckanr::package_show("wacensus")
+# upload this workbook, species EOOs, and comms EOOs.
+```
+
+## EOO to TSC upload
+This section will upload the EOOs to TSC through its API using `wastdr`.
