@@ -23,6 +23,10 @@ library(skimr)
 library(leaflet)
 library(Hmisc)
 library(ckanr)
+library(grDevices)
+library(sf)
+library(mapview)
+library(ggplot2)
 
 # Configure ckanr to data.dpaw.wa.gov.au
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
@@ -43,6 +47,7 @@ Currently, data snapshots from the data catalogue as exported by the ETL workboo
 fauna_occ_rid <- "b73ae0de-f243-4bb3-bbce-25b65bb98e66"
 flora_occ_rid <- "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef"
 comm_occ_rid <- ""
+fauna_occ <- ckanr::resource_show(fauna_occ_rid)$url %>% read_csv()
 ```
 
 # Analysis
@@ -50,6 +55,30 @@ comm_occ_rid <- ""
 This section will calculate the Extent of Occurrence (EOO) 
 as convex hulls around all occurrences 
 of each `name_id` as recorded within the past 10 years.
+
+```{r}
+occ_tally <- fauna_occ %>% 
+    group_by(name_id, scientific_name) %>% 
+    tally() %>% 
+    dplyr::arrange(desc(n))
+kable(head(occ_tally, n=20))
+```
+There are `r nrow(occ_tally)` fauna taxa with recorded occurrences.
+
+## Calculating EOO from occurrence point observations
+```{r}
+eoo_polygon <- function(data, name_id=NULL, crs=4283){
+    data %>% 
+        sf::st_as_sf(., coords = c("longitude", "latitude"), 
+                     crs = crs, agr = "constant") %>% 
+        sf::st_union(.) %>% 
+        sf::st_convex_hull(.)
+}
+eoo_24557 <- fauna_occ %>% dplyr::filter(name_id == 24557) %>% eoo_polygon()
+# see https://r-spatial.github.io/sf/articles/sf5.html
+# ggplot() + geom_sf(data = eoo_24557)
+mapview(eoo_24557)
+```
 
 # Data upload
 ## EOO to data catalogue upload
