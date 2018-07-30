@@ -81,7 +81,8 @@ eoo_polygon <- function(data,
                         nid=NULL,
                         nid_col="name_id",
                         lonlat_cols=c("longitude", "latitude"),
-                        crs=4283){
+                        crs=4283,
+                        discard=NULL){
     if (is.null(nid)) {
         selected <- data
     } else {
@@ -112,13 +113,27 @@ mapview(eoo_24734)
 # Write sf object to GeoJSON geometry:
 # https://cran.r-project.org/web/packages/geojsonsf/vignettes/geojson-sf-conversions.html
 
-taxon_eoo <- tibble(
-    name_id = 24557,
-    eoo = eoo_polygon(fauna_occ, nid = 24557) %>% sfc_geojson()
-)
-wastd_POST(taxon_eoo, "taxon", verbose=T)
+# one_taxon_eoo <- tibble(
+#     name_id = 24557,
+#     eoo = eoo_polygon(fauna_occ, nid = 24557) %>% sfc_geojson()
+# )
+# wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose=T)
 
-#unique(fauna_occ$name_id)
+# All Fauna taxa
+taxon_eoo <- list()
+name_ids <- unique(fauna_occ$name_id)
+for (i in seq_len(name_ids)) {
+    nid <- name_ids[[i]]
+    if (!is.na(nid) && nid != "NA" && nid != 0){
+        cat(".")
+        taxon_eoo[[i]] <- eoo_polygon(fauna_occ, nid = nid) %>% geojsonsf::sfc_geojson(.)
+    }
+}
+taxon_eoos <- tibble(
+    name_id = name_ids[! name_ids %in% c(NA, 0)],
+    eoo = unlist(taxon_eoo)
+)
+wastdr::wastd_POST(taxon_eoos, "taxon", verbose = T)
 ```
 
 # Data upload
