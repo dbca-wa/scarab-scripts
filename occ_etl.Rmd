@@ -118,22 +118,6 @@ mapview(eoo_24734)
 #     eoo = eoo_polygon(fauna_occ, nid = 24557) %>% sfc_geojson()
 # )
 # wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose=T)
-
-# All Fauna taxa
-taxon_eoo <- list()
-name_ids <- unique(fauna_occ$name_id)
-for (i in seq_len(name_ids)) {
-    nid <- name_ids[[i]]
-    if (!is.na(nid) && nid != "NA" && nid != 0){
-        cat(".")
-        taxon_eoo[[i]] <- eoo_polygon(fauna_occ, nid = nid) %>% geojsonsf::sfc_geojson(.)
-    }
-}
-taxon_eoos <- tibble(
-    name_id = name_ids[! name_ids %in% c(NA, 0)],
-    eoo = unlist(taxon_eoo)
-)
-wastdr::wastd_POST(taxon_eoos, "taxon", verbose = T)
 ```
 
 # Data upload
@@ -146,3 +130,29 @@ d <- ckanr::package_show("wacensus")
 
 ## EOO to TSC upload
 This section will upload the EOOs to TSC through its API using `wastdr`.
+
+### Fauna
+
+```{r}
+# List unique name_ids without NA and 0
+name_ids <- unique(fauna_occ$name_id)
+name_ids_nn <- name_ids[!name_ids %in% c(NA, 0)]
+
+# Calculate EOO for each name_id
+taxon_eoo <- list()
+for (i in seq_len(name_ids_nn)) {
+    taxon_eoo[[i]] <- eoo_polygon(fauna_occ, nid = name_ids_nn[[i]]) %>% geojsonsf::sfc_geojson(.)
+}
+
+# Assemble tibble of name_id and eoo
+taxon_eoos <- tibble(name_id = name_ids_nn, eoo = unlist(taxon_eoo))
+
+# Upload tibble of name_id and eoo to TSC
+wastdr::wastd_POST(taxon_eoos, "taxon", verbose = T)
+```
+
+### Flora
+TODO
+
+### TEC
+TODO
