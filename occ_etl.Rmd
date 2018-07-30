@@ -69,24 +69,37 @@ There are `r nrow(occ_tally)` fauna taxa with recorded occurrences.
 
 ## Calculating EOO from occurrence point observations
 ```{r}
-eoo_polygon <- function(data, nid=NULL, crs=4283){
+#' Return the convex hull around all points with given name_id
+#' 
+#' @param data A tibble or data.frame with columns longitude, latitude, name_id
+#' @param nid A numeric name_id, default: null (use all rows)
+#' @param nid_col The column name of the NameID column, default: "name_id"
+#' @param lonlat_cols A vector of lon and lat column names, default: c("longitude", "latitude")
+#' @param crs The coordinate reference system ID (4283=GDA94)
+#' @return An object of class "sfc_POLYGON" "sfc" (package sf)
+eoo_polygon <- function(data, 
+                        nid=NULL,
+                        nid_col="name_id",
+                        lonlat_cols=c("longitude", "latitude"),
+                        crs=4283){
     if (is.null(nid)) {
         selected <- data
     } else {
-        selected <- dplyr::filter(data, name_id == nid)
+        selected <- dplyr::filter(data, (!! rlang::sym(nid_col)) == nid)
     }
     selected %>% 
-        sf::st_as_sf(., coords = c("longitude", "latitude"), 
-                     crs = crs, agr = "constant") %>% 
+        sf::st_as_sf(coords = lonlat_cols, crs = crs, agr = "constant") %>% 
         sf::st_union(.) %>% 
         sf::st_convex_hull(.)
 }
 
 eoo_all <- eoo_polygon(fauna_occ)
+mapview(eoo_all)
 
 # https://tsc.dbca.wa.gov.au/api/1/taxon/?name_id=24557
 # Leipoa ocellata, Malleefowl
 eoo_24557 <- eoo_polygon(fauna_occ, nid = 24557)
+
 # see https://r-spatial.github.io/sf/articles/sf5.html
 # ggplot() + geom_sf(data = eoo_24557)
 mapview(eoo_24557)
@@ -98,9 +111,14 @@ mapview(eoo_24734)
 
 # Write sf object to GeoJSON geometry:
 # https://cran.r-project.org/web/packages/geojsonsf/vignettes/geojson-sf-conversions.html
-# 
-eoo_24557 %>% sfc_geojson()
 
+taxon_eoo <- tibble(
+    name_id = 24557,
+    eoo = eoo_polygon(fauna_occ, nid = 24557) %>% sfc_geojson()
+)
+wastd_POST(taxon_eoo, "taxon", verbose=T)
+
+#unique(fauna_occ$name_id)
 ```
 
 # Data upload
