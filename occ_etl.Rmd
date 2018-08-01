@@ -253,6 +253,58 @@ one_taxon_eoo <- tibble::tibble(
 wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
 ```
 
+# Data QA
+cNameID
+
+```{r}
+fauna_occ_no_nameid <- fauna_occ %>% 
+    filter(name_id == 0) %>% 
+    select(scientific_name) %>% 
+    unique()
+fauna_occ_no_nameid %>% kable
+```
+
+There are `r nrow(fauna_occ_no_nameid)` distinct scientific fauna names without NameID.
+Some are known to TSC: E.g. the Western Brush Wallaby, Notamacropus irma, 
+NameID [48022](https://tsc.dbca.wa.gov.au/species/48022/).
+These records need to be fixed in the original Threatened Fauna database.
+
+```{r}
+flora_occ_no_nameid <- flora_occ %>% 
+    filter(name_id == 0) %>% 
+    select(species_name) %>% 
+    unique()
+flora_occ_no_nameid %>% kable
+```
+
+There are `r nrow(flora_occ_no_nameid)` distinct scientific flora names without NameID.
+
+## Missing coordinates
+
+```{r}
+fauna_occ_no_latlng <- fauna_occ %>% 
+    filter(is.na(latitude) | is.na(longitude))
+fauna_occ_no_latlng %>% head %>% kable
+```
+
+There are `r nrow(fauna_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
+
+```{r}
+flora_occ_no_latlng <- flora_occ %>% 
+    filter(is.na(latitude) | is.na(longitude))
+flora_occ_no_latlng %>% head %>% kable
+```
+
+There are `r nrow(flora_occ_no_latlng)` distinct flora records with missing latitude or longitude.
+These records need to be fixed in the original Threatened Flora database.
+
+## NameID mismatch
+TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
+
+## Trust level of occurrence records
+Currently, we assume that all occurrence records in the legacy databases are trustworthy.
+If this weren't the case, this analysis should exclude the non-trustworthy records.
+
 # EOO to TSC upload
 This section generates and uploads the EOOs to TSC through its API using `wastdr`.
 For performance reasons, we'll run the steps in batches on the entire 
