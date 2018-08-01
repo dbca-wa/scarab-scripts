@@ -49,7 +49,8 @@ Currently, data snapshots from the data catalogue as exported by the ETL workboo
 fauna_occ_rid <- "b73ae0de-f243-4bb3-bbce-25b65bb98e66"
 flora_occ_rid <- "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef"
 comm_occ_rid <- ""
-fauna_occ <- ckanr::resource_show(fauna_occ_rid)$url %>% read_csv()
+fauna_occ <- ckanr::resource_show(fauna_occ_rid)$url %>% readr::read_csv()
+flora_occ <- ckanr::resource_show(flora_occ_rid)$url %>% readr::read_csv()
 ```
 
 # Analysis
@@ -146,6 +147,34 @@ for (i in seq_len(name_ids_nn)) {
 
 # Assemble tibble of name_id and eoo
 taxon_eoos <- tibble(name_id = name_ids_nn, eoo = unlist(taxon_eoo))
+
+eoo_from_occ <- function(data, nid_col="name_id"){
+    # Extract unique name_ids without NA and 0 from entire data
+    name_ids_raw <- data %>%
+        dplyr::select(., (!! rlang::sym(nid_col))) %>% 
+        unique() %>% 
+        extract2(1)
+    name_ids <- name_ids_raw[!name_ids_raw %in% c(NA, 0)]
+    
+    # Calculate EOO for each name_id from entire data
+    taxon_eoo <- list()
+    for (i in seq_len(name_ids)) {
+        taxon_eoo[[i]] <- data %>% 
+            eoo_polygon(., nid = name_ids[[i]]) %>% 
+            geojsonsf::sfc_geojson(.)
+    }
+
+    # Assemble tibble of name_id and eoo
+    taxon_eoos <- tibble(
+        name_id = name_ids_nn, 
+        eoo = unlist(taxon_eoo)
+    )
+    taxon_eoos
+}
+
+fauna_eoos <- eoo_from_occ(fauna_occ)
+flora_eoos <- eoo_from_occ(flora_occ)
+taxon_eoos <- rbind(fauna_eoos, flora_eoos)
 
 # Upload tibble of name_id and eoo to TSC
 wastdr::wastd_POST(taxon_eoos, "taxon", verbose = T)

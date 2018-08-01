@@ -235,7 +235,7 @@ occurrence <- tpfl$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
     sheetno = SHEETNO %>% as.integer(),
-    taxon_id = TAXONID %>% as.character(),
+    name_id = TAXONID %>% as.character(),
     species_name = SPNAME %>% as.character(),
     new_pop_ind = NEW.POP.IND %>% as.character(), # Y N
     pop_id = SHEET.POP.NUMBER %>% as.integer(),
