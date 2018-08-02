@@ -18,6 +18,9 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 # install from github: "brianb/mdbtools"
 # devtools::install_github("ropensci/ckanr")
 library(tidyverse)
+library(jsonlite)
+library(geojsonio)
+library(readr)
 library(magrittr)
 library(lubridate)
 library(skimr)
@@ -346,6 +349,21 @@ fauna_eoo %>%
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
   wastdr::wastd_POST("taxon", verbose = T)
+```
+
+# TEC
+* Boundaries of community occurrences are available as Shapefiles.
+* QGIS: Open shapefile, Fix geometries, Minimum bounding geometry of type "convex hull", group by "COM_ID".
+* Resulting layer: save as GeoJSON, upload to `data/tec_eoo.geojson` (relative to workbook).
+
+Note: TSC's API only accepts GeoJSON strings for the field EEO, not (Geo)JSON objects.
+
+Note: A custom QGIS model wraps the QGIS steps into one GUI dialogue.
+
+```{r, eval=F}
+tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson") %>% 
+    tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
+    wastdr::wastd_POST("community", verbose=T)
 ```
 
 # Data catalogue upload
