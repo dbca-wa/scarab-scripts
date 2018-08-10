@@ -27,6 +27,7 @@ source("helpers.R")
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 local_api <- "http://localhost:8220/api/1/"
+uat_api <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
 ```
 
 # Context
@@ -50,8 +51,9 @@ wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
 ## Batch upsert: Create or update all Taxa
 Local TSC instance (dev):
 
-```{r rock_and_roll_local}
-gjlocal <- function(data, ser) upsert_geojson(data, serializer = ser, api_url = local_api)
+```{r rock_and_roll_local, eval=F}
+gjlocal <- function(data, ser) upsert_geojson(
+    data, serializer = ser, api_url = uat_api, chunksize = 10)
 "public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjlocal("names")
 "public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjlocal("supra")
 "public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjlocal("groups")
@@ -65,7 +67,7 @@ gjlocal <- function(data, ser) upsert_geojson(data, serializer = ser, api_url = 
 
 Production TSC instance. Adjust chunksize down when getting "504 gateway timeouts".
 
-```{r rock_and_roll_production}
+```{r rock_and_roll_production, eval=F}
 "public:herbie_hbvnames_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "names", chunksize=100)
 "public:herbie_hbvsupra_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "supra", chunksize=100)
 "public:herbie_hbvgroups_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "groups", chunksize=100)
