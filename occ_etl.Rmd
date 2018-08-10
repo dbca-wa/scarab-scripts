@@ -342,13 +342,16 @@ mapview::mapview(head(flora_eoo$eoo_sfc))
 Upload to TSC - run manually. This could overwrite data or time out (depending on network load).
 
 ```{r upload_eoo, eval=F}
+uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
+prod <- "https://tsc.dbca.wa.gov.au/api/1/"
+
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
 ```
 
 # TEC
@@ -361,9 +364,9 @@ Note: TSC's API only accepts GeoJSON strings for the field EEO, not (Geo)JSON ob
 Note: A custom QGIS model wraps the QGIS steps into one GUI dialogue.
 
 ```{r, eval=F}
-tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson") %>% 
-    tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
-    wastdr::wastd_POST("community", verbose=T)
+tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
+tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
+    wastdr::wastd_POST("community", verbose=T, api_url = uat)
 ```
 
 # Data catalogue upload
