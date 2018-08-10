@@ -1,0 +1,377 @@
+---
+title: "Occurrence analysis"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+# devtools::install_github("ropenscilabs/skimr")
+# devtools::install_github("tidyverse/readr")
+# install from github: "brianb/mdbtools"
+# devtools::install_github("ropensci/ckanr")
+library(tidyverse)
+library(jsonlite)
+library(geojsonio)
+library(readr)
+library(magrittr)
+library(lubridate)
+library(skimr)
+library(leaflet)
+library(Hmisc)
+library(ckanr)
+library(grDevices)
+library(sf)
+library(geojsonsf)
+library(mapview)
+library(ggplot2)
+
+# Configure ckanr to data.dpaw.wa.gov.au
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+source("helpers.R")
+```
+
+# Context
+This workbook analyses occurrence data of threatened species and communities as
+extracted from the legacy databases.
+
+Currently, data snapshots from the data catalogue as exported by the ETL workbooks are used. 
+Soon, we will use occurrence data from BioSys.
+
+# Usage
+This workbook serves two purposes.
+
+The data analyst (Florian) runs this workbook to generate EOO (extent of occurrence)
+polygons and upload them to [TSC](https://tsc.dbca.wa.gov.au/). 
+
+At the same time, this workbook aims to document and explain the process, 
+so that TSC stakeholders can verify that this process is correct and produces the desired outputs.
+
+The data curators will contribute feedback for the analyses and visualisations in this workbook
+to be improved and expanded, which the analyst will implement.
+
+While a rendered copy of this workbook (for stakeholders to read) lives on the DBCA data catalogue 
+([dataset link](https://data.dpaw.wa.gov.au/dataset/threatened-species-and-communities-occurrence-analysis) and
+[fullscreen link](https://data.dpaw.wa.gov.au/dataset/a9c0fc22-3fd0-4896-9aba-95ad16e0c02a/resource/56335544-72cf-4ebd-bb2c-bc246ec96080/download/occ_etl.html)), its source (for analysts to run) is under version control [here](https://github.com/dbca-wa/scarab-scripts).
+
+# Data download
+* Now: Occurrence data snapshots from data catalogue
+* Soon: Occurrence data from Biosys
+
+```{r load_data}
+fauna_occ_rid <- "b73ae0de-f243-4bb3-bbce-25b65bb98e66"
+flora_occ_rid <- "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef"
+comm_occ_rid <- ""
+fauna_occ <- ckanr::resource_show(fauna_occ_rid)$url %>% readr::read_csv()
+flora_occ <- ckanr::resource_show(flora_occ_rid)$url %>% readr::read_csv()
+```
+
+# A first look
+
+```{r tally_occ}
+fauna_tally <- fauna_occ %>%
+  dplyr::group_by(name_id, scientific_name) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n))
+
+fauna_tally %>% head(n = 20) %>% kable(.)
+
+flora_tally <- flora_occ %>%
+  dplyr::group_by(name_id, species_name) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n))
+
+flora_tally %>% head(n = 20) %>% kable(.)
+```
+
+There are `r nrow(fauna_tally)` fauna taxa and 
+`r nrow(flora_tally)` flora taxa with recorded occurrences.
+
+# Helper functions
+A few helper functions to extract convex hulls from given points.
+
+```{r helpers}
+#' Return the convex hull around all given points.
+#'
+#' @param lonlat_cols A vector of lon and lat column names,
+#'   default: c("longitude", "latitude")
+#' @param crs The coordinate reference system ID (4283=GDA94)
+#' @return An object of class "sfc_POLYGON" "sfc" (package sf)
+lonlat_to_convex_hull <- function(data,
+                                  lonlat_cols=c("longitude", "latitude"),
+                                  crs=4283) {
+  data %>%
+    sf::st_as_sf(coords = lonlat_cols, crs = crs, agr = "constant") %>%
+    sf::st_union(.) %>%
+    sf::st_convex_hull(.)
+}
+
+#' Convert occurrence records into a dataframe of distinct name_id:eoo
+#'
+#' **Data** must have the columns `name_id`, `latitude`, and `longitude`.
+#' **Filter** out occurrences of invalid NameIDs (NA and 0).
+#' **Nest** occurrence data by name_id to generate two columns,
+#'   `name_id` and `data` (all records of that `name_id`).
+#' **Map** `lonlat_to_convex_hull` over data column to generate convex
+#'   hulls (class `sfc`) from all points in `data` column.
+#' **Map** `sfc_geojson` to convert the convex hulls into GeoJSON.
+#' @param data A dataframe with at least the columns
+#'   `name_id`, `latitude`, and `longitude`.
+#' @return A dataframe with columns `name_id`, `data`, `eeo_sfc`, and `eeo`:
+#'      name_id: one row per distinct name_id in input dataframe.
+#'      data: the nested data of all rows with that name_id.
+#'      eeo_sfc: the extent of occurrence as object of class `sfc`.
+#'      eeo: the extent of occurrence as GeoJSON string.
+#' @examples
+#'   \notrun{
+#'   data %>% make_eoo %>% mapview(.$eoo_sfc)
+#'   data %>% make_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
+#'   }
+make_eoo <- function(data) {
+  data %>%
+    dplyr::filter(
+      !name_id %in% c(NA, 0),
+      !is.na(longitude),
+      !is.na(latitude)
+    ) %>%
+    tidyr::nest(-name_id) %>%
+    dplyr::mutate(
+      eoo_sfc = purrr::map(data, lonlat_to_convex_hull),
+      eoo = purrr::map(eoo_sfc, geojsonsf::sfc_geojson)
+    )
+}
+
+#' Return the convex hull around all points with given name_id
+#'
+#' @param data A tibble or data.frame with columns
+#'   `longitude`, `latitude`, `name_id`
+#' @param nid A numeric name_id, default: null (use all rows)
+#' @param nid_col The column name of the NameID column, default: "name_id"
+#' @param lonlat_cols A vector of lon and lat column names,
+#'   default: c("longitude", "latitude")
+#' @param crs The coordinate reference system ID (4283=GDA94)
+#' @return An object of class "sfc_POLYGON" "sfc" (package sf)
+#'   if points are given, else NULL.
+eoo_polygon <- function(data,
+                        nid=NULL,
+                        nid_col="name_id",
+                        lonlat_cols=c("longitude", "latitude"),
+                        crs=4283) {
+  if (is.null(nid)) {
+    selected <- data
+  } else {
+    selected <- dplyr::filter(data, (!! rlang::sym(nid_col)) == nid)
+  }
+  if (nrow(selected) == 0) return(NULL)
+  lonlat_to_convex_hull(selected, lonlat_cols = lonlat_cols, crs = crs)
+}
+```
+
+# Examples
+
+## All occurrences
+Excluding flora data with missing coordinates.
+
+```{r ex_all_occ}
+fauna_eoo_all <- eoo_polygon(fauna_occ)
+mapview(fauna_eoo_all)
+
+flora_eoo_all <- flora_occ %>%
+  dplyr::filter(!is.na(longitude), !is.na(latitude)) %>%
+  eoo_polygon()
+mapview(flora_eoo_all)
+```
+
+The next sections show a handful of example taxa and their calculated EOOs.
+
+Once this workbook has generated and uploaded the EOO polygons to TSC, 
+the EOOs shown in the following examples should be the same as the EOO shown 
+in TSC (see the respective TSC GUI links to view them in TSC).
+
+## Leipoa ocellata
+Malleefowl
+
+* TSC GUI: https://tsc.dbca.wa.gov.au/species/24557/
+* TSC API: https://tsc.dbca.wa.gov.au/api/1/taxon/?name_id=24557
+
+```{r ex_malleefowl}
+eoo_24557 <- eoo_polygon(fauna_occ, nid = 24557)
+
+# see https://r-spatial.github.io/sf/articles/sf5.html
+# ggplot() + geom_sf(data = eoo_24557)
+mapview::mapview(eoo_24557)
+```
+
+## Calyptorhynchus latirostris
+Carnaby's Black Cockatoo: 14k occurrences.
+
+* TSC GUI: https://tsc.dbca.wa.gov.au/species/24734/
+* TSC API: https://tsc.dbca.wa.gov.au/api/1/taxon/?name_id=24734
+
+```{r ex_carnabys}
+eoo_24734 <- eoo_polygon(fauna_occ, nid = 24734)
+mapview::mapview(eoo_24734)
+```
+
+## Banksia brownii
+
+* TSC GUI: https://tsc.dbca.wa.gov.au/species/1806/
+* TSC API: https://tsc.dbca.wa.gov.au/api/1/taxon/?name_id=1806
+
+```{r ex_bbrownii}
+eoo_1806 <- flora_occ %>% 
+    dplyr::filter(!is.na(longitude), !is.na(latitude)) %>% 
+    eoo_polygon(nid = 1806)
+mapview::mapview(eoo_1806)
+```
+
+## Banksia goodii
+
+* TSC GUI: https://tsc.dbca.wa.gov.au/species/1818/
+* TSC API: https://tsc.dbca.wa.gov.au/api/1/taxon/?name_id=1818
+
+```{r ex_bgoodii}
+eoo_1818 <- flora_occ %>% 
+    dplyr::filter(!is.na(longitude), !is.na(latitude)) %>% 
+    eoo_polygon(nid = 1818)
+mapview::mapview(eoo_1818)
+```
+
+## TSC upload example
+Writing an `sf` object to a GeoJSON string:
+https://cran.r-project.org/web/packages/geojsonsf/vignettes/geojson-sf-conversions.html
+
+```{r ex_upload_one_eoo, eval=F}
+one_taxon_eoo <- tibble::tibble(
+  name_id = 24557,
+  eoo = eoo_polygon(fauna_occ, nid = 24557) %>% sfc_geojson()
+)
+wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
+```
+
+# Data QA
+cNameID
+
+```{r}
+fauna_occ_no_nameid <- fauna_occ %>% 
+    filter(name_id == 0) %>% 
+    select(scientific_name) %>% 
+    unique()
+fauna_occ_no_nameid %>% kable
+```
+
+There are `r nrow(fauna_occ_no_nameid)` distinct scientific fauna names without NameID.
+Some are known to TSC: E.g. the Western Brush Wallaby, Notamacropus irma, 
+NameID [48022](https://tsc.dbca.wa.gov.au/species/48022/).
+These records need to be fixed in the original Threatened Fauna database.
+
+```{r}
+flora_occ_no_nameid <- flora_occ %>% 
+    filter(name_id == 0) %>% 
+    select(species_name) %>% 
+    unique()
+flora_occ_no_nameid %>% kable
+```
+
+There are `r nrow(flora_occ_no_nameid)` distinct scientific flora names without NameID.
+
+## Missing coordinates
+
+```{r}
+fauna_occ_no_latlng <- fauna_occ %>% 
+    filter(is.na(latitude) | is.na(longitude))
+fauna_occ_no_latlng %>% head %>% kable
+```
+
+There are `r nrow(fauna_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
+
+```{r}
+flora_occ_no_latlng <- flora_occ %>% 
+    filter(is.na(latitude) | is.na(longitude))
+flora_occ_no_latlng %>% head %>% kable
+```
+
+There are `r nrow(flora_occ_no_latlng)` distinct flora records with missing latitude or longitude.
+These records need to be fixed in the original Threatened Flora database.
+
+## NameID mismatch
+TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
+
+## Trust level of occurrence records
+Currently, we assume that all occurrence records in the legacy databases are trustworthy.
+If this weren't the case, this analysis should exclude the non-trustworthy records.
+
+# EOO to TSC upload
+This section generates and uploads the EOOs to TSC through its API using `wastdr`.
+For performance reasons, we'll run the steps in batches on the entire 
+fauna, flora (and soon: TEC) datasets.
+
+**Note** Only occurrence records with valid NameIDs and coordinates are considered.
+
+* **Data** must have the columns `name_id`, `latitude`, and `longitude`.
+* **Filter** out occurrences of invalid NameIDs (NA and 0).
+* **Nest** occurrence data by name_id to generate two columns, 
+  `name_id` and `data` (all records of that `name_id`).
+* **Map** `lonlat_to_convex_hull` over data column to generate convex 
+  hulls (class `sfc`) from all points in `data` column.
+* **Map** `sfc_geojson` to convert the convex hulls into GeoJSON.
+* **Discard** columns `data` and `eeo_sfc`.
+* **POST** to WAStD.
+
+Crunch time.
+
+```{r calculate_eoo}
+fauna_eoo <- fauna_occ %>% make_eoo()
+flora_eoo <- flora_occ %>% make_eoo()
+```
+
+Does that look about right?
+
+```{r map_eoo}
+mapview::mapview(head(fauna_eoo$eoo_sfc))
+mapview::mapview(head(flora_eoo$eoo_sfc))
+```
+
+Upload to TSC - run manually. This could overwrite data or time out (depending on network load).
+
+```{r upload_eoo, eval=F}
+fauna_eoo %>%
+  dplyr::select(-data, -eoo_sfc) %>%
+  wastdr::wastd_POST("taxon", verbose = T)
+
+flora_eoo %>%
+  dplyr::select(-data, -eoo_sfc) %>%
+  wastdr::wastd_POST("taxon", verbose = T)
+```
+
+# TEC
+* Boundaries of community occurrences are available as Shapefiles.
+* QGIS: Open shapefile, Fix geometries, Minimum bounding geometry of type "convex hull", group by "COM_ID".
+* Resulting layer: save as GeoJSON, upload to `data/tec_eoo.geojson` (relative to workbook).
+
+Note: TSC's API only accepts GeoJSON strings for the field EEO, not (Geo)JSON objects.
+
+Note: A custom QGIS model wraps the QGIS steps into one GUI dialogue.
+
+```{r, eval=F}
+tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson") %>% 
+    tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
+    wastdr::wastd_POST("community", verbose=T)
+```
+
+# Data catalogue upload
+Snapshots of this workbook (soon: and selected outputs) are uploaded to the data catalogue.
+
+```{r upload_ckan}
+d <- ckanr::package_show("threatened-species-and-communities-occurrence-analysis")
+# upload this workbook, species EOOs, and comms EOOs.
+
+ckanr::resource_update("56335544-72cf-4ebd-bb2c-bc246ec96080", "occ_etl.html")
+```
