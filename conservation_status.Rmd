@@ -122,8 +122,8 @@ which will be superseded by the IUCN RLE.
 tec_gaz_cat %>% 
     dplyr::transmute(
         list_code = "DBCA_RLE",
-        category_code = category_type_code, 
-        category_label = category_type) %>% 
+        category_code = category_code, 
+        category_label = category_label) %>% 
     unique() %>% 
     dplyr::arrange(list_code, category_code) %>%
     kable(.)
@@ -180,7 +180,7 @@ Which gazettals have old categories?
 
 ```{tec_gaz_qa}
 # State-PD (presumed totally destroyed): 7 records
-tec_gaz_cat %>% filter(category_code=="PD") %>% DT::datatable(.)
+tec_gaz_cat %>% filter(category_code=="PD") %>% kable
 
 # EPBC-CRE: 10 records
 tec_gaz_cat %>% filter(category_code=="CRE") %>% DT::datatable(.)
