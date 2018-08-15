@@ -23,6 +23,7 @@ library(skimr)
 library(leaflet)
 library(Hmisc)
 library(ckanr)
+library(glue)
 
 # Configure ckanr to data.dpaw.wa.gov.au
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
@@ -363,6 +364,7 @@ fauna_skim %>%
 ```
 
 The table `fauna` contains species occurrence records:
+
 * taxonomy,
 * location (coordinates, accuracy and derived information) and time of observation,
 * observers, taxonomic ID confirmation,
@@ -392,16 +394,17 @@ leaflet(width = 800, height = 600) %>%
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
     label = ~ paste0(scientific_name, " (", stringr::str_to_title(common_name), ")"),
-    popup = ~ paste(
-      "<h3>", stringr::str_to_title(common_name), "</h3>",
-      "<strong>", scientific_name, "</strong> (", species_code, ")<br/>",
-      "<strong>Encountered on</strong>", date, "<br/>",
-      "<strong>by</strong>", observer_name, "<br/>",
-      "<strong>through</strong>", observation_method, "(", observation_type, ")<br/>",
-      "<strong>at </strong>", site_comment, "(", shire_label, ")<br/>",
-      "<strong>Tenure</strong>", tenure, "(", tenure_id, ")<br/>",
-      "<strong>Vegetation type</strong>", vegetation_type, "(", vegetation_type_id, ")<br/>",
-      "<strong>Certainty</strong>", certainty, "(", certainty_id, ")<br/>"
+    popup = ~ glue::glue(
+        "<h3>{title}</h3>
+        <strong>{scientific_name}</strong> ({species_code})<br/>
+        <strong>Encountered on</strong> {date}<br/>
+        <strong>by</strong> {observer_name}<br/>
+        <strong>through</strong> {observation_method} ({observation_type})<br/>
+        <strong>at </strong> {site_comment} ({shire_label})<br/>
+        <strong>Tenure</strong> {tenure} ({tenure_id})<br/>
+        <strong>Vegetation type</strong> {vegetation_type} ({vegetation_type_id})<br/>
+        <strong>Certainty</strong> {certainty} ({certainty_id})<br/>",
+        title=stringr::str_to_title(common_name)
     ),
     group = "Fauna",
     clusterOptions = markerClusterOptions()
