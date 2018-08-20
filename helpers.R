@@ -86,4 +86,4 @@ upload_to_ckan <- function(data,
 }
 
 #' Load a CSV from a CKAN resource ID, requires ckanr_setup
-load_ckan_csv <- .  %>% resource_show() %>% extract2("url") %>% read_csv()
+load_ckan_csv <- .  %>% resource_show() %>% magrittr::extract2("url") %>% read_csv()

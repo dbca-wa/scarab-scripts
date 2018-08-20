@@ -15,27 +15,34 @@ output:
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 # devtools::install_github("ropenscilabs/skimr")
 # devtools::install_github("tidyverse/readr")
-# install from github: "brianb/mdbtools"
+# devtools::install_github("brianb/mdbtools")
 # devtools::install_github("ropensci/ckanr")
 library(tidyverse)
 library(jsonlite)
 library(geojsonio)
 library(readr)
+library(ckanr)
+
+library(dplyr)
 library(magrittr)
 library(lubridate)
 library(skimr)
-library(leaflet)
-library(Hmisc)
-library(ckanr)
 library(grDevices)
+
+library(leaflet)
 library(sf)
 library(geojsonsf)
 library(mapview)
 library(ggplot2)
+# library(gganimate)
+library(mapproj)
+library(RColorBrewer)
 
 # Configure ckanr to data.dpaw.wa.gov.au
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
+uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
+prod <- "https://tsc.dbca.wa.gov.au/api/1/"
 ```
 
 # Context
@@ -65,7 +72,7 @@ While a rendered copy of this workbook (for stakeholders to read) lives on the D
 * Now: Occurrence data snapshots from data catalogue
 * Soon: Occurrence data from Biosys
 
-```{r load_data}
+```{r load_data, message=F}
 fauna_occ_rid <- "b73ae0de-f243-4bb3-bbce-25b65bb98e66"
 flora_occ_rid <- "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef"
 comm_occ_rid <- ""
@@ -250,14 +257,14 @@ https://cran.r-project.org/web/packages/geojsonsf/vignettes/geojson-sf-conversio
 
 ```{r ex_upload_one_eoo, eval=F}
 one_taxon_eoo <- tibble::tibble(
-  name_id = 24557,
-  eoo = eoo_polygon(fauna_occ, nid = 24557) %>% sfc_geojson()
+  name_id = 24162,
+  eoo = eoo_polygon(fauna_occ, nid = 24162) %>% sfc_geojson()
 )
 wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
 ```
 
 # Data QA
-cNameID
+### Fauna occurrences missing a NameID
 
 ```{r}
 fauna_occ_no_nameid <- fauna_occ %>% 
@@ -342,16 +349,13 @@ mapview::mapview(head(flora_eoo$eoo_sfc))
 Upload to TSC - run manually. This could overwrite data or time out (depending on network load).
 
 ```{r upload_eoo, eval=F}
-uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
-prod <- "https://tsc.dbca.wa.gov.au/api/1/"
-
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 ```
 
 # TEC
@@ -368,6 +372,41 @@ tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
 tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
     wastdr::wastd_POST("community", verbose=T, api_url = uat)
 ```
+
+# Animations
+```{r}
+theme_opts <- list(theme(panel.grid.minor = element_blank(),
+                         panel.grid.major = element_blank(),
+                         panel.background = element_blank(),
+                         plot.background = element_blank(),
+                         panel.border = element_blank(),
+                         axis.line = element_blank(),
+                         axis.text.x = element_blank(),
+                         axis.text.y = element_blank(),
+                         axis.ticks = element_blank(),
+                         axis.title.x = element_blank(),
+                         axis.title.y = element_blank(),
+                         legend.position="right",
+                         plot.title = element_text(size=16)))
+p <- ggplot(fauna_occ, aes(x = longitude, y = latitude, group = name_id)) +
+  # theme_opts + 
+  coord_equal() +
+  geom_point(color = 'red') +
+  labs(title = "Title",
+       subtitle = "Subtitle",
+       caption = 'Caption') +
+  scale_fill_distiller(name='axis', direction = 1, palette='RdYlGn')
+
+ 
+# gg_animate(p, interval = 5) 
+
+
+# df <- df %>% mutate(ts=as.POSIXct(t, origin="1970-01-01"), 
+#                     year_month=format(ts, "%Y-%m"))
+
+
+```
+
 
 # Data catalogue upload
 Snapshots of this workbook (soon: and selected outputs) are uploaded to the data catalogue.

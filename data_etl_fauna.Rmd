@@ -206,12 +206,6 @@ species_names <- species %>%
 species_save <- species %>% dplyr::select(-starts_with("file_number"))
 ```
 
-There are `r nrow(species)` species names. The following columns are incomplete:
-
-```{r species_missing_values}
-species_skim %>% filter(stat == "missing", value > 0) %>% select(-stat, -level, -formatted)
-```
-
 The table `species` contains info on:
 
 * taxonomy (links to `name_id`, names, various hierarchy levels, 
@@ -221,6 +215,23 @@ The table `species` contains info on:
 * corporate file numbers (what's in those files?)
 * some now unused fields (see above for excluded fields)
 The field `region_id_list` should be a many-to-many relation to regions, but is superseded by spatial lookup of occurrence to spatial entity.
+
+### Data QA
+
+There are `r nrow(species)` species names. The following columns are incomplete:
+
+```{r species_missing_values}
+species_skim %>% filter(stat == "missing", value > 0) %>% select(-stat, -level, -formatted)
+```
+
+In particular, the following species names are missing a NameID.
+
+TODO: Compare all species names (with and without NameID) against recent WACensus names and NameIDs.
+Fix inconsistencies at source (Fauna db).
+ 
+```{r species_missins_nameid}
+species %>% dplyr::filter(is.na(name_id)) %>% kable
+```
 
 ## Fauna occurrence
 
@@ -242,6 +253,7 @@ The field `region_id_list` should be a many-to-many relation to regions, but is 
 ```{r fauna_occurrence}
 # Generate column config:
 # fauna_data$`Fauna Records` %>% make_coldef()
+default_date <- parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
 fauna_raw <- fauna_data$`Fauna Records`
 fauna <- fauna_raw %>%
@@ -251,9 +263,26 @@ fauna <- fauna_raw %>%
     # district_db_no = DistDBNo %>% as.character(),
     species_code = SpCode %>% as.character(),
     # name_id = NameId %>% as.character(), # they're all NA
-    o_date = parse_date_time(Date, orders = orders, tz = tz),
-    o_time = parse_date_time(Time, orders = orders, tz = tz),
-    date = with_tz(o_date + hours(hour(o_time)) + minutes(minute(o_time)), tzone = tz),
+    orig_date = Date,
+    orig_time = Time,
+    o_date = ifelse(
+        Date == "",
+        default_date, 
+        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 18L)
+        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz), 
+    o_time = ifelse(
+        Time == "",
+        default_date,
+        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 18L)
+        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    datetime = ifelse(
+        is.na(o_date),
+        default_date,
+        ifelse(
+            is.na(o_time),
+            o_date,
+            o_date + hours(hour(o_time)) + minutes(minute(o_time))
+        )) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     observer_name = Observer %>% as.character(),
     observer_role = OrgRole %>% as.character(),
     observer_address = Address %>% as.character(),
@@ -275,10 +304,10 @@ fauna <- fauna_raw %>%
     site_comment = Site %>% as.character(),
     latitude = Lat %>% as.double(),
     longitude = Long %>% as.double(),
-    map_zone = MapZone %>% as.character(),
+    zone = MapZone %>% as.character(),
     northing = SightNorth %>% as.character(),
     easting = SightEast %>% as.character(),
-    map_datum = Datum %>% as.character(),
+    datum = Datum %>% as.character(),
     resolution_id = Resolution %>% as.integer(),
     landform_id = Landform %>% as.character(),
     vegetation_type_id = VegType %>% as.character(),
@@ -337,36 +366,22 @@ fauna <- fauna_raw %>%
   dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
-  dplyr::left_join(resolution, by = "resolution_id") %>%
-  dplyr::select(-o_date, -o_time)
+  dplyr::left_join(resolution, by = "resolution_id") 
+
+# %>% dplyr::select(-o_date, -o_time)
 ```
 
-Fauna occurrence does link to the name that was current / legal at the time.
+### Taxonomic caveats
+Fauna occurrences link to the name that was current / legal at the time.
 Occurrence query should show hints linking to current / legal names and their history.
 
-## Fauna occurrence data overview
-A condensed overview over data values (completeness, ranges and distribution).
+`zone` and `datum` are standard names expected by BioSys.
 
-
-```{r fauna_skim}
-fauna_skim <- fauna %>% skimr::skim()
-print(fauna_skim)
-```
-
-There are `r nrow(fauna)` species occurrence records (encounters). 
-The following columns are incomplete:
-
-```{r fauna_missing_values}
-fauna_skim %>%
-  filter(stat == "missing", value > 0) %>%
-  select(-stat, -level, -formatted) %>%
-  DT::datatable(.)
-```
-
-The table `fauna` contains species occurrence records:
+### Data overview
+The table `fauna` contains species occurrence records with information about:
 
 * taxonomy,
-* location (coordinates, accuracy and derived information) and time of observation,
+* location (coordinates, accuracy and derived information) and datetime of observation,
 * observers, taxonomic ID confirmation,
 * data entry and last change (date and operator),
 * info on type specimens,
@@ -376,12 +391,60 @@ The table `fauna` contains species occurrence records:
 * MalleeFowl-specific observations (MF*),
 * empty columns (Field*).
 
+A condensed overview over data values (completeness, ranges and distribution):
+
+```{r fauna_skim, eval=F}
+fauna_skim <- fauna %>% skimr::skim()
+print(fauna_skim)
+```
+
+There are `r nrow(fauna)` species occurrence records (encounters). 
+The following columns are incomplete, which may only pose a problem for mandatory columns:
+
+```{r fauna_missing_values, eval=F}
+fauna_skim %>%
+  filter(stat == "missing", value > 0) %>%
+  select(-stat, -level, -formatted) %>%
+  DT::datatable(.)
+```
+
+### Data QA
+This section lists data issues which need to be fixed at the source (here, in the legacy Fauna DB).
+
+The column `datetime` is required in BioSys to be populated.
+R generates `NA` where datetime is missing, but BioSys can't handle `NA` strings.
+
+Where a time is missing, we'll default to midnight (00:00).
+Where a date is missing, we'll default to 1900-01-01.
+
+While this modifies the original data, the consequences will not have a dramatic effect on analyses for
+conservation management purposes:
+
+* A safe default of the observation time (midnight) could introduce an error of up to one day. 
+  Compared to the time frame considered (past 10-50 years of observations relative to time of 
+  calculation), this error is minuscule.
+* A safe default for missing dates (1900-01-01) will both exclude those observations from any recent
+  observations (past 10-50 years), but still make the data available to identify the records for the
+  purpose of backfilling a credible date.
+
+Please review legacy data until the following numbers are all zero (or accept default handling):
+
+* `r fauna %>% dplyr::filter(is.na(datetime)) %>% nrow()` datetimes couldn't be restored and require
+  a valid date (and ideally time) to be set at the source.
+* `r fauna %>% dplyr::filter(orig_time == "") %>% nrow()` records lack an explicit time and were 
+  defaulted to midnight AWST.
+* `r fauna %>% dplyr::filter(orig_date == "") %>% nrow()` records lack an explicit date and were
+  defaulted to 1900-01-01.
+* `r fauna %>% dplyr::filter(is.na(latitude)) %>% nrow` latitudes are missing.
+* `r fauna %>% dplyr::filter(is.na(longitude)) %>% nrow` longitudes are missing.
+* `r fauna %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the minus sign and turn up in China.
+
 ### Data migration strategy
 * Personnel: Create lookup table of `Personnel$Initials` to DBCA usernames as table `users`.
 * Names: observer, taxonomist, record entered by, record last changed by.
-* Names include menbers of public.
+* Names include members of public.
 
-## Fauna occurrence map
+### Map
 An interactive map of fauna occurrences.
 
 ```{r fauna_map, fig.height=5, fig.width=7}
@@ -393,18 +456,19 @@ leaflet(width = 800, height = 600) %>%
     data = fauna,
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
-    label = ~ paste0(scientific_name, " (", stringr::str_to_title(common_name), ")"),
+    label = ~ glue::glue(
+        "{scientific_name} ({stringr::str_to_title(common_name)})"
+    ),
     popup = ~ glue::glue(
-        "<h3>{title}</h3>
+        "<h3>{stringr::str_to_title(common_name)}</h3>
         <strong>{scientific_name}</strong> ({species_code})<br/>
-        <strong>Encountered on</strong> {date}<br/>
+        <strong>Encountered on</strong> {with_tz(datetime, tz=tz)} AWST<br/>
         <strong>by</strong> {observer_name}<br/>
         <strong>through</strong> {observation_method} ({observation_type})<br/>
         <strong>at </strong> {site_comment} ({shire_label})<br/>
         <strong>Tenure</strong> {tenure} ({tenure_id})<br/>
         <strong>Vegetation type</strong> {vegetation_type} ({vegetation_type_id})<br/>
-        <strong>Certainty</strong> {certainty} ({certainty_id})<br/>",
-        title=stringr::str_to_title(common_name)
+        <strong>Certainty</strong> {certainty} ({certainty_id})<br/>"
     ),
     group = "Fauna",
     clusterOptions = markerClusterOptions()
@@ -590,6 +654,7 @@ upload_to_ckan(fauna_cons_listing, "Threatened Fauna Conservation Status Gazetta
                resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f")
 upload_to_ckan(recovery_plans, "Threatened Fauna Recovery Plans", d$id, 
                resource_id = "9f8426c3-20ed-4ba7-a551-05e1838ab1cb")
+# Only complete occurrence records are uploaded:
 upload_to_ckan(fauna, "Threatened Fauna Occurrence", d$id, 
                resource_id = "b73ae0de-f243-4bb3-bbce-25b65bb98e66")
 ```
