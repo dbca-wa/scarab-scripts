@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 # devtools::install_github("tidyverse/readr")
 # devtools::install_github("brianb/mdbtools")
 # devtools::install_github("ropensci/ckanr")
+# devtools::install_github('thomasp85/gganimate')
 library(tidyverse)
 library(jsonlite)
 library(geojsonio)
@@ -33,10 +34,13 @@ library(leaflet)
 library(sf)
 library(geojsonsf)
 library(mapview)
+library(maps)
 library(ggplot2)
-# library(gganimate)
+library(gganimate)
+library(ggthemes)
 library(mapproj)
 library(RColorBrewer)
+library(gapminder)
 
 # Configure ckanr to data.dpaw.wa.gov.au
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
@@ -214,6 +218,27 @@ eoo_24557 <- eoo_polygon(fauna_occ, nid = 24557)
 # see https://r-spatial.github.io/sf/articles/sf5.html
 # ggplot() + geom_sf(data = eoo_24557)
 mapview::mapview(eoo_24557)
+
+anim_24557 <- fauna_occ %>% 
+    dplyr::mutate(year = lubridate::year(datetime)) %>% 
+    dplyr::filter(name_id==24557)
+
+oz <- ggplot() +
+  borders("world", colour = "gray75", fill = "gray95") +
+  ggthemes::theme_map() + coord_equal() + xlim(c(100, 140)) + ylim(c(-40,-10))
+
+oz + geom_point(
+        data=anim_24557,
+        aes(x=longitude, y=latitude, size = number_seen, colour = observation_type), 
+        alpha = 0.7, show.legend = FALSE) +
+  scale_size(range = c(2, 12)) +
+  labs(title = 'Mallefowl [Year: {lubridate::year(frame_time)}]', x = 'Lat', y = 'Lon') +
+  transition_time(o_date) +
+  # gganimate::shadow_mark(size = 1, colour = 'darkgrey') +
+  ease_aes('linear') +
+  enter_grow() +
+  exit_fade() +
+  anim_save("data/occ_24557.gif")
 ```
 
 ## Calyptorhynchus latirostris
@@ -372,41 +397,6 @@ tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
 tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
     wastdr::wastd_POST("community", verbose=T, api_url = uat)
 ```
-
-# Animations
-```{r}
-theme_opts <- list(theme(panel.grid.minor = element_blank(),
-                         panel.grid.major = element_blank(),
-                         panel.background = element_blank(),
-                         plot.background = element_blank(),
-                         panel.border = element_blank(),
-                         axis.line = element_blank(),
-                         axis.text.x = element_blank(),
-                         axis.text.y = element_blank(),
-                         axis.ticks = element_blank(),
-                         axis.title.x = element_blank(),
-                         axis.title.y = element_blank(),
-                         legend.position="right",
-                         plot.title = element_text(size=16)))
-p <- ggplot(fauna_occ, aes(x = longitude, y = latitude, group = name_id)) +
-  # theme_opts + 
-  coord_equal() +
-  geom_point(color = 'red') +
-  labs(title = "Title",
-       subtitle = "Subtitle",
-       caption = 'Caption') +
-  scale_fill_distiller(name='axis', direction = 1, palette='RdYlGn')
-
- 
-# gg_animate(p, interval = 5) 
-
-
-# df <- df %>% mutate(ts=as.POSIXct(t, origin="1970-01-01"), 
-#                     year_month=format(ts, "%Y-%m"))
-
-
-```
-
 
 # Data catalogue upload
 Snapshots of this workbook (soon: and selected outputs) are uploaded to the data catalogue.
