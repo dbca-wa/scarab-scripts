@@ -109,8 +109,10 @@ There are `r nrow(fauna_tally)` fauna taxa and
 A few helper functions to extract convex hulls from given points.
 
 ```{r helpers}
-#' Return the convex hull around all given points.
+#' Return the convex hull plus minimal buffer around all given points.
 #'
+#' A minimal buffer is included to turn single point observations
+#' into actual polygons.
 #' @param lonlat_cols A vector of lon and lat column names,
 #'   default: c("longitude", "latitude")
 #' @param crs The coordinate reference system ID (4283=GDA94)
@@ -121,7 +123,8 @@ lonlat_to_convex_hull <- function(data,
   data %>%
     sf::st_as_sf(coords = lonlat_cols, crs = crs, agr = "constant") %>%
     sf::st_union(.) %>%
-    sf::st_convex_hull(.)
+    sf::st_convex_hull(.) %>%
+    sf::st_buffer(., 0.00001)
 }
 
 #' Convert occurrence records into a dataframe of distinct name_id:eoo
@@ -379,16 +382,16 @@ Does that look about right?
 mapview::mapview(head(fauna_eoo$eoo_sfc))
 mapview::mapview(head(flora_eoo$eoo_sfc))
 
-# Banksia brownii, NameID 1806
-flora_eoo %>% 
-    filter(name_id==1806) %>% 
-    magrittr::extract2("eoo_sfc") %>% 
-    mapview::mapview(.)
-
-flora_eoo %>% 
-    dplyr::filter(name_id==1806) %>%
-    dplyr::select(-data, -eoo_sfc) %>%
-    wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
+# # Banksia brownii, NameID 1806
+# flora_eoo %>% 
+#     filter(name_id==1806) %>% 
+#     magrittr::extract2("eoo_sfc") %>% 
+#     mapview::mapview(.)
+# 
+# flora_eoo %>% 
+#     dplyr::filter(name_id==1806) %>%
+#     dplyr::select(-data, -eoo_sfc) %>%
+#     wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
 ```
 
 Upload to TSC - run manually. This could overwrite data or time out (depending on network load).
@@ -396,11 +399,11 @@ Upload to TSC - run manually. This could overwrite data or time out (depending o
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 ```
 
 # TEC
