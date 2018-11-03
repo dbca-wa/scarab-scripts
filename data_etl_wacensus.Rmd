@@ -43,8 +43,9 @@ This workbook serves to update TSC via its API from KMI's WACensus views and leg
 ## Example: update one Taxon
 
 ```{r write_data_example}
-hbvnames <- kmi_getFeature(layer_name = "public:herbie_hbvnames_public")
+hbvnames <- gs_getFeature(layer_name = "public:herbie_hbvnames_public")
 namesprops <- purrr::map(hbvnames[["features"]], "properties")
+namesprops[[1]]
 wastd_POST(namesprops[[1]], serializer = "names", api_url = local_api)
 ```
 
@@ -54,9 +55,7 @@ Local TSC instance (dev):
 ```{r rock_and_roll_local, eval=F}
 gjlocal <- function(data, ser) upsert_geojson(
     data, serializer = ser, api_url = uat_api, chunksize = 1000)
-"public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjlocal("names")
 "public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjlocal("supra")
-"public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjlocal("groups")
 "public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% gjlocal("families")
 "public:herbie_hbvgenera_public" %>% gs_getFeature() %>% gjlocal("genera")
 "public:herbie_hbvspecies_public" %>% gs_getFeature() %>% gjlocal("species")
