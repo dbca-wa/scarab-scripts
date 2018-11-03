@@ -21,10 +21,8 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 library(tidyverse)
 library(jsonlite)
 library(geojsonio)
-library(readr)
 library(ckanr)
 
-library(dplyr)
 library(magrittr)
 library(lubridate)
 library(skimr)
@@ -35,7 +33,6 @@ library(sf)
 library(geojsonsf)
 library(mapview)
 library(maps)
-library(ggplot2)
 library(gganimate)
 library(ggthemes)
 library(mapproj)
@@ -45,6 +42,7 @@ library(RColorBrewer)
 # Configure ckanr to data.dpaw.wa.gov.au
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
+dev <- "http://localhost:8220/api/1/"
 uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
 prod <- "https://tsc.dbca.wa.gov.au/api/1/"
 ```
@@ -382,6 +380,17 @@ Does that look about right?
 mapview::mapview(head(fauna_eoo$eoo_sfc))
 mapview::mapview(head(flora_eoo$eoo_sfc))
 
+<<<<<<< HEAD
+# Banksia brownii, NameID 1806
+flora_eoo %>% 
+    filter(name_id==1806) %>% 
+    magrittr::extract2("eoo_sfc") %>% 
+    mapview::mapview(.)
+
+flora_eoo %>% 
+    # dplyr::filter(name_id==1806) %>%
+    dplyr::select(-data, -eoo_sfc) %>%
+    wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
 # # Banksia brownii, NameID 1806
 # flora_eoo %>% 
 #     filter(name_id==1806) %>% 
