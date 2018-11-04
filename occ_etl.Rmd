@@ -430,6 +430,36 @@ tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>
     wastdr::wastd_POST("community", verbose=T, api_url = uat)
 ```
 
+
+# Fauna occurrences to TEC
+A single record, or a list of (one or) many records, can be uploaded to the TSC API as follows.
+
+```{r eval=F}
+taxonpoint = rjson::fromJSON('[{"taxon": 25755, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,    "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT (119.732234 -32.35756)"}]')
+wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api_url = "http://0.0.0.0:32770/api/1/")
+```
+
+```{r fauna_occ_prep}
+fauna_tae <- fauna_occ %>%
+  dplyr::transmute(
+    taxon = name_id,
+    code = "",
+    description = "",
+    source = 10,
+    source_id = id,
+    encountered_on = datetime,
+    encountered_by = 1,
+    area_type = 30,
+    accuracy = 1000.0,
+    point = glue::glue("SRID=4326;POINT ({longitude} {latitude})")
+  )
+wastdr::wastd_POST(fauna_tae,
+                   serializer = "occ-taxon-points", 
+                   verbose = T, 
+                   api_url = "http://0.0.0.0:32772/api/1/")
+
+```
+
 # Data catalogue upload
 Snapshots of this workbook (soon: and selected outputs) are uploaded to the data catalogue.
 
