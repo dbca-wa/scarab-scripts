@@ -301,7 +301,7 @@ com_history %>% DT::datatable(.)
 ## Occurrences
 Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
 
-```{r occ}
+```{r tec_occ}
 # what's that?
 classifications <- tec$CLASSIFICATIONS %>%
   dplyr::transmute(
@@ -321,7 +321,7 @@ reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability = BR.DESC %>% as.character()
 )
 
-occurrences <- tec$OCCURRENCES %>%
+tec_occ <- tec$OCCURRENCES %>%
   tibble::as.tibble() %>%
   dplyr::transmute(
     # IDs
@@ -380,12 +380,12 @@ occurrences <- tec$OCCURRENCES %>%
   dplyr::left_join(confidentiality, by = "confidential_id") %>%
   dplyr::left_join(reliability, by = "reliability_id") %>%
   dplyr::select(-confidential_id, reliability_id)
-occurrences %>% skimr::skim()
-occurrences %>% head(100) %>% DT::datatable(.)
+tec_occ %>% skimr::skim()
+tec_occ %>% head(100) %>% DT::datatable(.)
 
 # unique(occurrences$ctrc_sys) %>% sort()
 
-occ_short <- occurrences %>%
+occ_short <- tec_occ %>%
   dplyr::select(occ_id, boundary_id, boundary_desc, com_id, com_label, com_name)
 ```
 
@@ -866,7 +866,7 @@ d <- ckanr::package_show("threatened-ecological-communities-database")
 ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
 upload_to_ckan(communities, "Threatened Ecological Communities (TEC)", 
                d$id, resource_id = "9782cc52-7be8-494a-a7da-51845c119a21")
-upload_to_ckan(occurrences, "TEC Occurrences", 
+upload_to_ckan(tec_occ, "TEC Occurrences", 
                d$id, resource_id = "65f43392-a8c5-41e2-a31e-cc4135e9274e")
 upload_to_ckan(sites, "TEC Site Points", 
                d$id, resource_id = "bf4c2973-e549-408b-a583-013052072d6c")

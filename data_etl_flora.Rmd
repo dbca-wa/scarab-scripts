@@ -26,6 +26,10 @@ library(ckanr)
 # Configure ckanr to data.dpaw.wa.gov.au
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
+
+# Date conventions
+orders <- c("mdyHMS")
+tz <- "Australia/Perth"
 ```
 # SCB data background
 [Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
@@ -230,8 +234,10 @@ Table `DRF_RFR_FORMS` combines highly denormalised data related to species occur
 
 TODO: parse data types
 
-```{r occ}
-occurrence <- tpfl$DRF_RFR_FORMS %>%
+```{r flora_occ}
+default_date <- parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
+
+flora_occ <- tpfl$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
     sheetno = SHEETNO %>% as.integer(),
@@ -312,7 +318,18 @@ occurrence <- tpfl$DRF_RFR_FORMS %>%
     quad_num_total = QUAD.NUM.TOTAL %>% as.character(),
 
     # survey / site visit
-    observation_date = OBSERVATION.DATE %>% as.character(),
+    observation_date = OBSERVATION.DATE %>% 
+            lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
+            lubridate::as_datetime(.) %>%
+            with_tz(tzone = tz),
+        # ifelse(
+        # is.na(OBSERVATION.DATE),
+        # default_date,
+        # OBSERVATION.DATE %>% 
+        #     lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
+        #     lubridate::as_datetime(.) %>%
+        #     with_tz(tzone = tz)
+        # ),
     svy_extent = SVY.EXTENT %>% as.character(),
     svy_effort_area = SVY.EFFORT.AREA %>% as.character(),
     svy_effort_time = SVY.EFFORT.TIME %>% as.character(),
@@ -393,7 +410,7 @@ leaflet(width = 800, height = 600) %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
   clearBounds() %>%
   addAwesomeMarkers(
-    data = occurrence,
+    data = flora_occ,
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
     label = ~ paste(species_name),
@@ -753,7 +770,7 @@ is generated after the R code is run.
 d <- ckanr::package_show("threatened-and-priority-flora-database")
 ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb", 
                        "data_etl_flora.html")
-upload_to_ckan(occurrence, "TPFL Species Occurrence", 
+upload_to_ckan(flora_occ, "TPFL Species Occurrence", 
                d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
 upload_to_ckan(populations, "TPFL Populations", 
                d$id, resource_id = "477dbe8c-5bcb-4a5d-90d9-a28869d376b8")

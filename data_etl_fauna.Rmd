@@ -134,6 +134,11 @@ resolution <- fauna_data$Resolution %>%
     resolution_projected_coords = ResolutionUTM %>% as.character()
   )
 
+resolution_m <- tibble::tibble(
+    resolution_id = c(1,2,3,4,5,6),
+    accuracy = c(50,100,1000, 10000, 50000, 100000)
+)
+
 category <- fauna_data$`Category List` %>%
   dplyr::transmute(
     category_id = Category %>% as.character(),
@@ -256,7 +261,7 @@ species %>% dplyr::filter(is.na(name_id)) %>% kable
 default_date <- parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
 fauna_raw <- fauna_data$`Fauna Records`
-fauna <- fauna_raw %>%
+fauna_occ <- fauna_raw %>%
   dplyr::transmute(
     id = DBNo %>% as.integer(),
     # district_db = DistDB %>% as.integer(),
@@ -366,7 +371,7 @@ fauna <- fauna_raw %>%
   dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
-  dplyr::left_join(resolution, by = "resolution_id") 
+  dplyr::left_join(resolution_m, by = "resolution_id") 
 
 # %>% dplyr::select(-o_date, -o_time)
 ```
@@ -378,7 +383,7 @@ Occurrence query should show hints linking to current / legal names and their hi
 `zone` and `datum` are standard names expected by BioSys.
 
 ### Data overview
-The table `fauna` contains species occurrence records with information about:
+The table `fauna_occ` contains species occurrence records with information about:
 
 * taxonomy,
 * location (coordinates, accuracy and derived information) and datetime of observation,
@@ -394,11 +399,11 @@ The table `fauna` contains species occurrence records with information about:
 A condensed overview over data values (completeness, ranges and distribution):
 
 ```{r fauna_skim, eval=F}
-fauna_skim <- fauna %>% skimr::skim()
+fauna_skim <- fauna_occ %>% skimr::skim()
 print(fauna_skim)
 ```
 
-There are `r nrow(fauna)` species occurrence records (encounters). 
+There are `r nrow(fauna_occ)` species occurrence records (encounters). 
 The following columns are incomplete, which may only pose a problem for mandatory columns:
 
 ```{r fauna_missing_values, eval=F}
@@ -429,15 +434,15 @@ conservation management purposes:
 
 Please review legacy data until the following numbers are all zero (or accept default handling):
 
-* `r fauna %>% dplyr::filter(is.na(datetime)) %>% nrow()` datetimes couldn't be restored and require
+* `r fauna_occ %>% dplyr::filter(is.na(datetime)) %>% nrow()` datetimes couldn't be restored and require
   a valid date (and ideally time) to be set at the source.
-* `r fauna %>% dplyr::filter(orig_time == "") %>% nrow()` records lack an explicit time and were 
+* `r fauna_occ %>% dplyr::filter(orig_time == "") %>% nrow()` records lack an explicit time and were 
   defaulted to midnight AWST.
-* `r fauna %>% dplyr::filter(orig_date == "") %>% nrow()` records lack an explicit date and were
+* `r fauna_occ %>% dplyr::filter(orig_date == "") %>% nrow()` records lack an explicit date and were
   defaulted to 1900-01-01.
-* `r fauna %>% dplyr::filter(is.na(latitude)) %>% nrow` latitudes are missing.
-* `r fauna %>% dplyr::filter(is.na(longitude)) %>% nrow` longitudes are missing.
-* `r fauna %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the minus sign and turn up in China.
+* `r fauna_occ %>% dplyr::filter(is.na(latitude)) %>% nrow` latitudes are missing.
+* `r fauna_occ %>% dplyr::filter(is.na(longitude)) %>% nrow` longitudes are missing.
+* `r fauna_occ %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the minus sign and turn up in China.
 
 ### Data migration strategy
 * Personnel: Create lookup table of `Personnel$Initials` to DBCA usernames as table `users`.
@@ -453,7 +458,7 @@ leaflet(width = 800, height = 600) %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
   clearBounds() %>%
   addAwesomeMarkers(
-    data = fauna,
+    data = fauna_occ,
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
     label = ~ glue::glue(
@@ -468,7 +473,7 @@ leaflet(width = 800, height = 600) %>%
         <strong>at </strong> {site_comment} ({shire_label})<br/>
         <strong>Tenure</strong> {tenure} ({tenure_id})<br/>
         <strong>Vegetation type</strong> {vegetation_type} ({vegetation_type_id})<br/>
-        <strong>Certainty</strong> {certainty} ({certainty_id})<br/>"
+        <strong>Certainty</strong> {certainty} ({certainty})<br/>"
     ),
     group = "Fauna",
     clusterOptions = markerClusterOptions()
@@ -655,7 +660,7 @@ upload_to_ckan(fauna_cons_listing, "Threatened Fauna Conservation Status Gazetta
 upload_to_ckan(recovery_plans, "Threatened Fauna Recovery Plans", d$id, 
                resource_id = "9f8426c3-20ed-4ba7-a551-05e1838ab1cb")
 # Only complete occurrence records are uploaded:
-upload_to_ckan(fauna, "Threatened Fauna Occurrence", d$id, 
+upload_to_ckan(fauna_occ, "Threatened Fauna Occurrence", d$id, 
                resource_id = "b73ae0de-f243-4bb3-bbce-25b65bb98e66")
 ```
 
