@@ -13,38 +13,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-# devtools::install_github("ropenscilabs/skimr")
-# devtools::install_github("tidyverse/readr")
-# devtools::install_github("brianb/mdbtools")
-# devtools::install_github("ropensci/ckanr")
-# devtools::install_github('thomasp85/gganimate')
-library(tidyverse)
-library(jsonlite)
-# library(geojsonio)
-library(ckanr)
-
-library(magrittr)
-library(lubridate)
-library(skimr)
-library(grDevices)
-
-library(leaflet)
-library(sf)
-library(geojsonsf)
-library(mapview)
-library(maps)
-library(gganimate)
-library(ggthemes)
-library(mapproj)
-library(RColorBrewer)
-# library(gapminder)
-
-# Configure ckanr to data.dpaw.wa.gov.au
-ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
-dev <- "http://localhost:8220/api/1/"
-uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
-prod <- "https://tsc.dbca.wa.gov.au/api/1/"
 ```
 
 # Context

@@ -1,3 +1,52 @@
+# devtools::install_github("ropenscilabs/skimr")
+# devtools::install_github("tidyverse/readr")
+# devtools::install_github("brianb/mdbtools")
+# devtools::install_github("ropensci/ckanr")
+# devtools::install_github('thomasp85/gganimate')
+library(tidyverse)
+library(lubridate)
+library(skimr)
+library(Hmisc)
+library(ckanr)
+library(glue)
+library(magrittr)
+library(readr)
+library(dplyr)
+
+library(ckanr)
+library(wastdr)
+
+library(magrittr)
+library(lubridate)
+library(skimr)
+
+library(leaflet)
+library(RColorBrewer)
+library(sf)
+library(jsonlite)
+library(geojsonio)
+library(geojsonsf)
+library(mapview)
+library(maps)
+library(mapproj)
+
+library(gganimate)
+library(ggthemes)
+library(grDevices)
+
+# library(gapminder)
+
+# Configure ckanr to data.dpaw.wa.gov.au
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+
+# Date conventions
+orders <- c("mdyHMS")
+tz <- "Australia/Perth"
+
+dev <- "http://localhost:8220/api/1/"
+uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
+prod <- "https://tsc.dbca.wa.gov.au/api/1/"
+
 #' Download, extract and open a zipped Access database from a CKAN dataset
 #'
 #' @param resource_id The CKAN resource ID of a zipped Access DB

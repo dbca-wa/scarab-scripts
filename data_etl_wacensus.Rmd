@@ -13,22 +13,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
-library(lubridate)
-library(magrittr)
-library(tidyverse)
-library(skimr)
-library(leaflet)
-library(Hmisc)
-library(ckanr)
-library(readr)
-library(wastdr)
-library(dplyr)
 source("helpers.R")
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
-ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
-dev <- "http://localhost:8220/api/1/"
-uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
-prod <- "https://tsc.dbca.wa.gov.au/api/1/"
 ```
 
 # Context

@@ -13,23 +13,8 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-# devtools::install_github("ropenscilabs/skimr")
-# devtools::install_github("tidyverse/readr")
-# install from github: "brianb/mdbtools"
-# devtools::install_github("ropensci/ckanr")
-library(tidyverse)
-library(skimr)
-library(leaflet)
-library(Hmisc)
-library(ckanr)
-
-# Configure ckanr to data.dpaw.wa.gov.au
-ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
-
-# Date conventions
-orders <- c("mdyHMS")
-tz <- "Australia/Perth"
+if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ```
 # SCB data background
 [Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
