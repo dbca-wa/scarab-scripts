@@ -387,19 +387,9 @@ flora_eoo %>%
     mapview::mapview(.)
 
 flora_eoo %>% 
-    # dplyr::filter(name_id==1806) %>%
+    dplyr::filter(name_id==1806) %>%
     dplyr::select(-data, -eoo_sfc) %>%
     wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
-# # Banksia brownii, NameID 1806
-# flora_eoo %>% 
-#     filter(name_id==1806) %>% 
-#     magrittr::extract2("eoo_sfc") %>% 
-#     mapview::mapview(.)
-# 
-# flora_eoo %>% 
-#     dplyr::filter(name_id==1806) %>%
-#     dplyr::select(-data, -eoo_sfc) %>%
-#     wastdr::wastd_POST("taxon", verbose = T, api_url = uat)
 ```
 
 Upload to TSC - run manually. This could overwrite data or time out (depending on network load).
@@ -433,13 +423,13 @@ tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>
 # Occurrences to TSC
 A single record, or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
-```{r eval=F}
+```{r fauna_single_occ, eval=F}
 # 25755
 taxonpoint = rjson::fromJSON('[{"taxon": 25757, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,    "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT(119.732234 -32.35756)"}]')
 wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api_url = dev)
 ```
 
-```{r fauna_occ_tsc}
+```{r fauna_occ_tsc, eval=F}
 fauna_tae <- fauna_occ %>%
   dplyr::filter(!is.na(name_id)) %>% 
   dplyr::transmute(
@@ -466,7 +456,7 @@ fauna_tae10 = fauna_tae[1:10,]
 wastdr::wastd_POST(fauna_tae10, serializer = "occ-taxon-points", api_url = dev)
 ```
 
-```{r flora_occ_tsc}
+```{r flora_occ_tsc, eval=F}
 flora_tae <- flora_occ %>%
   dplyr::filter(!is.na(name_id)) %>% 
   dplyr::filter(!is.na(observation_date)) %>%
