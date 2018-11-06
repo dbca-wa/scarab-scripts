@@ -407,7 +407,7 @@ Upload to TSC - run manually. This could overwrite data or time out (depending o
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
@@ -462,7 +462,7 @@ fauna_tae <- fauna_occ %>%
   )
 
 # db transaction spans entire batch, data only visible in TSC on completed POST
-fauna_tae10 = fauna_tae[20001:62901,]
+fauna_tae10 = fauna_tae[1:10,]
 wastdr::wastd_POST(fauna_tae10, serializer = "occ-taxon-points", api_url = dev)
 ```
 

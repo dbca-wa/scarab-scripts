@@ -226,7 +226,7 @@ The field `region_id_list` should be a many-to-many relation to regions, but is 
 There are `r nrow(species)` species names. The following columns are incomplete:
 
 ```{r species_missing_values}
-species_skim %>% filter(stat == "missing", value > 0) %>% select(-stat, -level, -formatted)
+species_skim #%>% filter(stat == "missing", value > 0) %>% select(-stat, -level, -formatted)
 ```
 
 In particular, the following species names are missing a NameID.
@@ -255,7 +255,7 @@ species %>% dplyr::filter(is.na(name_id)) %>% kable
 * Some staff use FaunaFile for data returns.
 * Staff could use BioSys for data returns.
 
-```{r fauna_occurrence}
+```{r fauna_occ}
 # Generate column config:
 # fauna_data$`Fauna Records` %>% make_coldef()
 default_date <- parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)

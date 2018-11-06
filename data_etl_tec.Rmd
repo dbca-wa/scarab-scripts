@@ -863,7 +863,7 @@ is generated after the R code is run - knit a workbook twice to update the data 
 
 ```{r tec_upload}
 d <- ckanr::package_show("threatened-ecological-communities-database")
-ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
+# ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
 upload_to_ckan(communities, "Threatened Ecological Communities (TEC)", 
                d$id, resource_id = "9782cc52-7be8-494a-a7da-51845c119a21")
 upload_to_ckan(tec_occ, "TEC Occurrences", 

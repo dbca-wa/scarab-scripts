@@ -235,7 +235,7 @@ Table `DRF_RFR_FORMS` combines highly denormalised data related to species occur
 TODO: parse data types
 
 ```{r flora_occ}
-default_date <- parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
+default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
 flora_occ <- tpfl$DRF_RFR_FORMS %>%
   dplyr::transmute(
@@ -321,7 +321,7 @@ flora_occ <- tpfl$DRF_RFR_FORMS %>%
     observation_date = OBSERVATION.DATE %>% 
             lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
             lubridate::as_datetime(.) %>%
-            with_tz(tzone = tz),
+            lubridate::with_tz(tzone = tz),
         # ifelse(
         # is.na(OBSERVATION.DATE),
         # default_date,
@@ -768,7 +768,7 @@ is generated after the R code is run.
 
 ```{r flora_upload}
 d <- ckanr::package_show("threatened-and-priority-flora-database")
-ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb", 
+ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb",
                        "data_etl_flora.html")
 upload_to_ckan(flora_occ, "TPFL Species Occurrence", 
                d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
