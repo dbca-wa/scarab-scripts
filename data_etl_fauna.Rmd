@@ -13,20 +13,6 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
-# devtools::install_github("ropenscilabs/skimr")
-# devtools::install_github("tidyverse/readr")
-# install from github: "brianb/mdbtools"
-# devtools::install_github("ropensci/ckanr")
-library(tidyverse)
-library(lubridate)
-library(skimr)
-library(leaflet)
-library(Hmisc)
-library(ckanr)
-library(glue)
-
-# Configure ckanr to data.dpaw.wa.gov.au
-ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 source("helpers.R")
 ```
 # SCB data background
