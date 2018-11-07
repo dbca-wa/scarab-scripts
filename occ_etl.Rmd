@@ -459,21 +459,23 @@ wastdr::wastd_POST(flora_tae, serializer = "occ-taxon-points", api_url = dev)
 
 ## TEC
 ```{r tec_occ_tsc , eval=F}
-tec <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
+tec_boundaries <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
 tec_cae <- tibble::tibble(
-    community = tec$COM_ID,
-    name=tec$BDY_ID,
+    community = tec_boundaries$COM_ID,
+    name=tec_boundaries$BDY_ID,
     description = glue::glue(""),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 12, # TEC
-    source_id = tec$OCC_UNIQUE,
+    source_id = tec_boundaries$OCC_UNIQUE,
     encountered_on=default_date,
     encountered_by=1,
-    geom = tec$geometry %>% 
+    geom = tec_boundaries$geometry %>% 
         sf::st_convex_hull(.) %>% 
         sf::st_buffer(., 0.00001) %>% 
         geojsonsf::sfc_geojson(.) 
-tec_cae %>% wastdr::wastd_POST("occ-community-areas", verbose=T, api_url = dev)
+    )
+    
+tec_cae %>% chunk_post(serializer = "occ-community-areas", api_url = uat)
 ```
 
 # Data catalogue upload

@@ -156,22 +156,22 @@ species <- fauna_data$`Species List` %>%
     authority_species = Authority.sp %>% as.character(),
     subspecies = Subspecies %>% as.character(),
     authority_subspecies = Authority.ssp %>% as.character(),
-    file_number_calm = CALMFileNum %>%
-      as.character() %>%
-      map(~ as_filenumber(., prefix = "CALM")),
-    file_number_dec = DECFileNum %>%
-      as.character() %>%
-      map(~ as_filenumber(., prefix = "DEC")),
-    file_number_dpaw = DPaWFileNum %>%
-      as.character() %>%
-      map(~ as_filenumber(., prefix = "DPAW")),
-    file_number_dbca = DBCAFileNum %>%
-      as.character() %>%
-      map(~ as_filenumber(., prefix = "DBCA")),
+    # file_number_calm = CALMFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "CALM")),
+    # file_number_dec = DECFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DEC")),
+    # file_number_dpaw = DPaWFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DPAW")),
+    # file_number_dbca = DBCAFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DBCA")),
     category_id = Category %>% as.character(),
     origin = Origin %>% as.character(), # N - native, I - introduced
     # region_id_list = Region %>% map(~ as.list(strsplit(., ",")[[1]] %>% as.integer())),
-    taxon_id = TaxonId %>% as.logical(),
+    taxon_id = TaxonId %>% as.logical()
     # translocated = Trans %>% as.character(), # E - extant, T - translocated
     # accept_new_records = Incl %>% as.logical(), # only FALSE in old records
     # species_can_be_trapped = Trap %>% as.logical(),

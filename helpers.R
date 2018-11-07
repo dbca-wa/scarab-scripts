@@ -136,3 +136,24 @@ upload_to_ckan <- function(data,
 
 #' Load a CSV from a CKAN resource ID, requires ckanr_setup
 load_ckan_csv <- .  %>% resource_show() %>% magrittr::extract2("url") %>% read_csv()
+
+
+
+chunk_post <- function(data, serializer = "names", api_url = wastdr::get_wastdr_api_url(),
+          api_token = wastdr::get_wastdr_api_token(), api_un = wastdr::get_wastdr_api_un(),
+          api_pw = wastdr::get_wastdr_api_pw(), chunksize = 1000,
+          verbose = FALSE) {
+    . <- NULL
+    if (verbose) message("[chunk_post] Updating ", api_url, serializer, "...")
+    len <- length(data)
+    for (i in 0:(len/chunksize)) {
+        start <- (i * chunksize) + 1
+        end <- min((start + chunksize) - 1, len)
+        message("[chunk_post] Processing feature ", start, " to ", end)
+        data[start:end,] %>%
+            wastdr::wastd_POST(., serializer = serializer, api_url = api_url,
+                       api_token = api_token, api_un = api_un, api_pw = api_pw,
+                       verbose = verbose)
+    }
+    message("[chunk_post] Finished, ", len, " records created/updated.")
+}
