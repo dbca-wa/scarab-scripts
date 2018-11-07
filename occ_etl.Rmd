@@ -425,7 +425,7 @@ fauna_tae <- fauna_occ %>%
 
 # db transaction spans entire batch, data only visible in TSC on completed POST
 fauna_tae10 = fauna_tae[1:10,]
-wastdr::wastd_POST(fauna_tae, serializer = "occ-taxon-points", api_url = dev)
+fauna_tae %>% chunk_post(serializer = "occ-taxon-points", api_url = dev)
 ```
 ## Flora
 
@@ -454,7 +454,7 @@ flora_tae <- flora_occ %>%
 
 # db transaction spans entire batch, data only visible in TSC on completed POST
 flora_tae10 = flora_tae[1:10,]
-wastdr::wastd_POST(flora_tae, serializer = "occ-taxon-points", api_url = dev)
+flora_tae %>% chunk_post(serializer = "occ-taxon-points", api_url = dev)
 ```
 
 ## TEC
@@ -475,7 +475,7 @@ tec_cae <- tibble::tibble(
         geojsonsf::sfc_geojson(.) 
     )
     
-tec_cae %>% chunk_post(serializer = "occ-community-areas", api_url = uat)
+tec_cae %>% chunk_post(serializer = "occ-community-areas", api_url = dev)
 ```
 
 # Data catalogue upload

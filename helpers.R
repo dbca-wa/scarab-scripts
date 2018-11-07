@@ -141,11 +141,10 @@ load_ckan_csv <- .  %>% resource_show() %>% magrittr::extract2("url") %>% read_c
 
 chunk_post <- function(data, serializer = "names", api_url = wastdr::get_wastdr_api_url(),
           api_token = wastdr::get_wastdr_api_token(), api_un = wastdr::get_wastdr_api_un(),
-          api_pw = wastdr::get_wastdr_api_pw(), chunksize = 1000,
-          verbose = FALSE) {
+          api_pw = wastdr::get_wastdr_api_pw(), chunksize = 1000, verbose = FALSE) {
     . <- NULL
     if (verbose) message("[chunk_post] Updating ", api_url, serializer, "...")
-    len <- length(data)
+    len <- nrow(data)
     for (i in 0:(len/chunksize)) {
         start <- (i * chunksize) + 1
         end <- min((start + chunksize) - 1, len)
