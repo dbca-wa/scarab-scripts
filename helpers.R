@@ -145,7 +145,7 @@ chunk_post <- function(data, serializer = "names", api_url = wastdr::get_wastdr_
     . <- NULL
     if (verbose) message("[chunk_post] Updating ", api_url, serializer, "...")
     len <- nrow(data)
-    for (i in 0:(len/chunksize)) {
+    for (i in 0:((len/chunksize)-1)) {
         start <- (i * chunksize) + 1
         end <- min((start + chunksize) - 1, len)
         message("[chunk_post] Processing feature ", start, " to ", end)

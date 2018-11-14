@@ -390,7 +390,7 @@ tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>
 ```
 
 
-# Occurrences to TSC
+# TSC Occurrences
 A single record, or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
 ## Fauna
@@ -423,13 +423,16 @@ fauna_tae <- fauna_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   )
 
-# db transaction spans entire batch, data only visible in TSC on completed POST
 fauna_tae10 = fauna_tae[1:10,]
-fauna_tae %>% chunk_post(serializer = "occ-taxon-points", api_url = dev)
+fauna_tae10 %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
 ```
-## Flora
 
-```{r flora_occ_tsc, eval=F}
+## Flora
+Poplation ID (e.g. "7"") becomes TaxonEncounter code,
+Ppopulation ID plus Subpopulation DI (if given) becomes TaxonEncounter name 
+(e.g. "7A", "7B", "8", "9").
+
+```{r flora_occ_tsc_data}
 flora_tae <- flora_occ %>%
   dplyr::filter(!is.na(name_id)) %>% 
   dplyr::filter(!is.na(observation_date)) %>%
@@ -438,7 +441,7 @@ flora_tae <- flora_occ %>%
   dplyr::transmute(
     taxon = name_id,
     code = pop_id,
-    name = glue::glue("{pop_id}-{subpop_code}"),
+    name = glue::glue("{pop_id}{subpop_code}"),
     description = glue::glue(
         "Population {pop_id}, Subpopulation {subpop_code}. ",
         "Location: {location}. Nearest known place: {nearplace}. "
@@ -451,10 +454,17 @@ flora_tae <- flora_occ %>%
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   )
+```
 
-# db transaction spans entire batch, data only visible in TSC on completed POST
-flora_tae10 = flora_tae[1:10,]
-flora_tae %>% chunk_post(serializer = "occ-taxon-points", api_url = dev)
+Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
+```{r flora_occ_tsc_resighted}
+flora_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2)
+```
+
+Finally, flora encounters are uploaded to TSC.
+```{r flora_occ_tsc_upload, eval=F}
+flora_tae10 = flora_tae[1:100,]
+flora_tae10 %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
 ```
 
 ## TEC
@@ -474,8 +484,9 @@ tec_cae <- tibble::tibble(
         sf::st_buffer(., 0.00001) %>% 
         geojsonsf::sfc_geojson(.) 
     )
-    
-tec_cae %>% chunk_post(serializer = "occ-community-areas", api_url = dev)
+tec_cae10 = tec_cae[1:100,]
+tec_cae %>% chunk_post(serializer = "occ-community-areas", api_url = dev, verbose = T)
+#"http://0.0.0.0:32769/api/1/")
 ```
 
 # Data catalogue upload
