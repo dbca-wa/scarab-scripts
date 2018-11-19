@@ -10,7 +10,7 @@ output:
     toc_float: true
     fig_width: 10
     fig_height: 6
-    code_folding: show
+    code_folding: hide
     theme: lumen
   pdf_document: default
 ---
@@ -211,8 +211,7 @@ The table `species` contains info on:
 The field `region_id_list` should be a many-to-many relation to regions, 
 but is superseded by spatial lookup of occurrence to spatial entity.
 
-## Taxonomy QA
-
+## Taxonomy masterlist: WACensus
 The current list of authoritative names resides in WACensus and is published
 through OIM's GeoServer.
 
@@ -229,8 +228,7 @@ species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
 species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
 ```
 
-### QA: Missing NameID
-
+## QA: Missing NameID
 Names in TFA are matched via NameID to WACensus taxa.
 
 The following list requires a NameID to be found from WACensus 
@@ -245,12 +243,10 @@ species %>%
     DT::datatable()
 ```
 
-### QA: Name mismatch
-
+## QA: Name mismatches
 For a given NameID, the scientific name in TFA should be identical to 
-the scientific name in WACensus. A mismatch is an indication for review.
-
-One Known issue is WACensus names contain "subsp." whereas TFA doesn't.
+the scientific name in WACensus with the same NameID. 
+A name mismatch is an indication for review.
 
 ```{r wacensus_name_mismatch}
 name_mismatches <- species_nid %>% 
@@ -258,18 +254,31 @@ name_mismatches <- species_nid %>%
     dplyr::select(name_id, species_code, short_code, scientific_name, wace_name)
 ```
 
+### Mismatches containing "subsp"
+WACensus names contain "subsp." whereas TFA don't. 
+Therefore, scientific name mismatches by only the "subsp" can be ignored.
+
+**QA** Review this list to make sure both WACensus and TFA mean the same name.
+If the TFA "scientific_name" means a different taxon than the "wace_name", TFA's
+NameID must be changed to the WACensus NameID of the correct taxon.
 
 ```{r name_mismatches_subsp}
-# With subsp:
 name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% DT::datatable()
+```
 
-# Without subsp:
+
+### Remaining mismatches
+The remaining mismatches require a review of the scientific name or NameID in TFA.
+
+**QA** If the TFA "scientific_name" means a different taxon than the "wace_name", TFA's
+NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_typo}
 name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
 ```
 
 
 # Occurrence
-
 ## Critical Habitat, Population, Subpopulation
 * CH are Multipolygon Features.
 * Population is the sum of all subpopulations.

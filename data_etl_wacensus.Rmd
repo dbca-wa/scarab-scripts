@@ -8,6 +8,10 @@ output:
     toc: true
     toc_depth: 3
     toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
   pdf_document: default
 ---
 
@@ -54,7 +58,8 @@ Local TSC instance (dev):
 
 ```{r rock_and_roll_local, eval=F}
 gjlocal <- function(data, ser) upsert_geojson(
-    data, serializer = ser, api_url = dev, chunksize = 1000)
+    data, serializer = ser, api_url = dev, chunksize = 100)
+"public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjlocal("names")
 "public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjlocal("supra")
 "public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% gjlocal("families")
 "public:herbie_hbvgenera_public" %>% gs_getFeature() %>% gjlocal("genera")
@@ -79,13 +84,6 @@ Production TSC instance. Adjust chunksize down when getting "504 gateway timeout
 "public:herbie_hbtparents_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "parents", chunksize=100)
 ```
 
-
-# Names list
-```{r names_list}
-wace_names <- "public:herbie_hbvnames_public" %>% gs_getFeature()
-wace_names
-
-```
 
 # Users
 Given a CSV with columns `name`, `phone`, `email` and `role`, we can update users as follows.
