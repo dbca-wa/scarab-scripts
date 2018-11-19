@@ -8,6 +8,10 @@ output:
     toc: true
     toc_depth: 3
     toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: show
+    theme: lumen
   pdf_document: default
 ---
 
@@ -425,8 +429,18 @@ fauna_tae <- fauna_occ %>%
   )
 
 fauna_tae10 = fauna_tae %>% dplyr::filter(taxon==24734)
-fauna_tae10 %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+fauna_tae10 %>% dplyr::filter(source_id==10261)
+fauna_tae10 %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
 ```
+
+### Big Fauna
+
+Taxa with heaps of sightings:
+
+```{r fauna_tae_large}
+fauna_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
+```
+
 
 ## Flora
 Poplation ID (e.g. "7"") becomes TaxonEncounter code,
@@ -459,7 +473,7 @@ flora_tae <- flora_occ %>%
 
 Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
 ```{r flora_occ_tsc_resighted}
-flora_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2)
+flora_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
 ```
 
 Finally, flora encounters are uploaded to TSC.
@@ -488,6 +502,18 @@ tec_cae <- tibble::tibble(
 tec_cae10 = tec_cae[1:100,]
 tec_cae %>% chunk_post(serializer = "occ-community-areas", api_url = dev, verbose = T)
 #"http://0.0.0.0:32769/api/1/")
+```
+
+### Big TECs
+
+Serial offenders:
+```{r tec_cae_large}
+tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
+```
+
+### Normal TECs
+```{r}
+tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n<400)
 ```
 
 # Data catalogue upload

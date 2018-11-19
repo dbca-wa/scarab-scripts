@@ -8,22 +8,24 @@ output:
     toc: true
     toc_depth: 3
     toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: show
+    theme: lumen
   pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
 ```
-# SCB data background
+# Context
 [Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
-# Fauna
-
-## Fauna data load
+# Data
 The zip archive containing the MS Access database is downloaded from the data 
 catalogue, the archive is extracted, and a database connection is opened.
 
@@ -40,7 +42,7 @@ orders <- c("mdyHMS")
 tz <- "Australia/Perth"
 ```
 
-## Lookup tables
+# Lookup tables
 Lookup table columns are renamed to facilitate joining.
 
 ```{r lookup_tables}
@@ -132,7 +134,7 @@ category <- fauna_data$`Category List` %>%
   )
 ```
 
-## Species names
+# Taxonomy
 Data is parsed into matching data types, dates are recognised, and lookup
 values are joined while lookup IDs are retained to facilitate later data ingestion
 into other systems.
@@ -176,7 +178,7 @@ species <- fauna_data$`Species List` %>%
     # accept_new_records = Incl %>% as.logical(), # only FALSE in old records
     # species_can_be_trapped = Trap %>% as.logical(),
     # only_sighting_type_surveys = Sight %>% as.logical(),
-    # could_have_nest_box = Nbox %>% as.logical(),
+    # could_have_nest_box = Nbox %>% as.### Datalogical(),
     # could_display_secondary_signs = Sign %>% as.logical(),
     # can_associate_band_number = BANo %>% as.logical(),
     # buffer = Buffer %>% as.character(), # NA 0 1 2 3 - unused
@@ -205,33 +207,75 @@ The table `species` contains info on:
 * some numeric fields: `est_life` `r unique(species$est_life)`
 * corporate file numbers (what's in those files?)
 * some now unused fields (see above for excluded fields)
-The field `region_id_list` should be a many-to-many relation to regions, but is superseded by spatial lookup of occurrence to spatial entity.
 
-### Data QA
+The field `region_id_list` should be a many-to-many relation to regions, 
+but is superseded by spatial lookup of occurrence to spatial entity.
 
-There are `r nrow(species)` species names. The following columns are incomplete:
+## Taxonomy QA
 
-```{r species_missing_values}
-species_skim #%>% filter(stat == "missing", value > 0) %>% select(-stat, -level, -formatted)
+The current list of authoritative names resides in WACensus and is published
+through OIM's GeoServer.
+
+```{r list_names}
+wace_names <- "public:herbie_hbvnames_public" %>% 
+    gs_getFeature() %>% 
+    magrittr::extract2("features") %>% 
+    {tibble::tibble(
+        name_id = purrr::map(., c("properties", "name_id")) %>% flatten_chr(),
+        wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
+    )}
+
+species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
+species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
 ```
 
-In particular, the following species names are missing a NameID.
+### QA: Missing NameID
 
-TODO: Compare all species names (with and without NameID) against recent WACensus names and NameIDs.
-Fix inconsistencies at source (Fauna db).
- 
-```{r species_missins_nameid}
-species %>% dplyr::filter(is.na(name_id)) %>% kable
+Names in TFA are matched via NameID to WACensus taxa.
+
+The following list requires a NameID to be found from WACensus 
+(e.g. via [TSC's species list](https://tsc.dbca.wa.gov.au/species/)) 
+and to be populated in TFA.
+
+```{r missing_nameid}
+species %>% 
+    filter(is.na(name_id)) %>% 
+    arrange(order) %>% 
+    select(species_code, short_code, scientific_name) %>% 
+    DT::datatable()
 ```
 
-## Fauna occurrence
+### QA: Name mismatch
 
-### Critical Habitat, Population, Subpopulation
+For a given NameID, the scientific name in TFA should be identical to 
+the scientific name in WACensus. A mismatch is an indication for review.
+
+One Known issue is WACensus names contain "subsp." whereas TFA doesn't.
+
+```{r wacensus_name_mismatch}
+name_mismatches <- species_nid %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, short_code, scientific_name, wace_name)
+```
+
+
+```{r name_mismatches_subsp}
+# With subsp:
+name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% DT::datatable()
+
+# Without subsp:
+name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
+```
+
+
+# Occurrence
+
+## Critical Habitat, Population, Subpopulation
 * CH are Multipolygon Features.
 * Population is the sum of all subpopulations.
 * Subpopulation is a spatially and/or genetically distinct group of occurrences.
 
-### Occurrences
+## Occurrences
 * AnimalEncounters are species occurrences.
 * Opportunistic sightings by members of public currently end up in ThrFaunaDB.
 * Opportunistic sightings by members of public could come in via an app.
@@ -362,13 +406,13 @@ fauna_occ <- fauna_raw %>%
 # %>% dplyr::select(-o_date, -o_time)
 ```
 
-### Taxonomic caveats
+## Taxonomic caveats
 Fauna occurrences link to the name that was current / legal at the time.
 Occurrence query should show hints linking to current / legal names and their history.
 
 `zone` and `datum` are standard names expected by BioSys.
 
-### Data overview
+## Occurrence data overview
 The table `fauna_occ` contains species occurrence records with information about:
 
 * taxonomy,
@@ -399,7 +443,7 @@ fauna_skim %>%
   DT::datatable(.)
 ```
 
-### Data QA
+## Occurrence data QA
 This section lists data issues which need to be fixed at the source (here, in the legacy Fauna DB).
 
 The column `datetime` is required in BioSys to be populated.
@@ -430,12 +474,12 @@ Please review legacy data until the following numbers are all zero (or accept de
 * `r fauna_occ %>% dplyr::filter(is.na(longitude)) %>% nrow` longitudes are missing.
 * `r fauna_occ %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the minus sign and turn up in China.
 
-### Data migration strategy
+## Data migration strategy
 * Personnel: Create lookup table of `Personnel$Initials` to DBCA usernames as table `users`.
 * Names: observer, taxonomist, record entered by, record last changed by.
 * Names include members of public.
 
-### Map
+## Occurrence Map
 An interactive map of fauna occurrences.
 
 ```{r fauna_map, fig.height=5, fig.width=7}
@@ -471,11 +515,11 @@ leaflet(width = 800, height = 600) %>%
   )
 ```
 
-## Conservation status
+# Conservation status
 Gazettal, Listing Category, Listing Names, List Names deal with assigning conservation status from 
 various legal listings to species.
 
-### Listing Names
+## Listing Names
 Lookups for legal acts.
 
 ```{r fauna_conservation_lists}
@@ -489,7 +533,7 @@ fauna_conservation_lists <- fauna_data$`Listing Names` %>%
 fauna_conservation_lists %>% skim()
 ```
 
-### DEC Listing Names
+## DEC Listing Names
 ```{r dec_fauna_conservation_lists}
 dec_fauna_conservation_lists <- fauna_data$`DEC List Names` %>%
   dplyr::transmute(
@@ -501,7 +545,7 @@ dec_fauna_conservation_lists <- fauna_data$`DEC List Names` %>%
 dec_fauna_conservation_lists %>% skim()
 ```
 
-### Conservation status
+## Conservation status listing
 Each act (listing) defines a number of possible conservation statuses.
 The table `Listing Category` contains all possible conservation statuses.
 Conservation status can be assigned (for a period of time) to a species.
@@ -526,7 +570,7 @@ conservation_categories %>% skim()
 conservation_categories %>% head(10) %>% DT::datatable(.)
 ```
 
-### Gazettal
+## Gazettal
 Gazettal is the act of assigning a conservation status to a species for a span of time.
 
 ```{r gazettal}
@@ -550,10 +594,10 @@ fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
 ```
 
-## Recovery Plans
+# Recovery Planning
 Recovery Plans, Recovery Actions, Research Topics, Research Priorities.
 
-### Research Priorities
+## Research Priorities
 ```{r res_prio}
 res_prio <- fauna_data$`Research Priorities` %>%
   dplyr::transmute(
@@ -566,7 +610,7 @@ res_prio <- fauna_data$`Research Priorities` %>%
 res_prio %>% skim()
 ```
 
-### Recovery Plans
+## Recovery Plans
 ```{r recovery_plans}
 res_topics <- fauna_data$`Research Topics` %>%
   dplyr::transmute(
@@ -609,8 +653,9 @@ recovery_plans %>% skim()
 recovery_plans %>% DT::datatable(.)
 ```
 
-## Data model
-As a relational data model, the dependencies can be expressed linearly (excluding key-value lookups):
+# Data model
+As a relational data model, the dependencies can be expressed linearly 
+(excluding key-value lookups):
 
 * [Taxonomy] Species names
 * [Observations] Species Occurrence > Species Names
@@ -626,7 +671,7 @@ The models fit broadly into three modules:
 * Conservation - conservation status and its assignment to species names, recovery plans aiming to
   change conservation status, research priorities related to species names.
 
-## Data upload
+# Data upload
 Create resource once-off to get a resource ID.
 Subsequently, upload the compiled workbook.
 Note, this process lags one compilation of this workbook, as the HTML output

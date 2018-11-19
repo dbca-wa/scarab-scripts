@@ -8,6 +8,10 @@ output:
     toc: true
     toc_depth: 3
     toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: show
+    theme: lumen
   pdf_document: default
 ---
 

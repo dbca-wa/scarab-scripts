@@ -36,6 +36,19 @@ namesprops[[1]]
 wastd_POST(namesprops[[1]], serializer = "names", api_url = dev)
 ```
 
+```{r list_names}
+wace_names <- "public:herbie_hbvnames_public" %>% 
+    gs_getFeature()  %>% 
+    magrittr::extract2("features") %>% 
+    {dplyr::tbl_df(
+        name_id = purrr::map(., c("properties", "name_id")) %>% as.integer(),
+        name = purrr::map(., c("properties", "name")),
+        author = purrr::map(., c("properties", "author")),
+        reference = purrr::map(., c("properties", "reference")),
+        rank_name = purrr::map(., c("properties", "rank_name"))
+    )}
+```
+
 ## Batch upsert: Create or update all Taxa
 Local TSC instance (dev):
 
@@ -64,6 +77,14 @@ Production TSC instance. Adjust chunksize down when getting "504 gateway timeout
 "public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "vernaculars", chunksize=100)
 "public:herbie_hbvxrefs_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "xrefs", chunksize=100)
 "public:herbie_hbtparents_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "parents", chunksize=100)
+```
+
+
+# Names list
+```{r names_list}
+wace_names <- "public:herbie_hbvnames_public" %>% gs_getFeature()
+wace_names
+
 ```
 
 # Users
