@@ -24,7 +24,7 @@ source("helpers.R")
 # Conventions
 The following conventions shall be used to create table and column names in this ETL process.
 
-* All names shall be snake_case, i.e. lower cased and underscore-separated.
+* All names shall be snake_case, i.e. lower cased and underscore_separated.
 * Primary key (PK) columns in lookup tables shall be prefixed by the table name. 
   This facilitates joining multiple lookups using unambiguous column names.
 * Numeric PKs shall be named `_id`.
@@ -35,21 +35,20 @@ The following conventions shall be used to create table and column names in this
 * All primary tables shall be joined to their lookup tables, and legacy lookup ID / code shall be discarded.
 * Tables holding obsolete or duplicate data will be discarded.
 
-# SCB data background
+# Context
 [TEC dataset](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database)
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
-# TEC
 
-## TEC data load
+# Data
 ```{r tec_data_load}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 ```
 
-## Configuration
+# Configuration
 Some tables store legacy configuration data. We won't need or import them.
 
 * Settings: Datum preference
@@ -58,16 +57,19 @@ Some tables store legacy configuration data. We won't need or import them.
 * mddMasterLists: external db config
 * mddReportItems (empty)
 
-## Taxonomy
+# Taxonomy
 
 * WA_* WACensus data copies
 * jhb
 * SPMASTER_OLD, Flora conservation codes
 * Fauna taxa, Fauna conservation codes, Fauna Groups, Occ Fauna, Occ species, Species roles
 
-TODO how are taxonomy tables linked? Which one is the current master one?
+Decision:
 
-## Spatial lookups
+* Taxonomy is imported into TSC directly from WACensus, not from TEC.
+* Taxonomy from TEC beyond NameID will be ignored.
+
+# Spatial lookups
 There are several groups of spatial entities which are maintained outside of the SCB ecosystem.
 The link to WSCB entities can be inferred unambiguously through geospatial location and cached for performance.
 
@@ -88,13 +90,13 @@ The link to WSCB entities can be inferred unambiguously through geospatial locat
 # calm_district_occurrences <- tec$DISTRICTS
 ```
 
-## GIS exports
+# GIS exports
 Some tables refer to externally managed spatial data:
 
 * GIS_*
 * Boundaries
 
-## Spatial concepts
+# Spatial concepts
 * Each occurrence lies within a `boundary` polygon.
 * Not all occurrences have recorded boudaries.
 * Boundaries (where existing) are buffered by a distance (default 500m) into a `buffer` polygon.
@@ -111,7 +113,7 @@ Some tables refer to externally managed spatial data:
 
 There are 122970 sites, 120118 boundaries, and 121366 buffers.
 
-## Communities
+# Communities
 Abbreviation: `com`
 
 ```{r communities}
@@ -285,7 +287,7 @@ com_history <- tec$HISTORY %>%
 com_history %>% DT::datatable(.)
 ```
 
-## Occurrences
+# Occurrences
 Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
 
 ```{r tec_occ}
@@ -575,7 +577,11 @@ occ_species <- tec$OCCURRENCE_SPECIES %>%
 occ_species %>% DT::datatable(.)
 ```
 
-## Surveys
+# Surveys
+`Surveys` are full site visits with a complete set of measurements.
+`Site visits` are quick site visits with a partial set of measurements.
+Both relate to Occurrences.
+
 A separate group related to surveys has the tables:
 
 * Threat Impacts
@@ -660,7 +666,8 @@ survey_conditions <- tec$SURVEY_CONDITIONS %>%
   dplyr::left_join(conditions, by = "condition_code")
 ```
 
-## Sites
+# Site Visits
+Site visits are incomplete or brief site visits.
 
 * Sites
 * Datum
@@ -775,7 +782,7 @@ leaflet(width = 800, height = 600) %>%
 ```
 
 
-## Gazettal
+# Gazettal
 The data model of gazettals requires clarification.
 
 ```{r gazettal}
@@ -824,7 +831,7 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
 # join com_short, criteria codes
 ```
 
-## Recovery Plans
+# Recovery Plans
 
 ```{r recovery_plans}
 recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
@@ -842,7 +849,7 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
 recovery_plans %>% skim()
 ```
 
-## TEC data upload
+# Data upload
 Create resource once-off to get a resource ID.
 Also upload the compiled workbook.
 Note, this process lags one compilation of this workbook, as the HTML output

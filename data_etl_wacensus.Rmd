@@ -73,15 +73,18 @@ gjlocal <- function(data, ser) upsert_geojson(
 Production TSC instance. Adjust chunksize down when getting "504 gateway timeouts".
 
 ```{r rock_and_roll_production, eval=F}
-"public:herbie_hbvnames_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "names", chunksize=100)
-"public:herbie_hbvsupra_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "supra", chunksize=100)
-"public:herbie_hbvgroups_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "groups", chunksize=100)
-"public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "families", chunksize=100)
-"public:herbie_hbvgenera_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "genera", chunksize=100)
-"public:herbie_hbvspecies_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "species", chunksize=100)
-"public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "vernaculars", chunksize=100)
-"public:herbie_hbvxrefs_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "xrefs", chunksize=100)
-"public:herbie_hbtparents_public" %>% gs_getFeature() %>% upsert_geojson(serializer = "parents", chunksize=100)
+gjprod <- function(data, ser) upsert_geojson(
+    data, serializer = ser, api_url = prod, chunksize = 100)
+
+"public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjprod("names")
+"public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjprod("supra")
+"public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjprod("groups")
+"public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% gjprod("families")
+"public:herbie_hbvgenera_public" %>% gs_getFeature() %>% gjprod("genera")
+"public:herbie_hbvspecies_public" %>% gs_getFeature() %>% gjprod("species")
+"public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% gjprod("vernaculars")
+"public:herbie_hbvxrefs_public" %>% gs_getFeature() %>% gjprod("xrefs")
+"public:herbie_hbtparents_public" %>% gs_getFeature() %>% gjprod("parents")
 ```
 
 
