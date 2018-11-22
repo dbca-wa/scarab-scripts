@@ -666,6 +666,15 @@ survey_conditions <- tec$SURVEY_CONDITIONS %>%
   dplyr::left_join(conditions, by = "condition_code")
 ```
 
+Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct `survey_id`s.
+With `length(unique(surveys$surveyed_on))`, this means that a `survey_id` does not denote an individual
+visit of a TEC boundary.
+
+However, there are exactly as many unique combinations of `survey_id` and `occ_id` 
+(`r surveys %>% group_by(occ_id, survey_id) %>% tally() %>% nrow`) as records in the table `surveys`.
+
+How do `r nrow(survey_conditions)` `survey_conditions` reference `r nrow(surveys)` `surveys`? Likely by `occ_id` and `survey_id`.
+
 # Site Visits
 Site visits are incomplete or brief site visits.
 

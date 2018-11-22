@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 source("helpers.R")
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ```
-# SCB data background
+# Context
 [Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
@@ -29,9 +29,7 @@ the Oracle database, zipped (36 MB) and uploaded as a resource underneath the Fl
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
-# Flora
-
-## Flora data load
+# Data
 The zipped MS Access snapshot is downloaded, unpacked, and accessed as object `tpfl`.
 
 ```{r flora_load_data, message=FALSE}
@@ -68,7 +66,7 @@ leaflet(width = 800, height = 600) %>%
   )
 ```
 
-## Species populations
+# Species populations
 Table `DRF_POPULATION` contains many columns that are shared with `DRF_RFR_FORMS` (species occurrences).
 
 ```{r pop}
@@ -205,7 +203,7 @@ populations <- tpfl$DRF_POPULATION %>%
 
 There are `r nrow(populations)` known populations.
 
-## Species occurrence
+# Species occurrence
 Table `DRF_RFR_FORMS` combines highly denormalised data related to species occurrence:
 
 * IDs (data collection form, taxon, population, subpopulation)
@@ -678,7 +676,7 @@ pop_sectionmap <- tpfl$DRF_POP_SECTION_MAP %>%
 pop_sectionmap[1:100, ] %>% DT::datatable(.)
 ```
 
-## Conservation listings
+# Conservation listings
 
 ```{r cons_listings}
 flora_cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
