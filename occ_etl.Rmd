@@ -407,7 +407,7 @@ wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api
 
 ```{r fauna_occ_tsc, eval=F}
 fauna_tae <- fauna_occ %>%
-  dplyr::filter(!is.na(name_id)) %>% 
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude)) %>% 
   dplyr::transmute(
     taxon = name_id,
     code = location_name,
@@ -428,9 +428,9 @@ fauna_tae <- fauna_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   )
 
-fauna_tae10 = fauna_tae %>% dplyr::filter(taxon==24734)
-fauna_tae10 %>% dplyr::filter(source_id==10261)
-fauna_tae10 %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
+fauna_tae10 <- fauna_tae %>% dplyr::filter(taxon==24734)
+fauna_tae10 <- fauna_tae %>% dplyr::filter(source_id==10261)
+fauna_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
 ### Big Fauna
