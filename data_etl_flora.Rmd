@@ -714,6 +714,8 @@ flora_cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
     file_no = FILE.NO %>% as.character()
   ) %>% dplyr::arrange(taxon_id)
 flora_cons_listings[1:100, ] %>% DT::datatable(.)
+
+save(flora_cons_listings, file=here::here("data", "flora_cons_listings.Rdata"))
 ```
 
 ## Conservation priority

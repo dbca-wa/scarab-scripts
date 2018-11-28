@@ -641,6 +641,8 @@ fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
 
 fauna_cons_listing %>% dplyr::filter(name_id == 0)
+
+save(fauna_cons_listing, file=here::here("data", "fauna_cons_listing.Rdata"))
 ```
 
 # Recovery Planning
