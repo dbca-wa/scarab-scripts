@@ -21,7 +21,7 @@ library(lubridate)
 library(skimr)
 
 library(leaflet)
-library(RColorBrewer)
+# library(RColorBrewer)
 library(sf)
 library(jsonlite)
 library(geojsonio)

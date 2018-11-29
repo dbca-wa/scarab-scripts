@@ -288,6 +288,55 @@ com_history %>% DT::datatable(.)
 ```
 
 # Occurrences
+
+## Boundaries
+Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
+
+```{r tec_bdy , eval=F}
+tec_boundaries <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
+tec_cae <- tibble::tibble(
+    community = tec_boundaries$COM_ID,
+    code=tec_boundaries$FIRST_S_ID %||% tec_boundaries$BDY_ID,
+    name=tec_boundaries$FIRST_S_ID %||% tec_boundaries$BDY_ID,
+    description = ifelse(
+        is.na(tec_boundaries$FIRST_S_ID),
+        glue::glue("Boundary ID {tec_boundaries$BDY_ID} named {tec_boundaries$BDY_ID} for lack of sites within."),
+        glue::glue("Boundary ID {tec_boundaries$BDY_ID} named {tec_boundaries$FIRST_S_ID} after first site observed within.")
+    ),
+    area_type = 10, # 10 bound, 11 buffer, 12 site point
+    source = 12, # TEC
+    source_id = tec_boundaries$OCC_UNIQUE,
+    encountered_on=default_date,
+    encountered_by=1,
+    geom = tec_boundaries$geometry %>% 
+        sf::st_convex_hull(.) %>% 
+        sf::st_buffer(., 0.00001) %>% 
+        geojsonsf::sfc_geojson(.) 
+    )
+```
+
+```{r tec_bdy_tsc, eval=F}
+tec_cae %>% filter(community == "SCP20a")
+tec_cae %>% 
+    # filter(community == "SCP20a") %>% 
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+```
+
+### Boundaries from raster
+Some boundaries were digitised from a polygonised raster remote sensing product. This results in
+a spray of numerous polygons, most of which were never visited in person.
+
+Serial offenders:
+```{r tec_cae_large}
+tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
+```
+
+### Normal TECs
+```{r}
+tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n<400)
+```
+
+
 Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
 
 ```{r tec_occ}
@@ -376,6 +425,9 @@ tec_occ %>% head(100) %>% DT::datatable(.)
 
 occ_short <- tec_occ %>%
   dplyr::select(occ_id, boundary_id, boundary_desc, com_id, com_label, com_name)
+
+# tec_occ %>% dplyr::filter(com_label == "SCP20a") %>% View
+
 ```
 
 ## Occurrence Actions
@@ -676,12 +728,10 @@ However, there are exactly as many unique combinations of `survey_id` and `occ_i
 How do `r nrow(survey_conditions)` `survey_conditions` reference `r nrow(surveys)` `surveys`? Likely by `occ_id` and `survey_id`.
 
 # Site Visits
-Site visits are incomplete or brief site visits.
-
-* Sites
-* Datum
-* Site Visits
-* Site Species
+* Sites: Point-referenced sites, mostly 10x10m or 6x6m quadrats, within boundaries.
+* Datum: coordinate datum
+* Site Visits: CommunityAreaEncounters of Sites (lat/lon point) at date (site_visit$site_visit_date).
+* Site Species: Species encountered during a site_visit.
 
 ```{r sites}
 datum <- tec$DATUM %>%
@@ -739,7 +789,8 @@ site_visit <- tec$SITE_VISITS %>%
     fire_age = SV.FIRE.AGE %>% as.character(),
     fire_notes = SV.FIRE.NOTES %>% as.character(),
     observation_notes = SV.OBSERVATION.NOTES %>% as.character()
-  )
+  ) %>% 
+   dplyr::left_join(sites, by = "site_code")
 
 # coll code and number indicates voucher specimens
 voucher_specimens <- tec$SITE_SPECIES %>%

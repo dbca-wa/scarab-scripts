@@ -482,39 +482,6 @@ flora_tae10 = flora_tae[95:100,]
 flora_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
-## TEC
-```{r tec_occ_tsc , eval=F}
-tec_boundaries <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
-tec_cae <- tibble::tibble(
-    community = tec_boundaries$COM_ID,
-    name=tec_boundaries$BDY_ID,
-    description = glue::glue(""),
-    area_type = 10, # 10 bound, 11 buffer, 12 site point
-    source = 12, # TEC
-    source_id = tec_boundaries$OCC_UNIQUE,
-    encountered_on=default_date,
-    encountered_by=1,
-    geom = tec_boundaries$geometry %>% 
-        sf::st_convex_hull(.) %>% 
-        sf::st_buffer(., 0.00001) %>% 
-        geojsonsf::sfc_geojson(.) 
-    )
-tec_cae10 = tec_cae[1:100,]
-tec_cae %>% chunk_post(serializer = "occ-community-areas", api_url = dev, verbose = T)
-#"http://0.0.0.0:32769/api/1/")
-```
-
-### Big TECs
-
-Serial offenders:
-```{r tec_cae_large}
-tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
-```
-
-### Normal TECs
-```{r}
-tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n<400)
-```
 
 
 # Conservation Listing
@@ -627,8 +594,6 @@ if (file.exists(tflcl_file)) load(tflcl_file)
 flora_cons_listings %>% DT::datatable()
 ```
 
-### TEC cons listing
-TODO
 
 # Data catalogue upload
 Snapshots of this workbook (soon: and selected outputs) are uploaded to the data catalogue.
