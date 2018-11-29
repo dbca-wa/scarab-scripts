@@ -311,7 +311,7 @@ tec_bdy_cae <- tibble::tibble(
 
 ```{r tec_bdy_tsc, eval=F}
 tec_bdy_cae %>% 
-    filter(community == "SCP20a") %>%
+    # filter(community == "SCP20a") %>%
     chunk_post(serializer = "occ-community-areas", api_url = dev, verbose = T)
 ```
 
@@ -340,7 +340,7 @@ tec_buf_cae <- tibble::tibble(
 
 ```{r tec_buf_tsc, eval=F}
 tec_buf_cae %>% 
-    filter(community == "SCP20a") %>%
+    # filter(community == "SCP20a") %>%
     chunk_post(serializer = "occ-community-areas", api_url = dev, verbose = T)
 ```
 
