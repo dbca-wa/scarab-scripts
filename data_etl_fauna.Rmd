@@ -228,6 +228,28 @@ species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
 species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
 ```
 
+## QA: Phrase names
+Names with `name_id` 0 are phrase names. These should be entered into WACensus and their resulting
+new `name_id` should be backfilled here.
+
+```{r phrase_names}
+species %>% 
+    filter(name_id == 0) %>% 
+    arrange(order) %>% 
+    select(species_code, short_code, scientific_name) %>% 
+    DT::datatable()
+```
+
+## QA: Phrase names in WACensus
+Some phrase names may already have been added to WACensus, requiring TFA to update the NameID.
+
+```{r phrase_names_wace}
+species %>% 
+    dplyr::filter(name_id == 0) %>% 
+    dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name")) %>% 
+    DT::datatable()
+```
+
 ## QA: Missing NameID
 Names in TFA are matched via NameID to WACensus taxa.
 
@@ -266,15 +288,30 @@ NameID must be changed to the WACensus NameID of the correct taxon.
 name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% DT::datatable()
 ```
 
+### Remaining mismatches
+The remaining mismatches contain minor differences, such as "sp." vs "sp", parentheses and quotation marks.
+
+```{r name_mismatches_typo}
+name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
+```
 
 ### Remaining mismatches
 The remaining mismatches require a review of the scientific name or NameID in TFA.
 
-**QA** If the TFA "scientific_name" means a different taxon than the "wace_name", TFA's
-NameID must be changed to the WACensus NameID of the correct taxon.
+**QA** If the TFA "scientific_name" is meant to refer to a different taxon than the "wace_name", 
+TFA's NameID must be changed to the WACensus NameID of the correct taxon.
 
-```{r name_mismatches_typo}
-name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
+```{r name_mismatches_real}
+drop_cruft <- . %>% stringr::str_remove_all("[.()'\"]|sp|subsp") %>% stringr::str_replace_all("  ", " ")
+true_mismatches <- species_nid %>% 
+    dplyr::mutate(
+        scientific_name = scientific_name %>% drop_cruft,
+        wace_name = wace_name %>% drop_cruft
+    ) %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, short_code, scientific_name, wace_name)
+
+true_mismatches %>% DT::datatable()
 ```
 
 
@@ -412,6 +449,7 @@ fauna_occ <- fauna_raw %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") 
 
+# fauna_occ %>% dplyr::filter(name_id == "0")
 # %>% dplyr::select(-o_date, -o_time)
 ```
 
@@ -601,6 +639,10 @@ fauna_cons_listing <- fauna_data$Gazettal %>%
   dplyr::left_join(species_names, by = "species_code")
 fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
+
+fauna_cons_listing %>% dplyr::filter(name_id == 0)
+
+save(fauna_cons_listing, file=here::here("data", "fauna_cons_listing.Rdata"))
 ```
 
 # Recovery Planning
