@@ -84,12 +84,6 @@ The link to WSCB entities can be inferred unambiguously through geospatial locat
 * Tenures: Purposes, Tenure Types, Tenures, Occurrence Tenures, Occurrence Shires, Shires
 * Maps: Maps, Occurrence Maps
 
-```{r spatial_lookups, echo=FALSE}
-# calm_regions <- tec$CALM_REGIONS
-# calm_districts <- tec$CALM_DISTRICTS
-# calm_district_occurrences <- tec$DISTRICTS
-```
-
 # GIS exports
 Some tables refer to externally managed spatial data:
 
@@ -152,7 +146,6 @@ communities <- tec$COMMUNITIES %>%
     com_id = COM.NO %>% as.integer(),
     com_label = COM.ID %>% as.character(),
     com_name = COM.NAME %>% as.character(),
-    com_description = COM.DESC %>% as.character(),
     former_range_code = COM.FORMER.RANGE %>% as.character(),
     range_decline_id = COM.RANGE.DECLINE %>% as.integer(),
     occ_decline_id = COM.OCC.DECLINE %>% as.integer(),
