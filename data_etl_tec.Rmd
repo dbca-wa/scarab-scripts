@@ -327,7 +327,7 @@ a spray of numerous polygons, most of which were never visited in person.
 Name and shame: 
 
 ```{r tec_cae_large}
-overweight_communities <- tec_buf_cae %>% 
+overweight_communities <- tec_bdy_cae %>% 
   dplyr::group_by(community) %>% 
   dplyr::tally() %>% 
   dplyr::arrange(-n) %>% 
@@ -340,11 +340,14 @@ fat_filter <- overweight_communities %>%
   paste0(collapse = "|")
 ```
 
+Import excluding the heavyweight communities with more than 400 features:
 ```{r tec_bdy_tsc, eval=F}
-x <- tec_bdy_cae %>% 
+tec_bdy_cae %>% 
     filter(!grepl(fat_filter, community)) %>%
     chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
+
+### Buffers
 
 ```{r tec_buf}
 tec_buf_cae <- tibble::tibble(
@@ -368,15 +371,21 @@ tec_buf_cae <- tibble::tibble(
     )
 ```
 
+Import all but the numerous ones:
+
 ```{r tec_buf_tsc, eval=F}
 tec_buf_cae %>% 
     dplyr::filter(!grepl(fat_filter, community)) %>%
     chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
 
-TODO site points, source = 15
+### Sites
 
 ```{r tec_sit}
+sit_com <- tec_sit %>% extract2("COM_ID") %>% unique
+com_com <- com_short %>% extract2("com_label") %>% unique
+site_name_typos <- setdiff(sit_com, com_com) %>% paste0(collapse = "|")
+
 tec_sit_cae <- tibble::tibble(
     community = tec_sit$COM_ID,
     code=tec_sit$S_ID,
@@ -388,15 +397,39 @@ tec_sit_cae <- tibble::tibble(
     encountered_on=default_date,
     encountered_by=1,
     point = tec_sit$geometry %>% geojsonsf::sfc_geojson(.) 
-    )
+    ) %>% 
+    dplyr::filter(!is.na(community)) %>% 
+    dplyr::filter(!grepl(site_name_typos, community))
 ```
 
+TODO: exclude / QA community names
 ```{r tec_sit_tsc, eval=F}
 tec_sit_cae %>% 
     dplyr::filter(!grepl(fat_filter, community)) %>%
     chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 ```
 
+
+### Long running data import
+This will run for about a day.
+```{r tec_import_long, eval=F}
+tec_sit_cae %>% 
+    dplyr::filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+
+tec_bdy_cae %>% 
+    filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+
+tec_buf_cae %>% 
+    dplyr::filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+```
+
+
+### Occurrences
+TEC refers to a single AOO as "occurrence". Occurrences may be geo-referenced as boundaries and/or
+buffered boundaries (buffers) and/or through point sites within.
 
 Occurrences refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
 
