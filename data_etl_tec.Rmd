@@ -43,9 +43,22 @@ The code for all SCB workbooks is under version control at [github](https://gith
 
 
 # Data
+Data comes from four sources:
+
+* An MS Access database dump from the original TEC Oracle database,
+* three shapefiles (exported as GeoJSON) for TEC boundaries (exact site polygons),
+  TEC buffers (boundaries buffered by a given amount), TEC sites (point locations
+  inside boundaries referencing e.g. 10x10m quadrats).
+
 ```{r tec_data_load}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
+tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
+tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
+tec_sit <- geojsonsf::geojson_sf("data/tec_sites.geojson")
+
+# save(tec, tec_bdy, tec_buf, tec_sit, file=here::here("data", "tecdb.RData"))
+# load(here::here("data", "tecdb.RData"))
 ```
 
 # Configuration
@@ -286,7 +299,6 @@ com_history %>% DT::datatable(.)
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
 ```{r tec_bdy , eval=F}
-tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 tec_bdy_cae <- tibble::tibble(
     community = tec_bdy$COM_ID,
@@ -309,14 +321,32 @@ tec_bdy_cae <- tibble::tibble(
     )
 ```
 
-```{r tec_bdy_tsc, eval=F}
-tec_bdy_cae %>% 
-    # filter(community == "SCP20a") %>%
-    chunk_post(serializer = "occ-community-areas", api_url = dev, verbose = T)
+Some boundaries were digitised from a polygonised raster remote sensing product. This results in
+a spray of numerous polygons, most of which were never visited in person.
+
+Name and shame: 
+
+```{r tec_cae_large}
+overweight_communities <- tec_buf_cae %>% 
+  dplyr::group_by(community) %>% 
+  dplyr::tally() %>% 
+  dplyr::arrange(-n) %>% 
+  filter(n>400) 
+
+overweight_communities
+
+fat_filter <- overweight_communities %>% 
+  extract2("community") %>% 
+  paste0(collapse = "|")
 ```
 
-```{r}
-tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
+```{r tec_bdy_tsc, eval=F}
+x <- tec_bdy_cae %>% 
+    filter(!grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+```
+
+```{r tec_buf}
 tec_buf_cae <- tibble::tibble(
     community = tec_buf$COM_ID,
     code=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
@@ -340,28 +370,35 @@ tec_buf_cae <- tibble::tibble(
 
 ```{r tec_buf_tsc, eval=F}
 tec_buf_cae %>% 
-    # filter(community == "SCP20a") %>%
-    chunk_post(serializer = "occ-community-areas", api_url = dev, verbose = T)
+    dplyr::filter(!grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
 
 TODO site points, source = 15
 
-### Boundaries from raster
-Some boundaries were digitised from a polygonised raster remote sensing product. This results in
-a spray of numerous polygons, most of which were never visited in person.
-
-Serial offenders:
-```{r tec_cae_large}
-tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
+```{r tec_sit}
+tec_sit_cae <- tibble::tibble(
+    community = tec_sit$COM_ID,
+    code=tec_sit$S_ID,
+    name=tec_sit$S_ID,
+    description = glue::glue("Site ID {tec_sit$S_ID} inside TEC Boundary {tec_sit$BDY_ID}"),
+    area_type = 12, # 10 bound, 11 buffer, 12 site point
+    source = 15, # TEC sit
+    source_id = tec_sit$S_ID,
+    encountered_on=default_date,
+    encountered_by=1,
+    point = tec_sit$geometry %>% geojsonsf::sfc_geojson(.) 
+    )
 ```
 
-### Normal TECs
-```{r}
-tec_cae %>% dplyr::group_by(community) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n<400)
+```{r tec_sit_tsc, eval=F}
+tec_sit_cae %>% 
+    dplyr::filter(!grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 ```
 
 
-Occurrences seem to refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
+Occurrences refer to `BDI_ID` (boundary_id), which is a PK to a bunch of GIS tables.
 
 ```{r tec_occ}
 # what's that?
@@ -372,11 +409,11 @@ classifications <- tec$CLASSIFICATIONS %>%
   )
 
 # Occurrence confidentiality
-confidentiality <- tec$OCC_CONFIDENTIAL_CODES %>%
-  dplyr::transmute(
-    confidential_id = OCC.CONFIDENTIAL %>% as.integer(),
-    is_confidential = OCC.CONFID.DESC %>% as.character()
-  )
+# confidentiality <- tec$OCC_CONFIDENTIAL_CODES %>%
+#   dplyr::transmute(
+#     confidential_id = OCC.CONFIDENTIAL %>% as.integer(),
+#     is_confidential = OCC.CONFID.DESC %>% as.character()
+#   )
 
 reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability_id = BR.CODE %>% as.character(),
@@ -439,7 +476,7 @@ tec_occ <- tec$OCCURRENCES %>%
       lubridate::parse_date_time(., orders = orders, tz = tz)
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
-  dplyr::left_join(confidentiality, by = "confidential_id") %>%
+  # dplyr::left_join(confidentiality, by = "confidential_id") %>%
   dplyr::left_join(reliability, by = "reliability_id") %>%
   dplyr::select(-confidential_id, reliability_id)
 tec_occ %>% skimr::skim()
@@ -650,7 +687,7 @@ occ_species <- tec$OCCURRENCE_SPECIES %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(species_roles, by = "species_role_code")
 
-occ_species %>% DT::datatable(.)
+# occ_species %>% DT::datatable(.)
 ```
 
 # Surveys
@@ -814,7 +851,7 @@ site_visit <- tec$SITE_VISITS %>%
     fire_notes = SV.FIRE.NOTES %>% as.character(),
     observation_notes = SV.OBSERVATION.NOTES %>% as.character()
   ) %>% 
-   dplyr::left_join(sites, by = "site_code")
+  dplyr::left_join(sites, by = "site_code")
 
 # coll code and number indicates voucher specimens
 voucher_specimens <- tec$SITE_SPECIES %>%
