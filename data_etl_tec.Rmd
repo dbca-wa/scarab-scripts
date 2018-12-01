@@ -306,8 +306,10 @@ tec_bdy_cae <- tibble::tibble(
     name=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
     description = ifelse(
         is.na(tec_bdy$FIRST_S_ID),
-        glue::glue("Boundary ID {tec_bdy$BDY_ID} named {tec_bdy$BDY_ID} for lack of sites within."),
-        glue::glue("Boundary ID {tec_bdy$BDY_ID} named {tec_bdy$FIRST_S_ID} after first site observed within.")
+        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
+                   "{tec_bdy$BDY_ID} for lack of sites within."),
+        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
+                   "{tec_bdy$FIRST_S_ID} after first site observed within.")
     ),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
@@ -327,15 +329,15 @@ a spray of numerous polygons, most of which were never visited in person.
 Name and shame: 
 
 ```{r tec_cae_large}
-overweight_communities <- tec_bdy_cae %>% 
+numerous_communities <- tec_bdy_cae %>% 
   dplyr::group_by(community) %>% 
   dplyr::tally() %>% 
   dplyr::arrange(-n) %>% 
   filter(n>400) 
 
-overweight_communities
+numerous_communities
 
-fat_filter <- overweight_communities %>% 
+fat_filter <- numerous_communities %>% 
   extract2("community") %>% 
   paste0(collapse = "|")
 ```
@@ -356,8 +358,10 @@ tec_buf_cae <- tibble::tibble(
     name=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
     description = ifelse(
         is.na(tec_buf$FIRST_S_ID),
-        glue::glue("Buffer ID {tec_buf$BDY_ID} named {tec_buf$BDY_ID} for lack of sites within."),
-        glue::glue("Buffer ID {tec_buf$BDY_ID} named {tec_buf$FIRST_S_ID} after first site observed within.")
+        glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
+                   " {tec_buf$BDY_ID} for lack of sites within."),
+        glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
+                   " {tec_buf$FIRST_S_ID} after first site observed within.")
     ),
     area_type = 11, # 10 bound, 11 buffer, 12 site point
     source = 14, # TEC buf
@@ -397,16 +401,33 @@ tec_sit_cae <- tibble::tibble(
     encountered_on=default_date,
     encountered_by=1,
     point = tec_sit$geometry %>% geojsonsf::sfc_geojson(.) 
-    ) %>% 
-    dplyr::filter(!is.na(community)) %>% 
-    dplyr::filter(!grepl(site_name_typos, community))
+    ) #%>%  # (123560) dplyr::filter(!grepl(site_name_typos, community)) # 105606
 ```
 
 TODO: exclude / QA community names
 ```{r tec_sit_tsc, eval=F}
+# 7008 sites
 tec_sit_cae %>% 
     dplyr::filter(!grepl(fat_filter, community)) %>%
-    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+    dplyr::filter(!grepl("Nullarbor microbial mantles", community)) %>% 
+    chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
+
+# 10 sites, site shapefile mismatches com code
+tec_sit_cae %>% 
+  dplyr::filter(community == "Nullarbor microbial mantles") %>% 
+  dplyr::mutate(community = "Microbial mantles") %>% 
+  chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
+
+# 119 sites
+tec_sit_cae %>% 
+  dplyr::filter(community == "Limestone ridges (SCP 26a)") %>% 
+  chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
+
+# 17k sites
+# TODO update TSC community name of "Banksia Woodlands of the Swan Coastal Plain" (is None)
+tec_sit_cae %>% 
+  dplyr::filter(community == "Banksia Woodlands of the Swan Coastal Plain") %>% 
+  chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
 ```
 
 
