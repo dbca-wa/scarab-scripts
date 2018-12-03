@@ -406,44 +406,44 @@ tec_sit_cae <- tibble::tibble(
 
 TODO: exclude / QA community names
 ```{r tec_sit_tsc, eval=F}
-# 7008 sites
-tec_sit_cae %>% 
-    dplyr::filter(!grepl(fat_filter, community)) %>%
-    dplyr::filter(!grepl("Nullarbor microbial mantles", community)) %>% 
-    chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
-
 # 10 sites, site shapefile mismatches com code
 tec_sit_cae %>% 
   dplyr::filter(community == "Nullarbor microbial mantles") %>% 
   dplyr::mutate(community = "Microbial mantles") %>% 
-  chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
+  chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
 # 119 sites
 tec_sit_cae %>% 
   dplyr::filter(community == "Limestone ridges (SCP 26a)") %>% 
-  chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
+  chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
-# 17k sites
-# TODO update TSC community name of "Banksia Woodlands of the Swan Coastal Plain" (is None)
+# 7008 sites
+tec_sit_cae %>% 
+    dplyr::filter(!grepl(fat_filter, community)) %>%
+    dplyr::filter(!grepl("Nullarbor microbial mantles", community)) %>% 
+    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+
+# 17954 sites
 tec_sit_cae %>% 
   dplyr::filter(community == "Banksia Woodlands of the Swan Coastal Plain") %>% 
-  chunk_post(serializer = "occ-community-points", api_url = dev, verbose = T)
+  chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 ```
 
 
 ### Long running data import
 This will run for about a day.
 ```{r tec_import_long, eval=F}
-tec_sit_cae %>% 
-    dplyr::filter(grepl(fat_filter, community)) %>%
-    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
-
-tec_bdy_cae %>% 
-    filter(grepl(fat_filter, community)) %>%
-    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+# tec_sit_cae %>% 
+#     dplyr::filter(grepl(fat_filter, community)) %>%
+#     chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
 tec_buf_cae %>% 
     dplyr::filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+
+# 116538 polys from three big one
+tec_bdy_cae %>% 
+    filter(grepl(fat_filter, community)) %>%
     chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
 
