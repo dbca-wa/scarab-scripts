@@ -957,20 +957,20 @@ leaflet(width = 800, height = 600) %>%
 ```
 
 
-# Gazettal
-The data model of gazettals requires clarification.
+#  Conservation Listing
+The data model of conservation listings (gazettals) requires clarification.
 
-```{r gazettal}
+```{r tec_listing}
 # lookups
 library(magrittr)
-tec_cons_categories <- tec$CATEGORY_TYPES %>%
+tec_cons_cat <- tec$CATEGORY_TYPES %>%
   dplyr::transmute(
     category_code = CT.TYPE %>% as.character(),
     category_label = CT.DESC %>% as.character(),
     authority = CT.AUTHORITY.CODE %>% as.character()
   )
 
-tec_cons_criteria <- tec$CRITERIA_CODES %>%
+tec_cons_crit<- tec$CRITERIA_CODES %>%
   dplyr::transmute(
     criterion_code = CRIT.CODE %>% as.character(),
     criterion_description = CRIT.DESC %>% as.character()
@@ -993,7 +993,8 @@ tec_cons_listing_categories <- tec$CATEGORIES %>%
     cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
-  dplyr::left_join(tec_cons_categories, by = "category_code")
+  dplyr::left_join(tec_cons_cat, by = "category_code") %>% 
+  tibble::rowid_to_column("source_id")
 
 tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   dplyr::transmute(
@@ -1002,9 +1003,44 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
     criterion_code = CC.CRIT.CODE %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
-  dplyr::left_join(tec_cons_criteria, by = "criterion_code")
+  dplyr::left_join(tec_cons_crit, by = "criterion_code")
 # join com_short, criteria codes
 ```
+
+### Cons listing TSC ETL
+
+```{r tec_listing_tsc}
+
+# https://tsc.dbca.wa.gov.au/api/1/communitygazettal/
+# 
+# "source": 3, # TEC
+# "source_id": "1", # tec$CATEGORIES row ID
+# "scope": 0,  # WA
+# "status": 80, # listed
+# "proposed_on": null,
+# "effective_from": "2008-12-08T12:00:00+09:00",
+# "effective_to": null,
+# "last_reviewed_on": null,
+# "review_due": null, # cat_review_date
+# "comments": "Transferred as-is from legacy TEC database.",
+# "community": "Whicher Scarp A1", # com_label
+# "category": [35] # WAPEC P1
+
+tec_listing_p1 <- tec_cons_listing_categories %>% 
+    dplyr::filter(category_code == "P1") %>% 
+    dplyr::transmute(
+        source = 3,
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = 80,
+        effective_from = effective_from,
+        last_reviewed_on = cat_review_date,
+        community = com_label,
+        category = c(35)
+    )
+```
+
+
 
 # Recovery Plans
 
