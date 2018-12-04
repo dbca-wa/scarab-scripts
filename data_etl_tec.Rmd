@@ -19,6 +19,15 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 source("helpers.R")
+
+default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
+parse_as_datetime <- function(x){
+  if (is.null(x)) return(default_date)
+  x %>%
+    lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
+    lubridate::as_datetime(.) %>%
+    lubridate::with_tz(tzone = tz)
+}
 ```
 
 # Conventions
@@ -299,7 +308,6 @@ com_history %>% DT::datatable(.)
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
 ```{r tec_bdy , eval=F}
-default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 tec_bdy_cae <- tibble::tibble(
     community = tec_bdy$COM_ID,
     code=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
@@ -984,12 +992,12 @@ endorsement <- tec$ENDORSED_BY # another lookup for lower case.
 tec_cons_listing_categories <- tec$CATEGORIES %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
-    effective_from = CAT.EFFECT.DATE %>% as.character(),
+    effective_from = CAT.EFFECT.DATE %>% parse_as_datetime(),
     category_code = CAT.CT.TYPE %>% as.character(),
     cat_comment = CAT.COMMENT %>% as.character(),
-    cat_review_date = CAT.REVIEW.DATE %>% as.character(),
+    cat_review_date = CAT.REVIEW.DATE %>% parse_as_datetime(),
     cat_endorsed_code = CAT.ENDORSED.CODE %>% as.character(),
-    cat_endorsed_date = CAT.ENDORSED.DATE %>% as.character(),
+    cat_endorsed_date = CAT.ENDORSED.DATE %>% parse_as_datetime(),
     cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
@@ -999,7 +1007,7 @@ tec_cons_listing_categories <- tec$CATEGORIES %>%
 tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
-    effective_from = CAT.EFFECT.DATE %>% as.character(),
+    effective_from = CAT.EFFECT.DATE %>% parse_as_datetime(),
     criterion_code = CC.CRIT.CODE %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
@@ -1008,8 +1016,9 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
 ```
 
 ### Cons listing TSC ETL
+Transform TEC data into TSC data.
 
-```{r tec_listing_tsc}
+```{r tec_listing_tsc_transform}
 
 # https://tsc.dbca.wa.gov.au/api/1/communitygazettal/
 # 
@@ -1026,9 +1035,47 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
 # "community": "Whicher Scarp A1", # com_label
 # "category": [35] # WAPEC P1
 
-tec_listing_p1 <- tec_cons_listing_categories %>% 
-    dplyr::filter(category_code == "P1") %>% 
-    dplyr::transmute(
+# TSC cons lists applicable to communities
+tsc_conslists_com <- "conservationlist" %>% 
+  wastdr::wastd_GET(api_url = prod, query = c(scope_communities = TRUE)) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content(.) %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    code = purrr::map_chr(., "code"),
+    label = purrr::map_chr(., "label"),
+    scope_communities = purrr::map_chr(., "scope_communities"),
+    scope_wa = purrr::map_chr(., "scope_wa"),
+    scope_cmw = purrr::map_chr(., "scope_cmw")
+  )}
+
+
+# IDs of TSC cons lists applicable to communities
+com_list_ids_wa <- tsc_conslists_com %>% extract2("id") %>% paste(collapse=",")
+# DBCA_RLE 11
+# WAPEC 12
+# IUCN_RLE 16
+
+# tsc_conscat$id is the TSC ID for the cons category
+# tsc_conscat$label = tec_cons_listing_categories$category_code
+tsc_conscat <- "conservationcategory" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content(.) %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    tsc_category_id = purrr::map_int(., "id"),
+    category_code = purrr::map_chr(., "code"),
+    tsc_label = purrr::map_chr(., "label"),
+    conservation_list = purrr::map_chr(., "conservation_list")
+  )} %>% 
+  dplyr::filter(conservation_list %in% c(11,12))
+
+# TODO join by scope as well
+tec_listing_cat <- tec_cons_listing_categories %>% 
+  dplyr::left_join(tsc_conscat, by="category_code") %>% 
+  dplyr::transmute(
         source = 3,
         source_id = source_id %>% as.character(),
         scope = 0,
@@ -1036,11 +1083,34 @@ tec_listing_p1 <- tec_cons_listing_categories %>%
         effective_from = effective_from,
         last_reviewed_on = cat_review_date,
         community = com_label,
-        category = c(35)
-    )
+        category = tsc_category_id %>% as.list()
+    ) %>% 
+  dplyr::filter(!is.na(category))
 ```
 
+Upload to TSC. Handle TEC typos separately.
 
+```{r tec_listing_tsc_upload}
+# typo: Broomhill System > Broomehill System
+tec_listing_cat %>% 
+  dplyr::filter(community == "Nullarbor microbial mantles") %>% 
+  dplyr::mutate(community = "Microbial mantles") %>% 
+  wastdr::wastd_POST("communitygazettal", api_url = prod)
+
+# SCP26a  > Limestone ridges (SCP 26a)
+tec_listing_cat %>% 
+  dplyr::filter(community == "SCP26a") %>% 
+  dplyr::mutate(community = "Limestone ridges (SCP 26a)") %>% 
+  wastdr::wastd_POST("communitygazettal", api_url = prod)
+
+# Riparian communities of springs and Pools Pilbara ??
+
+not_a_tec <- "Nullarbor microbial mantles|SCP26a|Riparian communities of springs and Pools Pilbara"
+
+tec_listing_cat %>% 
+  dplyr::filter(!grepl(not_a_tec, community)) %>% 
+  wastdr::wastd_POST("communitygazettal", api_url = prod)
+```
 
 # Recovery Plans
 
