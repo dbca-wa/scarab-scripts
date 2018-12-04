@@ -1088,9 +1088,9 @@ tec_listing_cat <- tec_cons_listing_categories %>%
   dplyr::filter(!is.na(category))
 ```
 
-Upload to TSC. Handle TEC typos separately.
+Upload to TSC. Some TEC names might have changed, need to update commuity names again!
 
-```{r tec_listing_tsc_upload}
+```{r tec_listing_tsc_upload, eval=F}
 # typo: Broomhill System > Broomehill System
 tec_listing_cat %>% 
   dplyr::filter(community == "Nullarbor microbial mantles") %>% 
@@ -1104,6 +1104,8 @@ tec_listing_cat %>%
   wastdr::wastd_POST("communitygazettal", api_url = prod)
 
 # Riparian communities of springs and Pools Pilbara ??
+# tec_cons_listing_categories %>% 
+#     dplyr::filter(com_label == "Riparian communities of springs and Pools Pilbara")
 
 not_a_tec <- "Nullarbor microbial mantles|SCP26a|Riparian communities of springs and Pools Pilbara"
 
