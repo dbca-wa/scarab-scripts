@@ -607,10 +607,10 @@ conservation_categories %>% skim()
 conservation_categories %>% head(10) %>% DT::datatable(.)
 ```
 
-## Gazettal
-Gazettal is the act of assigning a conservation status to a species for a span of time.
+## Conservation listing
+Conservation listing is the act of assigning a conservation status to a species for a span of time.
 
-```{r gazettal}
+```{r cons_listing}
 fauna_cons_listing <- fauna_data$Gazettal %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
