@@ -30,16 +30,7 @@ The zip archive containing the MS Access database is downloaded from the data
 catalogue, the archive is extracted, and a database connection is opened.
 
 ```{r fauna_data_load, message=FALSE}
-# fauna_app <- dl_mdbzip("fb5869a9-61d2-4320-bae2-3c6e4ea3f73f") # no data
 fauna_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-```
-
-Some helpers are defined.
-
-```{r etl_helpers}
-# Date conventions
-orders <- c("mdyHMS")
-tz <- "Australia/Perth"
 ```
 
 # Lookup tables
@@ -334,7 +325,6 @@ true_mismatches %>% DT::datatable()
 ```{r fauna_occ}
 # Generate column config:
 # fauna_data$`Fauna Records` %>% make_coldef()
-default_date <- parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
 fauna_raw <- fauna_data$`Fauna Records`
 fauna_occ <- fauna_raw %>%

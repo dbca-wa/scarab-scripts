@@ -18,7 +18,6 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 source("helpers.R")
-if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 ```
 # Context
 [Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
