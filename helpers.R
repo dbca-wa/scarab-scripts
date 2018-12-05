@@ -42,6 +42,14 @@ ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"
 # Date conventions
 orders <- c("mdyHMS")
 tz <- "Australia/Perth"
+default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
+parse_as_datetime <- function(x){
+    if (is.null(x)) return(default_date)
+    x %>%
+        lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>%
+        lubridate::as_datetime(.) %>%
+        lubridate::with_tz(tzone = tz)
+}
 
 dev <- "http://localhost:8220/api/1/"
 uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"

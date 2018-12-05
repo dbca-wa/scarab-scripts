@@ -19,15 +19,6 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 source("helpers.R")
-
-default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
-parse_as_datetime <- function(x){
-  if (is.null(x)) return(default_date)
-  x %>%
-    lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
-    lubridate::as_datetime(.) %>%
-    lubridate::with_tz(tzone = tz)
-}
 ```
 
 # Conventions
@@ -186,6 +177,29 @@ communities %>% skim()
 communities %>% DT::datatable(.)
 
 com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
+```
+
+Transform communities into TSC shape.
+```{r com_tsc_tf}
+com_tsc <- communities %>% 
+  dplyr::transmute(
+    source = 12, # TEC
+    source_id = com_id,
+    code = com_label,
+    name = com_name,
+    description = glue::glue(
+      "Original area: {com_original_area}\n",
+      "Area accuracy: {com_area_accuracy}\n",
+      "Former range: {former_range}\n",
+      "Range decline: {range_decline}\n",
+      "Occurrence decline: {occ_decline}"
+    )
+  )
+```
+
+Load communities into TSC.
+```{r com_tsc_load, eval=F}
+com_tsc %>% wastdr::wastd_POST("community", api_url = prod)
 ```
 
 ## Community Recommendations
@@ -394,10 +408,6 @@ tec_buf_cae %>%
 ### Sites
 
 ```{r tec_sit}
-sit_com <- tec_sit %>% extract2("COM_ID") %>% unique
-com_com <- com_short %>% extract2("com_label") %>% unique
-site_name_typos <- setdiff(sit_com, com_com) %>% paste0(collapse = "|")
-
 tec_sit_cae <- tibble::tibble(
     community = tec_sit$COM_ID,
     code=tec_sit$S_ID,
@@ -409,26 +419,14 @@ tec_sit_cae <- tibble::tibble(
     encountered_on=default_date,
     encountered_by=1,
     point = tec_sit$geometry %>% geojsonsf::sfc_geojson(.) 
-    ) #%>%  # (123560) dplyr::filter(!grepl(site_name_typos, community)) # 105606
+    )
 ```
 
-TODO: exclude / QA community names
+
 ```{r tec_sit_tsc, eval=F}
-# 10 sites, site shapefile mismatches com code
-tec_sit_cae %>% 
-  dplyr::filter(community == "Nullarbor microbial mantles") %>% 
-  dplyr::mutate(community = "Microbial mantles") %>% 
-  chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
-
-# 119 sites
-tec_sit_cae %>% 
-  dplyr::filter(community == "Limestone ridges (SCP 26a)") %>% 
-  chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
-
 # 7008 sites
 tec_sit_cae %>% 
     dplyr::filter(!grepl(fat_filter, community)) %>%
-    dplyr::filter(!grepl("Nullarbor microbial mantles", community)) %>% 
     chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
 # 17954 sites
@@ -441,9 +439,9 @@ tec_sit_cae %>%
 ### Long running data import
 This will run for about a day.
 ```{r tec_import_long, eval=F}
-# tec_sit_cae %>% 
-#     dplyr::filter(grepl(fat_filter, community)) %>%
-#     chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+tec_sit_cae %>%
+    dplyr::filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
 tec_buf_cae %>% 
     dplyr::filter(grepl(fat_filter, community)) %>%
@@ -1013,12 +1011,15 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(tec_cons_crit, by = "criterion_code")
 # join com_short, criteria codes
+
+# TODO: load cons crit from IUCN RLE into TSC, map resulting codes to:
+# tec_cons_crit$criterion_code
 ```
 
 ### Cons listing TSC ETL
 Transform TEC data into TSC data.
 
-```{r tec_listing_tsc_transform}
+```{r conslist_tsc_tf}
 
 # https://tsc.dbca.wa.gov.au/api/1/communitygazettal/
 # 
@@ -1088,30 +1089,11 @@ tec_listing_cat <- tec_cons_listing_categories %>%
   dplyr::filter(!is.na(category))
 ```
 
+
 Upload to TSC. Some TEC names might have changed, need to update commuity names again!
 
-```{r tec_listing_tsc_upload, eval=F}
-# typo: Broomhill System > Broomehill System
-tec_listing_cat %>% 
-  dplyr::filter(community == "Nullarbor microbial mantles") %>% 
-  dplyr::mutate(community = "Microbial mantles") %>% 
-  wastdr::wastd_POST("communitygazettal", api_url = prod)
-
-# SCP26a  > Limestone ridges (SCP 26a)
-tec_listing_cat %>% 
-  dplyr::filter(community == "SCP26a") %>% 
-  dplyr::mutate(community = "Limestone ridges (SCP 26a)") %>% 
-  wastdr::wastd_POST("communitygazettal", api_url = prod)
-
-# Riparian communities of springs and Pools Pilbara ??
-# tec_cons_listing_categories %>% 
-#     dplyr::filter(com_label == "Riparian communities of springs and Pools Pilbara")
-
-not_a_tec <- "Nullarbor microbial mantles|SCP26a|Riparian communities of springs and Pools Pilbara"
-
-tec_listing_cat %>% 
-  dplyr::filter(!grepl(not_a_tec, community)) %>% 
-  wastdr::wastd_POST("communitygazettal", api_url = prod)
+```{r conslist_tsc_upload, eval=F}
+tec_listing_cat %>% wastdr::wastd_POST("communitygazettal", api_url = prod)
 ```
 
 # Recovery Plans
