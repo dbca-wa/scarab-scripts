@@ -607,10 +607,10 @@ conservation_categories %>% skim()
 conservation_categories %>% head(10) %>% DT::datatable(.)
 ```
 
-## Gazettal
-Gazettal is the act of assigning a conservation status to a species for a span of time.
+## Conservation Listing
+Conservation listing is the act of assigning a conservation status to a species for a span of time.
 
-```{r gazettal}
+```{r cons_listing}
 fauna_cons_listing <- fauna_data$Gazettal %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
@@ -626,14 +626,58 @@ fauna_cons_listing <- fauna_data$Gazettal %>%
     translocation = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
   ) %>%
-  dplyr::left_join(species_names, by = "species_code")
+  dplyr::left_join(species_names, by = "species_code") %>% 
+  tibble::rowid_to_column("source_id")
 fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
 
 fauna_cons_listing %>% dplyr::filter(name_id == 0)
 
 save(fauna_cons_listing, file=here::here("data", "fauna_cons_listing.Rdata"))
+
+# tsc_conscat$id is the TSC ID for the cons category
+# tsc_conscat$label = tec_cons_listing_categories$category_code
+tsc_conscat_sp <- "conservationcategory" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content(.) %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    tsc_category_id = purrr::map_int(., "id"),
+    category_code = purrr::map_chr(., "code"),
+    tsc_label = purrr::map_chr(., "label"),
+    conservation_list = purrr::map_chr(., "conservation_list")
+  )} %>% 
+  dplyr::filter(conservation_list %in% c(1,2,3,6,7))
+
+# WAWCA 1
+# SPFN 2
+# IUCN 2012 3
+# WAPS 6
+# EPBC 7
+
+# IUCN cons listing
+tfa_listing_cat_iucn <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="IUCN(2012)") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = 80,
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
 ```
+
+
 
 # Recovery Planning
 Recovery Plans, Recovery Actions, Research Topics, Research Priorities.
