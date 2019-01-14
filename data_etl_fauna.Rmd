@@ -650,14 +650,29 @@ tsc_conscat_sp <- "conservationcategory" %>%
   )} %>% 
   dplyr::filter(conservation_list %in% c(1,2,3,6,7))
 
-# WAWCA 1
-# SPFN 2
-# IUCN 2012 3
-# WAPS 6
-# EPBC 7
-
 # IUCN cons listing
+# IUCN 2012 3
 tfa_listing_cat_iucn <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="WAWCA") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 1), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = 80,
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+
+# WAWCA 1
+tfa_listing_cat_wawca <- fauna_cons_listing %>% 
   dplyr::filter(list_code=="IUCN(2012)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3), by="category_code") %>% 
   dplyr::transmute(
@@ -674,7 +689,68 @@ tfa_listing_cat_iucn <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+
+# SPFN 2
+tfa_listing_cat_spfn <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="SPFN") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 2), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = 80,
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+
+# WAPS 6
+tfa_listing_cat_waps <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="WAPF") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 6), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = 80,
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfa_listing_cat_waps %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+
+# EPBC 7
+tfa_listing_cat_epbc <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="EPBC") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 7), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 1,
+        status = 80,
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfa_listing_cat_epbc %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+
 ```
 
 
