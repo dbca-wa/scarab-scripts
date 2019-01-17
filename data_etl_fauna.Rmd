@@ -607,10 +607,75 @@ conservation_categories %>% skim()
 conservation_categories %>% head(10) %>% DT::datatable(.)
 ```
 
-## Conservation Listing
+## TSC Conservation Listing
+This is the data we need to map to: conservation lists, categories, and criteria.
+
+### TSC conservation lists
+
+```{r conslist}
+conslist <- wastdr::wastd_GET("conservationlist", api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content() %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    list_id = purrr::map_int(., "id"),
+    list_code = purrr::map_chr(., "code"),
+    list_label = purrr::map_chr(., "label"),
+    list_description = wastdr::map_chr_hack(., "description"),
+    scope_wa = purrr::map_chr(., "scope_wa"),
+    scope_cmw = purrr::map_chr(., "scope_cmw"),
+    scope_intl = purrr::map_chr(., "scope_intl"),
+    scope_species = purrr::map_chr(., "scope_species"),
+    scope_communities = purrr::map_chr(., "scope_communities"),
+    approval_level = purrr::map_int(., "approval_level")
+  )} 
+```
+
+### TSC conservation categories
+The conservation category serializer writes JSON, not GeoJSON. 
+`wastdr` needs a `parse_conservationcategory` parser.
+
+```{r conscat}
+conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content() %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    list_id = purrr::map_int(., "conservation_list"),
+    rank = wastdr::map_chr_hack(., "rank"),
+    code = purrr::map_chr(., "code"),
+    label = purrr::map_chr(., "label"),
+    description = wastdr::map_chr_hack(., "description"),
+    current = purrr::map_chr(., "current")
+  )} %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(conslist, by = "list_id")
+```
+
+### TSC conservation criteria
+
+```{r conscrit}
+conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content() %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    list_id = purrr::map_int(., "conservation_list"),
+    rank = wastdr::map_chr_hack(., "rank"),
+    code = purrr::map_chr(., "code"),
+    label = purrr::map_chr(., "label")
+  )} %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(conslist, by = "list_id")
+```
+
+## TFA conservation Listing
+
 Conservation listing is the act of assigning a conservation status to a species for a span of time.
 
-```{r cons_listing}
+```{r tfa_cons_listing}
 fauna_cons_listing <- fauna_data$Gazettal %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
@@ -632,9 +697,45 @@ fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
 
 fauna_cons_listing %>% dplyr::filter(name_id == 0)
+```
 
-save(fauna_cons_listing, file=here::here("data", "fauna_cons_listing.Rdata"))
+Let's save a snapshot of the cons listings.
 
+```{r tfa_cons_listing_save}
+fcl_file <- here::here("data", "fauna_cons_listing.Rdata")
+save(fauna_cons_listing, file=fcl_file)
+if (file.exists(fcl_file)) load(fcl_file)
+```
+
+Conservation lists used in Fauna cons listings:
+
+```{r tfa_cons_listing_qa}
+fauna_cons_listing$list_code %>% unique # cons lists used
+fauna_cons_listing %>% dplyr::filter(list_code == "WAPF") # Is this WAPS?
+fauna_cons_listing %>% dplyr::filter(list_code == "ActionPlan") # Discard those?
+fauna_cons_listing %>% dplyr::filter(list_code == "") # Discard those?
+fauna_cons_listing %>% dplyr::filter(list_code == "RedList") # Which IUCN version?
+
+# ETL nightmare fuel: condensed criteria mixed with free text
+criteria_requiring_mapping <- fauna_cons_listing %>% 
+    dplyr::filter(grepl('[+,;]', reasons)) 
+
+criteria_requiring_mapping %>%  unique %>% knitr::kable()
+```
+
+QA questions for Fauna cons listings:
+
+* Fauna WAPF = TSC WAPS? (Has same codes, so assume yes)
+* Which TSC IUCN redlist is Fauna RedList?
+* Fauna ActionPlan - do we keep this info?
+* Fauna has three empty listings (no list, no cat, no crit) - discard?
+
+`r criteria_requiring_mapping %>% nrow` conservation listings contain condensed lists of criteria
+mixed with free text. Rather than manually transcribing this number, a manually written mapping for
+`r criteria_requiring_mapping$reasons %>% unique %>% length` distinct values can be used to automate ETL.
+
+
+```{r tfa_cons_listing_upload, eval=F}
 # tsc_conscat$id is the TSC ID for the cons category
 # tsc_conscat$label = tec_cons_listing_categories$category_code
 tsc_conscat_sp <- "conservationcategory" %>% 
