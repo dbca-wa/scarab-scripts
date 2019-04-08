@@ -54,37 +54,22 @@ wace_names <- "public:herbie_hbvnames_public" %>%
 ```
 
 ## Batch upsert: Create or update all Taxa
-Local TSC instance (dev):
-
-```{r rock_and_roll_local, eval=F}
-gjlocal <- function(data, ser) upsert_geojson(
-    data, serializer = ser, api_url = dev, chunksize = 100)
-"public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjlocal("names")
-"public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjlocal("supra")
-"public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% gjlocal("families")
-"public:herbie_hbvgenera_public" %>% gs_getFeature() %>% gjlocal("genera")
-"public:herbie_hbvspecies_public" %>% gs_getFeature() %>% gjlocal("species")
-"public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% gjlocal("vernaculars")
-
-"public:herbie_hbvxrefs_public" %>% gs_getFeature() %>% gjlocal("xrefs")
-"public:herbie_hbtparents_public" %>% gs_getFeature() %>% gjlocal("parents")
-```
-
-Production TSC instance. Adjust chunksize down when getting "504 gateway timeouts".
+Local (dev), UAT (uat) or production (prod) TSC instance. 
+Adjust chunksize down when getting "504 gateway timeouts".
 
 ```{r rock_and_roll_production, eval=F}
 gjprod <- function(data, ser) upsert_geojson(
-    data, serializer = ser, api_url = prod, chunksize = 100)
+    data, serializer = ser, api_url = dev, chunksize = 1000)
 
-"public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjprod("names")
-"public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjprod("supra")
 "public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjprod("groups")
+"public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjprod("supra")
+"public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjprod("names")
 "public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% gjprod("families")
 "public:herbie_hbvgenera_public" %>% gs_getFeature() %>% gjprod("genera")
 "public:herbie_hbvspecies_public" %>% gs_getFeature() %>% gjprod("species")
-"public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% gjprod("vernaculars")
 "public:herbie_hbvxrefs_public" %>% gs_getFeature() %>% gjprod("xrefs")
 "public:herbie_hbtparents_public" %>% gs_getFeature() %>% gjprod("parents")
+"public:herbie_hbvvernaculars_public" %>% gs_getFeature() %>% gjprod("vernaculars")
 ```
 
 
