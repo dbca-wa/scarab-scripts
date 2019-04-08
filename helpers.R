@@ -3,6 +3,8 @@
 # devtools::install_github("brianb/mdbtools")
 # devtools::install_github("ropensci/ckanr")
 # devtools::install_github('thomasp85/gganimate')
+# devtools::install_github("ropensci/rredlist")
+# devtools::install_github("ropensci/jqr")
 library(tidyverse)
 library(lubridate)
 library(skimr)

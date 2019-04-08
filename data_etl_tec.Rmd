@@ -965,7 +965,7 @@ leaflet(width = 800, height = 600) %>%
 #  Conservation Listing
 The data model of conservation listings (gazettals) requires clarification.
 
-```{r tec_listing}
+```{r cons_listing}
 # lookups
 library(magrittr)
 tec_cons_cat <- tec$CATEGORY_TYPES %>%
@@ -1076,7 +1076,7 @@ tsc_conscat <- "conservationcategory" %>%
 tec_listing_cat <- tec_cons_listing_categories %>% 
   dplyr::left_join(tsc_conscat, by="category_code") %>% 
   dplyr::transmute(
-        source = 3,
+        source = 3, # ComGaz.source TEC
         source_id = source_id %>% as.character(),
         scope = 0,
         status = 80,
@@ -1089,7 +1089,7 @@ tec_listing_cat <- tec_cons_listing_categories %>%
 ```
 
 
-Upload to TSC. Some TEC names might have changed, need to update commuity names again!
+Upload to TSC is easy (although making it easy wasn't).
 
 ```{r conslist_tsc_upload, eval=F}
 tec_listing_cat %>% wastdr::wastd_POST("communitygazettal", api_url = prod)

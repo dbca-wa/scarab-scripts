@@ -486,6 +486,7 @@ flora_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url =
 
 # Conservation Listing
 
+
 ## TSC data
 This is the data we need to map to: conservation lists, categories, and criteria.
 
@@ -550,39 +551,6 @@ conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
   dplyr::left_join(conslist, by = "list_id")
 ```
 
-## Fauna cons listing
-
-```{r}
-fcl_file <- here::here("data", "fauna_cons_listing.Rdata")
-if (file.exists(fcl_file)) load(fcl_file)
-```
-
-Conservation lists used in Fauna cons listings:
-```{r}
-fauna_cons_listing$list_code %>% unique # cons lists used
-fauna_cons_listing %>% dplyr::filter(list_code == "WAPF") # Is this WAPS?
-fauna_cons_listing %>% dplyr::filter(list_code == "ActionPlan") # Discard those?
-fauna_cons_listing %>% dplyr::filter(list_code == "") # Discard those?
-fauna_cons_listing %>% dplyr::filter(list_code == "RedList") # Which IUCN version?
-
-# ETL nightmare fuel: condensed criteria mixed with free text
-criteria_requiring_mapping <- fauna_cons_listing %>% 
-    dplyr::filter(grepl('[+,;]', reasons)) 
-
-criteria_requiring_mapping %>%  unique %>% knitr::kable()
-```
-
-Questions:
-
-* Fauna WAPF = TSC WAPS? (Has same codes, so assume yes)
-* Which TSC IUCN redlist is Fauna RedList?
-* Fauna ActionPlan - do we keep this info?
-* Fauna has three empty listings (no list, no cat, no crit) - discard?
-
-
-`r criteria_requiring_mapping %>% nrow` conservation listings contain condensed lists of criteria
-mixed with free text. Rather than manually transcribing this number, a manually written mapping for
-`r criteria_requiring_mapping$reasons %>% unique %>% length` distinct values can be used to automate ETL.
 
 ### Flora cons listing
 ```{r}
