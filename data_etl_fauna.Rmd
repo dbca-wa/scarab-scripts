@@ -770,7 +770,7 @@ tfa_listing_cat_iucn <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # WAWCA 1
 tfa_listing_cat_wawca <- fauna_cons_listing %>% 
@@ -790,7 +790,7 @@ tfa_listing_cat_wawca <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # SPFN 2
 tfa_listing_cat_spfn <- fauna_cons_listing %>% 
@@ -810,7 +810,7 @@ tfa_listing_cat_spfn <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # WAPS 6
 tfa_listing_cat_waps <- fauna_cons_listing %>% 
@@ -830,7 +830,7 @@ tfa_listing_cat_waps <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_waps %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_waps %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # EPBC 7
 tfa_listing_cat_epbc <- fauna_cons_listing %>% 
@@ -850,7 +850,7 @@ tfa_listing_cat_epbc <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_epbc %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_epbc %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 ```
 

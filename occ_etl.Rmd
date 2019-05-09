@@ -390,7 +390,7 @@ Note: A custom QGIS model wraps the QGIS steps into one GUI dialogue.
 ```{r, eval=F}
 tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
 tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
-    wastdr::wastd_POST("community", verbose=T, api_url = uat)
+    wastdr::wastd_POST("community", verbose=T, api_url = prod)
 ```
 
 
