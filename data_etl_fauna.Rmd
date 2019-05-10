@@ -473,7 +473,7 @@ print(fauna_skim)
 There are `r nrow(fauna_occ)` species occurrence records (encounters). 
 The following columns are incomplete, which may only pose a problem for mandatory columns:
 
-```{r fauna_missing_values, eval=F}
+```{r fauna_missing_values}
 fauna_skim %>%
   filter(stat == "missing", value > 0) %>%
   select(-stat, -level, -formatted) %>%
@@ -720,7 +720,7 @@ fauna_cons_listing %>% dplyr::filter(list_code == "RedList") # Which IUCN versio
 criteria_requiring_mapping <- fauna_cons_listing %>% 
     dplyr::filter(grepl('[+,;]', reasons)) 
 
-criteria_requiring_mapping %>%  unique %>% knitr::kable()
+criteria_requiring_mapping %>% unique %>% dt
 ```
 
 QA questions for Fauna cons listings:

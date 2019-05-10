@@ -371,7 +371,7 @@ Upload to TSC - run manually. This could overwrite data or time out (depending o
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
@@ -443,7 +443,7 @@ fauna_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %
 
 
 ## Flora
-Poplation ID (e.g. "7"") becomes TaxonEncounter code,
+Poplation ID (e.g. "7") becomes TaxonEncounter code,
 Ppopulation ID plus Subpopulation DI (if given) becomes TaxonEncounter name 
 (e.g. "7A", "7B", "8", "9").
 
