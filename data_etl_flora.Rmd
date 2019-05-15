@@ -780,7 +780,9 @@ flora_cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::arrange(taxon_id)
 flora_cons_listings[1:100, ] %>% DT::datatable(.)
 
-save(flora_cons_listings, file=here::here("data", "flora_cons_listings.Rdata"))
+flcl_file <- here::here("data", "flora_cons_listings.Rdata")
+save(flora_cons_listing, file=flcl_file)
+if (file.exists(flcl_file)) load(flcl_file)
 ```
 
 
