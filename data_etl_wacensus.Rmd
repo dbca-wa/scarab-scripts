@@ -33,14 +33,14 @@ This workbook serves to update TSC via its API from KMI's WACensus views and leg
 
 ## Example: update one Taxon
 
-```{r write_data_example}
+```{r write_data_example, eval=F}
 hbvnames <- gs_getFeature(layer_name = "public:herbie_hbvnames_public")
 namesprops <- purrr::map(hbvnames[["features"]], "properties")
 namesprops[[1]]
 wastd_POST(namesprops[[1]], serializer = "names", api_url = dev)
 ```
 
-```{r list_names}
+```{r list_names, eval=F}
 wace_names <- "public:herbie_hbvnames_public" %>% 
     gs_getFeature()  %>% 
     magrittr::extract2("features") %>% 
@@ -58,9 +58,7 @@ Local (dev), UAT (uat) or production (prod) TSC instance.
 Adjust chunksize down when getting "504 gateway timeouts".
 
 ```{r rock_and_roll_production, eval=F}
-gjprod <- function(data, ser) upsert_geojson(
-    data, serializer = ser, api_url = dev, chunksize = 1000)
-
+gjprod <- function(data, ser) upsert_geojson(data, serializer = ser, api_url = prod, chunksize = 1000)
 "public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjprod("groups")
 "public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjprod("supra")
 "public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjprod("names")
@@ -88,7 +86,7 @@ TEC names were extracted in the TEC ETL workbook, then uploaded to the data cata
 This step accesses the CSV with TEC names from the data catalogue, transforms it into the target
 format, then uploads it into TSC's API.
 
-```{r tec_names}
+```{r tec_names, eval=F}
 # In steps to view intermediary outputs
 # com <- "9782cc52-7be8-494a-a7da-51845c119a21" %>% load_ckan_csv
 # com_taxa <- com %>%

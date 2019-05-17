@@ -731,6 +731,7 @@ criteria_requiring_mapping$reasons %>% unique(.)
 
 QA questions for Fauna cons listings:
 
+
 * Fauna WAPF = TSC WAPS
 * Which TSC IUCN redlist is Fauna RedList?
 * Fauna ActionPlan - do we keep this info?
