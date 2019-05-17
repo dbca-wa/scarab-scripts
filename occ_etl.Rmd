@@ -363,7 +363,7 @@ flora_eoo %>%
 flora_eoo %>% 
     dplyr::filter(name_id==1806) %>%
     dplyr::select(-data, -eoo_sfc) %>%
-    wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
+    wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 ```
 
 Upload to TSC - run manually. This could overwrite data or time out (depending on network load).
@@ -371,7 +371,7 @@ Upload to TSC - run manually. This could overwrite data or time out (depending o
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
@@ -390,7 +390,7 @@ Note: A custom QGIS model wraps the QGIS steps into one GUI dialogue.
 ```{r, eval=F}
 tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
 tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
-    wastdr::wastd_POST("community", verbose=T, api_url = uat)
+    wastdr::wastd_POST("community", verbose=T, api_url = prod)
 ```
 
 
@@ -414,22 +414,25 @@ fauna_tae <- fauna_occ %>%
     name = location_name,
     description = glue::glue(
         "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}. ",
-        "Certainty {certainty}. ",
+        "Species ID {certainty}. ",
         "Number seen: {number_seen}. ",
         "Site comments: {site_comment}. ",
         "Observation comments: {observation_comments}. ",
         "Curator comments: {comments}"),
     source = 10,
     source_id = id,
+    encounter_type = 1, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/1/change/ = opportunistic 
     encountered_on = glue::glue("{datetime}+08:00"),
     encountered_by = 1,
     area_type = 30,
+    geolocation_capture_method='gps-point',
     accuracy = accuracy,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   )
 
 fauna_tae10 <- fauna_tae %>% dplyr::filter(taxon==24734)
 fauna_tae10 <- fauna_tae %>% dplyr::filter(source_id==10261)
+
 fauna_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
@@ -443,7 +446,7 @@ fauna_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %
 
 
 ## Flora
-Poplation ID (e.g. "7"") becomes TaxonEncounter code,
+Poplation ID (e.g. "7") becomes TaxonEncounter code,
 Ppopulation ID plus Subpopulation DI (if given) becomes TaxonEncounter name 
 (e.g. "7A", "7B", "8", "9").
 
@@ -463,9 +466,11 @@ flora_tae <- flora_occ %>%
         ),
     source = 11,
     source_id = sheetno,
+    encounter_type = 3, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
     encountered_on = glue::glue("{observation_date} 00:00:00+08:00"),
     encountered_by = 1,
     area_type = 20, # pop:20, subpop: 21
+    geolocation_capture_method='gps-point',
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   )

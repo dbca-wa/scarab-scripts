@@ -671,9 +671,10 @@ conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
   dplyr::left_join(conslist, by = "list_id")
 ```
 
-## TFA conservation Listing
+## TFA Conservation Listing
 
 Conservation listing is the act of assigning a conservation status to a species for a span of time.
+Fauna cons listing columns are renamed and joined to species names by species code.
 
 ```{r tfa_cons_listing}
 fauna_cons_listing <- fauna_data$Gazettal %>%
@@ -695,7 +696,12 @@ fauna_cons_listing <- fauna_data$Gazettal %>%
   tibble::rowid_to_column("source_id")
 fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
+```
 
+Some cons listings have a name_id of 0. These are phrase names and require to be assigned the name_id
+of the published name.
+
+```{r}
 fauna_cons_listing %>% dplyr::filter(name_id == 0)
 ```
 
@@ -711,7 +717,7 @@ Conservation lists used in Fauna cons listings:
 
 ```{r tfa_cons_listing_qa}
 fauna_cons_listing$list_code %>% unique # cons lists used
-fauna_cons_listing %>% dplyr::filter(list_code == "WAPF") # Is this WAPS?
+fauna_cons_listing %>% dplyr::filter(list_code == "WAPF") # = WAPS
 fauna_cons_listing %>% dplyr::filter(list_code == "ActionPlan") # Discard those?
 fauna_cons_listing %>% dplyr::filter(list_code == "") # Discard those?
 fauna_cons_listing %>% dplyr::filter(list_code == "RedList") # Which IUCN version?
@@ -720,19 +726,20 @@ fauna_cons_listing %>% dplyr::filter(list_code == "RedList") # Which IUCN versio
 criteria_requiring_mapping <- fauna_cons_listing %>% 
     dplyr::filter(grepl('[+,;]', reasons)) 
 
-criteria_requiring_mapping %>%  unique %>% knitr::kable()
+criteria_requiring_mapping$reasons %>% unique(.)
 ```
 
 QA questions for Fauna cons listings:
 
-* Fauna WAPF = TSC WAPS? (Has same codes, so assume yes)
+* Fauna WAPF = TSC WAPS
 * Which TSC IUCN redlist is Fauna RedList?
 * Fauna ActionPlan - do we keep this info?
 * Fauna has three empty listings (no list, no cat, no crit) - discard?
 
 `r criteria_requiring_mapping %>% nrow` conservation listings contain condensed lists of criteria
 mixed with free text. Rather than manually transcribing this number, a manually written mapping for
-`r criteria_requiring_mapping$reasons %>% unique %>% length` distinct values can be used to automate ETL.
+`r criteria_requiring_mapping$reasons %>% unique %>% length` distinct values can be used to 
+automate ETL.
 
 
 ```{r tfa_cons_listing_upload, eval=F}
@@ -751,6 +758,7 @@ tsc_conscat_sp <- "conservationcategory" %>%
   )} %>% 
   dplyr::filter(conservation_list %in% c(1,2,3,6,7))
 
+
 # IUCN cons listing
 # IUCN 2012 3
 tfa_listing_cat_iucn <- fauna_cons_listing %>% 
@@ -760,7 +768,7 @@ tfa_listing_cat_iucn <- fauna_cons_listing %>%
         source = 1, # TaxonGaz.source TFA
         source_id = source_id %>% as.character(),
         scope = 0,
-        status = 80,
+        status = ifelse(is.na(delisted_on), 80, 90),
         effective_from = gazetted_on,
         effective_to=delisted_on,
         review_due=review_due,
@@ -770,7 +778,7 @@ tfa_listing_cat_iucn <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # WAWCA 1
 tfa_listing_cat_wawca <- fauna_cons_listing %>% 
@@ -780,7 +788,7 @@ tfa_listing_cat_wawca <- fauna_cons_listing %>%
         source = 1, # TaxonGaz.source TFA
         source_id = source_id %>% as.character(),
         scope = 0,
-        status = 80,
+        status = ifelse(is.na(delisted_on), 80, 90),
         effective_from = gazetted_on,
         effective_to=delisted_on,
         review_due=review_due,
@@ -790,7 +798,7 @@ tfa_listing_cat_wawca <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # SPFN 2
 tfa_listing_cat_spfn <- fauna_cons_listing %>% 
@@ -800,7 +808,7 @@ tfa_listing_cat_spfn <- fauna_cons_listing %>%
         source = 1, # TaxonGaz.source TFA
         source_id = source_id %>% as.character(),
         scope = 0,
-        status = 80,
+        status = ifelse(is.na(delisted_on), 80, 90),
         effective_from = gazetted_on,
         effective_to=delisted_on,
         review_due=review_due,
@@ -810,7 +818,7 @@ tfa_listing_cat_spfn <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # WAPS 6
 tfa_listing_cat_waps <- fauna_cons_listing %>% 
@@ -820,7 +828,7 @@ tfa_listing_cat_waps <- fauna_cons_listing %>%
         source = 1, # TaxonGaz.source TFA
         source_id = source_id %>% as.character(),
         scope = 0,
-        status = 80,
+        status = ifelse(is.na(delisted_on), 80, 90),
         effective_from = gazetted_on,
         effective_to=delisted_on,
         review_due=review_due,
@@ -830,7 +838,7 @@ tfa_listing_cat_waps <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_waps %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfa_listing_cat_waps %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # EPBC 7
 tfa_listing_cat_epbc <- fauna_cons_listing %>% 
@@ -840,7 +848,7 @@ tfa_listing_cat_epbc <- fauna_cons_listing %>%
         source = 1, # TaxonGaz.source TFA
         source_id = source_id %>% as.character(),
         scope = 1,
-        status = 80,
+        status = ifelse(is.na(delisted_on), 80, 90),
         effective_from = gazetted_on,
         effective_to=delisted_on,
         review_due=review_due,
@@ -850,8 +858,7 @@ tfa_listing_cat_epbc <- fauna_cons_listing %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_epbc %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
-
+tfa_listing_cat_epbc %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 ```
 
 

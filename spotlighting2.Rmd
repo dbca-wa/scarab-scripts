@@ -1,0 +1,247 @@
+---
+title: "Data ETL from ODK Central"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
+  pdf_document: default
+---
+
+
+# Background
+
+Fauna spotlighting surveys have three forms:
+
+* Survey start
+* Spotlighting x number of encountered animals
+* Survey end
+
+Data is uploaded at the [ODK Central sandbox](https://sandbox.central.opendatakit.org/#/projects/14/).
+User and app accounts can be created on request.
+
+Requires R package [Odata](https://cran.r-project.org/package=OData).
+Requires R env vars `ODKC_UN` and `ODKC_PW` for the ODK Central server.
+
+```{r setup, message=F}
+if (file.exists("~/.Rprofile")) source("~/.Rprofile")
+library(OData)
+library(ckanr)
+library(Hmisc)
+library(glue)
+library(httr)
+library(dplyr)
+library(magrittr)
+library(tibble)
+library(purrr)
+library(leaflet)
+sss_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-Start-0-2_1558066890.svc/Submissions"
+sse_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-End-0-2_1558067123.svc/Submissions"
+spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-0-4_1558064688.svc/Submissions"
+```
+
+# Data ETL
+
+## Extract: accessing the data
+Read data from ODK Central and beat them into a rectangular shape.
+
+```{r}
+# es_sss <- OData::entitySets(glue::glue("{sss_url}?format=json"))  # 501 not implemented
+# md_sss <- OData::metadata(glue::glue("{sss_url}"))
+auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
+hdr <- httr::add_headers(Accept = "json")
+
+sss <- httr::GET(sss_url, hdr, auth) %>% httr::content(.)
+survey_start <- sss$value %>% {
+    tibble::tibble(
+    submission_id = purrr::map_chr(., c("__id")),
+    submission_datetime = purrr::map_chr(., c("__system", "submissionDate")),
+    submitter_name = purrr::map_chr(., c("__system", "submitterName")),
+    device_id = purrr::map_chr(., c("device_id")),
+    survey_start_datetime = purrr::map_chr(., c("encounter_start_datetime")),
+    longitude = purrr::map(., c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(1) %>% as.numeric,
+    latitude = purrr::map(., c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(2) %>% as.numeric,
+    gps_reference_point = purrr::map(., c("location-group", "gps_reference_point")),
+    transect_name = purrr::map(., c("location-group", "transect_name")),
+    observer_left = purrr::map(., c("team", "observer_left")),
+    observer_right = purrr::map(., c("team", "observer_right")),
+    driver = purrr::map(., c("team", "driver")),
+    recorder = purrr::map(., c("team", "recorder")),
+    distance_measure = purrr::map_chr(., c("methods", "distance_measure")),
+    number_of_spotlights = purrr::map(., c("methods", "number_of_spotlights")) %>% as.integer,
+    air_temperature = purrr::map(., c("climate", "air_temperature")) %>% as.numeric,
+    wind_speed = purrr::map(., c("climate", "wind_speed")) %>% as.numeric,
+    precipitation = purrr::map(., c("climate", "precipitation")),
+    moon_phase = purrr::map(., c("climate", "moon_phase")) %>% as.integer,
+    cloud_cover = purrr::map(., c("climate", "cloud_cover")) %>% as.integer
+  )
+}
+
+sse <- httr::GET(sse_url, hdr, auth) %>% httr::content(.)
+survey_end <- sse$value %>% {
+    tibble::tibble(
+    submission_id = purrr::map_chr(., c("__id")),
+    submission_datetime = purrr::map_chr(., c("__system", "submissionDate")),
+    submitter_name = purrr::map_chr(., c("__system", "submitterName")),
+    device_id = purrr::map_chr(., c("device_id")),
+    survey_end_datetime = purrr::map_chr(., c("encounter_start_datetime")),
+    longitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(1) %>% as.numeric,
+    latitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(2) %>% as.numeric,
+    gps_reference_point = purrr::map(., c("location-group", "gps_reference_point")),
+    transect_name = purrr::map(., c("location-group", "transect_name")),
+    average_vehicle_speed = purrr::map_chr(., c("methods", "average_vehicle_speed")),
+    air_temperature = purrr::map(., c("climate", "air_temperature")) %>% as.numeric,
+    wind_speed = purrr::map(., c("climate", "wind_speed")) %>% as.numeric,
+    precipitation = purrr::map(., c("climate", "precipitation")),
+    moon_phase = purrr::map(., c("climate", "moon_phase")) %>% as.integer,
+    cloud_cover = purrr::map(., c("climate", "cloud_cover")) %>% as.integer
+  )
+}
+
+spt <- httr::GET(spt_url, hdr, auth) %>% httr::content(.)
+spotlights <- spt$value %>% {
+    tibble::tibble(
+    submission_id = purrr::map_chr(., c("__id")),
+    submission_datetime = purrr::map_chr(., c("__system", "submissionDate")),
+    submitter_name = purrr::map_chr(., c("__system", "submitterName")),
+    device_id = purrr::map_chr(., c("device_id")),
+    encounter_datetime = purrr::map_chr(., c("encounter_start_datetime")),
+    distance_to_animal_metres = purrr::map_chr(., c("animal-details", "distance_to_animal")),
+    bearing_to_animal_degrees = purrr::map_chr(., c("animal-details", "bearing_to_animal")),
+    bearing_to_road_degrees = purrr::map_chr(., c("animal-details", "bearing_to_road")),
+    animal_height_above_ground_estimate_m = purrr::map_chr(., c("animal-details", "animal_height_above_ground_estimate_m")),
+    species = purrr::map_chr(., c("animal-details", "species")),
+    species_id_certainty = purrr::map_chr(., c("animal-details", "species_id_certainty")),
+    number_of_individuals = purrr::map_chr(., c("animal-details", "number_of_individuals")),
+    tree_species = purrr::map_chr(., c("surroundings", "tree_species")),
+    substrate_under_animal = purrr::map_chr(., c("surroundings", "substrate_under_animal")),
+    site_type = purrr::map_chr(., c("surroundings", "site_type")),
+    animal_activities = purrr::map_chr(., c("surroundings", "animal_activities")),
+    longitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(1) %>% as.numeric,
+    latitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(2) %>% as.numeric,
+    gps_reference_point = purrr::map(., c("location-group", "gps_reference_point")),
+    distance_odometer = purrr::map(., c("location-group", "distance_odometer"))
+  )
+}
+```
+
+
+### Data previews
+This section demonstrates that we can access, transform, and visualise the data.
+This proves that the data is not trapped in ODK Central. 
+
+#### Survey Start
+```{r}
+survey_start %>% DT::datatable(.)
+```
+
+#### Survey End
+```{r}
+survey_end %>% DT::datatable(.)
+```
+
+#### Spotlighted animals
+```{r}
+spotlights %>% DT::datatable(.)
+```
+
+#### Maps
+Note not all data is shown in popups yet.
+
+```{r}
+leaflet::leaflet(width = 800, height = 600) %>%
+    leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+    leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+    leaflet::clearBounds() %>% 
+    leaflet::addAwesomeMarkers(
+          data = survey_start,
+          lng = ~longitude, lat = ~latitude,
+          icon = leaflet::makeAwesomeIcon(
+            text = "S",
+            markerColor = ~number_of_spotlights
+          ),
+          label = ~glue::glue('{survey_start_datetime} {transect_name}'),
+          popup = ~glue::glue(
+            "<h3>{transect_name}</h3>",
+            "Survey start {survey_start_datetime}</br>",
+            "Observer left {observer_left}</br>",
+            "Observer right {observer_right}</br>",
+            "Driver {driver}</br>",
+            "Recorder {recorder}</br>"
+          ),
+          clusterOptions = markerClusterOptions()
+    ) %>% 
+    leaflet::addAwesomeMarkers(
+          data = survey_end,
+          lng = ~longitude, lat = ~latitude,
+          icon = leaflet::makeAwesomeIcon(
+            text = "E",
+            markerColor = "green"
+          ),
+          label = ~glue::glue('{survey_end_datetime} {transect_name}'),
+          popup = ~glue::glue(
+            "<h3>{transect_name}</h3>",
+            "Survey end {survey_end_datetime}</br>"
+            
+          ),
+          clusterOptions = markerClusterOptions()
+    ) %>%
+    addLayersControl(
+      baseGroups = c("Aerial", "Place names"),
+      options = layersControlOptions(collapsed = FALSE)
+    )
+```
+
+```{r}
+leaflet::leaflet(width = 800, height = 600) %>%
+    leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+    leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+    leaflet::clearBounds() %>% 
+    leaflet::addAwesomeMarkers(
+          data = spotlights,
+          lng = ~longitude, lat = ~latitude,
+          icon = leaflet::makeAwesomeIcon(
+            text = "A",
+            markerColor = ~species
+          ),
+          label = ~glue::glue('{encounter_datetime} {species}'),
+          popup = ~glue::glue(
+            "<h3>{species}</h3>",
+            "Dist {distance_to_animal_metres}m, bearing {bearing_to_animal_degrees} deg</br>",
+            "Sitting on {substrate_under_animal} / {tree_species}</br>",
+            "Site type {site_type}</br>"
+          ),
+          clusterOptions = markerClusterOptions()
+    ) %>%
+    addLayersControl(
+      baseGroups = c("Aerial", "Place names"),
+      options = layersControlOptions(collapsed = FALSE)
+    )
+```
+
+## Transform: ODK to FaunaFile
+Tasks: Translate lookups, rename columns, restructure tables.
+
+
+## Load: Upload into FaunaFile
+Tasks: Use Hmisc or [RODBC](http://rprogramming.net/connect-to-ms-access-in-r/) to write to an MS Access db.
+
+In the worst case, we can dump this data into a spreadsheet and use it from there.
+In the best case, we can automate the import into FaunaFile.
+
+```{r, eval=F}
+dbfile <- "path/to/faunafile.mdb"
+con <- Hmisc::mdb.get(dbfile, dateformat = "%m-%d-%Y", as.is = TRUE)
+# write transformed data to FaunaFile
+```
+
+# Publish
+This workbook is uploaded to the DBCA data catalogue.
+
