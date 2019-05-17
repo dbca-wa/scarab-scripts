@@ -17,24 +17,30 @@ output:
 
 
 # Background
+This workbook demonstrates how to access data from ODK Central through the
+OData service endpoint.
 
-Fauna spotlighting surveys have three forms:
+As an example, we show three forms from Fauna spotlighting surveys:
 
-* Survey start
-* Spotlighting x number of encountered animals
-* Survey end
+* Survey start: team, weather conditions at start.
+* Spotlighting (repeated for the number of encountered animals): an observer
+  detects a possum sitting on a tree in the dark by waving a spotlight while
+  sitting on the roof of a (slowly moving) vehicle.
+* Survey end: climate and environment at end of survey.
 
-Data is uploaded at the [ODK Central sandbox](https://sandbox.central.opendatakit.org/#/projects/14/).
+Data is uploaded to the 
+[ODK Central sandbox](https://sandbox.central.opendatakit.org/#/projects/14/).
 User and app accounts can be created on request.
 
-Requires R package [Odata](https://cran.r-project.org/package=OData).
-Requires R env vars `ODKC_UN` and `ODKC_PW` for the ODK Central server.
+This example requires the email address (=ODK Central username) and password 
+to be set as R env vars `ODKC_UN` and `ODKC_PW` for the ODK Central server.
+A good place for those is `~/.Rprofile`.
 
 ```{r setup, message=F}
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
-library(OData)
+# library(OData)  # didn't work, went with httr
 library(ckanr)
-library(Hmisc)
+library(Hmisc)  # MS Access
 library(glue)
 library(httr)
 library(dplyr)
@@ -42,6 +48,8 @@ library(magrittr)
 library(tibble)
 library(purrr)
 library(leaflet)
+
+# Our example forms' OData endpoint, plus /Submissions
 sss_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-Start-0-2_1558066890.svc/Submissions"
 sse_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-End-0-2_1558067123.svc/Submissions"
 spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-0-4_1558064688.svc/Submissions"
@@ -50,15 +58,20 @@ spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_S
 # Data ETL
 
 ## Extract: accessing the data
-Read data from ODK Central and beat them into a rectangular shape.
+Read data from ODK Central and beat them into a rectangular shape (tibble) with 
+a `purrr` wrench.
 
 ```{r}
-# es_sss <- OData::entitySets(glue::glue("{sss_url}?format=json"))  # 501 not implemented
-# md_sss <- OData::metadata(glue::glue("{sss_url}"))
+# es_sss <- OData::entitySets(sss_url)  # 501 not implemented
+# md_sss <- OData::metadata(sss_url) # no luch either
+
+# Authentication: Basicauth with ODK Central web user's UN (=email) and PW
 auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
+
+# Demand JSON response
 hdr <- httr::add_headers(Accept = "json")
 
-sss <- httr::GET(sss_url, hdr, auth) %>% httr::content(.)
+sss <- sss_url %>% httr::GET(hdr, auth) %>% httr::content(.)
 survey_start <- sss$value %>% {
     tibble::tibble(
     submission_id = purrr::map_chr(., c("__id")),
@@ -84,7 +97,7 @@ survey_start <- sss$value %>% {
   )
 }
 
-sse <- httr::GET(sse_url, hdr, auth) %>% httr::content(.)
+sse <- sse_url %>% httr::GET(hdr, auth) %>% httr::content(.)
 survey_end <- sse$value %>% {
     tibble::tibble(
     submission_id = purrr::map_chr(., c("__id")),
@@ -105,7 +118,7 @@ survey_end <- sse$value %>% {
   )
 }
 
-spt <- httr::GET(spt_url, hdr, auth) %>% httr::content(.)
+spt <- spt_url %>% httr::GET(hdr, auth) %>% httr::content(.)
 spotlights <- spt$value %>% {
     tibble::tibble(
     submission_id = purrr::map_chr(., c("__id")),
@@ -142,19 +155,6 @@ This proves that the data is not trapped in ODK Central.
 survey_start %>% DT::datatable(.)
 ```
 
-#### Survey End
-```{r}
-survey_end %>% DT::datatable(.)
-```
-
-#### Spotlighted animals
-```{r}
-spotlights %>% DT::datatable(.)
-```
-
-#### Maps
-Note not all data is shown in popups yet.
-
 ```{r}
 leaflet::leaflet(width = 800, height = 600) %>%
     leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
@@ -177,7 +177,24 @@ leaflet::leaflet(width = 800, height = 600) %>%
             "Recorder {recorder}</br>"
           ),
           clusterOptions = markerClusterOptions()
-    ) %>% 
+    ) %>%
+    addLayersControl(
+      baseGroups = c("Aerial", "Place names"),
+      options = layersControlOptions(collapsed = FALSE)
+    )
+```
+
+
+#### Survey End
+```{r}
+survey_end %>% DT::datatable(.)
+```
+
+```{r}
+leaflet::leaflet(width = 800, height = 600) %>%
+    leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+    leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+    leaflet::clearBounds() %>% 
     leaflet::addAwesomeMarkers(
           data = survey_end,
           lng = ~longitude, lat = ~latitude,
@@ -189,7 +206,6 @@ leaflet::leaflet(width = 800, height = 600) %>%
           popup = ~glue::glue(
             "<h3>{transect_name}</h3>",
             "Survey end {survey_end_datetime}</br>"
-            
           ),
           clusterOptions = markerClusterOptions()
     ) %>%
@@ -197,6 +213,11 @@ leaflet::leaflet(width = 800, height = 600) %>%
       baseGroups = c("Aerial", "Place names"),
       options = layersControlOptions(collapsed = FALSE)
     )
+```
+
+#### Spotlighted animals
+```{r}
+spotlights %>% DT::datatable(.)
 ```
 
 ```{r}
@@ -243,5 +264,6 @@ con <- Hmisc::mdb.get(dbfile, dateformat = "%m-%d-%Y", as.is = TRUE)
 ```
 
 # Publish
-This workbook is uploaded to the DBCA data catalogue.
+This workbook will be uploaded to the DBCA data catalogue (once productionised).
+As long as test data are shown, it is published to RPubs.com.
 
