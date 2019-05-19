@@ -39,16 +39,19 @@ A good place for those is `~/.Rprofile`.
 ```{r setup, message=F}
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 # library(OData)  # didn't work, went with httr
+# remotes::install_github("r-lib/rlang")
+# remotes::install_github("tidyverse/tidyr")
 library(ckanr)
 library(Hmisc)  # MS Access
 library(glue)
 library(httr)
+library(tidyr)
 library(dplyr)
 library(magrittr)
 library(tibble)
 library(purrr)
 library(leaflet)
-
+library(wastdr)
 # Our example forms' OData endpoint, plus /Submissions
 sss_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-Start-0-2_1558066890.svc/Submissions"
 sse_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-End-0-2_1558067123.svc/Submissions"
@@ -59,11 +62,11 @@ spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_S
 
 ## Extract: accessing the data
 Read data from ODK Central and beat them into a rectangular shape (tibble) with 
-a `purrr` wrench.
+a `tidyr` wrench.
 
-```{r}
+```{r, message=F}
 # es_sss <- OData::entitySets(sss_url)  # 501 not implemented
-# md_sss <- OData::metadata(sss_url) # no luch either
+# md_sss <- OData::metadata(sss_url) # no luck either
 
 # Authentication: Basicauth with ODK Central web user's UN (=email) and PW
 auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
@@ -72,79 +75,55 @@ auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
 hdr <- httr::add_headers(Accept = "json")
 
 sss <- sss_url %>% httr::GET(hdr, auth) %>% httr::content(.)
-survey_start <- sss$value %>% {
-    tibble::tibble(
-    submission_id = purrr::map_chr(., c("__id")),
-    submission_datetime = purrr::map_chr(., c("__system", "submissionDate")),
-    submitter_name = purrr::map_chr(., c("__system", "submitterName")),
-    device_id = purrr::map_chr(., c("device_id")),
-    survey_start_datetime = purrr::map_chr(., c("encounter_start_datetime")),
-    longitude = purrr::map(., c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(1) %>% as.numeric,
-    latitude = purrr::map(., c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(2) %>% as.numeric,
-    gps_reference_point = purrr::map(., c("location-group", "gps_reference_point")),
-    transect_name = purrr::map(., c("location-group", "transect_name")),
-    observer_left = purrr::map(., c("team", "observer_left")),
-    observer_right = purrr::map(., c("team", "observer_right")),
-    driver = purrr::map(., c("team", "driver")),
-    recorder = purrr::map(., c("team", "recorder")),
-    distance_measure = purrr::map_chr(., c("methods", "distance_measure")),
-    number_of_spotlights = purrr::map(., c("methods", "number_of_spotlights")) %>% as.integer,
-    air_temperature = purrr::map(., c("climate", "air_temperature")) %>% as.numeric,
-    wind_speed = purrr::map(., c("climate", "wind_speed")) %>% as.numeric,
-    precipitation = purrr::map(., c("climate", "precipitation")),
-    moon_phase = purrr::map(., c("climate", "moon_phase")) %>% as.integer,
-    cloud_cover = purrr::map(., c("climate", "cloud_cover")) %>% as.integer
-  )
-}
+
+survey_start <- tibble::tibble(value=sss$value) %>% 
+  tidyr::unnest_wider(value) %>% 
+  tidyr::unnest_wider(`__system`) %>% 
+  tidyr::unnest_wider(meta) %>% 
+  tidyr::unnest_wider(climate) %>% 
+  tidyr::unnest_wider(team) %>% 
+  tidyr::unnest_wider(methods) %>% 
+  tidyr::unnest_wider(`location-group`) %>% 
+  tidyr::unnest_wider(location) %>% 
+  tidyr::unnest_wider(coordinates) %>% 
+  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 
 sse <- sse_url %>% httr::GET(hdr, auth) %>% httr::content(.)
-survey_end <- sse$value %>% {
-    tibble::tibble(
-    submission_id = purrr::map_chr(., c("__id")),
-    submission_datetime = purrr::map_chr(., c("__system", "submissionDate")),
-    submitter_name = purrr::map_chr(., c("__system", "submitterName")),
-    device_id = purrr::map_chr(., c("device_id")),
-    survey_end_datetime = purrr::map_chr(., c("encounter_start_datetime")),
-    longitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(1) %>% as.numeric,
-    latitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(2) %>% as.numeric,
-    gps_reference_point = purrr::map(., c("location-group", "gps_reference_point")),
-    transect_name = purrr::map(., c("location-group", "transect_name")),
-    average_vehicle_speed = purrr::map_chr(., c("methods", "average_vehicle_speed")),
-    air_temperature = purrr::map(., c("climate", "air_temperature")) %>% as.numeric,
-    wind_speed = purrr::map(., c("climate", "wind_speed")) %>% as.numeric,
-    precipitation = purrr::map(., c("climate", "precipitation")),
-    moon_phase = purrr::map(., c("climate", "moon_phase")) %>% as.integer,
-    cloud_cover = purrr::map(., c("climate", "cloud_cover")) %>% as.integer
-  )
-}
+survey_end <- tibble::tibble(value=sse$value) %>% 
+  tidyr::unnest_wider(value) %>% 
+  tidyr::unnest_wider(`__system`) %>% 
+  tidyr::unnest_wider(meta) %>% 
+  tidyr::unnest_wider(climate) %>% 
+  tidyr::unnest_wider(methods) %>% 
+  tidyr::unnest_wider(`location-group`) %>% 
+  tidyr::unnest_wider(location) %>% 
+  tidyr::unnest_wider(coordinates) %>% 
+  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 
 spt <- spt_url %>% httr::GET(hdr, auth) %>% httr::content(.)
-spotlights <- spt$value %>% {
-    tibble::tibble(
-    submission_id = purrr::map_chr(., c("__id")),
-    submission_datetime = purrr::map_chr(., c("__system", "submissionDate")),
-    submitter_name = purrr::map_chr(., c("__system", "submitterName")),
-    device_id = purrr::map_chr(., c("device_id")),
-    encounter_datetime = purrr::map_chr(., c("encounter_start_datetime")),
-    distance_to_animal_metres = purrr::map_chr(., c("animal-details", "distance_to_animal")),
-    bearing_to_animal_degrees = purrr::map_chr(., c("animal-details", "bearing_to_animal")),
-    bearing_to_road_degrees = purrr::map_chr(., c("animal-details", "bearing_to_road")),
-    animal_height_above_ground_estimate_m = purrr::map_chr(., c("animal-details", "animal_height_above_ground_estimate_m")),
-    species = purrr::map_chr(., c("animal-details", "species")),
-    species_id_certainty = purrr::map_chr(., c("animal-details", "species_id_certainty")),
-    number_of_individuals = purrr::map_chr(., c("animal-details", "number_of_individuals")),
-    tree_species = purrr::map_chr(., c("surroundings", "tree_species")),
-    substrate_under_animal = purrr::map_chr(., c("surroundings", "substrate_under_animal")),
-    site_type = purrr::map_chr(., c("surroundings", "site_type")),
-    animal_activities = purrr::map_chr(., c("surroundings", "animal_activities")),
-    longitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(1) %>% as.numeric,
-    latitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(2) %>% as.numeric,
-    gps_reference_point = purrr::map(., c("location-group", "gps_reference_point")),
-    distance_odometer = purrr::map(., c("location-group", "distance_odometer"))
-  )
-}
+spotlights <- tibble::tibble(value=spt$value) %>% 
+  tidyr::unnest_wider(value) %>% 
+  tidyr::unnest_wider(`__system`) %>% 
+  tidyr::unnest_wider(meta) %>% 
+  tidyr::unnest_wider(`animal-details`) %>% 
+  tidyr::unnest_wider(surroundings) %>% 
+  tidyr::unnest_wider(`location-group`) %>% 
+  tidyr::unnest_wider(location) %>% 
+  tidyr::unnest_wider(coordinates) %>% 
+  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 ```
 
+For data engineers: The response's content is parsed into a list of lists.
+One record looks like so.
+
+```{r}
+sss$value[[1]]
+```
+
+We unnest each nesting level with `tidyr::unnest_wider`, until all terminal
+variables are at the same level. This replaces the earlier implementation
+using multiple calls to `purrr:map_*` with shorter code - we don't have to 
+manually pluck each variable any longer.
 
 ### Data previews
 This section demonstrates that we can access, transform, and visualise the data.
@@ -167,14 +146,24 @@ leaflet::leaflet(width = 800, height = 600) %>%
             text = "S",
             markerColor = ~number_of_spotlights
           ),
-          label = ~glue::glue('{survey_start_datetime} {transect_name}'),
+          label = ~glue::glue('{encounter_start_datetime} {transect_name}'),
           popup = ~glue::glue(
             "<h3>{transect_name}</h3>",
-            "Survey start {survey_start_datetime}</br>",
+            "Survey start {encounter_start_datetime}</br>",
+            "<h5>Team</h5>",
             "Observer left {observer_left}</br>",
-            "Observer right {observer_right}</br>",
+            # "Observer right {observer_right}</br>",
             "Driver {driver}</br>",
-            "Recorder {recorder}</br>"
+            "Recorder {recorder}</br>",
+            "<h5>Methodology</h5>",
+            "Distance measured by {distance_measure}</br>",
+            "Spotlights: {number_of_spotlights}</br>",
+            "<h5>Climate</h5>",
+            "Air temp {air_temperature} deg C</br>",
+            "Wind {wind_speed} m/s</br>",
+            "Precipitation {precipitation}</br>",
+            "Moon phase {moon_phase}/8</br>",
+            "Cloud cover {cloud_cover}/8</br>"
           ),
           clusterOptions = markerClusterOptions()
     ) %>%
@@ -202,10 +191,15 @@ leaflet::leaflet(width = 800, height = 600) %>%
             text = "E",
             markerColor = "green"
           ),
-          label = ~glue::glue('{survey_end_datetime} {transect_name}'),
+          label = ~glue::glue('Survey end {encounter_start_datetime}'),
           popup = ~glue::glue(
-            "<h3>{transect_name}</h3>",
-            "Survey end {survey_end_datetime}</br>"
+            "Avg vehicle speed {average_vehicle_speed} km/h</br>",
+            "<h5>Climate</h5>",
+            "Air temp {air_temperature} deg C</br>",
+            "Wind {wind_speed} m/s</br>",
+            "Precipitation {precipitation}</br>",
+            "Moon phase {moon_phase}/8</br>",
+            "Cloud cover {cloud_cover}/8</br>"
           ),
           clusterOptions = markerClusterOptions()
     ) %>%
@@ -232,12 +226,20 @@ leaflet::leaflet(width = 800, height = 600) %>%
             text = "A",
             markerColor = ~species
           ),
-          label = ~glue::glue('{encounter_datetime} {species}'),
+          label = ~glue::glue('{encounter_start_datetime} {species}'),
           popup = ~glue::glue(
-            "<h3>{species}</h3>",
-            "Dist {distance_to_animal_metres}m, bearing {bearing_to_animal_degrees} deg</br>",
-            "Sitting on {substrate_under_animal} / {tree_species}</br>",
-            "Site type {site_type}</br>"
+            "<h3>{number_of_individuals} {humanize(species)}",
+            " ({humanize(species_id_certainty)})</h3>",
+            "Dist {distance_to_animal} m, ",
+            "bearing {bearing_to_animal} deg, ",
+            "height {animal_height_above_ground_estimate_m} m</br>",
+            "Sitting on {humanize(substrate_under_animal)} / {humanize(tree_species)}</br>",
+            "Activity {animal_activities}<br/>",
+            "Site type {humanize(site_type)}</br>",
+            "<h5>Observer</h5>",
+            "Bearing to road {bearing_to_road} deg<br/>",
+            "GPS waypoint {gps_reference_point}<br/>",
+            "Odometer {distance_odometer} m<br/>"
           ),
           clusterOptions = markerClusterOptions()
     ) %>%
@@ -250,9 +252,14 @@ leaflet::leaflet(width = 800, height = 600) %>%
 ## Transform: ODK to FaunaFile
 Tasks: Translate lookups, rename columns, restructure tables.
 
+FaunaFile has specific internal values for columns with dropdown selections.
+To translate the more human-readable ODK values into the legacy FaunaFile values, 
+`dplyr::left_join` tibbles of ODK values vs FaunaFile lookups to the data tibbles.
 
 ## Load: Upload into FaunaFile
-Tasks: Use Hmisc or [RODBC](http://rprogramming.net/connect-to-ms-access-in-r/) to write to an MS Access db.
+Tasks: Use Hmisc or [RODBC](http://rprogramming.net/connect-to-ms-access-in-r/) to write to an MS Access db. Alteratively, dump the data into CSV, then upload those CSVs into FF
+e.g. through an SQL script from inside FF, or import them into the Oracle backend
+with a separate SQL script.
 
 In the worst case, we can dump this data into a spreadsheet and use it from there.
 In the best case, we can automate the import into FaunaFile.
