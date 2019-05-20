@@ -1,5 +1,5 @@
 ---
-title: "Data ETL from ODK Central"
+title: "Data ETL from ODK Central: Fauna Spotlighting"
 author: "Florian Mayer, DBCA"
 date: "`r Sys.time()`"
 always_allow_html: yes
@@ -24,8 +24,8 @@ As an example, we show three forms from Fauna spotlighting surveys:
 
 * Survey start: team, weather conditions at start.
 * Spotlighting (repeated for the number of encountered animals): an observer
-  detects a possum sitting on a tree in the dark by waving a spotlight while
-  sitting on the roof of a (slowly moving) vehicle.
+detects a possum sitting on a tree in the dark by waving a spotlight while
+sitting on the roof of a (slowly moving) vehicle.
 * Survey end: climate and environment at end of survey.
 
 Data is uploaded to the 
@@ -42,7 +42,7 @@ if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 # remotes::install_github("r-lib/rlang")
 # remotes::install_github("tidyverse/tidyr")
 library(ckanr)
-library(Hmisc)  # MS Access
+# library(Hmisc)  # MS Access
 library(glue)
 library(httr)
 library(tidyr)
@@ -53,16 +53,16 @@ library(purrr)
 library(leaflet)
 library(wastdr)
 # Our example forms' OData endpoint, plus /Submissions
-sss_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-Start-0-2_1558066890.svc/Submissions"
-sse_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-End-0-2_1558067123.svc/Submissions"
-spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-0-4_1558064688.svc/Submissions"
+sss_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-Start-0-3_1558320795.svc/Submissions"
+sse_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-End-0-3_1558320208.svc/Submissions"
+spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-0-5_1558320001.svc/Submissions"
 ```
 
 # Data ETL
 
 ## Extract: accessing the data
-Read data from ODK Central and beat them into a rectangular shape (tibble) with 
-a `tidyr` wrench.
+In this section, form submissions are downloaded from ODK Central and transformed
+into a rectangular shape.
 
 ```{r, message=F}
 # es_sss <- OData::entitySets(sss_url)  # 501 not implemented
@@ -75,18 +75,17 @@ auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
 hdr <- httr::add_headers(Accept = "json")
 
 sss <- sss_url %>% httr::GET(hdr, auth) %>% httr::content(.)
-
 survey_start <- tibble::tibble(value=sss$value) %>% 
   tidyr::unnest_wider(value) %>% 
   tidyr::unnest_wider(`__system`) %>% 
   tidyr::unnest_wider(meta) %>% 
-  tidyr::unnest_wider(climate) %>% 
-  tidyr::unnest_wider(team) %>% 
-  tidyr::unnest_wider(methods) %>% 
-  tidyr::unnest_wider(`location-group`) %>% 
+  tidyr::unnest_wider(location_group) %>% 
   tidyr::unnest_wider(location) %>% 
   tidyr::unnest_wider(coordinates) %>% 
-  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
+  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`) %>% 
+  tidyr::unnest_wider(climate) %>% 
+  tidyr::unnest_wider(team) %>% 
+  tidyr::unnest_wider(methods)
 
 sse <- sse_url %>% httr::GET(hdr, auth) %>% httr::content(.)
 survey_end <- tibble::tibble(value=sse$value) %>% 
@@ -95,7 +94,7 @@ survey_end <- tibble::tibble(value=sse$value) %>%
   tidyr::unnest_wider(meta) %>% 
   tidyr::unnest_wider(climate) %>% 
   tidyr::unnest_wider(methods) %>% 
-  tidyr::unnest_wider(`location-group`) %>% 
+  tidyr::unnest_wider(location_group) %>% 
   tidyr::unnest_wider(location) %>% 
   tidyr::unnest_wider(coordinates) %>% 
   dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
@@ -105,16 +104,16 @@ spotlights <- tibble::tibble(value=spt$value) %>%
   tidyr::unnest_wider(value) %>% 
   tidyr::unnest_wider(`__system`) %>% 
   tidyr::unnest_wider(meta) %>% 
-  tidyr::unnest_wider(`animal-details`) %>% 
+  tidyr::unnest_wider(animal_details) %>% 
   tidyr::unnest_wider(surroundings) %>% 
-  tidyr::unnest_wider(`location-group`) %>% 
+  tidyr::unnest_wider(location_group) %>% 
   tidyr::unnest_wider(location) %>% 
   tidyr::unnest_wider(coordinates) %>% 
   dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 ```
 
-For data engineers: The response's content is parsed into a list of lists.
-One record looks like so.
+For data engineers: The response's content is a list of lists.
+One record looks like this:
 
 ```{r}
 sss$value[[1]]
@@ -123,11 +122,14 @@ sss$value[[1]]
 We unnest each nesting level with `tidyr::unnest_wider`, until all terminal
 variables are at the same level. This replaces the earlier implementation
 using multiple calls to `purrr:map_*` with shorter code - we don't have to 
-manually pluck each variable any longer.
+manually reference each variable any longer.
 
 ### Data previews
 This section demonstrates that we can access, transform, and visualise the data.
 This proves that the data is not trapped in ODK Central. 
+
+In production, a section like this can provide a first look at the data (as soon 
+as the capture devices have finished their upload).
 
 #### Survey Start
 ```{r}
@@ -136,41 +138,41 @@ survey_start %>% DT::datatable(.)
 
 ```{r}
 leaflet::leaflet(width = 800, height = 600) %>%
-    leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
-    leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
-    leaflet::clearBounds() %>% 
-    leaflet::addAwesomeMarkers(
-          data = survey_start,
-          lng = ~longitude, lat = ~latitude,
-          icon = leaflet::makeAwesomeIcon(
-            text = "S",
-            markerColor = ~number_of_spotlights
-          ),
-          label = ~glue::glue('{encounter_start_datetime} {transect_name}'),
-          popup = ~glue::glue(
-            "<h3>{transect_name}</h3>",
-            "Survey start {encounter_start_datetime}</br>",
-            "<h5>Team</h5>",
-            "Observer left {observer_left}</br>",
-            # "Observer right {observer_right}</br>",
-            "Driver {driver}</br>",
-            "Recorder {recorder}</br>",
-            "<h5>Methodology</h5>",
-            "Distance measured by {distance_measure}</br>",
-            "Spotlights: {number_of_spotlights}</br>",
-            "<h5>Climate</h5>",
-            "Air temp {air_temperature} deg C</br>",
-            "Wind {wind_speed} m/s</br>",
-            "Precipitation {precipitation}</br>",
-            "Moon phase {moon_phase}/8</br>",
-            "Cloud cover {cloud_cover}/8</br>"
-          ),
-          clusterOptions = markerClusterOptions()
-    ) %>%
-    addLayersControl(
-      baseGroups = c("Aerial", "Place names"),
-      options = layersControlOptions(collapsed = FALSE)
-    )
+  leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  leaflet::clearBounds() %>% 
+  leaflet::addAwesomeMarkers(
+    data = survey_start,
+    lng = ~longitude, lat = ~latitude,
+    icon = leaflet::makeAwesomeIcon(
+      text = "S",
+      markerColor = ~number_of_spotlights
+    ),
+    label = ~glue::glue('{survey_start_datetime} {transect_name}'),
+    popup = ~glue::glue(
+      "<h3>{transect_name}</h3>",
+      "Survey start {survey_start_datetime}</br>",
+      "<h5>Team</h5>",
+      "Observer left {observer_left}</br>",
+      "Observer right {observer_right}</br>",
+      "Driver {driver}</br>",
+      "Recorder {recorder}</br>",
+      "<h5>Methodology</h5>",
+      "Distance measured by {distance_measure}</br>",
+      "Spotlights: {number_of_spotlights}</br>",
+      "<h5>Climate</h5>",
+      "Air temp {air_temperature} deg C</br>",
+      "Wind {wind_speed} m/s</br>",
+      "Precipitation {precipitation}</br>",
+      "Moon phase {moon_phase}/8</br>",
+      "Cloud cover {cloud_cover}/8</br>"
+    ),
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
 ```
 
 
@@ -181,32 +183,35 @@ survey_end %>% DT::datatable(.)
 
 ```{r}
 leaflet::leaflet(width = 800, height = 600) %>%
-    leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
-    leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
-    leaflet::clearBounds() %>% 
-    leaflet::addAwesomeMarkers(
-          data = survey_end,
-          lng = ~longitude, lat = ~latitude,
-          icon = leaflet::makeAwesomeIcon(
-            text = "E",
-            markerColor = "green"
-          ),
-          label = ~glue::glue('Survey end {encounter_start_datetime}'),
-          popup = ~glue::glue(
-            "Avg vehicle speed {average_vehicle_speed} km/h</br>",
-            "<h5>Climate</h5>",
-            "Air temp {air_temperature} deg C</br>",
-            "Wind {wind_speed} m/s</br>",
-            "Precipitation {precipitation}</br>",
-            "Moon phase {moon_phase}/8</br>",
-            "Cloud cover {cloud_cover}/8</br>"
-          ),
-          clusterOptions = markerClusterOptions()
-    ) %>%
-    addLayersControl(
-      baseGroups = c("Aerial", "Place names"),
-      options = layersControlOptions(collapsed = FALSE)
-    )
+  leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  leaflet::clearBounds() %>% 
+  leaflet::addAwesomeMarkers(
+    data = survey_end,
+    lng = ~longitude, lat = ~latitude,
+    icon = leaflet::makeAwesomeIcon(
+      text = "E",
+      markerColor = "green"
+    ),
+    label = ~glue::glue('Survey end {survey_end_datetime}'),
+    popup = ~glue::glue(
+      "<h3>Survey end</h3>",
+      "<h5>Methodology</h5>",
+      "Avg vehicle speed {average_vehicle_speed_kmh} km/h</br>",
+      "Comments: {methodology_comments}</br>",
+      "<h5>Climate</h5>",
+      "Air temp {air_temperature} deg C</br>",
+      "Wind {wind_speed} m/s</br>",
+      "Precipitation {precipitation}</br>",
+      "Moon phase {moon_phase}/8</br>",
+      "Cloud cover {cloud_cover}/8</br>"
+    ),
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
 ```
 
 #### Spotlighted animals
@@ -216,37 +221,38 @@ spotlights %>% DT::datatable(.)
 
 ```{r}
 leaflet::leaflet(width = 800, height = 600) %>%
-    leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
-    leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
-    leaflet::clearBounds() %>% 
-    leaflet::addAwesomeMarkers(
-          data = spotlights,
-          lng = ~longitude, lat = ~latitude,
-          icon = leaflet::makeAwesomeIcon(
-            text = "A",
-            markerColor = ~species
-          ),
-          label = ~glue::glue('{encounter_start_datetime} {species}'),
-          popup = ~glue::glue(
-            "<h3>{number_of_individuals} {humanize(species)}",
-            " ({humanize(species_id_certainty)})</h3>",
-            "Dist {distance_to_animal} m, ",
-            "bearing {bearing_to_animal} deg, ",
-            "height {animal_height_above_ground_estimate_m} m</br>",
-            "Sitting on {humanize(substrate_under_animal)} / {humanize(tree_species)}</br>",
-            "Activity {animal_activities}<br/>",
-            "Site type {humanize(site_type)}</br>",
-            "<h5>Observer</h5>",
-            "Bearing to road {bearing_to_road} deg<br/>",
-            "GPS waypoint {gps_reference_point}<br/>",
-            "Odometer {distance_odometer} m<br/>"
-          ),
-          clusterOptions = markerClusterOptions()
-    ) %>%
-    addLayersControl(
-      baseGroups = c("Aerial", "Place names"),
-      options = layersControlOptions(collapsed = FALSE)
-    )
+  leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  leaflet::clearBounds() %>% 
+  leaflet::addAwesomeMarkers(
+    data = spotlights,
+    lng = ~longitude, lat = ~latitude,
+    icon = leaflet::makeAwesomeIcon(
+      text = "A",
+      markerColor = ~species
+    ),
+    label = ~glue::glue('{encounter_start_datetime} {species}'),
+    popup = ~glue::glue(
+      "<h3>{humanize(species)} ",
+      "({humanize(species_id_certainty)}) ({number_of_individuals})</h3>",
+      "<h5>Animal</h5>",
+      "Dist {distance_to_animal_metres} m, ",
+      "bearing {bearing_to_animal_degrees} deg, ",
+      "height {animal_height_above_ground_estimate_metres} m</br>",
+      "Sitting on {humanize(substrate_under_animal)} / {humanize(tree_species)}</br>",
+      "Activity {animal_activities}<br/>",
+      "Site type {humanize(site_type)}</br>",
+      "<h5>Observer</h5>",
+      "Bearing to road {bearing_to_road_degrees} deg<br/>",
+      "GPS waypoint {gps_reference_point}<br/>",
+      "Odometer {distance_odometer} m<br/>"
+    ),
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
 ```
 
 ## Transform: ODK to FaunaFile

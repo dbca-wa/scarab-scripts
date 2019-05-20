@@ -1,0 +1,85 @@
+---
+title: "Data ETL from ODK Central: Flora Quadrats"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
+  pdf_document: default
+---
+
+
+# Background
+This workbook demonstrates how to access data from ODK Central through the
+OData service endpoint.
+
+As an example, we show three forms from Flora Quadrat Surveys.
+
+Data is uploaded to the 
+[ODK Central sandbox](https://sandbox.central.opendatakit.org/#/projects/14/).
+User and app accounts can be created on request.
+
+This example requires the email address (=ODK Central username) and password 
+to be set as R env vars `ODKC_UN` and `ODKC_PW` for the ODK Central server.
+A good place for those is `~/.Rprofile`.
+
+```{r setup, message=F}
+if (file.exists("~/.Rprofile")) source("~/.Rprofile")
+# library(OData)  # didn't work, went with httr
+# remotes::install_github("r-lib/rlang")
+# remotes::install_github("tidyverse/tidyr")
+library(ckanr)
+# library(Hmisc)  # MS Access
+library(glue)
+library(httr)
+library(tidyr)
+library(dplyr)
+library(magrittr)
+library(tibble)
+library(purrr)
+library(leaflet)
+library(wastdr)
+# Our example OData endpoint, plus /Submissions
+data_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Flora-Quadrat-0-1_1558330379.svc/Submissions"
+```
+
+
+# Data ETL
+
+## Extract: accessing the data
+In this section, form submissions are downloaded from ODK Central and transformed
+into a rectangular shape.
+
+```{r}
+# Authentication: Basicauth with ODK Central web user's UN (=email) and PW
+auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
+
+# Demand JSON response
+hdr <- httr::add_headers(Accept = "json")
+
+d <- data_url %>% httr::GET(hdr, auth) %>% httr::content(.)
+data <- tibble::tibble(value=d$value) %>% 
+  tidyr::unnest_wider(value) %>% 
+  tidyr::unnest_wider(`__system`) %>% 
+  tidyr::unnest_wider(meta) %>% 
+  tidyr::unnest_wider(location) %>% 
+  tidyr::unnest_wider(corner1) %>% 
+  tidyr::unnest_wider(coordinates) %>% 
+  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`) %>% 
+  tidyr::unnest_wider(habitat) %>%   
+  tidyr::unnest_wider(vegetation_structure) %>%   
+  tidyr::unnest_wider(perimeter)
+```
+
+## Analyse
+```{r}
+data %>% DT::datatable(.)
+```
+
