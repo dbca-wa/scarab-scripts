@@ -30,3 +30,5 @@ data/*
 *.Rdata
 staff.csv
 logs
+attachments
+rsconnect
