@@ -41,8 +41,10 @@ if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 # library(OData)  # didn't work, went with httr
 # remotes::install_github("r-lib/rlang")
 # remotes::install_github("tidyverse/tidyr")
+# remotes::install_github("HanOostdijk/odataR",build_vignettes = T)
 library(ckanr)
 # library(Hmisc)  # MS Access
+library(odataR)
 library(glue)
 library(httr)
 library(tidyr)
@@ -53,9 +55,10 @@ library(purrr)
 library(leaflet)
 library(wastdr)
 # Our example forms' OData endpoint, plus /Submissions
-sss_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-Start-0-3_1558320795.svc/Submissions"
-sse_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-End-0-3_1558320208.svc/Submissions"
-spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-0-5_1558320001.svc/Submissions"
+base_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/"
+sss_url <- glue::glue("{base_url}build_Spotlighting-Survey-Start-0-3_1558320795.svc")
+sse_url <- glue::glue("{base_url}build_Spotlighting-Survey-End-0-3_1558320208.svc")
+spt_url <- glue::glue("{base_url}build_Spotlighting-0-5_1558320001.svc")
 ```
 
 # Data ETL
@@ -64,17 +67,69 @@ spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_S
 In this section, form submissions are downloaded from ODK Central and transformed
 into a rectangular shape.
 
+In the code block, some helper functions to wrangle the OData service are defined
+and documented.
+
 ```{r, message=F}
-# es_sss <- OData::entitySets(sss_url)  # 501 not implemented
-# md_sss <- OData::metadata(sss_url) # no luck either
+# OData::metadata(glue::glue("{sss_url}$metadata"))
+# odataR::odataR_set_root("https://sandbox.central.opendatakit.org/v1")
+# odataR::odataR_get_cat()
 
-# Authentication: Basicauth with ODK Central web user's UN (=email) and PW
-auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
+#' Retrieve metadata from an OData URL ending in .svc as list of lists
+#'
+#' @param url The OData URL, ending in .svc, no trailing slash
+#' @param un The ODK Central username (an email address), 
+#'           default: Sys.getenv("ODKC_UN").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_UN="...@...")
+#' @param pw The ODK Central password,, 
+#'           default: Sys.getenv("ODKC_PW").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_PW="...")
+#' @returns A list of two named lists, DataServices and .attrs (Version).
+#'          DataServices contains the dataset definition.
+get_metadata <- function(
+  url, 
+  un=Sys.getenv("ODKC_UN"),
+  pw=Sys.getenv("ODKC_PW")
+){
+  glue::glue("{url}/$metadata") %>% 
+  httr::GET(
+    httr::add_headers(Accept = "application/xml"), 
+    httr::authenticate(un, pw)
+  ) %>% 
+  httr::content(.) %>% 
+  XML::xmlParse(.) %>% 
+  XML::xmlToList(.) 
+}
 
-# Demand JSON response
-hdr <- httr::add_headers(Accept = "json")
+#' Retrieve /Submissions from an OData URL ending in .svc as list of lists
+#' 
+#' @param url The OData URL, ending in .svc, no trailing slash
+#' @param un The ODK Central username (an email address), 
+#'           default: Sys.getenv("ODKC_UN").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_UN="...@...")
+#' @param pw The ODK Central password,, 
+#'           default: Sys.getenv("ODKC_PW").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_PW="...")
+#' @importFrom glue glue
+#' @importFrom httr add_headers authenticate content
+#' @returns A list of two named lists, value and context.
+#           $value contains the submissions, which can be "rectangled"
+#'          using `tidyr::unnest_wider("element_name")`.
+get_submissions <- function(
+  url, 
+  un=Sys.getenv("ODKC_UN"),
+  pw=Sys.getenv("ODKC_PW")
+){
+  glue::glue("{url}/Submissions") %>% 
+  httr::GET(
+    httr::add_headers(Accept = "application/json"), 
+    httr::authenticate(un, pw)
+  ) %>% 
+  httr::content(.)
+}
 
-sss <- sss_url %>% httr::GET(hdr, auth) %>% httr::content(.)
+sss_metadata <- get_metadata(sss_url)
+sss <- get_submissions(sss_url)
 survey_start <- tibble::tibble(value=sss$value) %>% 
   tidyr::unnest_wider(value) %>% 
   tidyr::unnest_wider(`__system`) %>% 
@@ -85,9 +140,11 @@ survey_start <- tibble::tibble(value=sss$value) %>%
   dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`) %>% 
   tidyr::unnest_wider(climate) %>% 
   tidyr::unnest_wider(team) %>% 
-  tidyr::unnest_wider(methods)
+  tidyr::unnest_wider(methods) %>% 
+  dplyr::select(-"...1")
 
-sse <- sse_url %>% httr::GET(hdr, auth) %>% httr::content(.)
+sse_metadata <- get_metadata(sse_url)
+sse <- get_submissions(sse_url)
 survey_end <- tibble::tibble(value=sse$value) %>% 
   tidyr::unnest_wider(value) %>% 
   tidyr::unnest_wider(`__system`) %>% 
@@ -99,7 +156,8 @@ survey_end <- tibble::tibble(value=sse$value) %>%
   tidyr::unnest_wider(coordinates) %>% 
   dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 
-spt <- spt_url %>% httr::GET(hdr, auth) %>% httr::content(.)
+spt_metadata <- get_metadata(spt_url)
+spt <- get_submissions(spt_url)
 spotlights <- tibble::tibble(value=spt$value) %>% 
   tidyr::unnest_wider(value) %>% 
   tidyr::unnest_wider(`__system`) %>% 
@@ -123,6 +181,14 @@ We unnest each nesting level with `tidyr::unnest_wider`, until all terminal
 variables are at the same level. This replaces the earlier implementation
 using multiple calls to `purrr:map_*` with shorter code - we don't have to 
 manually reference each variable any longer.
+
+
+The metadata for one service endpoint looks like this:
+```{r}
+sss_metadata %>% listviewer::jsonedit()
+```
+
+We don't do anything with the metadata yet.
 
 ### Data previews
 This section demonstrates that we can access, transform, and visualise the data.

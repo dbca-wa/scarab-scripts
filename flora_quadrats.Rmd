@@ -47,7 +47,9 @@ library(purrr)
 library(leaflet)
 library(wastdr)
 # Our example OData endpoint, plus /Submissions
-data_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Flora-Quadrat-0-1_1558330379.svc/Submissions"
+base_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/"
+form_id <- "build_Flora-Quadrat-0-1_1558330379"
+data_url <- glue::glue("{base_url}{form_id}.svc")
 ```
 
 
@@ -57,25 +59,145 @@ data_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_
 In this section, form submissions are downloaded from ODK Central and transformed
 into a rectangular shape.
 
-```{r}
-# Authentication: Basicauth with ODK Central web user's UN (=email) and PW
-auth <- httr::authenticate(Sys.getenv("ODKC_UN"), Sys.getenv("ODKC_PW"))
+```{r helpers}
+#' Retrieve metadata from an OData URL ending in .svc as list of lists
+#'
+#' @param url The OData URL, ending in .svc, no trailing slash
+#' @param un The ODK Central username (an email address), 
+#'           default: Sys.getenv("ODKC_UN").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_UN="...@...")
+#' @param pw The ODK Central password,, 
+#'           default: Sys.getenv("ODKC_PW").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_PW="...")
+#' @returns A list of two named lists, DataServices and .attrs (Version).
+#'          DataServices contains the dataset definition.
+get_metadata <- function(
+  url, 
+  un=Sys.getenv("ODKC_UN"),
+  pw=Sys.getenv("ODKC_PW")
+){
+  glue::glue("{url}/$metadata") %>% 
+  httr::GET(
+    httr::add_headers(Accept = "application/xml"), 
+    httr::authenticate(un, pw)
+  ) %>% 
+  httr::content(.) %>% 
+  XML::xmlParse(.) %>% 
+  XML::xmlToList(.) 
+}
 
-# Demand JSON response
-hdr <- httr::add_headers(Accept = "json")
+#' Retrieve /Submissions from an OData URL ending in .svc as list of lists
+#' 
+#' @param url The OData URL, ending in .svc, no trailing slash
+#' @param un The ODK Central username (an email address), 
+#'           default: Sys.getenv("ODKC_UN").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_UN="...@...")
+#' @param pw The ODK Central password,, 
+#'           default: Sys.getenv("ODKC_PW").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_PW="...")
+#' @importFrom glue glue
+#' @importFrom httr add_headers authenticate content
+#' @returns A list of two named lists, value and context.
+#           $value contains the submissions, which can be "rectangled"
+#'          using `tidyr::unnest_wider("element_name")`.
+get_submissions <- function(
+  url, 
+  un=Sys.getenv("ODKC_UN"),
+  pw=Sys.getenv("ODKC_PW")
+){
+  glue::glue("{url}/Submissions") %>% 
+  httr::GET(
+    httr::add_headers(Accept = "application/json"), 
+    httr::authenticate(un, pw)
+  ) %>% 
+  httr::content(.)
+}
 
-d <- data_url %>% httr::GET(hdr, auth) %>% httr::content(.)
+#' Download attachments and return the local path
+#' 
+#' @param base_url The ODK Central OData base url,
+#'                 e.g. "https://sandbox.central.opendatakit.org/v1/projects/14/forms/"
+#' @param form_id The ODK form ID, e.g. "build_Flora-Quadrat-0-1_1558330379"
+#' @param submission_uuid The ODK submission UUID, an MD5 hash
+#' @param attachment_filename The ODK form attachment filename, 
+#'                            e.g. "1558330537199.jpg"
+#' @param local_dir The local folder to save the downloaded files to, 
+#'                  default: "attachments"
+#' @param un The ODK Central username (an email address), 
+#'           default: Sys.getenv("ODKC_UN").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_UN="...@...")
+#' @param pw The ODK Central password,, 
+#'           default: Sys.getenv("ODKC_PW").
+#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_PW="...")
+dl_attachment <- function(
+  base_url,
+  form_id,
+  submission_uuid, 
+  attachment_filename,
+  local_dir="attachments",
+  un=Sys.getenv("ODKC_UN"),
+  pw=Sys.getenv("ODKC_PW"),
+  overwrite=FALSE
+  ){
+  
+  # Create local destination dir attachments/uuid
+  dest_dir <- glue::glue("{local_dir}/{submission_uuid}")
+  dir.create(dest_dir, recursive = T)
+  
+  source_url <- glue::glue("{base_url}{form_id}/",
+               "submissions/{submission_uuid}/",
+               "attachments/{attachment_filename}")
+  
+  dest_path <- glue::glue("{dest_dir}/{attachment_filename}")
+  
+  # Keep existing
+  if (!file.exists(dest_path) && !is.na(attachment_filename)){
+    httr::GET(
+      source_url, 
+      httr::authenticate(un, pw), 
+      write_disk(dest_path, overwrite=T)
+    )
+  }
+  
+  # Return the relative path to the attechment
+  return(dest_path %>% as.character)
+}
+```
+
+
+```{r extract, message=F, warning=F}
+quadrat_metadata <- get_metadata(data_url)
+d <- get_submissions(data_url)
 data <- tibble::tibble(value=d$value) %>% 
   tidyr::unnest_wider(value) %>% 
+  dplyr::rename(uuid=`__id`) %>% 
   tidyr::unnest_wider(`__system`) %>% 
   tidyr::unnest_wider(meta) %>% 
   tidyr::unnest_wider(location) %>% 
   tidyr::unnest_wider(corner1) %>% 
   tidyr::unnest_wider(coordinates) %>% 
   dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`) %>% 
+  dplyr::select(-"type") %>% 
   tidyr::unnest_wider(habitat) %>%   
   tidyr::unnest_wider(vegetation_structure) %>%   
-  tidyr::unnest_wider(perimeter)
+  tidyr::unnest_wider(perimeter) %>% 
+  tidyr::unnest_wider(coerner2) %>% 
+  tidyr::unnest_wider(coordinates) %>%
+  dplyr::select(-"type") %>% 
+  dplyr::rename(longitude_c2=`...1`, latitude_c2=`...2`, altitude_c2=`...3`) %>% 
+  tidyr::unnest_wider(coerner3) %>% 
+  tidyr::unnest_wider(coordinates) %>%
+  dplyr::select(-"type") %>% 
+  dplyr::rename(longitude_c3=`...1`, latitude_c3=`...2`, altitude_c3=`...3`) %>% 
+  tidyr::unnest_wider(coerner4) %>% 
+  tidyr::unnest_wider(coordinates) %>%
+  dplyr::select(-"type") %>% 
+  dplyr::rename(longitude_c4=`...1`, latitude_c4=`...2`, altitude_c4=`...3`) %>%
+  dplyr::mutate(
+    quadrat_photo_local = dl_attachment(base_url, form_id, uuid, quadrat_photo),
+    morphological_type_photo_local = dl_attachment(base_url, form_id, uuid, morphological_type_photo),
+    mudmap_photo_local = dl_attachment(base_url, form_id, uuid, mudmap_photo)
+  )
 ```
 
 ## Analyse
@@ -83,3 +205,37 @@ data <- tibble::tibble(value=d$value) %>%
 data %>% DT::datatable(.)
 ```
 
+```{r}
+leaflet::leaflet(width = 800, height = 600) %>%
+  leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  leaflet::clearBounds() %>% 
+  leaflet::addAwesomeMarkers(
+    data = data,
+    lng = ~longitude, lat = ~latitude,
+    icon = leaflet::makeAwesomeIcon(text = "Q", markerColor = "red"),
+    label = ~glue::glue('{area_name} {encounter_start_datetime}'),
+    popup = ~glue::glue(
+      "<h3>{area_name}</h3>",
+      "Survey start {encounter_start_datetime}</br>",
+      "Reporter {reporter}</br>",
+      "Device {device_id}</br>",
+      "<h5>Site</h5>",
+      '<div><img src="{quadrat_photo_local}"',
+      ' height="150px" alt="Quadrat photo"></img></div>',
+      "<h5>Mudmap</h5>",
+      '<div><img src="{mudmap_photo_local}',
+      ' height="150px" alt="Mudmap"></img></div>',
+      "<h5>Habitat</h5>",
+      "Morphological type: {morphological_type}</br>",
+      '<div><img src="{morphological_type_photo_local}"',
+      'height="150px" alt="Morphological type"></img></div>',
+      "Veg class: {vegclass_placeholder}</br>"
+    ),
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
