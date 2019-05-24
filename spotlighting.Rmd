@@ -1,0 +1,148 @@
+---
+title: "Data ETL from ODK Central"
+author: "Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
+  pdf_document: default
+---
+
+
+# Background
+
+Fauna spotlighting surveys have three forms:
+
+* Survey start
+* Spotlighting x number of encountered animals
+* Survey end
+
+Data is uploaded at the [ODK Central sandbox](https://sandbox.central.opendatakit.org/#/projects/14/).
+User and app accounts can be created on request.
+
+Requires R env vars `ODKC_UN` and `ODKC_PW` for the ODK Central server.
+
+```{r setup, message=F}
+library(ckanr)
+library(Hmisc)
+library(glue)
+library(httr)
+library(dplyr)
+library(magrittr)
+library(tibble)
+library(purrr)
+library(leaflet)
+
+remotes::install_github("dbca-wa/ruODK")
+
+# Load ODK Central credentials
+if (file.exists("~/.Rprofile")) source("~/.Rprofile")
+
+# ODK Central
+sss_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-Start-0-2_1558066890.svc/Submissions"
+sse_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-Survey-End-0-2_1558067123.svc/Submissions"
+spt_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/build_Spotlighting-0-4_1558064688.svc/Submissions"
+```
+
+# Data ETL
+
+## Extract: accessing the data
+Read data from ODK Central and beat them into a rectangular shape.
+This example shows Spotlighting Survey Start. The other two forms remain TODO.
+
+```{r}
+sss <- ruODK::get_submissions(sss_url)
+survey_start <- sss$value %>% {
+    tibble::tibble(
+    submission_id = purrr::map_chr(., c("__id")),
+    submission_datetime = purrr::map_chr(., c("__system", "submissionDate")),
+    submitter_name = purrr::map_chr(., c("__system", "submitterName")),
+    device_id = purrr::map_chr(., c("device_id")),
+    survey_start_datetime = purrr::map_chr(., c("encounter_start_datetime")),
+    longitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(1) %>% as.numeric,
+    latitude = purrr::map(sss$value, c("location-group", "location", "coordinates")) %>% extract2(1) %>% extract2(2) %>% as.numeric,
+    gps_reference_point = purrr::map(sss$value, c("location-group", "gps_reference_point")),
+    transect_name = purrr::map(sss$value, c("location-group", "transect_name")),
+    observer_left = purrr::map(sss$value, c("team", "observer_left")),
+    observer_right = purrr::map(sss$value, c("team", "observer_right")),
+    driver = purrr::map(sss$value, c("team", "driver")),
+    recorder = purrr::map(sss$value, c("team", "recorder")),
+    distance_measure = purrr::map_chr(sss$value, c("methods", "distance_measure")),
+    number_of_spotlights = purrr::map(sss$value, c("methods", "number_of_spotlights")) %>% as.integer,
+    air_temperature = purrr::map(sss$value, c("climate", "air_temperature")) %>% as.numeric,
+    wind_speed = purrr::map(sss$value, c("climate", "wind_speed")) %>% as.numeric,
+    precipitation = purrr::map(sss$value, c("climate", "precipitation")),
+    moon_phase = purrr::map(sss$value, c("climate", "moon_phase")) %>% as.integer,
+    cloud_cover = purrr::map(sss$value, c("climate", "cloud_cover")) %>% as.integer
+  )
+}
+
+sse <- ruODK::get_submissions(sse_url)
+spt <- ruODK::get_submissions(spt_url)
+```
+
+
+### Survey Start
+This section demonstrates that we can access, transform, and visualise the data.
+This proves that the data is not trapped in ODK Central. 
+
+#### Table
+```{r}
+survey_start %>% DT::datatable(.)
+```
+
+#### Map
+```{r}
+leaflet::leaflet(width = 800, height = 600) %>%
+    leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+    leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+    leaflet::clearBounds() %>% 
+    leaflet::addAwesomeMarkers(
+          data = survey_start,
+          lng = ~longitude, lat = ~latitude,
+          icon = leaflet::makeAwesomeIcon(
+            text = "S",
+            markerColor = ~number_of_spotlights
+          ),
+          label = ~glue::glue('{survey_start_datetime} {transect_name}'),
+          popup = ~glue::glue(
+            "<h3>{transect_name}</h3>",
+            "Survey start {survey_start_datetime}</br>",
+            "Observer left {observer_left}</br>",
+            "Observer right {observer_right}</br>",
+            "Driver {driver}</br>",
+            "Recorder {recorder}</br>"
+          )
+    ) %>%
+    addLayersControl(
+      baseGroups = c("Aerial", "Place names"),
+      options = layersControlOptions(collapsed = FALSE)
+    )
+```
+
+## Transform: ODK to FaunaFile
+Tasks: Translate lookups, rename columns, restructure tables.
+
+
+## Load: Upload into FaunaFile
+Tasks: Use Hmisc or [RODBC](http://rprogramming.net/connect-to-ms-access-in-r/) to write to an MS Access db.
+
+In the worst case, we can dump this data into a spreadsheet and use it from there.
+In the best case, we can automate the import into FaunaFile.
+
+```{r, eval=F}
+dbfile <- "path/to/faunafile.mdb"
+con <- Hmisc::mdb.get(dbfile, dateformat = "%m-%d-%Y", as.is = TRUE)
+# write transformed data to FaunaFile
+```
+
+# Publish
+This workbook is uploaded to the DBCA data catalogue.
+

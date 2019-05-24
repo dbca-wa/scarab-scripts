@@ -519,7 +519,7 @@ Please review legacy data until the following numbers are all zero (or accept de
 ## Occurrence Map
 An interactive map of fauna occurrences.
 
-```{r fauna_map, fig.height=5, fig.width=7}
+```{r fauna_map}
 leaflet(width = 800, height = 600) %>%
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
