@@ -41,10 +41,8 @@ if (file.exists("~/.Rprofile")) source("~/.Rprofile")
 # library(OData)  # didn't work, went with httr
 # remotes::install_github("r-lib/rlang")
 # remotes::install_github("tidyverse/tidyr")
-# remotes::install_github("HanOostdijk/odataR",build_vignettes = T)
 library(ckanr)
 # library(Hmisc)  # MS Access
-library(odataR)
 library(glue)
 library(httr)
 library(tidyr)
@@ -54,6 +52,7 @@ library(tibble)
 library(purrr)
 library(leaflet)
 library(wastdr)
+library(ruODK)
 # Our example forms' OData endpoint, plus /Submissions
 base_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/"
 sss_url <- glue::glue("{base_url}build_Spotlighting-Survey-Start-0-3_1558320795.svc")
@@ -67,128 +66,75 @@ spt_url <- glue::glue("{base_url}build_Spotlighting-0-5_1558320001.svc")
 In this section, form submissions are downloaded from ODK Central and transformed
 into a rectangular shape.
 
-In the code block, some helper functions to wrangle the OData service are defined
-and documented.
+```{r}
+unnest_location <- . %>% tidyr::unnest_wider(coordinates) %>%
+  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 
-```{r, message=F}
-# OData::metadata(glue::glue("{sss_url}$metadata"))
-# odataR::odataR_set_root("https://sandbox.central.opendatakit.org/v1")
-# odataR::odataR_get_cat()
-
-#' Retrieve metadata from an OData URL ending in .svc as list of lists
-#'
-#' @param url The OData URL, ending in .svc, no trailing slash
-#' @param un The ODK Central username (an email address), 
-#'           default: Sys.getenv("ODKC_UN").
-#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_UN="...@...")
-#' @param pw The ODK Central password,, 
-#'           default: Sys.getenv("ODKC_PW").
-#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_PW="...")
-#' @returns A list of two named lists, DataServices and .attrs (Version).
-#'          DataServices contains the dataset definition.
-get_metadata <- function(
-  url, 
-  un=Sys.getenv("ODKC_UN"),
-  pw=Sys.getenv("ODKC_PW")
-){
-  glue::glue("{url}/$metadata") %>% 
-  httr::GET(
-    httr::add_headers(Accept = "application/xml"), 
-    httr::authenticate(un, pw)
-  ) %>% 
-  httr::content(.) %>% 
-  XML::xmlParse(.) %>% 
-  XML::xmlToList(.) 
-}
-
-#' Retrieve /Submissions from an OData URL ending in .svc as list of lists
-#' 
-#' @param url The OData URL, ending in .svc, no trailing slash
-#' @param un The ODK Central username (an email address), 
-#'           default: Sys.getenv("ODKC_UN").
-#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_UN="...@...")
-#' @param pw The ODK Central password,, 
-#'           default: Sys.getenv("ODKC_PW").
-#'           Add to your ~/.Rprofile: Sys.setenv(ODKC_PW="...")
-#' @importFrom glue glue
-#' @importFrom httr add_headers authenticate content
-#' @returns A list of two named lists, value and context.
-#           $value contains the submissions, which can be "rectangled"
-#'          using `tidyr::unnest_wider("element_name")`.
-get_submissions <- function(
-  url, 
-  un=Sys.getenv("ODKC_UN"),
-  pw=Sys.getenv("ODKC_PW")
-){
-  glue::glue("{url}/Submissions") %>% 
-  httr::GET(
-    httr::add_headers(Accept = "application/json"), 
-    httr::authenticate(un, pw)
-  ) %>% 
-  httr::content(.)
-}
-
-sss_metadata <- get_metadata(sss_url)
-sss <- get_submissions(sss_url)
-survey_start <- tibble::tibble(value=sss$value) %>% 
+sss_meta <- ruODK::get_metadata(sss_url)
+sss_raw <- ruODK::get_submissions(sss_url)
+survey_start <- tibble::tibble(value=sss_raw$value) %>% 
   tidyr::unnest_wider(value) %>% 
-  tidyr::unnest_wider(`__system`) %>% 
-  tidyr::unnest_wider(meta) %>% 
-  tidyr::unnest_wider(location_group) %>% 
-  tidyr::unnest_wider(location) %>% 
-  tidyr::unnest_wider(coordinates) %>% 
-  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`) %>% 
-  tidyr::unnest_wider(climate) %>% 
+  dplyr::rename(uuid=`__id`) %>% 
+  tidyr::unnest_wider(`__system`) %>%
+  tidyr::unnest_wider(meta) %>%
+  tidyr::unnest_wider(location_group) %>%
+  tidyr::unnest_wider(location) %>%
+  unnest_location %>%
   tidyr::unnest_wider(team) %>% 
   tidyr::unnest_wider(methods) %>% 
-  dplyr::select(-"...1")
-
-sse_metadata <- get_metadata(sse_url)
-sse <- get_submissions(sse_url)
-survey_end <- tibble::tibble(value=sse$value) %>% 
-  tidyr::unnest_wider(value) %>% 
-  tidyr::unnest_wider(`__system`) %>% 
-  tidyr::unnest_wider(meta) %>% 
   tidyr::unnest_wider(climate) %>% 
-  tidyr::unnest_wider(methods) %>% 
-  tidyr::unnest_wider(location_group) %>% 
-  tidyr::unnest_wider(location) %>% 
-  tidyr::unnest_wider(coordinates) %>% 
-  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
+  invisible
 
-spt_metadata <- get_metadata(spt_url)
-spt <- get_submissions(spt_url)
-spotlights <- tibble::tibble(value=spt$value) %>% 
+
+sse_meta <- ruODK::get_metadata(sse_url)
+sse_raw <- ruODK::get_submissions(sse_url)
+survey_end <- tibble::tibble(value=sse_raw$value) %>% 
   tidyr::unnest_wider(value) %>% 
-  tidyr::unnest_wider(`__system`) %>% 
-  tidyr::unnest_wider(meta) %>% 
-  tidyr::unnest_wider(animal_details) %>% 
-  tidyr::unnest_wider(surroundings) %>% 
-  tidyr::unnest_wider(location_group) %>% 
-  tidyr::unnest_wider(location) %>% 
-  tidyr::unnest_wider(coordinates) %>% 
-  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
+  dplyr::rename(uuid=`__id`) %>% 
+  tidyr::unnest_wider(`__system`) %>%
+  tidyr::unnest_wider(meta) %>%
+  tidyr::unnest_wider(location_group) %>%
+  tidyr::unnest_wider(location) %>%
+  unnest_location %>%
+  tidyr::unnest_wider(methods) %>%
+  tidyr::unnest_wider(climate) %>%
+  invisible
+
+spt_meta <- ruODK::get_metadata(spt_url)
+spt_raw <- ruODK::get_submissions(spt_url)
+spotlights <- tibble::tibble(value=spt_raw$value) %>% 
+  tidyr::unnest_wider(value) %>% 
+  dplyr::rename(uuid=`__id`) %>% 
+  tidyr::unnest_wider(`__system`) %>%
+  tidyr::unnest_wider(meta) %>%
+  tidyr::unnest_wider(location_group) %>%
+  tidyr::unnest_wider(location) %>%
+  unnest_location %>%
+  tidyr::unnest_wider(animal_details) %>%
+  tidyr::unnest_wider(surroundings) %>%
+  invisible
 ```
 
 For data engineers: The response's content is a list of lists.
 One record looks like this:
 
 ```{r}
-sss$value[[1]]
+sss_raw$value[[1]]
 ```
 
 We unnest each nesting level with `tidyr::unnest_wider`, until all terminal
 variables are at the same level. This replaces the earlier implementation
 using multiple calls to `purrr:map_*` with shorter code - we don't have to 
-manually reference each variable any longer.
+manually reference each variable combination any longer.
 
 
 The metadata for one service endpoint looks like this:
 ```{r}
-sss_metadata %>% listviewer::jsonedit()
+sss_meta %>% listviewer::jsonedit()
 ```
 
-We don't do anything with the metadata yet.
+We don't do anything with the metadata yet. In future, we could automate the
+unnesting based on the dataset schema information in the metadata.
 
 ### Data previews
 This section demonstrates that we can access, transform, and visualise the data.
