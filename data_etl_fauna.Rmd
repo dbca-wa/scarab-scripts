@@ -698,7 +698,7 @@ fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
 ```
 
-Some cons listings have a name_id of 0. These are phrase names and require to be assigned the name_id
+Some cons listings have a name_id of 0. These are phrase names and require to be assigned the `name_id`
 of the published name.
 
 ```{r}
@@ -729,10 +729,34 @@ criteria_requiring_mapping <- fauna_cons_listing %>%
 criteria_requiring_mapping$reasons %>% unique(.)
 ```
 
+Conservation listings are entered in triplicate:
+
+Level 1: Legislation
+
+* WAWCA is the WA Wildlife Conservation Act, the legistation under which taxa can be gazetted as specially protected.
+* WAWCA has been superseded by the Biodiversity Conservation Act 2016 on 01/01/2019.
+* All conservation listings were/are gazetted under the respective act (WAWCA or BCA).
+
+Level 2: Gazette
+
+* SPFN = "Wildlife Conservation (Specially Protected Fauna) Notice, Schedules"
+* SPFN are the gazetted schedules.
+
+Level 3: Assigned conservation categories and criteria
+
+* DBCA has assigned actual conservation cat&crit to taxa following the IUCN definitions, 
+  or similar cat&crit of own design before IUCN was published.
+* These "IUCN" cons listings are the actual listings we want to preserve.
+
+In future, only IUCN 2012 cat&crit will be assigned to taxa.
+The list of all listed taxa will be published by the government gazette annually, 
+which will set the life cycle status of our IUN listings to "gazetted".
+The underlying legislation (from now on, the BCA) is evident out of the context 
+and does not have to be entered as conservation listing into TSC.
+
 QA questions for Fauna cons listings:
 
-
-* Fauna WAPF = TSC WAPS
+* Fauna WAPF = TSC WAPS = Priority species
 * Which TSC IUCN redlist is Fauna RedList?
 * Fauna ActionPlan - do we keep this info?
 * Fauna has three empty listings (no list, no cat, no crit) - discard?
@@ -757,32 +781,12 @@ tsc_conscat_sp <- "conservationcategory" %>%
     tsc_label = purrr::map_chr(., "label"),
     conservation_list = purrr::map_chr(., "conservation_list")
   )} %>% 
-  dplyr::filter(conservation_list %in% c(1,2,3,6,7))
+  dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
 
 
 # IUCN cons listing
 # IUCN 2012 3
-tfa_listing_cat_iucn <- fauna_cons_listing %>% 
-  dplyr::filter(list_code=="WAWCA") %>% 
-  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 1), by="category_code") %>% 
-  dplyr::transmute(
-        source = 1, # TaxonGaz.source TFA
-        source_id = source_id %>% as.character(),
-        scope = 0,
-        status = ifelse(is.na(delisted_on), 80, 90),
-        effective_from = gazetted_on,
-        effective_to=delisted_on,
-        review_due=review_due,
-        taxon = name_id %>% as.numeric,
-        category = tsc_category_id %>% as.list(),
-        criteria = 1
-    ) %>% 
-  dplyr::filter(!is.na(category))
-
-tfa_listing_cat_iucn %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
-
-# WAWCA 1
-tfa_listing_cat_wawca <- fauna_cons_listing %>% 
+tfa_listing_cat_iucn2012 <- fauna_cons_listing %>% 
   dplyr::filter(list_code=="IUCN(2012)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3), by="category_code") %>% 
   dplyr::transmute(
@@ -797,9 +801,78 @@ tfa_listing_cat_wawca <- fauna_cons_listing %>%
         category = tsc_category_id %>% as.list(),
         criteria = 1
     ) %>% 
-  dplyr::filter(!is.na(category))
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
 
-tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_iucn2012 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+# IUCN(2001) 4
+tfa_listing_cat_iucn2001 <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="IUCN(2001)") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 4), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_iucn2001 %>%
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+# IUCN(1994) 5
+tfa_listing_cat_iucn1994 <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="IUCN(1994)") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 5), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_iucn1994 %>%
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+
+# WAWCA 1
+tfa_listing_cat_wawca <- fauna_cons_listing %>% 
+  dplyr::filter(list_code=="WAWCA") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 1), by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        review_due=review_due,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_wawca %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # SPFN 2
 tfa_listing_cat_spfn <- fauna_cons_listing %>% 
@@ -817,9 +890,11 @@ tfa_listing_cat_spfn <- fauna_cons_listing %>%
         category = tsc_category_id %>% as.list(),
         criteria = 1
     ) %>% 
-  dplyr::filter(!is.na(category))
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
 
-tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_spfn %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # WAPS 6
 tfa_listing_cat_waps <- fauna_cons_listing %>% 
@@ -837,9 +912,11 @@ tfa_listing_cat_waps <- fauna_cons_listing %>%
         category = tsc_category_id %>% as.list(),
         criteria = 1
     ) %>% 
-  dplyr::filter(!is.na(category))
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
 
-tfa_listing_cat_waps %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_waps %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # EPBC 7
 tfa_listing_cat_epbc <- fauna_cons_listing %>% 
@@ -857,9 +934,11 @@ tfa_listing_cat_epbc <- fauna_cons_listing %>%
         category = tsc_category_id %>% as.list(),
         criteria = 1
     ) %>% 
-  dplyr::filter(!is.na(category))
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
 
-tfa_listing_cat_epbc %>% wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_epbc %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 ```
 
 
