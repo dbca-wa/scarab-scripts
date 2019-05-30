@@ -38,9 +38,9 @@ A good place for those is `~/.Rprofile`.
 
 ```{r setup, message=F}
 if (file.exists("~/.Rprofile")) source("~/.Rprofile")
-# library(OData)  # didn't work, went with httr
-# remotes::install_github("r-lib/rlang")
-# remotes::install_github("tidyverse/tidyr")
+# remotes::install_github("dbca-wa/ruODK", dependencies = T)
+# remotes::install_github("dbca-wa/wastdr", dependencies = T)
+# remotes::install_github("ropensci/ckanr", dependencies = T)
 library(ckanr)
 # library(Hmisc)  # MS Access
 library(glue)
@@ -53,7 +53,7 @@ library(purrr)
 library(leaflet)
 library(wastdr)
 library(ruODK)
-# Our example forms' OData endpoint, plus /Submissions
+# Our example forms' OData endpoints
 base_url <- "https://sandbox.central.opendatakit.org/v1/projects/14/forms/"
 sss_url <- glue::glue("{base_url}build_Spotlighting-Survey-Start-0-3_1558320795.svc")
 sse_url <- glue::glue("{base_url}build_Spotlighting-Survey-End-0-3_1558320208.svc")
@@ -71,55 +71,45 @@ into a rectangular shape.
 #   dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 
 sss_meta <- ruODK::get_metadata(sss_url)
-sss_raw <- ruODK::get_submissions(sss_url)
-survey_start <- tibble::tibble(value=sss_raw$value) %>% unnest_all
-
-survey_start <- survey_start %>% 
-    dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`) %>% 
+survey_start <- sss_url %>% 
+  ruODK::get_submissions() %>% 
+  ruODK::parse_submissions() %>% 
+  dplyr::rename(
+    uuid=`.__id`,
+    context=`.odata.context`,
+    unknown=`...18`,
+    longitude=`...10`, 
+    latitude=`...11`, 
+    altitude=`...12`
+  ) %>% 
   invisible
 
-
 sse_meta <- ruODK::get_metadata(sse_url)
-sse_raw <- ruODK::get_submissions(sse_url)
-survey_end <- tibble::tibble(value=sse_raw$value) %>% 
-  tidyr::unnest_wider(value) %>% 
-  dplyr::rename(uuid=`__id`) %>% 
-  tidyr::unnest_wider(`__system`) %>%
-  tidyr::unnest_wider(meta) %>%
-  tidyr::unnest_wider(location_group) %>%
-  tidyr::unnest_wider(location) %>%
-  unnest_location %>%
-  tidyr::unnest_wider(methods) %>%
-  tidyr::unnest_wider(climate) %>%
+survey_end <- sse_url %>% 
+  ruODK::get_submissions() %>% 
+  ruODK::parse_submissions() %>% 
+  dplyr::rename(
+    uuid=`.__id`,
+    context=`.odata.context`,
+    longitude=`...10`, 
+    latitude=`...11`, 
+    altitude=`...12`
+    ) %>% 
   invisible
 
 spt_meta <- ruODK::get_metadata(spt_url)
-spt_raw <- ruODK::get_submissions(spt_url)
-spotlights <- tibble::tibble(value=spt_raw$value) %>% 
-  tidyr::unnest_wider(value) %>% 
-  dplyr::rename(uuid=`__id`) %>% 
-  tidyr::unnest_wider(`__system`) %>%
-  tidyr::unnest_wider(meta) %>%
-  tidyr::unnest_wider(location_group) %>%
-  tidyr::unnest_wider(location) %>%
-  unnest_location %>%
-  tidyr::unnest_wider(animal_details) %>%
-  tidyr::unnest_wider(surroundings) %>%
+spotlights <- spt_url %>% 
+  ruODK::get_submissions() %>% 
+  ruODK::parse_submissions() %>% 
+  dplyr::rename(
+    uuid=`.__id`,
+    context=`.odata.context`,
+    longitude=`...21`,
+    latitude=`...22`,
+    altitude=`...23`
+    ) %>% 
   invisible
 ```
-
-For data engineers: The response's content is a list of lists.
-One record looks like this:
-
-```{r}
-sss_raw$value[[1]]
-```
-
-We unnest each nesting level with `tidyr::unnest_wider`, until all terminal
-variables are at the same level. This replaces the earlier implementation
-using multiple calls to `purrr:map_*` with shorter code - we don't have to 
-manually reference each variable combination any longer.
-
 
 The metadata for one service endpoint looks like this:
 ```{r}
@@ -172,11 +162,11 @@ leaflet::leaflet(width = 800, height = 600) %>%
       "Moon phase {moon_phase}/8</br>",
       "Cloud cover {cloud_cover}/8</br>"
     ),
-    clusterOptions = markerClusterOptions()
+    clusterOptions = leaflet::markerClusterOptions()
   ) %>%
-  addLayersControl(
+  leaflet::addLayersControl(
     baseGroups = c("Aerial", "Place names"),
-    options = layersControlOptions(collapsed = FALSE)
+    options = leaflet::layersControlOptions(collapsed = FALSE)
   )
 ```
 
@@ -211,11 +201,11 @@ leaflet::leaflet(width = 800, height = 600) %>%
       "Moon phase {moon_phase}/8</br>",
       "Cloud cover {cloud_cover}/8</br>"
     ),
-    clusterOptions = markerClusterOptions()
+    clusterOptions = leaflet::markerClusterOptions()
   ) %>%
-  addLayersControl(
+  leaflet::addLayersControl(
     baseGroups = c("Aerial", "Place names"),
-    options = layersControlOptions(collapsed = FALSE)
+    options = leaflet::layersControlOptions(collapsed = FALSE)
   )
 ```
 
@@ -252,11 +242,11 @@ leaflet::leaflet(width = 800, height = 600) %>%
       "GPS waypoint {gps_reference_point}<br/>",
       "Odometer {distance_odometer} m<br/>"
     ),
-    clusterOptions = markerClusterOptions()
+    clusterOptions = leaflet::markerClusterOptions()
   ) %>%
-  addLayersControl(
+  leaflet::addLayersControl(
     baseGroups = c("Aerial", "Place names"),
-    options = layersControlOptions(collapsed = FALSE)
+    options = leaflet::layersControlOptions(collapsed = FALSE)
   )
 ```
 
