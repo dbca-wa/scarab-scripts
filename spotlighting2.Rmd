@@ -67,22 +67,15 @@ In this section, form submissions are downloaded from ODK Central and transforme
 into a rectangular shape.
 
 ```{r}
-unnest_location <- . %>% tidyr::unnest_wider(coordinates) %>%
-  dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
+# unnest_location <- . %>% tidyr::unnest_wider(coordinates) %>%
+#   dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`)
 
 sss_meta <- ruODK::get_metadata(sss_url)
 sss_raw <- ruODK::get_submissions(sss_url)
-survey_start <- tibble::tibble(value=sss_raw$value) %>% 
-  tidyr::unnest_wider(value) %>% 
-  dplyr::rename(uuid=`__id`) %>% 
-  tidyr::unnest_wider(`__system`) %>%
-  tidyr::unnest_wider(meta) %>%
-  tidyr::unnest_wider(location_group) %>%
-  tidyr::unnest_wider(location) %>%
-  unnest_location %>%
-  tidyr::unnest_wider(team) %>% 
-  tidyr::unnest_wider(methods) %>% 
-  tidyr::unnest_wider(climate) %>% 
+survey_start <- tibble::tibble(value=sss_raw$value) %>% unnest_all
+
+survey_start <- survey_start %>% 
+    dplyr::rename(longitude=`...1`, latitude=`...2`, altitude=`...3`) %>% 
   invisible
 
 
