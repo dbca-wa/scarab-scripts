@@ -23,18 +23,18 @@ source("helpers.R")
 [Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
-TPFL production data lives in an Oracle database. An MS Access database (510 MB) is generated from 
+flora_data production data lives in an Oracle database. An MS Access database (510 MB) is generated from 
 the Oracle database, zipped (36 MB) and uploaded as a resource underneath the Flora dataset.
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
 # Data
-The zipped MS Access snapshot is downloaded, unpacked, and accessed as object `tpfl`.
+The zipped MS Access snapshot is downloaded, unpacked, and accessed as object `flora_data`.
 
 ```{r flora_load_data, message=FALSE}
 # flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>%
 # read.csv(., as.is = TRUE, encoding = "utf8", fileEncoding = "latin1")
-tpfl <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
+flora_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
 ```
 
 ```{r flora_map, eval=F, echo=F}
@@ -69,7 +69,7 @@ leaflet(width = 800, height = 600) %>%
 Table `DRF_POPULATION` contains many columns that are shared with `DRF_RFR_FORMS` (species occurrences).
 
 ```{r pop}
-populations <- tpfl$DRF_POPULATION %>%
+populations <- flora_data$DRF_POPULATION %>%
   dplyr::transmute(
     pop_id = POP.ID %>% as.character(),
     pop_number = POP.NUMBER %>% as.character(),
@@ -223,7 +223,7 @@ TODO: parse data types
 ```{r flora_occ}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
-flora_occ <- tpfl$DRF_RFR_FORMS %>%
+flora_occ <- flora_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
     sheetno = SHEETNO %>% as.integer(),
@@ -420,7 +420,7 @@ leaflet(width = 800, height = 600) %>%
 Dominant vegetation classes in occurrences.
 
 ```{r occ_vegclass}
-occ_vegclass <- tpfl$DRF_SHEET_VEG_CLASSES %>%
+occ_vegclass <- flora_data$DRF_SHEET_VEG_CLASSES %>%
   dplyr::transmute(
     veg_class_id = VEG.CLASS.ID %>% as.integer(),
     veg_class_code = VEG.CLASS.CODE %>% as.character(),
@@ -434,7 +434,7 @@ occ_vegclass[1:100, ] %>% DT::datatable(.)
 ## Occurrence threats
 
 ```{r occ_threats}
-occ_threats <- tpfl$DRF_SHEET_THREATS %>%
+occ_threats <- flora_data$DRF_SHEET_THREATS %>%
   dplyr::transmute(
     sheet_threat_id = SHEET.THREAT.ID %>% as.character(),
     sheetno = SHEETNO %>% as.character(),
@@ -459,7 +459,7 @@ occ_threats[1:100, ] %>% DT::datatable(.)
 ## Occurrence fire details
 
 ```{r occ_fire}
-occ_fire <- tpfl$DRF_FIRE_DETAILS %>%
+occ_fire <- flora_data$DRF_FIRE_DETAILS %>%
   dplyr::transmute(
     fire_det_id = FIRE.DET.ID %>% as.character(),
     sheet_no = SHEET.NO %>% as.character(),
@@ -505,7 +505,7 @@ occ_fire[1:100, ] %>% DT::datatable(.)
 TODO what's that?
 
 ```{r pop_forms}
-pop_forms <- tpfl$DRF_POP_FORMS %>%
+pop_forms <- flora_data$DRF_POP_FORMS %>%
   dplyr::transmute(
     pop_forms_id = POP.FORMS.ID %>% as.character(),
     pop_id = POP.ID %>% as.character(),
@@ -526,7 +526,7 @@ pop_forms[1:100, ] %>% DT::datatable(.)
 ## Population threats
 
 ```{r pop_threats}
-pop_threats <- tpfl$DRF_POP_THREATS %>%
+pop_threats <- flora_data$DRF_POP_THREATS %>%
   dplyr::transmute(
     pop_threat_id = POP.THREAT.ID %>% as.character(),
     pop_id = POP.ID %>% as.character(),
@@ -553,7 +553,7 @@ pop_threats[1:100, ] %>% DT::datatable(.)
 ## Population management actions
 
 ```{r pop_mgmtactions}
-pop_mgmtactions <- tpfl$DRF_POP_MGMT_ACTIONS %>%
+pop_mgmtactions <- flora_data$DRF_POP_MGMT_ACTIONS %>%
   dplyr::transmute(
     action_id = ACTION.ID %>% as.character(),
     pop_id = POP.ID %>% as.character(),
@@ -578,7 +578,7 @@ pop_mgmtactions[1:100, ] %>% DT::datatable(.)
 ## Population fire summaries
 
 ```{r pop_fire_summ}
-pop_fire_summ <- tpfl$DRF_FIRE_SUMMARIES %>%
+pop_fire_summ <- flora_data$DRF_FIRE_SUMMARIES %>%
   dplyr::transmute(
     fire_sum_id = FIRE.SUM.ID %>% as.character(),
     summary_level = SUMMARY.LEVEL %>% as.character(),
@@ -618,7 +618,7 @@ pop_fire_summ[1:100, ] %>% DT::datatable(.)
 ## Liaisons
 
 ```{r liaisons}
-liaisons <- tpfl$DRF_LIAISONS %>%
+liaisons <- flora_data$DRF_LIAISONS %>%
   dplyr::transmute(
     liaisons_id = LIAISONS.ID %>% as.character(),
     pop_id = POP.ID %>% as.character(),
@@ -645,7 +645,7 @@ liaisons[1:100, ] %>% DT::datatable(.)
 ## Population vegetation classes
 
 ```{r pop_vegclass}
-pop_vegclass <- tpfl$DRF_POP_VEG_CLASSES %>%
+pop_vegclass <- flora_data$DRF_POP_VEG_CLASSES %>%
   dplyr::transmute(
     veg_class_id = VEG.CLASS.ID %>% as.character(),
     veg_class_code = VEG.CLASS.CODE %>% as.character(),
@@ -659,7 +659,7 @@ pop_vegclass[1:100, ] %>% DT::datatable(.)
 ## Population section maps
 
 ```{r pop_sectionmap}
-pop_sectionmap <- tpfl$DRF_POP_SECTION_MAP %>%
+pop_sectionmap <- flora_data$DRF_POP_SECTION_MAP %>%
   dplyr::transmute(
     section_id = SECTION.ID %>% as.character(),
     pop_id = POP.ID %>% as.character(),
@@ -742,75 +742,214 @@ conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
 ## TFL conservation Listing
 
 ```{r cons_listings}
-flora_cons_listings <- tpfl$DRF_TAXON_CONSV_LISTINGS %>%
+flora_cl <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
-    taxon_id = TAXONID %>% as.integer(),
+    name_id = TAXONID %>% as.integer(),
     name = NAME %>% as.character(),
     list_code = LIST.CODE %>% as.character(),
     category_code = STATUS.CODE %>% as.character(),
-    wa_criterion_code = WA.IUCN.RANK.LIST.CODE %>% as.character(),
-    wa_criterion_label = WA.IUCN.RANK %>% as.character(),
-    iucn_criteria = IUCN.CRITERIA %>% as.character(),
-    date_listed = DATE.LISTED %>% as.character(),
+    list_code_wa = WA.IUCN.RANK.LIST.CODE %>% as.character(),
+    category_code_wa = WA.IUCN.RANK %>% as.character(),
+    criteria_code_wa = IUCN.CRITERIA %>% as.character(),
+    date_listed = DATE.LISTED %>% 
+      parse_date_time(., orders = orders, tz = tz),
     reasons = REASONS %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    date_delisted = DATE.DELISTED %>% as.character(),
+    date_delisted = DATE.DELISTED %>% 
+      parse_date_time(., orders = orders, tz = tz),
     comments = COMMENTS %>% as.character(),
     distribution = DISTRIBUTION %>% as.character(),
     fl_period = FL.PERIOD %>% as.character(),
     prev_taxonid = PREV.TAXONID %>% as.character(),
     prev_name = PREV.NAME %>% as.character(),
     fam_no = FAM.NO %>% as.character(),
-    r_plan = R.PLAN %>% as.character(),
-    rp_comments = RP.COMMENTS %>% as.character(),
-    rp_exp_date = RP.EXP.DATE %>% as.character(),
+    recovery_plan = R.PLAN %>% as.character(),
+    recovery_plan_comments = RP.COMMENTS %>% as.character(),
+    recovery_plan_expiry_date = RP.EXP.DATE %>% 
+      parse_date_time(., orders = orders, tz = tz),
     active_ind = ACTIVE.IND %>% as.character(),
-    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% 
+      parse_date_time(., orders = orders, tz = tz),
     reason_deactivated = REASON.DEACTIVATED %>% as.character(),
     created_by = CREATED.BY %>% as.character(),
-    created_date = CREATED.DATE %>% as.character(),
+    created_date = CREATED.DATE %>% 
+      parse_date_time(., orders = orders, tz = tz),
     modified_by = MODIFIED.BY %>% as.character(),
-    modified_date = MODIFIED.DATE %>% as.character(),
-    file_last_updated = FILE.LAST.UPDATED %>% as.character(),
+    modified_date = MODIFIED.DATE %>% 
+      parse_date_time(., orders = orders, tz = tz),
+    file_last_updated = FILE.LAST.UPDATED %>% 
+      parse_date_time(., orders = orders, tz = tz),
     file_comments = FILE.COMMENTS %>% as.character(),
     file_no = FILE.NO %>% as.character()
   ) %>% 
   tibble::rowid_to_column("source_id") %>% 
-  dplyr::arrange(taxon_id)
+  dplyr::arrange(name_id)
 flora_cons_listings[1:100, ] %>% DT::datatable(.)
 
 flcl_file <- here::here("data", "flora_cons_listings.Rdata")
-save(flora_cons_listing, file=flcl_file)
+save(flora_cl, file=flcl_file)
 if (file.exists(flcl_file)) load(flcl_file)
 ```
 
 
 ```{r}
-tfl_listing_cat <- flora_cons_listings %>% 
-  dplyr::filter(list_code=="SPFN") %>%
-  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 2), by="category_code") %>% 
+tsc_conscat_sp <- "conservationcategory" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content(.) %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    tsc_category_id = purrr::map_int(., "id"),
+    category_code = purrr::map_chr(., "code"),
+    tsc_label = purrr::map_chr(., "label"),
+    conservation_list = purrr::map_chr(., "conservation_list")
+  )} %>% 
+  dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
+
+# List codes: "Priority"
+# https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
+tfl_cl_priority <- flora_cl %>% 
+  dplyr::filter(list_code=="Priority") %>%
+  dplyr::mutate(
+    category_code=glue::glue("P{category_code}") %>% as.character) %>% 
+  dplyr::left_join(
+    dplyr::filter(tsc_conscat_sp, conservation_list == 6), 
+    by="category_code") %>% 
   dplyr::transmute(
-        source = 2, # TaxonGaz.source TFA
+        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
-        scope = 0,
-        status = 80,
-        effective_from = gazetted_on,
-        effective_to=delisted_on,
-        review_due=review_due,
+        scope = 0, # state 0, cwth 1, intl 2, ap 3
+        status = ifelse(is.na(date_delisted), 80, 90),
+        effective_from = date_listed,
+        effective_to = date_delisted,
+        review_due = recovery_plan_expiry_date,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
         criteria = 1
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxongazettal", api_url = prod)
+tfl_cl_priority[1:3887,] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+# tfl_cl_priority[3888,] 
+# taxonid 315936 does not exist, 31593 does - typo?
+
+# List codes: "EPBC" 
+# https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/7/
+tfl_cl_epbc <- flora_cl %>% 
+  dplyr::filter(list_code=="EPBC") %>% 
+  dplyr::left_join(
+    dplyr::filter(tsc_conscat_sp, conservation_list == 7), 
+    by="category_code") %>% 
+  dplyr::transmute(
+        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source_id = source_id %>% as.character(),
+        scope = 1, # state 0, cwth 1, intl 2, ap 3
+        status = ifelse(is.na(date_delisted), 80, 90),
+        effective_from = date_listed,
+        effective_to = date_delisted,
+        review_due = recovery_plan_expiry_date,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfl_cl_epbc %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+
+# List codes: "WCA_1991" = IUCN 1994/2001/2012
+# IUCN 1994 
+# https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/5/change/
+tfl_cl_iucn1994 <- flora_cl %>% 
+  dplyr::filter(list_code_wa=="IUCN_1994") %>% 
+  dplyr::mutate(category_code=category_code_wa) %>% 
+  dplyr::left_join(
+    dplyr::filter(tsc_conscat_sp, conservation_list == 5), 
+    by="category_code") %>% 
+  dplyr::transmute(
+        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source_id = source_id %>% as.character(),
+        scope = 0, # state 0, cwth 1, intl 2, ap 3
+        status = ifelse(is.na(date_delisted), 80, 90),
+        effective_from = date_listed,
+        effective_to = date_delisted,
+        review_due = recovery_plan_expiry_date,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfl_cl_iucn1994 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+# IUCN 2001
+# https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
+tfl_cl_iucn2001 <- flora_cl %>% 
+  dplyr::filter(list_code_wa=="IUCN_2001") %>% 
+  dplyr::mutate(category_code=category_code_wa) %>% 
+  dplyr::left_join(
+    dplyr::filter(tsc_conscat_sp, conservation_list == 4), 
+    by="category_code") %>% 
+  dplyr::transmute(
+        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source_id = source_id %>% as.character(),
+        scope = 0, # state 0, cwth 1, intl 2, ap 3
+        status = ifelse(is.na(date_delisted), 80, 90),
+        effective_from = date_listed,
+        effective_to = date_delisted,
+        review_due = recovery_plan_expiry_date,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+tfl_cl_iucn2001 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+
+# IUCN 2012
+# https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/3/change/
+tfl_cl_iucn2012 <- flora_cl %>% 
+  dplyr::filter(list_code_wa=="IUCN_2012") %>% 
+  dplyr::mutate(category_code=category_code_wa) %>% 
+  dplyr::left_join(
+    dplyr::filter(tsc_conscat_sp, conservation_list == 3), 
+    by="category_code") %>% 
+  dplyr::transmute(
+        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source_id = source_id %>% as.character(),
+        scope = 0, # state 0, cwth 1, intl 2, ap 3
+        status = ifelse(is.na(date_delisted), 80, 90),
+        effective_from = date_listed,
+        effective_to = date_delisted,
+        review_due = recovery_plan_expiry_date,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
+    ) %>% 
+  dplyr::filter(!is.na(category))
+
+# There are none, skip upload
+# tfl_cl_iucn2012 %>% 
+#   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+# List codes: "FIDMS"
+# Legacy, discard
+
+# List codes: "FLORABASE"
+# TSC will export TO FloraBase, not the other way around
 ```
 
 ## Conservation priority
 
 ```{r cons_prio}
-cons_prio <- tpfl$DRF_P2K_PRIORITY %>%
+cons_prio <- flora_data$DRF_P2K_PRIORITY %>%
   dplyr::transmute(
     species = SPECIES %>% as.character(),
     taxon_id = TAXONID %>% as.integer(),
@@ -872,7 +1011,7 @@ upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes",
                d$id, resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
 upload_to_ckan(pop_sectionmap, "TPFL Population section maps", 
                d$id, resource_id = "6d557642-cd1f-4cca-8f22-0149d244dd83")
-upload_to_ckan(flora_cons_listings, "TPFL Conservation Listings", 
+upload_to_ckan(flora_cl, "TPFL Conservation Listings", 
                d$id, resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
 upload_to_ckan(cons_prio, "TPFL Conservation priority", 
                d$id, resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")

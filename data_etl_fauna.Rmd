@@ -683,7 +683,7 @@ fauna_cons_listing <- fauna_data$Gazettal %>%
     list_code = ListCode %>% as.character(),
     category_code = StatCode %>% as.character(),
     population = Popn %>% as.character(),
-    reasons = Reasons %>% as.character(),
+    criteria_code = Reasons %>% as.character(),
     authority = AUTHORITY %>% as.character(),
     gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
     delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),

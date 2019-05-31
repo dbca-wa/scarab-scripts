@@ -1,10 +1,15 @@
-# devtools::install_github("ropenscilabs/skimr")
-# devtools::install_github("tidyverse/readr")
-# devtools::install_github("brianb/mdbtools")
-# devtools::install_github("ropensci/ckanr")
-# devtools::install_github('thomasp85/gganimate')
-# devtools::install_github("ropensci/rredlist")
-# devtools::install_github("ropensci/jqr")
+# System packages:
+# sudo apt install libcairo2-dev libgdal-dev libudunits2-dev libjq-dev libv8-dev libprotobuf-dev protobuf-compiler
+
+# remotes::install_github("ropenscilabs/skimr")
+# remotes::install_github("tidyverse/readr")
+# remotes::install_github("brianb/mdbtools")
+# remotes::install_github("ropensci/ckanr")
+# remotes::install_github('thomasp85/gganimate')
+# remotes::install_github("ropensci/rredlist")
+# remotes::install_github("ropensci/jqr")
+# remotes::install_github("dbca-wa/wastdr")
+
 library(tidyverse)
 library(lubridate)
 library(skimr)
@@ -14,6 +19,7 @@ library(glue)
 library(magrittr)
 library(readr)
 library(dplyr)
+library(readr)
 
 library(ckanr)
 library(wastdr)
@@ -167,3 +173,4 @@ chunk_post <- function(data, serializer = "names", api_url = wastdr::get_wastdr_
     }
     message("[chunk_post] Finished, ", len, " records created/updated.")
 }
+
