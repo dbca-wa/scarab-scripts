@@ -1073,17 +1073,19 @@ tsc_conscat <- "conservationcategory" %>%
   dplyr::filter(conservation_list %in% c(11,12))
 
 # TODO join by scope as well
-tec_listing_cat <- tec_cons_listing_categories %>% 
+tec_cl_cat <- tec_cons_listing_categories %>% 
   dplyr::left_join(tsc_conscat, by="category_code") %>% 
   dplyr::transmute(
-        source = 3, # ComGaz.source TEC
+    source = 3, # TaxonGaz.source TFA 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
-        scope = 0,
+        scope = 0, # state 0, cwth 1, intl 2, ap 3
         status = 80,
         effective_from = effective_from,
-        last_reviewed_on = cat_review_date,
+        # effective_to = date_delisted, # where is the effective to date?
+        review_due = cat_review_date,
         community = com_label,
-        category = tsc_category_id %>% as.list()
+        category = tsc_category_id %>% as.list(),
+        criteria = 1
     ) %>% 
   dplyr::filter(!is.na(category))
 ```
@@ -1092,7 +1094,8 @@ tec_listing_cat <- tec_cons_listing_categories %>%
 Upload to TSC is easy (although making it easy wasn't).
 
 ```{r conslist_tsc_upload, eval=F}
-tec_listing_cat %>% wastdr::wastd_POST("communitygazettal", api_url = prod)
+tec_cl_cat %>% 
+  wastdr::wastd_POST("community-conservationlisting", api_url = prod)
 ```
 
 # Recovery Plans
