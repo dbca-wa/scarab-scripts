@@ -724,9 +724,9 @@ fauna_cons_listing %>% dplyr::filter(list_code == "RedList") # Which IUCN versio
 
 # ETL nightmare fuel: condensed criteria mixed with free text
 criteria_requiring_mapping <- fauna_cons_listing %>% 
-    dplyr::filter(grepl('[+,;]', reasons)) 
+    dplyr::filter(grepl('[+,;]', criteria_code)) 
 
-criteria_requiring_mapping$reasons %>% unique(.)
+criteria_requiring_mapping$criteria_code %>% unique(.)
 ```
 
 Conservation listings are entered in triplicate:
@@ -761,10 +761,13 @@ QA questions for Fauna cons listings:
 * Fauna ActionPlan - do we keep this info?
 * Fauna has three empty listings (no list, no cat, no crit) - discard?
 
-`r criteria_requiring_mapping %>% nrow` conservation listings contain condensed lists of criteria
-mixed with free text. Rather than manually transcribing this number, a manually written mapping for
-`r criteria_requiring_mapping$reasons %>% unique %>% length` distinct values can be used to 
-automate ETL.
+`r criteria_requiring_mapping %>% nrow` conservation listings contain condensed 
+lists of criteria mixed with free text. 
+Rather than manually transcribing this number, a manually written mapping for
+`r criteria_requiring_mapping$reasons %>% unique %>% length` 
+distinct values can be used to  automate ETL.
+
+Note 24 June 2019: Some very new WACensus name IDs (49200 range) are not yet migrated and therefore temporarily excluded here.
 
 
 ```{r tfa_cons_listing_upload, eval=F}
@@ -806,6 +809,8 @@ tfa_listing_cat_iucn2012 <- fauna_cons_listing %>%
 
 tfa_listing_cat_iucn2012 %>% 
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+# tfa_listing_cat_iucn2012 %>% 
+#   wastdr::wastd_POST("taxon-conservationlisting", api_url = dev)
 
 # IUCN(2001) 4
 tfa_listing_cat_iucn2001 <- fauna_cons_listing %>% 
@@ -849,6 +854,8 @@ tfa_listing_cat_iucn1994 <- fauna_cons_listing %>%
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_iucn1994 %>%
+  # filter(taxon != 49208) %>% 
+  # filter(taxon != 49211) %>% 
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 
@@ -872,6 +879,9 @@ tfa_listing_cat_wawca <- fauna_cons_listing %>%
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_wawca %>% 
+  # filter(taxon != 49208) %>% 
+  # filter(taxon != 49210) %>% 
+  # filter(taxon != 49211) %>% 
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # SPFN 2
@@ -894,6 +904,9 @@ tfa_listing_cat_spfn <- fauna_cons_listing %>%
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_spfn %>% 
+  # filter(taxon != 49208) %>% 
+  # filter(taxon != 49210) %>% 
+  # filter(taxon != 49211) %>% 
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # WAPS 6
@@ -916,6 +929,11 @@ tfa_listing_cat_waps <- fauna_cons_listing %>%
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_waps %>% 
+  # filter(taxon != 49200) %>% 
+  # filter(taxon != 49203) %>% 
+  # filter(taxon != 49205) %>% 
+  # filter(taxon != 49211) %>% 
+  # filter(taxon != 49212) %>% 
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # EPBC 7
@@ -938,6 +956,7 @@ tfa_listing_cat_epbc <- fauna_cons_listing %>%
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_epbc %>% 
+  filter(taxon != 49211) %>% 
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 ```
 
@@ -1026,7 +1045,7 @@ Subsequently, upload the compiled workbook.
 Note, this process lags one compilation of this workbook, as the HTML output
 is generated after the R code is run.
 
-```{r fauna_upload}
+```{r fauna_upload, eval=F}
 d <- ckanr::package_show("threatened-and-priority-fauna-database")
 ckanr::resource_update("761af921-94ad-4383-be2c-300713c37e98", "data_etl_fauna.html")
 upload_to_ckan(species_save, "Threatened Fauna Species Names", d$id, 

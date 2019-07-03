@@ -56,8 +56,10 @@ tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
 tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
 tec_sit <- geojsonsf::geojson_sf("data/tec_sites.geojson")
 
-# save(tec, tec_bdy, tec_buf, tec_sit, file=here::here("data", "tecdb.RData"))
-# load(here::here("data", "tecdb.RData"))
+save(tec, 
+     # tec_bdy, tec_buf, tec_sit, 
+     file=here::here("data", "tecdb.RData"))
+load(here::here("data", "tecdb.RData"))
 ```
 
 # Configuration
@@ -1017,6 +1019,11 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
 
 ### Cons listing TSC ETL
 Transform TEC data into TSC data.
+
+TEC cons linsting categories closure date is the effective from date
+of next (if any) cons listing within same scope.
+`tec_cons_listing_categories$cat_endorsed_code` is approval life cycle stage.
+`tec_cons_listing_categories$cat_comment` 
 
 ```{r conslist_tsc_tf}
 

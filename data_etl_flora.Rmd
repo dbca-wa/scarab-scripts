@@ -785,7 +785,8 @@ flora_cl <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
   ) %>% 
   tibble::rowid_to_column("source_id") %>% 
   dplyr::arrange(name_id)
-flora_cons_listings[1:100, ] %>% DT::datatable(.)
+
+flora_cl[1:100, ] %>% DT::datatable(.)
 
 flcl_file <- here::here("data", "flora_cons_listings.Rdata")
 save(flora_cl, file=flcl_file)
@@ -830,11 +831,18 @@ tfl_cl_priority <- flora_cl %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfl_cl_priority[1:3887,] %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfl_cl_priority %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose=TRUE)
+
+# Active Priority listings:
+tfl_cl_priority %>% dplyr::filter(status==80) %>% nrow
+
+# Inactive Priority listings:
+tfl_cl_priority %>% dplyr::filter(status==90) %>% nrow
 
 # tfl_cl_priority[3888,] 
-# taxonid 315936 does not exist, 31593 does - typo?
+# taxonid 315936 does not exist, 31593 does - typo confirmed
 
 # List codes: "EPBC" 
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/7/
@@ -858,7 +866,8 @@ tfl_cl_epbc <- flora_cl %>%
   dplyr::filter(!is.na(category))
 
 tfl_cl_epbc %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose = TRUE)
 
 
 # List codes: "WCA_1991" = IUCN 1994/2001/2012
@@ -885,7 +894,8 @@ tfl_cl_iucn1994 <- flora_cl %>%
   dplyr::filter(!is.na(category))
 
 tfl_cl_iucn1994 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose = TRUE)
 
 # IUCN 2001
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
@@ -910,7 +920,8 @@ tfl_cl_iucn2001 <- flora_cl %>%
   dplyr::filter(!is.na(category))
 
 tfl_cl_iucn2001 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose=TRUE)
 
 
 # IUCN 2012
@@ -945,6 +956,12 @@ tfl_cl_iucn2012 <- flora_cl %>%
 # List codes: "FLORABASE"
 # TSC will export TO FloraBase, not the other way around
 ```
+
+There are `r tfl_cl_priority %>% dplyr::filter(status==80) %>% nrow` active Priority listings in WA and
+`r tfl_cl_priority %>% dplyr::filter(status==90) %>% nrow`
+delisted Priority listings in WA.
+
+
 
 ## Conservation priority
 
