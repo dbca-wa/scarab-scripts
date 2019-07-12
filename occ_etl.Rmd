@@ -192,9 +192,10 @@ Excluding flora data with missing coordinates.
 ```{r ex_all_occ}
 fna <- fauna_occ %>% dplyr::filter(!is.na(latitude)) %>% dplyr::filter(!is.na(longitude))
 fna_eoo_all <- eoo_polygon(fna)
+mapview(fna_eoo_all)
 
-fauna_eoo_all <- eoo_polygon(fauna_occ)
-mapview(fauna_eoo_all)
+# fauna_eoo_all <- eoo_polygon(fauna_occ)
+# mapview(fauna_eoo_all)
 
 flora_eoo_all <- flora_occ %>%
   dplyr::filter(!is.na(longitude), !is.na(latitude)) %>%
@@ -375,7 +376,7 @@ Upload to TSC - run manually. This could overwrite data or time out (depending o
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
@@ -432,13 +433,14 @@ fauna_tae <- fauna_occ %>%
     geolocation_capture_method='gps-point',
     accuracy = accuracy,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
-  )
+  ) %>% 
+  dplyr::arrange(taxon)
 
 fauna_tae10 <- fauna_tae %>% dplyr::filter(taxon==24734)
 fauna_tae10 <- fauna_tae %>% dplyr::filter(taxon==24166)
 fauna_tae10 <- fauna_tae %>% dplyr::filter(source_id==10261)
 
-fauna_tae10 %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
+fauna_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
 ```
 
 ### Big Fauna
@@ -472,7 +474,7 @@ flora_tae <- flora_occ %>%
     source = 11,
     source_id = sheetno,
     encounter_type = 3, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
-    encountered_on = glue::glue("{observation_date} 00:00:00+08:00"),
+    encountered_on = glue::glue("{observation_date}+08:00"),
     encountered_by = 1,
     area_type = 20, # pop:20, subpop: 21
     geolocation_capture_method='gps-point',
@@ -491,87 +493,6 @@ Finally, flora encounters are uploaded to TSC.
 flora_tae10 = flora_tae[95:100,]
 flora_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
-
-
-
-# Conservation Listing
-
-
-## TSC data
-This is the data we need to map to: conservation lists, categories, and criteria.
-
-### Conservation lists
-
-```{r conslist}
-conslist <- wastdr::wastd_GET("conservationlist", api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content() %>% 
-  magrittr::extract2("results") %>% 
-  {tibble::tibble(
-    list_id = purrr::map_int(., "id"),
-    list_code = purrr::map_chr(., "code"),
-    list_label = purrr::map_chr(., "label"),
-    list_description = wastdr::map_chr_hack(., "description"),
-    scope_wa = purrr::map_chr(., "scope_wa"),
-    scope_cmw = purrr::map_chr(., "scope_cmw"),
-    scope_intl = purrr::map_chr(., "scope_intl"),
-    scope_species = purrr::map_chr(., "scope_species"),
-    scope_communities = purrr::map_chr(., "scope_communities"),
-    approval_level = purrr::map_int(., "approval_level")
-  )} 
-```
-
-### Conservation categories
-The conservation category serializer writes JSON, not GeoJSON. 
-`wastdr` needs a `parse_conservationcategory` parser.
-
-```{r conscat}
-conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content() %>% 
-  magrittr::extract2("results") %>% 
-  {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    list_id = purrr::map_int(., "conservation_list"),
-    rank = wastdr::map_chr_hack(., "rank"),
-    code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label"),
-    description = wastdr::map_chr_hack(., "description"),
-    current = purrr::map_chr(., "current")
-  )} %>% 
-  dplyr::arrange(list_id, rank) %>% 
-  dplyr::left_join(conslist, by = "list_id")
-```
-
-### Conservation criteria
-
-```{r conscrit}
-conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content() %>% 
-  magrittr::extract2("results") %>% 
-  {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    list_id = purrr::map_int(., "conservation_list"),
-    rank = wastdr::map_chr_hack(., "rank"),
-    code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label")
-  )} %>% 
-  dplyr::arrange(list_id, rank) %>% 
-  dplyr::left_join(conslist, by = "list_id")
-```
-
-
-### Flora cons listing
-```{r}
-tflcl_file <- here::here("data", "flora_cons_listings.Rdata")
-if (file.exists(tflcl_file)) load(tflcl_file)
-```
-
-```{r}
-flora_cons_listings %>% DT::datatable()
-```
-
 
 # Data catalogue upload
 Snapshots of this workbook (soon: and selected outputs) are uploaded to the data catalogue.

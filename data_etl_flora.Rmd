@@ -794,7 +794,7 @@ if (file.exists(flcl_file)) load(flcl_file)
 ```
 
 
-```{r}
+```{r cons_listing_tsc_upload, eval=T}
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
   magrittr::extract2("response") %>% 
@@ -1003,7 +1003,7 @@ is generated after the R code is run.
 ```{r flora_upload}
 d <- ckanr::package_show("threatened-and-priority-flora-database")
 ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb",
-                       "data_etl_flora.html")
+"data_etl_flora.html")
 upload_to_ckan(flora_occ, "TPFL Species Occurrence", 
                d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
 upload_to_ckan(populations, "TPFL Populations", 

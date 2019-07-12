@@ -56,9 +56,7 @@ tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
 tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
 tec_sit <- geojsonsf::geojson_sf("data/tec_sites.geojson")
 
-save(tec, 
-     # tec_bdy, tec_buf, tec_sit, 
-     file=here::here("data", "tecdb.RData"))
+save(tec, tec_bdy, tec_buf, tec_sit, file=here::here("data", "tecdb.RData"))
 load(here::here("data", "tecdb.RData"))
 ```
 
@@ -322,7 +320,7 @@ com_history %>% DT::datatable(.)
 ## Boundaries
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
-```{r tec_bdy , eval=F}
+```{r tec_bdy}
 tec_bdy_cae <- tibble::tibble(
     community = tec_bdy$COM_ID,
     code=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
@@ -868,10 +866,10 @@ sites <- tec$SITES %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     site_code = S.ID %>% as.character(),
-    datum_code = S.DATUM.CODE %>% as.character(),
-    latitude = S.LATITUDE %>% as.double(),
-    longitude = S.LONGITUDE %>% as.double(),
-    comments = S.COMMENTS %>% as.character(),
+    # datum_code = S.DATUM.CODE %>% as.character(),
+    latitude = LATITUDE %>% as.double(),
+    longitude = LONGITUDE %>% as.double(),
+    comments = COMMENTS %>% as.character(),
     # S.LATITUDE.PREF = S.LATITUDE.PREF  %>% as.character, # wtf?
     # S.LONGITUDE.PREF = S.LONGITUDE.PREF  %>% as.character, # wut?
     created_by = USERNAME %>% as.character(),
