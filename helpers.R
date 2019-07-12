@@ -9,6 +9,7 @@
 # remotes::install_github("ropensci/rredlist")
 # remotes::install_github("ropensci/jqr")
 # remotes::install_github("dbca-wa/wastdr")
+# remotes::install_github("ropensci/ckanr")
 
 library(tidyverse)
 library(lubridate)
