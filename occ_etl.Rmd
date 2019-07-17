@@ -376,7 +376,7 @@ Upload to TSC - run manually. This could overwrite data or time out (depending o
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
@@ -411,8 +411,19 @@ wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api
 ```
 
 ```{r fauna_occ_tsc, eval=F}
+taxa <- wastdr::wastd_GET("taxon-fast", query=list(no_page=TRUE), api_url = dev) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content() %>% 
+  {
+    tibble::tibble(
+      taxon_pk = purrr::map_int(., "pk"),
+      name_id = purrr::map_int(., "name_id")
+    )
+  }
+
 fauna_tae <- fauna_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude)) %>% 
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  # dplyr::left_join(taxa, by="name_id") %>% 
   dplyr::transmute(
     taxon = name_id,
     code = location_name,
@@ -433,14 +444,14 @@ fauna_tae <- fauna_occ %>%
     geolocation_capture_method='gps-point',
     accuracy = accuracy,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
-  ) %>% 
+  ) %>%
   dplyr::arrange(taxon)
 
-fauna_tae10 <- fauna_tae %>% dplyr::filter(taxon==24734)
-fauna_tae10 <- fauna_tae %>% dplyr::filter(taxon==24166)
-fauna_tae10 <- fauna_tae %>% dplyr::filter(source_id==10261)
+occ_file <- here::here("data", "occ.Rdata")
+save(taxa, fauna_occ, fauna_tae, file=occ_file)
+if (file.exists(occ_file)) load(occ_file)
 
-fauna_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
+fauna_tae[10001:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
 ### Big Fauna
@@ -491,7 +502,7 @@ flora_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(
 Finally, flora encounters are uploaded to TSC.
 ```{r flora_occ_tsc_upload, eval=F}
 flora_tae10 = flora_tae[95:100,]
-flora_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+flora_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
 ```
 
 # Data catalogue upload
