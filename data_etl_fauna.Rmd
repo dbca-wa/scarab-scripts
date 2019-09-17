@@ -179,7 +179,7 @@ species <- fauna_data$`Species List` %>%
   dplyr::left_join(species_notes, by = "species_code") %>%
   dplyr::left_join(category, by = "category_id")
 species_skim <- skimr::skim(species)
-print(species_skim)
+# print(species_skim)
 DT::datatable(species)
 
 # Just the essentials: species code, name_id, names.
@@ -437,7 +437,8 @@ fauna_occ <- fauna_raw %>%
   dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
-  dplyr::left_join(resolution_m, by = "resolution_id") 
+  dplyr::left_join(resolution_m, by = "resolution_id") %>%
+  invisible()
 
 # fauna_occ %>% dplyr::filter(name_id == "0")
 # %>% dplyr::select(-o_date, -o_time)
@@ -669,6 +670,7 @@ conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
   )} %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(conslist, by = "list_id")
+readr::write_csv(conscrit,path = here::here("data","tsc_conscrit.csv"))
 ```
 
 ## TFA Conservation Listing
@@ -717,10 +719,10 @@ Conservation lists used in Fauna cons listings:
 
 ```{r tfa_cons_listing_qa}
 fauna_cons_listing$list_code %>% unique # cons lists used
-fauna_cons_listing %>% dplyr::filter(list_code == "WAPF") # = WAPS
-fauna_cons_listing %>% dplyr::filter(list_code == "ActionPlan") # Discard those?
-fauna_cons_listing %>% dplyr::filter(list_code == "") # Discard those?
-fauna_cons_listing %>% dplyr::filter(list_code == "RedList") # Which IUCN version?
+fauna_cons_listing %>% dplyr::filter(list_code == "WAPF") %>% DT::datatable() # = WAPS
+fauna_cons_listing %>% dplyr::filter(list_code == "ActionPlan") %>% DT::datatable() # Discard those?
+fauna_cons_listing %>% dplyr::filter(list_code == "") %>% DT::datatable() # Discard those?
+fauna_cons_listing %>% dplyr::filter(list_code == "RedList") %>% DT::datatable() # Which IUCN version?
 
 # ETL nightmare fuel: condensed criteria mixed with free text
 criteria_requiring_mapping <- fauna_cons_listing %>% 
