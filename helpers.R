@@ -10,7 +10,7 @@
 # remotes::install_github("ropensci/jqr")
 # remotes::install_github("dbca-wa/wastdr")
 # remotes::install_github("ropensci/ckanr")
-
+library(usethis)
 library(tidyverse)
 library(lubridate)
 library(skimr)
@@ -46,7 +46,7 @@ library(grDevices)
 # library(gapminder)
 
 # Configure ckanr to data.dpaw.wa.gov.au
-if (file.exists("~/.Rprofile")) source("~/.Rprofile")
+# usethis::edit_r_environ()
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 
 # Date conventions
