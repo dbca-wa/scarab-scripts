@@ -74,8 +74,8 @@ gjprod <- function(data, ser) upsert_geojson(data, serializer = ser, api_url = p
 Given a CSV with columns `name`, `phone`, `email` and `role`, we can update users as follows.
 The source CSV is hand-built from different Excel spreadsheets from each location.
 
-```{r update_users}
-readr::read_csv("data/staff.csv") %>% wastd_POST(., serializer = "users", verbose = TRUE)
+```{r update_users, eval=F}
+readr::read_csv("data/staff.csv") %>% wastdr::wastd_POST(., serializer = "users", verbose = TRUE)
 ```
 
 The username is generated from the `snake_case`'d field `name`.

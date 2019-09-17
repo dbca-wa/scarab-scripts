@@ -376,7 +376,7 @@ Upload to TSC - run manually. This could overwrite data or time out (depending o
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = dev)
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 
 flora_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
@@ -448,7 +448,7 @@ fauna_tae <- fauna_occ %>%
   dplyr::arrange(taxon)
 
 occ_file <- here::here("data", "occ.Rdata")
-save(taxa, fauna_occ, fauna_tae, file=occ_file)
+save(fauna_occ, fauna_tae, file=occ_file)
 if (file.exists(occ_file)) load(occ_file)
 
 fauna_tae[10001:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
@@ -502,7 +502,7 @@ flora_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(
 Finally, flora encounters are uploaded to TSC.
 ```{r flora_occ_tsc_upload, eval=F}
 flora_tae10 = flora_tae[95:100,]
-flora_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = dev)
+flora_tae[33000:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
 # Data catalogue upload
