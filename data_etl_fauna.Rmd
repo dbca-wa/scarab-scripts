@@ -728,7 +728,12 @@ fauna_cons_listing %>% dplyr::filter(list_code == "RedList") %>% DT::datatable()
 criteria_requiring_mapping <- fauna_cons_listing %>% 
     dplyr::filter(grepl('[+,;]', criteria_code)) 
 
-criteria_requiring_mapping$criteria_code %>% unique(.)
+crit_map <- criteria_requiring_mapping %>% 
+  dplyr::group_by(list_code) %>% 
+  dplyr::distinct(criteria_code) %>% 
+  dplyr::arrange(list_code, criteria_code) %>% 
+  dplyr::select(list_code, criteria_code)
+readr::write_csv(crit_map, path = here::here("data","tfa_conscrit.csv"))
 ```
 
 Conservation listings are entered in triplicate:
