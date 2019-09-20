@@ -568,7 +568,7 @@ fauna_conservation_lists <- fauna_data$`Listing Names` %>%
     list_order = ListOrder %>% as.integer()
   ) %>%
   dplyr::arrange(list_order)
-fauna_conservation_lists %>% skim()
+fauna_conservation_lists %>% dplyr::glimpse()
 ```
 
 ## DEC Listing Names
@@ -580,7 +580,8 @@ dec_fauna_conservation_lists <- fauna_data$`DEC List Names` %>%
     dec_listing_order = DECOrder %>% as.integer()
   ) %>%
   dplyr::arrange(dec_listing_order)
-dec_fauna_conservation_lists %>% skim()
+dec_fauna_conservation_lists %>% skim() 
+dec_fauna_conservation_lists %>% dplyr::glimpse()
 ```
 
 ## Conservation status listing
@@ -605,7 +606,9 @@ conservation_categories <- fauna_data$`Listing Category` %>%
   dplyr::left_join(fauna_conservation_lists, by = "list_code") %>%
   dplyr::left_join(dec_fauna_conservation_lists, by = "dec_listing_id")
 conservation_categories %>% skim()
-conservation_categories %>% head(10) %>% DT::datatable(.)
+conservation_categories %>%
+  head(10) %>%
+  DT::datatable(.)
 ```
 
 ## TSC Conservation Listing
