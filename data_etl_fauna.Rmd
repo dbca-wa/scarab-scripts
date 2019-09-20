@@ -703,6 +703,15 @@ fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
 ```
 
+```{r compare tsc conscrit listing to tfa conscrit}
+# data.dir=paste("~/projects/scarab-scripts/data/")
+# setwd(data.dir)
+# dir()
+# tfa_conscrit<-read_csv("tfa_conscrit.csv",)%>%
+#   filter(list_code=="IUCN(2012)")
+
+```
+
 Some cons listings have a name_id of 0. These are phrase names and require to be assigned the `name_id`
 of the published name.
 
