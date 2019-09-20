@@ -10,7 +10,9 @@
 # remotes::install_github("ropensci/jqr")
 # remotes::install_github("dbca-wa/wastdr")
 # remotes::install_github("ropensci/ckanr")
+# install.packages("knitr")
 # install.packages("sf")
+# install.packages("styler")
 
 library(devtools)
 library(usethis)
@@ -24,6 +26,8 @@ library(magrittr)
 library(readr)
 library(dplyr)
 library(readr)
+library(knitr)
+library(styler)
 
 library(ckanr)
 library(wastdr)
