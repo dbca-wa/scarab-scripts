@@ -657,6 +657,7 @@ pop_vegclass[1:100, ] %>% DT::datatable(.)
 ```
 
 ## Population section maps
+## Metadata indicating what information (SECT_CODE) is available for each population.
 
 ```{r pop_sectionmap}
 pop_sectionmap <- flora_data$DRF_POP_SECTION_MAP %>%
