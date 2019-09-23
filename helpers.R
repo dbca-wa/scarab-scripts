@@ -13,6 +13,7 @@
 # install.packages("knitr")
 # install.packages("sf")
 # install.packages("styler")
+# install.packages("jsonlite")
 
 library(devtools)
 library(usethis)
