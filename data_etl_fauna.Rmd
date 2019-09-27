@@ -716,10 +716,10 @@ tfa_conscrit <- here::here("data", "tfa_conscrit_w_tsc.csv") %>%
 setdiff(fauna_cons_listing$criteria_code,tfa_conscrit$criteria_code) 
 setdiff(tfa_conscrit$criteria_code,fauna_cons_listing$criteria_code)
 
-tfa_conscrit_w_tsc<-fauna_cons_listing %>% 
+fauna_cons_listing_w_tsc<-fauna_cons_listing %>% 
   left_join(tfa_conscrit,by=c("list_code","criteria_code"))
 ```
-There are 169 criteria in the fauna cons listings which do not match a new tsc criteria. 
+There are 152 criteria in the fauna cons listings which do not match a new tsc criteria. 
 There are no criteria in the new tsc criteria which do not match a criteria in the fauna cons listings.
 
 
@@ -727,30 +727,39 @@ Some cons listings have a name_id of 0. These are phrase names and require to be
 of the published name.
 
 ```{r}
-fauna_cons_listing %>% dplyr::filter(name_id == 0)
+fauna_cons_listing_w_tsc %>% dplyr::filter(name_id == 0)
 ```
 
 Let's save a snapshot of the cons listings.
 
 ```{r tfa_cons_listing_save}
-fcl_file <- here::here("data", "fauna_cons_listing.Rdata")
-save(fauna_cons_listing, file=fcl_file)
+fcl_file <- here::here("data", "fauna_cons_listing_w_tsc.Rdata")
+save(fauna_cons_listing_w_tsc, file=fcl_file)
 if (file.exists(fcl_file)) load(fcl_file)
 ```
 
 Conservation lists used in Fauna cons listings:
 
 ```{r tfa_cons_listing_qa}
-fauna_cons_listing$list_code %>% unique # cons lists used
-fauna_cons_listing %>% dplyr::filter(list_code == "WAPF") %>% DT::datatable() # = WAPS
-fauna_cons_listing %>% dplyr::filter(list_code == "ActionPlan") %>% DT::datatable() # Discard those?
-fauna_cons_listing %>% dplyr::filter(list_code == "") %>% DT::datatable() # Discard those?
-fauna_cons_listing %>% dplyr::filter(list_code == "RedList") %>% DT::datatable() # Which IUCN version?
+fauna_cons_listing_w_tsc$list_code %>% unique # cons lists used
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "WAPF") %>% DT::datatable() # = WAPS
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "ActionPlan") %>% DT::datatable() # Discard those?
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "") %>% DT::datatable() # Discard those?
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "RedList") %>% DT::datatable() # Which IUCN version?
 
 # ETL nightmare fuel: condensed criteria mixed with free text
 criteria_requiring_mapping <- fauna_cons_listing %>% 
     dplyr::filter(grepl('[+,;]', criteria_code)) 
 
+criteria_not_requiring_mapping <- fauna_cons_listing %>% 
+    dplyr::filter(!grepl('[+,;]', criteria_code)) 
+
+crit_not_map <- criteria_not_requiring_mapping %>% 
+  dplyr::group_by(list_code) %>% 
+  dplyr::distinct(criteria_code) %>% 
+  dplyr::arrange(list_code, criteria_code) %>% 
+  dplyr::select(list_code, criteria_code)
+  
 crit_map <- criteria_requiring_mapping %>% 
   dplyr::group_by(list_code) %>% 
   dplyr::distinct(criteria_code) %>% 
@@ -819,7 +828,7 @@ tsc_conscat_sp <- "conservationcategory" %>%
 
 # IUCN cons listing
 # IUCN 2012 3
-tfa_listing_cat_iucn2012 <- fauna_cons_listing %>% 
+tfa_listing_cat_iucn2012 <- fauna_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(2012)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3), by="category_code") %>% 
   dplyr::transmute(
@@ -832,13 +841,13 @@ tfa_listing_cat_iucn2012 <- fauna_cons_listing %>%
         review_due=review_due,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_iucn2012 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = uat)
 # tfa_listing_cat_iucn2012 %>% 
 #   wastdr::wastd_POST("taxon-conservationlisting", api_url = dev)
 
