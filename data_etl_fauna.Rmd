@@ -704,14 +704,25 @@ fauna_cons_listing %>% head(10) %>% DT::datatable()
 ```
 
 ```{r compare_tsc_conscrit_listing_to_tfa_conscrit}
-tfa_conscrit <- here::here("data", "tfa_conscrit_w_tsc.csv") %>% 
-  readr::read_csv(col_types = cols(
-  list_code = col_character(),
-  tsc_criteria = col_character(),
-  criteria_code = col_character(),
-  assigned_as = col_character(),
-  comments = col_character()
-))
+chr2int <- . %>% 
+      stringr::str_split(",") %>% 
+      purrr::map(as.integer)
+
+
+tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      list_code = col_character(),
+      tsc_criteria = col_character(),
+      criteria_code = col_character(),
+      assigned_as = col_character(),
+      comments = col_character()
+    )
+  ) %>%
+  dplyr::mutate(
+    tsc_criteria = tsc_criteria %>% chr2int()
+  )
+
 
 setdiff(fauna_cons_listing$criteria_code,tfa_conscrit$criteria_code) 
 setdiff(tfa_conscrit$criteria_code,fauna_cons_listing$criteria_code)
@@ -847,7 +858,7 @@ tfa_listing_cat_iucn2012 <- fauna_cons_listing_w_tsc %>%
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_iucn2012 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = uat)
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT"))
 # tfa_listing_cat_iucn2012 %>% 
 #   wastdr::wastd_POST("taxon-conservationlisting", api_url = dev)
 
