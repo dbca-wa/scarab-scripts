@@ -1,0 +1,371 @@
+list_code,tsc_criteria,criteria_code,assigned_as,comments
+ActionPlan,,"A1c, B1+B2c",,
+ActionPlan,,A2+3+4bc,,
+ActionPlan,,A2+3+4b; C1,,
+ActionPlan,,A2+3+4bcde,,
+ActionPlan,,A2abc+3bce+4bce,,
+ActionPlan,,A2abce+3abce+4abce,,
+ActionPlan,,A2abce+3bce+4abce,,
+ActionPlan,,A2bc+3c+4bc,,
+ActionPlan,,A2bc+3c+4c,,
+ActionPlan,,"A2bc, C1+2a(ii)",,
+ActionPlan,,A2bce+3bce+4bce,,
+ActionPlan,,A2c+3c+4c,,
+ActionPlan,,A3+4be (breeding population),,
+ActionPlan,,A3+4cde,,
+ActionPlan,,A3c+4bc,,
+ActionPlan,,"A4bc, B2ab(iii,v)",,
+ActionPlan,,Approaching A2+3+4bce,,
+ActionPlan,,"Approaching A2+3+4bde, B2ab(i,ii,iii,iv,v) (visiting population)",,
+ActionPlan,,Approaching A2+3+4cde (visiting population),,
+ActionPlan,,Approaching A2+3+4de,,
+ActionPlan,,"Approaching A2ab, B2ab(v)",,
+ActionPlan,,Approaching A2bc+3c+4bc,,
+ActionPlan,,Approaching A2c+3c+4c,,
+ActionPlan,,approaching A2ce+3ce+4ce,,
+ActionPlan,,Approaching A3+4bcd,,
+ActionPlan,,"Approaching A3c+4c, C2a(ii), D1",,
+ActionPlan,,"Approaching B1+2ab(i,ii,iii,iv,v)",,
+ActionPlan,,"Approaching B2ab(ii,iii,iv)",,
+ActionPlan,,"Approaching B2ab(ii,iii,iv,v)",,
+ActionPlan,,Approaching C1+2a(i),,
+ActionPlan,,"Approaching C2a(i), D1",,
+ActionPlan,,"Approaching VU B2ab(i,ii,iii,iv,v); C1",,
+ActionPlan,,"B1+2ab(iii,v)",,
+ActionPlan,,"B1+2ab(v), C2a(ii)",,
+ActionPlan,,"B1ab(ii,iii,v)",,
+ActionPlan,,"B1ab(iii,v)",,
+ActionPlan,,"B2ab(ii,iii)",,
+ActionPlan,,"B2ab(i,ii,iii,iv,v)",,
+ActionPlan,,"B2ab(ii,iii,iv,v)",,
+ActionPlan,,"B2ab(ii,iii,iv,v); D2",,
+ActionPlan,,"B2ab(ii,iii,v)",,
+ActionPlan,,"B2ab(iii,iv,v)",,
+ActionPlan,,"B2ab(iii,v)",,
+ActionPlan,,"B2ac(i,ii,iii,iv)",,
+ActionPlan,,"B2ac(iii,iv)",,
+ActionPlan,,C1+2a(i),,
+EPBC,,"A4ce, B1+2ab(iii)",,
+EPBC,,B1ab(iii)+B2ab(iii),,
+EPBC,,"Bonn, CAMBA, JAMBA",,
+EPBC,,"Bonn, CAMBA, JAMBA & ROKAMBA",,
+EPBC,,"Bonn, CAMBA, JAMBA, ROKAMBA",,
+EPBC,,"Bonn, JAMBA, ROKAMBA",,
+EPBC,,"CAMBA, JAMBA",,
+EPBC,,"CAMBA, JAMBA and ROKAMBA",,
+EPBC,,"CAMBA, JAMBA & ROKAMBA",,
+EPBC,,"CAMBA, JAMBA, ROKAMBA",,
+EPBC,,"CAMBA, JAMNBA & ROKAMBA",,
+EPBC,50,"Citerion 2 (B1+2ab(iii,iv,v))",Criterion 2,
+EPBC,"49,50,51","Criterion 1, 2 & 3","Criterion 1, 2 & 3",
+EPBC,"49,50,51,52","Criterion 1, 2, 3 & 4","Criterion 1, 2, 3 & 4",
+EPBC,"49,51,52","Criterion 1, 3 & 4 (equiv. A2ace, C2a(i),D)","Criterion 1, 2, 4",
+EPBC,"49,51",Criterion 1 (A2+3+4bcd) & Criterion 3 (C1),"Criterion 1, 3",
+EPBC,"49,50","Criterion 1: A2 (a),(b); Criterion 2: B2 (a),(b)(ii,),(iii),(v)","Criterion 1, 2",
+EPBC,"50,51","Criterion 2 & 3 (B2ab(i,ii,v), C1)","Criterion 2, 3",
+EPBC,"50,51","Criterion 2 B1+2ab(iii); Criterion 3 Bab(ii,iii,v)","Criterion 2, 3",
+EPBC,50,"Criterion 2 (B1+2ab(i,iii))",Criterion 2,
+EPBC,50,"Criterion 2 B2ab(i,ii,iii,iv,v)",Criterion 2,
+EPBC,50,"Criterion 2 B2ab(ii,iii,iv,v)",Criterion 2,
+EPBC,50,"Criterion 2 B2 (a),(b)(iii)(iv)",Criterion 2,
+EPBC,50,"Criterion 2 (B2ab(iii,iv,v)",Criterion 2,
+EPBC,50,"Criterion 2 B2,(a),(b)(ii)(iv)(v) and Criterion 3 C2(i)",Criterion 2,
+EPBC,50,"Criterion 2 B2ab(i,v)",Criterion 2,
+EPBC,50,"Criterion 2 B2 (b)(ii,iii,iv,v),(c)(iv)",Criterion 2,
+EPBC,50,Criterion 2 (equiv. B1+2),Criterion 2,
+EPBC,50,Criterion 2 (equiv. B1+2ab(v)c(v)),Criterion 2,
+EPBC,50,"Criterion 2 (equiv. B2ab(ii,iii,v))",Criterion 2,
+EPBC,50,"Criterion 2 (equiv. B2ab(iii,v)",Criterion 2,
+EPBC,50,"Criterion 2 (equiv. B2ab(iii,v))",Criterion 2,
+IUCN(1994),,A1+2abc,"A1abc, A2abc",
+IUCN(1994),,A1+2c,"A1c, A2c",
+IUCN(1994),,"A1a, B1","A1a, B1a",
+IUCN(1994),,A1ab; B2ab+3abc,"A1ab, B2ab, B3abc",
+IUCN(1994),,"A1a,D2","A1a, D2",
+IUCN(1994),,A1a; D2,"A1a, D2",
+IUCN(1994),,"A1ae,A2","A1ae, A2",
+IUCN(1994),,"A1, B1+2c, C1+2","A1c, B1c(i), B2c(i), C1, C2a(i)","Should this have all options for B1c, B2c, and C2a?"
+IUCN(1994),,"A1, B1+2c, C1+2a","A1c, B1c(i), B2c(i), C1, C2a(i)","Should this have all options for B1c, B2c, and C2a?"
+IUCN(1994),,"A1, B1+2c, C2b,D","A1c, B1c(i), B2c(i), C2b, D",Should this have all options for B1c and B2c?
+IUCN(1994),,"A1, B1+2c, C2b, D","A1c, B1c(i), B2c(i), C2b, D",Should this have all options for B1c and B2c?
+IUCN(1994),,"A1,B1+2c,C2b,D","A1c, B1c (i), B2c(i), C2b, D",Should this have all options for B1c and B2c?
+IUCN(1994),,A1b+2b,"A1b, A2b",
+IUCN(1994),,"A1b+A2, D2","A1b, A2b, D2",
+IUCN(1994),,A1bce; C1,"A1b, A1c, A1e, C1",
+IUCN(1994),,"A1c, B1+2c, C1+2a","A1c, B1c (i), B2c(i), C1, C2a(i)","Should this have all options for B1c, B2c, and C2a?"
+IUCN(1994),,"A1c, C1","A1c, C1",
+IUCN(1994),,"A1c,D","A1c, D",
+IUCN(1994),,"A1c, D2","A1c, D2",
+IUCN(1994),,B1+2,"B1a, B2a",Should this have all B1 and B2 options?
+IUCN(1994),,B1+2a,"B1a, B2a",
+IUCN(1994),,B1+2ab+3a,"B1a, B1b(i), B2a, B2b(i),",Should this have all B1b and B2b options? No B3
+IUCN(1994),,"B1+2abc, C2a","B1a, B1b(i), B2c(i), B2a, B2b(i), B2c(i), C2a(i)","Should this have all B1b, B1c, B2b, B2c and C2a options?"
+IUCN(1994),,B1+2abcde,"B1a, B1b(i), B1c(i), B2a, B2b(i), B2c(i)","Should this have all B1b, B1c, B2b and B2cs? No B1de or B2de"
+IUCN(1994),,B1+2abce; C2a,"B1a, B1b(i), B1c(i), B2a, B2b(i), B2c(i), C2a(i)","Should this have all B1b, B1c, B2b, B2c and C2a options? No B1e or B2e"
+IUCN(1994),,B1+2abd,"B1a, B1b(i), B2a, B2b(i)","Should this have all B1b, and B2b options? No B1d or B2d"
+IUCN(1994),,B1+2b; C2a,"B1b(i), B2b(i), C2a(i)","Should this have all options for B1b,B2b and C2a?"
+IUCN(1994),,"B1+2bc, C2a","B1b(i), B1c(i), B2b(i), B2c(i), C2a","Should this have all options for B1b,B1c,B2b,B2c and C2a?"
+IUCN(1994),,B1+2bd,"B1d(i), B2b(i)",Should this have all options for B1b and B2b? No B1d or B2d
+IUCN(1994),,B1+2c,"B1c(i), B2c(i)",Should this have all options for B1c and B2c?
+IUCN(1994),,"B1+2c, D","B1c(i), B2c(i), D",Should this have all options for B1c and B2c?
+IUCN(1994),,B1+2ce,"B1c(i), B2c(i)",Should this have all options for B1c and B2c? No B1e or B2e
+IUCN(1994),,B1+2d+3bc,,"No B1d, B2d or B3bc"
+IUCN(1994),,"B1+2d, D1",D1,No B1d or B2d
+IUCN(1994),,B1+3a,B1a,No B3a
+IUCN(1994),,B1+3d,,No B1d or B3d
+IUCN(1994),,C1+2ab,"C1, C2a(i), C2b",Should this have C2a(ii)
+IUCN(1994),,"C2a, D2","C2a(i), D2",Should this have C2a(ii)
+IUCN(1994),,D1+2,"D1, D2",
+IUCN(2001),,A1ab+2b,"A1a, A1b, A2b",
+IUCN(2001),,A1abd+2bcd,"A1a, A1b, A1d, A2b, A2c, A2d",
+IUCN(2001),,A1a (breeding) / VU A1abde+2bce (visiting pop),"A1a, A1b, A1d, A1e, A2b, A2c, A2e",
+IUCN(2001),,"A1c,D","A1c, D",
+IUCN(2001),,A1cd+2cd,"A1c, A1d, A2c, A2d",
+IUCN(2001),,A1d+2d,"A1d, A2d",
+IUCN(2001),,"A2+3+4ac, B1+2ab(v), C1+2a(ii,iii), D","A2a, A2c, A3a, A3c, A4a, A4c, B1a, B1b(v), B2a, B2b(v), C1, C2a(ii,iii),  D",
+IUCN(2001),,A2+3+4d,"A2d, A3d, A4d",
+IUCN(2001),,"A2+4abc, C1","A2a, A2b, A2c, A4a, A4b, A4c, C1",
+IUCN(2001),,"A2ac,B1+2ab(ii,iii,v), C1+2a(i,ii), D","A2a, A2c, B1a, B1b(ii,iii,v), B2a, B2b(ii,iii,v), C1, C2a(i,ii), D",
+IUCN(2001),,"A2ac; B2ab(iii,v)","A2a, A2c, B2a, B2b(iii,v)",
+IUCN(2001),,"A2,B2ab,C1,D2,E","A2a, A2b, B2a(i), B2b(i), C1, D2, E",Should this have all options for B2a and B2b?
+IUCN(2001),,A2bc+3c+4bc,"A2b, A2c, A3c, A4b, A4c",
+IUCN(2001),,"A2bc, C1+2a(ii)","A2b, A2c, C1, C2a(ii)",
+IUCN(2001),,"A2c, B1+2ab(i,ii,iii,iv,v), C1+2a(i), D","A2c, B1a, B1b(i,ii,iii,iv,v), B2a, B2b(i,ii,iii,iv,v), C1, C2a(i), D",
+IUCN(2001),,"A2c, B1+2ab(i,ii,iii,iv,v), C1+2a(i,ii), D","A2c, B1a, B1b(i,ii,iii,iv,v), B2a, B2b(i,ii,iii,iv,v), C1, C2a(i,ii), D",
+IUCN(2001),,A2d+3d+4d,"A2d,A3d,A4d",
+IUCN(2001),,"A3b+4b, C2b","A3b,A4b,C2b",
+IUCN(2001),,"A3b, A4b, C2b","A3b, A4b,C2b",
+IUCN(2001),,A3be; A4be,"A3b, A3e,A4b, A4e",
+IUCN(2001),,A3c+4bc,"A3c, A4bc",
+IUCN(2001),,"A4c, C2a(i)","A4c, C2a(i)",
+IUCN(2001),,"A4ce, B1+2ab(iii)","A4c, A4e, B1a, B1b(iii), B2a, B2b(iii)",
+IUCN(2001),,B1+2ab,"B1a, B1b(i), B2a, B2b(i)",Should this have all B1b and B2b options?
+IUCN(2001),,B1+2abcd,"B1a, B1b(i), B1c(i), B2a, B2b(i), B2c(i)","Should this have all B1b, B1c, B2b and B2c options?"
+IUCN(2001),,"B1+2abcde, D","B1a, B1b(i), B1c(i), B2a, B2b(i), B2c(i), D","Should this have all B1b, B1c, B2b and B2c options? No B1de or B2de"
+IUCN(2001),,B1+2ab(iii),"B1a, B1b(iii), B2a, B2b(iii)",
+IUCN(2001),,"B1+2ab(iii), D2","B1a, B2b(iii), B2a, B2b(iii), D2",
+IUCN(2001),,"B1+2ab(ii,iii)","B1a, B1b(ii,iii),B2a, B2b(ii,iii)",
+IUCN(2001),,"B1+2ab(i,ii,iii,iv,v)","B1a, B1b(i,ii,iii,iv,v), B2a, B2b(i,ii,iii,iv,v)",
+IUCN(2001),,"B1+2ab(iii,v)","B1a, B1b(iii,v), B2a, B2b(iii,v)",
+IUCN(2001),,"B1+2ab(iv,v)","B1a, B1b(iv,v), B2a, B2b(iv,v)",
+IUCN(2001),,B1+2ab(v),"B1, B1b(v), B2a, B2b(v)",
+IUCN(2001),,B1+2ab(v); C2a(i); D,"B1a, B1b(v), B2a, B2b(v), C2a(i), D",
+IUCN(2001),,"B1+2ab(v),C2a(ii)","B1a, B1b(v), B2a, B2b(v), C2a(ii)",
+IUCN(2001),,B1+2ac,"B1a, B1c(i), B2a, B2c(i)",Should this have all B1c and B2c options?
+IUCN(2001),,B1+2c,"B1c(i), B2c(i)",Should this have all B1c and B2c options?
+IUCN(2001),,"B1+2c,D2","B1a, B2c(i), D2",Should this have all B2c options?
+IUCN(2001),,B1+2ce,"B1c(i), B2c(i)",Should this have all B1c and B2c options? No B1e or B2e
+IUCN(2001),,B1+2e,,No B1e or B2e
+IUCN(2001),,B1ab(iii)+B2ab(iii),"B1a, B1b(iii), B2a, B2b(iii)",
+IUCN(2001),,"B1ab(iii), C2a(i)","B1a, B1b(iii), C2a(i)",
+IUCN(2001),,"B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)","B1a, B1b(i,ii,iii,iv,v), B2a, B2b(i,ii,iii,iv,v)",
+IUCN(2001),,B1ab(v)+2ab(v),"B1a, B1b(v), B2a, B2b(v)",
+IUCN(2001),,"B1;B2(a)(b)(I,ii,iii,iv)","B1a, B1b(I,ii,iii,iv), B2a, B2b(i,ii,iii,iv)",
+IUCN(2001),,"B2+2av(iv,v), C2a(i)","B2a, B2bv(iv,v), C2a(i)",
+IUCN(2001),,"B2ab(ii,iii)","B2a, B2b(ii,iii)",
+IUCN(2001),,"B2ab(i,ii,iii,iv,v), C2a(i), D1","B2a, Bb(i,ii,iii,iv,v), C2a(i), D1",
+IUCN(2001),,"B2ab(ii,iii,iv,v)","B2a, B2b(ii,iii,iv,v)",
+IUCN(2001),,"B2ab(ii,iii,v), C2a(ii)","B2a, B2b(ii,iii,v), C2a(ii)",
+IUCN(2001),,"B2ab(i,iii,iv,v), C2a(i)","B2a, B2b(i,iii,iv,v), C2a(i)",
+IUCN(2001),,"B2ab(iii,iv)","B2a, B2b(iii,iv)",
+IUCN(2001),,"B2ab(ii,iv)","B2a, B2b(ii,iv)",
+IUCN(2001),,"B2ab(iii,v)","B2a, B2b(iii,v)",
+IUCN(2001),,"B2ab(v), D2","B2a, B2b(v), D2",
+IUCN(2001),"40,41",C1+2a,"C1, C2a",
+IUCN(2001),"41,44,45","C2a(i), D1+2","C2a(i), D1, D2",
+IUCN(2001),"44,45",D1+2,"D1, D2",
+IUCN(2012),"7,11,16,40",A2+3+4b; C1,"A2b,A3b,A4b",
+IUCN(2012),"7,8,9,10,11,12,13,14,16,17,18,19",A2+3+4bcde,"A2bcde, A3bcde, A4bcde",
+IUCN(2012),"7,8,10,11,12,14,16,17,19",A2+3+4bce,"A2bce, A3bce, A4bce",
+IUCN(2012),"6,7,8,11,12,14,16,17,19",A2abc+3bce+4bce,"A2abc, A3bce, A4bce",
+IUCN(2012),"6,7,8,10,11,12,14,15,16,17,19,",A2abce+3abce+4abce,"A2abce, A3bce, A4abce",
+IUCN(2012),"6,7,8,10,11,12,14,15,16,17,19",A2abce+3bce+4abce,"A2abce, A3bce, A4abce",
+IUCN(2012),"6,8,10,30,33,35,40,41","A2ace; B2ab(iii,v); C1+2a(i)","A2ace, B2a, B2b(iii,v), C1, C2a(i)",
+IUCN(2012),"7,8,12,16,17",A2bc+3c+4bc,"A2bc, A3c, A4bc",
+IUCN(2012),"7,8,10,11,12,14,16,17,19",A2bce+3bce+4bce,"A2bce, A3bce, A4bce",
+IUCN(2012),"8,12,17",A2c+3c+4c,"A2c, A3c, A4c",
+IUCN(2012),"8,17",A2c+4c,"A2c, A4c",
+IUCN(2012),"8,17,45","A2c+4c, D2","A2c, A4c, D2",
+IUCN(2012),"8,10,12,14,17,19",A2ce+3ce+4ce,"A2c, A2e, A3c, A3e, A4c, A4e",
+IUCN(2012),"8,10,20,21,22,23,24,25,30,31,32,33,34,35","A2ce; B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)","A2c, A2e, B1a, B1b(i,ii,iii,iv,v), B2a, B2b(i,ii,iii,iv,v)",
+IUCN(2012),"30,33",B1+2ab(iii),"B1a, B1b(iii), B2a, B2b(iii)",
+IUCN(2012),"30,32,33","B1+2ab(ii,iii)","B1a, B1b(ii,iii), B2a, B2b(ii,iii)",
+IUCN(2012),"30,31,32,33,34,35","B1+2ab(i,ii,iii,iv,v)","B1a, B1b(i,ii,iii,iv,v), B2a, B2b(i,ii,iii,iv,v)",
+IUCN(2012),"30,31,32,33,35","B1+2ab(i,ii,iii,v)","B1a, B1b(i,ii,iii,v), B2a, B2b(i,ii,iii,v)",
+IUCN(2012),"30,32,33,35","B1+2ab(ii,iii,v)","B1a, B1b(ii,iii,v), B2a, B2b(ii,iii,v)",
+IUCN(2012),"30,33,34,35","B1+2ab(iii,iv,v)","B1a, B1b(iii,iv,v), B2a, B2b(iii,iv,v)",
+IUCN(2012),"30,33,35","B1+2ab(iii,v)","B1a, B1b(iii,v), B2a, B2b(iii,v)",
+IUCN(2012),"30,35",B1+2ab(v),"B1a, B1b(v), B2a, B2b(v)",
+IUCN(2012),"20,23,30,33",B1ab(iii)+2ab(iii),"B1a, B1b(iii), B2a, B2b(iii)",
+IUCN(2012),"20,21,22,23","B1ab(i,ii,iii)","B1a, B1b(i,ii,iii)",
+IUCN(2012),"20,21,22,23,24,25,30,31,32,33,34,35","B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)","B1a, B1b(i,ii,iii,iv,v), B2a, B2b(i,ii,iii,iv,v)",
+IUCN(2012),"20,22,23,25","B1ab(ii,iii,v)","B1a, B1b(ii,iii,v)",
+IUCN(2012),"30,32,33,34,35","B2ab(ii,iii,iv,v)","B2a, B2b(ii,iii,iv,v)",
+IUCN(2012),"30,33,34,35","B2ab(iii,iv,v)","B2a, B2b(iii,iv,v)",
+IUCN(2012),"30,36,37,38,39","B2ac(i,ii,iii,iv)","B2a, B2c(i,ii,iii,iv)",
+IUCN(2012),"40,41",C1+2a(i),"C1, C2a(i)",
+RedList,,A1abce+3bce+4abce,,Use IUCN 2012 
+RedList,,A1bd+2d,,
+RedList,,"A1c, B1+2c, C1+2b, D",,
+RedList,,A2+3+4abcde,,
+RedList,,"A2+3+4acde, B2ab(iii,iv,v)",,
+RedList,,A2+3+4bc,,
+RedList,,A2+3+4bce,,
+RedList,,"A2+3+4bce, C1+2a(i)",,
+RedList,,A2+3+4cde,,
+RedList,,A2+4bcd,,
+RedList,,A2ab+3d,,
+RedList,,A2abce+3bce+4abce,,
+RedList,,"A2ac; B2ab(iii,v)",,
+RedList,,"A2b, B2ab(i,ii,iv,v)",,
+RedList,,A2bc+3bc+4bc,,
+RedList,,A2bce+3ce+4ce,,
+RedList,,A2bd+3d,,
+RedList,,A2cd+3cd,,
+RedList,,A2ce+3ce+4ce,,
+RedList,,"A2ce; B2ab(i,ii,iii,iv)",,
+RedList,,"A4bc, B2ab(iii,v)",,
+RedList,,"A4bd, B2ab(v)",,
+RedList,,Approaching VU A2+3+4,,
+RedList,,Approaching A2+4abe+3be,,
+RedList,,Approaching VU A2abc+3bc+4abc,,
+RedList,,Approaching VU A2+3+4,,
+RedList,,Approaching VU A2abc+3bc+4abc,,
+RedList,,B1+2ab(iii),,
+RedList,,"B1+2ab(i,ii,iii,iv)",,
+RedList,,"B1+2ab(i,ii,iii,v)",,
+RedList,,"B1+2ab(iii,v)",,
+RedList,,"B1+2bc, D2",,
+RedList,,B1+2bd,,
+RedList,,B1+2c,,
+RedList,,"B1ab(i,iii)",,
+RedList,,"B1ab(ii,iii)",,
+RedList,,"B1ab(ii,iii,iv,v)",,
+RedList,,"B1ab(ii,iii,v)",,
+RedList,,"B1ab(iii,iv)",,
+RedList,,"B1ab(iii,v)",,
+RedList,,"B2ab(iii)c(ii,iii,iv);D",,
+RedList,,"B2ab(ii,iii)",,
+RedList,,"B2ab(i,ii,iii,iv,v)",,
+RedList,,"B2ab(i,ii,iii,iv,v), C2a(i)",,
+RedList,,"B2ab(i,ii,iii,iv,v); C2a(i)",,
+RedList,,"B2ab(i,ii,iii,iv,v)c(i,ii,iii,iv); C2b",,
+RedList,,"B2ab(ii,iii,iv)",,
+RedList,,"B2ab(ii,iii,iv,v)",,
+RedList,,"B2ab(ii,iii,v)",,
+RedList,,"B2ab(ii,iii,v); D2",,
+RedList,,"B2ab(i,iii,iv,v)",,
+RedList,,"B2ab(iii,v)",,
+RedList,,B2ab(v); C2a(ii),,
+RedList,,"B2ab(v), D2",,
+RedList,,"Bonn, CAMBA, JAMBA, ROKAMBA",,?
+SPFN,,"A2ace; B2ab(iii,v); C1+2a(i)",,Use IUCN 2012
+SPFN,,A2bc+3c+4bc,,
+SPFN,,"A2ce; B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)",,
+SPFN,,A3c+4bc,,
+SPFN,,B1+2ce,,
+SPFN,,B1ab(iii)+2ab(iii),,
+SPFN,,"B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)",,
+SPFN,,"B1ab(ii,iii,v)",,
+SPFN,,"CR B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)",,
+SPFN,,Last known/collected: 1938; Decade of extinction: N/A,,Correct?
+WAPF,,"1-2 locations, conservation estate, threats to groundwater,",,Ignore
+WAPF,,"1-2 locations, non conservation estate, development/agricultural and cane toads and fire threats",,Ignore
+WAPF,,"1-2 locations, non conservation estate, recreational vehicle threat",,Ignore
+WAPF,,"1 location, conservation estate but threats from gas plant",,Ignore
+WAPF,,"1 location, conservation estate, fire threat",,Ignore
+WAPF,,"1 location, conservation estate, land clearing/fire threat",,Ignore
+WAPF,,"1 location, conservation estate, threat from land clearing - saline water",,Ignore
+WAPF,,"1 location, conservation estate, threat of cattle, fire and cane toads, future mining possible",,Ignore
+WAPF,,"1 location, non conseration estate, development threat",,Ignore
+WAPF,,"1 location, non conservation estate, cattle, fire and cane toad threat",,Ignore
+WAPF,,"1 location, non conservation estate, fire, cattle and cane toad threat",,Ignore
+WAPF,,"1 location, non conservation estate, mining threat",,Ignore
+WAPF,,"1 location, non conservation estate, threat from cattle, fire and cane toads, taxanomic uncertainty",,Ignore
+WAPF,,"1 location, non conservation estate, threat of cattle, cane toad, fire; requires survey",,Ignore
+WAPF,,"1 location, non conservation estate, threats from cattle, fire and cane toads",,Ignore
+WAPF,,"1 location which has been fully developed/cleared, in need of survey",,Ignore
+WAPF,,"1 location within conservation estate, cattle, fire and cane toad threats",,Ignore
+WAPF,,"1 location within nature reserve, pastoral threats, requires further survey",,Ignore
+WAPF,,"1 population (location) on conservation estate, under threat from fire and climate change",,Ignore
+WAPF,,"2-3 locations, conservation estate, no immediate threats",,Ignore
+WAPF,,"2-3 locations, non conservation estate, land clearing/fire threat",,Ignore
+WAPF,,"2-3 widespread location, conservation estate, possible mining threat",,Ignore
+WAPF,,"2 areas (> 5 locations), all on conservation estate, under threat from fire and climate change",,Ignore
+WAPF,,"2 known locations but suitable habitat in wider area, needs survey",,Ignore
+WAPF,,"2 location, non-conservation estate, habitat loss",,Ignore
+WAPF,,"2 locations, 1 conservation estate, land clearing threats",,Ignore
+WAPF,,"2 locations, 1 in conservation estate, poorly known but not currently threatened",,Ignore
+WAPF,,"2 locations, conservation estate, clearing and fire threat",,Ignore
+WAPF,,"2 locations, conservation estate, salinity threat, needs survey",,Ignore
+WAPF,,"2 locations, non conservation estate, development threat",,Ignore
+WAPF,,"2 locations, non conservation estate, threats from cattle, fire, mining and cane toads",,Ignore
+WAPF,,"2 locations, not conservation estate, fire threat",,Ignore
+WAPF,,"2 separated locations so may have suitable habitat elsewhere, threats could affect",,Ignore
+WAPF,,"2 widely separated locations, possible threatening processes",,Ignore
+WAPF,,"3-4 sites in conservation estate, potential low risk threat of fire and cane toads",,Ignore
+WAPF,,"3 locations, mostly conservation estate, possible threats in future from fire, cane toads, developme",,Ignore
+WAPF,,"3 locations, non conservation estate, fire threat",,Ignore
+WAPF,,"3 locations within conservation estate, possibly future threatened by cane toads, fire, development",,Ignore
+WAPF,,"3 populations (locations) all in conservation estate, under threat from fire and climate change",,Ignore
+WAPF,,"3 widely separated locations, potential threatning processes",,Ignore
+WAPF,,"4 locations, 1 conservation estate, no evidence of past declines - requires further survey",,Ignore
+WAPF,,"4 locations, 1 conservation estate, no immediate threats",,Ignore
+WAPF,,"4 locations, small non-conservation reserves, potential urbanisation threat, requires more survey",,Ignore
+WAPF,,"4 WA locations incl. conservation estate, past threats of land clearing, requires further survey",,Ignore
+WAPF,,"4 widely separated locations, includes conservation estate but threats from cattle, cane toads, fire",,Ignore
+WAPF,,">5 locations, 2 pops on cons. estate, data deficient, under threat from fire and climate change",,Ignore
+WAPF,,">5 locations, conservation estate, threats from forestry, land clearing, predation",,Ignore
+WAPF,,">5 locations incl. conservation estate, requires survey, forestry/water extraction threats",,Ignore
+WAPF,,">5 locations, potential declines from fire, requires survey",,Ignore
+WAPF,,"> 5 locations, still requires surveys",,Ignore
+WAPF,,"<5 populatons (locations), all on conservation estate, under threat from fire and climate change",,Ignore
+WAPF,,"5 widespread locations including conservation estate, potential threat from fire and habitat loss",,Ignore
+WAPF,,"7-8 locations, includes conservation estate, threat of fire, cattle and cane toads",,Ignore
+WAPF,,"approx 10 localities, some conservation estate, threats to habitats (land clearing/urbanisation)",,Ignore
+WAPF,,"approx 4 locations, 1 in conservation estate, declining on SCP due to habitat loss",,Ignore
+WAPF,,"(c) delisted in 2015, monitoring",,Ignore
+WAPF,,"Data deficient, specimens from 6 locations",,Ignore
+WAPF,,"further survey required, potential coastal threats",,Ignore
+WAPF,,"New species, confined to individual calcrete aquifer, Laverton Downs Windarra, threat from mining",,Ignore
+WAPF,,No recent records of species in the sw extent of range; wheatbelt.,,Ignore
+WAPF,,"Poorly known, data deficient, limited survey, additional surveys required",,Ignore
+WAPF,,"Poorly known, data deficient, newly described, 3 data points, one specimen for Lesueur National Park",,Ignore
+WAPF,,"several pools including in conservation estate, threats unknown but possibly roadside degradation",,Ignore
+WAPF,,"several sites within conservation estate, possibly other pools, possible logging threat but unknown",,Ignore
+WAWCA,,Last known/collected: 1843; Decade of extinction: 1860s,,Ignore
+WAWCA,,Last known/collected: 1846; Decade of extinction: 1890s,,Ignore
+WAWCA,,Last known/collected: 1857; Decade of extinction: late 1800s,,Ignore
+WAWCA,,Last known/collected: 1875; Decade of extinction: 1880s,,Ignore
+WAWCA,,Last known/collected: 1896; Decade of extinction: 1900s,,Ignore
+WAWCA,,Last known/collected: 1901; Decade of extinction: 1900s,,Ignore
+WAWCA,,Last known/collected: 1901; Decade of extinction: 1950s,,Ignore
+WAWCA,,Last known/collected: 1906; Decade of extinction: 1900s,,Ignore
+WAWCA,,Last known/collected: 1931; Decade of extinction: 1950s or 1960s,,Ignore
+WAWCA,,Last known/collected: 1932; Decade of extinction: 1930s,,Ignore
+WAWCA,,Last known/collected: 1932; Decade of extinction: 1940s,,Ignore
+WAWCA,,Last known/collected: 1932; Decade of extinction: 1950s,,Ignore
+WAWCA,,"Last known/collected: 1933; Decade of extinction: Unknown, possibly as late as 1970",,Ignore
+WAWCA,,Last known/collected: 1938; Decade of extinction: N/A,,Ignore
+WAWCA,,Last known/collected: 1942; Decade of extinction: 1950s or 1960s,,Ignore
+WAWCA,,Last known/collected: 1943; Decade of extinction: 1960s,,Ignore
+IUCN(2012),1,A1a,A1a,
+IUCN(2012),"1,2,4",A1abd,"A1a, A1b, A1d",
+IUCN(2012),"1,4",A1ad,"A1a, A1d",
+IUCN(2012),4,A1d,A1d,
+IUCN(2012),6,A2a,A2a,
+IUCN(2012),"6,7,8,10",A2abce,"A2a, A2b, A2c, A2e",
+IUCN(2012),"7,8",A2bc,"A2b, A2c",
+IUCN(2012),"7,8,10",A2bce,"A2b, A2c, A2e",
+IUCN(2012),"7,9",A2bd,"A2b, A2d",
+IUCN(2012),"7,10",A2be,"A2b, A2e",
+IUCN(2012),12,A3c,A3c,
+IUCN(2012),"16,17,19",A4bce,"A4b, A4c, A4e",
+IUCN(2012),"30,33",B2ab(iii),"B2a, B2b(iii)",
+IUCN(2012),40,C1,C1,
+IUCN(2012),41,C2a(i),C2a(i),
+IUCN(2012),48,D,D,
+IUCN(2012),44,D1,D1,
+IUCN(2012),45,D2,D2,
+IUCN(2012),46,Extinct,E,
+IUCN(2012),46,Presumed extinct,E,
