@@ -451,7 +451,7 @@ occ_file <- here::here("data", "occ.Rdata")
 save(taxa, fauna_occ, fauna_tae, file=occ_file)
 if (file.exists(occ_file)) load(occ_file)
 
-fauna_tae[10001:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+fauna_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
 ### Big Fauna
@@ -512,5 +512,5 @@ Snapshots of this workbook (soon: and selected outputs) are uploaded to the data
 d <- ckanr::package_show("threatened-species-and-communities-occurrence-analysis")
 # upload this workbook, species EOOs, and comms EOOs.
 
-ckanr::resource_update("56335544-72cf-4ebd-bb2c-bc246ec96080", "occ_etl.html")
+ckanr::resource_update( "56335544-72cf-4ebd-bb2c-bc246ec96080", "occ_etl.html")
 ```
