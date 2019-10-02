@@ -857,10 +857,12 @@ tfa_listing_cat_iucn2012 <- fauna_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_iucn2012 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT"))
-# tfa_listing_cat_iucn2012 %>% 
-#   wastdr::wastd_POST("taxon-conservationlisting", api_url = dev)
+tfa_listing_cat_iucn2012 %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting",
+    # api_url = prod
+    api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+  )
 
 # IUCN(2001) 4
 tfa_listing_cat_iucn2001 <- fauna_cons_listing %>% 
