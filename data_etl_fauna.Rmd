@@ -865,7 +865,7 @@ tfa_listing_cat_iucn2012 %>%
   )
 
 # IUCN(2001) 4
-tfa_listing_cat_iucn2001 <- fauna_cons_listing %>% 
+tfa_listing_cat_iucn2001 <- fauna_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(2001)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 4), by="category_code") %>% 
   dplyr::transmute(
@@ -878,13 +878,35 @@ tfa_listing_cat_iucn2001 <- fauna_cons_listing %>%
         review_due=review_due,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
+setdiff(fauna_cons_listing$taxon,tfa_listing_cat_iucn2001$taxon) # none missing from fauna_cons_listing
+setdiff(tfa_listing_cat_iucn2001$taxon,fauna_cons_listing$taxon) # 275 taxon missing from tfa_listing_cat_iucn2001
+
+str(fauna_cons_listing)
+
+species_wo_crit<-tfa_listing_cat_iucn2001 %>% 
+  dplyr::filter(criteria=="NULL") %>% 
+  dplyr::transmute(
+  name_id = taxon %>% as.character(),
+  source_id = source_id %>% as.character,
+  criteria = criteria
+  ) 
+## Start here- not working!
+species_miss_crit<-species_wo_crit%>%
+  dplyr::left_join(fauna_cons_listing,by=("name_id")
+
+unique(species_wo_crit$name_id)# 57 unique species
+
 tfa_listing_cat_iucn2001 %>%
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    # api_url = prod
+    api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
 
 # IUCN(1994) 5
 tfa_listing_cat_iucn1994 <- fauna_cons_listing %>% 
