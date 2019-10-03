@@ -58,8 +58,8 @@ Adjust chunksize down when getting "504 gateway timeouts".
 
 ```{r rock_and_roll_production, eval=F}
 gjprod <- function(data, ser) upsert_geojson(data, serializer = ser, api_url = prod, chunksize = 1000)
-"public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjprod("groups")
 "public:herbie_hbvsupra_public" %>% gs_getFeature() %>% gjprod("supra")
+"public:herbie_hbvgroups_public" %>% gs_getFeature() %>% gjprod("groups")
 "public:herbie_hbvnames_public" %>% gs_getFeature() %>% gjprod("names")
 "public:herbie_hbvfamilies_public" %>% gs_getFeature() %>% gjprod("families")
 "public:herbie_hbvgenera_public" %>% gs_getFeature() %>% gjprod("genera")
