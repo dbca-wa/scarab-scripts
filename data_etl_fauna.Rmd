@@ -777,6 +777,14 @@ crit_map <- criteria_requiring_mapping %>%
   dplyr::arrange(list_code, criteria_code) %>% 
   dplyr::select(list_code, criteria_code)
 readr::write_csv(crit_map, path = here::here("data","tfa_conscrit.csv"))
+
+all_crit_map <- fauna_cons_listing %>%
+  dplyr::group_by(list_code) %>% 
+  dplyr::distinct(criteria_code) %>% 
+  dplyr::arrange(list_code, criteria_code) %>% 
+  dplyr::select(list_code, criteria_code)
+readr::write_csv(all_crit_map, path = here::here("data","all_tfa_conscrit.csv"))
+  
 ```
 
 Conservation listings are entered in triplicate:
@@ -895,9 +903,14 @@ species_wo_crit<-tfa_listing_cat_iucn2001 %>%
   source_id = source_id %>% as.character,
   criteria = criteria
   ) 
-## Start here- not working!
-species_miss_crit<-species_wo_crit%>%
-  dplyr::left_join(fauna_cons_listing,by=("name_id")
+
+species_miss_crit <- species_wo_crit %>%
+  dplyr::left_join(fauna_cons_listing,by=("name_id"))#%>% 
+  dplyr::group_by(list_code) %>% 
+  dplyr::distinct(criteria_code) %>% 
+  dplyr::arrange(list_code, criteria_code) %>% 
+  dplyr::select(list_code, criteria_code)
+readr::write_csv(species_miss_crit, path = here::here("data","tfa_conscrit_2001.csv"))
 
 unique(species_wo_crit$name_id)# 57 unique species
 
