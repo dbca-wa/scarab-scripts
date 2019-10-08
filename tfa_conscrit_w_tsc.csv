@@ -122,6 +122,7 @@ IUCN(2001),"1, 2, 4, 5, 7, 8, 10",A1a (breeding) / VU A1abde+2bce (visiting pop)
 IUCN(2001),"3, 48","A1c,D","A1c, D",
 IUCN(2001),"3, 4, 8, 9",A1cd+2cd,"A1c, A1d, A2c, A2d",
 IUCN(2001),"4, 9",A1d+2d,"A1d, A2d",
+IUCN(2001),6,A2,A2a,
 IUCN(2001),"6, 8, 12, 15, 17, 20, 25, 30, 35, 40, 42, 48","A2+3+4ac, B1+2ab(v), C1+2a(ii,iii), D","A2a, A2c, A3c, A4a, A4c, B1a, B1b(v), B2a, B2b(v), C1, C2a(ii),  D",No A3a
 IUCN(2001),"9, 13, 18",A2+3+4d,"A2d, A3d, A4d",
 IUCN(2001),"6, 7, 8, 15, 16, 17, 40","A2+4abc, C1","A2a, A2b, A2c, A4a, A4b, A4c, C1",
@@ -172,8 +173,14 @@ IUCN(2001),"30,32,34","B2ab(ii,iv)","B2a, B2b(ii,iv)",
 IUCN(2001),"30,33,35","B2ab(iii,v)","B2a, B2b(iii,v)",
 IUCN(2001),"30,35,45","B2ab(v), D2","B2a, B2b(v), D2",
 IUCN(2001),"40,41",C1+2a,"C1, C2a",
+IUCN(2001),41,C2,C2a(i),Should this have all C2 options?
+IUCN(2001),41,C2a(i),C2a(i),
+IUCN(2001),43,C2b,C2b,
 IUCN(2001),"41,44,45","C2a(i), D1+2","C2a(i), D1, D2",
+IUCN(2001),48,D,D,
+IUCN(2001),44,D1,,
 IUCN(2001),"44,45",D1+2,"D1, D2",
+IUCN(2001),45,D2,D2,
 IUCN(2012),"7,11,16,40",A2+3+4b; C1,"A2b,A3b,A4b",
 IUCN(2012),"7,8,9,10,11,12,13,14,16,17,18,19",A2+3+4bcde,"A2bcde, A3bcde, A4bcde",
 IUCN(2012),"7,8,10,11,12,14,16,17,19",A2+3+4bce,"A2bce, A3bce, A4bce",
@@ -203,12 +210,12 @@ IUCN(2012),"20,22,23,25","B1ab(ii,iii,v)","B1a, B1b(ii,iii,v)",
 IUCN(2012),"30,32,33,34,35","B2ab(ii,iii,iv,v)","B2a, B2b(ii,iii,iv,v)",
 IUCN(2012),"30,33,34,35","B2ab(iii,iv,v)","B2a, B2b(iii,iv,v)",
 IUCN(2012),"30,36,37,38,39","B2ac(i,ii,iii,iv)","B2a, B2c(i,ii,iii,iv)",
-IUCN(2012),"40,41",C1+2a(i),"C1, C2a(i)",
-RedList,"1,2,3,511,12,14,15,16,17,18,19",A1abce+3bce+4abce,"A1a,A1b,A1c,A1e,A3b,A3c,A3e,A4a,A4b,A4c,A4e",Use IUCN 2012 
-RedList,"2,4,9",A1bd+2d,"A1b,A1d,A2d",
-RedList,"3,26,36,40,43,48","A1c, B1+2c, C1+2b, D","A1c, B1c(i),B2c(i), C1, C2b, D",Should this have all options for B2b and B2c
+IUCN(2012),"40,41",C1+2a(i),"C1, C2a(i)",Use IUCN 2012 
+RedList,"1,2,3,511,12,14,15,16,17,18,19",A1abce+3bce+4abce,"A1a,A1b,A1c,A1e,A3b,A3c,A3e,A4a,A4b,A4c,A4e",
+RedList,"2,4,9",A1bd+2d,"A1b,A1d,A2d",Should this have all options for B2b and B2c
+RedList,"3,26,36,40,43,48","A1c, B1+2c, C1+2b, D","A1c, B1c(i),B2c(i), C1, C2b, D",No A3a
 RedList,"6,7,8,9,10,11,12,13,14,15,16,17,18,19",A2+3+4abcde,"A2a,A2b,A2c,A2d,A2e,A3b,A3c,A3d,A3e+A4a,A4b,A4c,A4d,A4e",No A3a
-RedList,"6,8,9,10,12,13,14,15,17,18,19,30,33,34,35","A2+3+4acde, B2ab(iii,iv,v)","A2a,A2c,A2d,A2e,A3c,A3d,A3e,A4a,A4c,A4d,A4e, B2a,B2b(iii,iv,v)",No A3a
+RedList,"6,8,9,10,12,13,14,15,17,18,19,30,33,34,35","A2+3+4acde, B2ab(iii,iv,v)","A2a,A2c,A2d,A2e,A3c,A3d,A3e,A4a,A4c,A4d,A4e, B2a,B2b(iii,iv,v)",
 RedList,"7,8,11,12,16,17",A2+3+4bc,"A2b,A2c,A3b,A3c,A4b,A4c",
 RedList,"7,8,10,11,12,14,16,17,19",A2+3+4bce,"A2b,A2c,A2e,A3b,A3c,A2e,A4b,A4c,A4e",
 RedList,"7,8,10,11,12,14,,16,17,19,40,41","A2+3+4bce, C1+2a(i)","A2b,A2c,A2e,A3b,A3c,A3e,A4b,A4c,A4e, C1,C2a(i)",
@@ -225,8 +232,8 @@ RedList,"8,9,12,13",A2cd+3cd,"A2c,A2d, A3c,A3d",
 RedList,"8,10,12,14,17,19",A2ce+3ce+4ce,"A2c,A2e,A3c,A3e,A4c,A4e",
 RedList,"8,10,30,21,22,23,24","A2ce; B2ab(i,ii,iii,iv)","A2c,A2e, B2a,B2b(i,ii,iii,iv)",
 RedList,"16,17,30,33,35","A4bc, B2ab(iii,v)","A4b,A4c, B2a,B2b(iii,v)",
-RedList,"16,18,30,35","A4bd, B2ab(v)","A4b,A4d, B2a,B2b(v)",
-RedList,"6,11,15",Approaching VU A2+3+4,"A2a,A3b,A4a","Should A2,A3 and A4 have all options? No A3a"
+RedList,"16,18,30,35","A4bd, B2ab(v)","A4b,A4d, B2a,B2b(v)","Should A2,A3 and A4 have all options? No A3a"
+RedList,"6,11,15",Approaching VU A2+3+4,"A2a,A3b,A4a",
 RedList,"6,7,10,11,14,15,16,19",Approaching A2+4abe+3be,"A2a,A2b,A2e,A3b,A3e,A4a,A4b,A4e",
 RedList,"6,7,8,11,12,15,16,17",Approaching VU A2abc+3bc+4abc,"A2a,A2b,A2c,A3b,A3c,A4a,A4b,A4c",
 RedList,"6,11,15",Approaching VU A2+3+4,"A2a,A3b,A4a",
@@ -234,10 +241,10 @@ RedList,"6,7,8,11,12,15,16,17",Approaching VU A2abc+3bc+4abc,"A2a,A2b,A2c,A3b,A3
 RedList,"20,23,30,33",B1+2ab(iii),"B1a,B1b(iii),B2a,B2b(iii)",
 RedList,"20,21,22,23,24,30,31,32,33,34","B1+2ab(i,ii,iii,iv)","B1a,B1b(i,ii,iii,iv),B2a,B2b(i,ii,iii,iv)",
 RedList,"20,21,22,23,25,30,31,32,33,35","B1+2ab(i,ii,iii,v)","B1a,B1b(i,ii,iii,v),B2a,B2b(i,ii,iii,v)",
-RedList,"20,23,25,30,33,35","B1+2ab(iii,v)","B1a,B1b(iii,v),B2a,B2b(iii,v)",
-RedList,"21,26,31,36,45","B1+2bc, D2","B1b(i),B1c(i),B2b(i),B2c(i), D2",Should this have all options for B2b and B2c
-RedList,"21,31",B1+2bd,"B1b(i),B2b(i)",Should this have all options for B2b. No B1d or B2d
-RedList,"26,36",B1+2c,"B1c(i),B2c(i)",Should this have all options for B2c
+RedList,"20,23,25,30,33,35","B1+2ab(iii,v)","B1a,B1b(iii,v),B2a,B2b(iii,v)",Should this have all options for B2b and B2c
+RedList,"21,26,31,36,45","B1+2bc, D2","B1b(i),B1c(i),B2b(i),B2c(i), D2",Should this have all options for B2b. No B1d or B2d
+RedList,"21,31",B1+2bd,"B1b(i),B2b(i)",Should this have all options for B2c
+RedList,"26,36",B1+2c,"B1c(i),B2c(i)",
 RedList,"20,21,23","B1ab(i,iii)","B1a,B1b(i,iii)",
 RedList,"20,22,23","B1ab(ii,iii)","B1a,B1b(ii,iii)",
 RedList,"20,22,23,24,25","B1ab(ii,iii,iv,v)","B1a,B1b(ii,iii,iv,v)",
@@ -257,18 +264,18 @@ RedList,"30,32,33,35,45","B2ab(ii,iii,v); D2","B2a,B2b(ii,iii,v),D2",
 RedList,"30,31,33,34,35","B2ab(i,iii,iv,v)","B2a,B2b(i,iii,iv,v)",
 RedList,"30,33,35","B2ab(iii,v)","B2a,B2b(iii,v)",
 RedList,"30,35,42",B2ab(v); C2a(ii),"B2a,B2b(v),C2a(ii)",
-RedList,"30,35,45","B2ab(v), D2","B2a,B2b(v), D2",
-RedList,,"Bonn, CAMBA, JAMBA, ROKAMBA",,?
-SPFN,"6,8,10,30,33,35,40,41","A2ace; B2ab(iii,v); C1+2a(i)",,Use IUCN 2012
+RedList,"30,35,45","B2ab(v), D2","B2a,B2b(v), D2",?
+RedList,,"Bonn, CAMBA, JAMBA, ROKAMBA",,Use IUCN 2012
+SPFN,"6,8,10,30,33,35,40,41","A2ace; B2ab(iii,v); C1+2a(i)",,
 SPFN,"7,8,12,16,17",A2bc+3c+4bc,,
 SPFN,"8, 10,20,21,22,23,24,25,30,31,32,33,34,35","A2ce; B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)",,
-SPFN,"12,16,17",A3c+4bc,,
-SPFN,26,B1+2ce,B1c(i),Should this have all options for B1c? No B1e
+SPFN,"12,16,17",A3c+4bc,,Should this have all options for B1c? No B1e
+SPFN,26,B1+2ce,B1c(i),
 SPFN,"20,23,30,33",B1ab(iii)+2ab(iii),,
 SPFN,"20,21,22,23,24,25,30,31,32,33,34,35","B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)",,
-SPFN,"20,22,23,25","B1ab(ii,iii,v)",,
-SPFN,"20,21,22,23,24,25,30,31,32,33,34,35","CR B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)","B1a,B1b(i,ii,iii,iv,v),B2a,B2a(i,ii,iii,iv,v)",No CR
-SPFN,,Last known/collected: 1938; Decade of extinction: N/A,,
+SPFN,"20,22,23,25","B1ab(ii,iii,v)",,No CR
+SPFN,"20,21,22,23,24,25,30,31,32,33,34,35","CR B1ab(i,ii,iii,iv,v)+2ab(i,ii,iii,iv,v)","B1a,B1b(i,ii,iii,iv,v),B2a,B2a(i,ii,iii,iv,v)",
+SPFN,,Last known/collected: 1938; Decade of extinction: N/A,,Ignore
 WAPF,,"1-2 locations, conservation estate, threats to groundwater,",,Ignore
 WAPF,,"1-2 locations, non conservation estate, development/agricultural and cane toads and fire threats",,Ignore
 WAPF,,"1-2 locations, non conservation estate, recreational vehicle threat",,Ignore
@@ -348,7 +355,7 @@ WAWCA,,Last known/collected: 1932; Decade of extinction: 1950s,,Ignore
 WAWCA,,"Last known/collected: 1933; Decade of extinction: Unknown, possibly as late as 1970",,Ignore
 WAWCA,,Last known/collected: 1938; Decade of extinction: N/A,,Ignore
 WAWCA,,Last known/collected: 1942; Decade of extinction: 1950s or 1960s,,Ignore
-WAWCA,,Last known/collected: 1943; Decade of extinction: 1960s,,Ignore
+WAWCA,,Last known/collected: 1943; Decade of extinction: 1960s,,
 IUCN(2012),1,A1a,A1a,
 IUCN(2012),"1,2,4",A1abd,"A1a, A1b, A1d",
 IUCN(2012),"1,4",A1ad,"A1a, A1d",
