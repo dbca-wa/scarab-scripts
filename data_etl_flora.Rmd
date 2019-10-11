@@ -738,12 +738,13 @@ conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
   )} %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(conslist, by = "list_id")
+readr::write_csv(conscrit,path = here::here("data","tsc_conscrit_flora.csv"))
 ```
 
 ## TFL conservation Listing
 
-```{r cons_listings}
-flora_cl <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
+```{r tfl cons_listings}
+flora_cons_listing <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
     name_id = TAXONID %>% as.integer(),
@@ -787,11 +788,25 @@ flora_cl <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
   tibble::rowid_to_column("source_id") %>% 
   dplyr::arrange(name_id)
 
-flora_cl[1:100, ] %>% DT::datatable(.)
+flora_cons_listing[1:100, ] %>% DT::datatable(.)
 
 flcl_file <- here::here("data", "flora_cons_listings.Rdata")
 save(flora_cl, file=flcl_file)
 if (file.exists(flcl_file)) load(flcl_file)
+```
+Conservation lists used in Fauna cons listings:
+
+```{r tfa_cons_listing_qa}
+# ETL nightmare fuel: condensed criteria mixed with free text
+
+## Find all criteria combinations for manually mapping
+all_crit_map <- flora_cons_listing %>%
+  dplyr::group_by(list_code) %>% 
+  dplyr::distinct(criteria_code_wa) %>% 
+  dplyr::arrange(list_code, criteria_code_wa) %>% 
+  dplyr::select(list_code, criteria_code_wa)
+readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
+  
 ```
 
 
