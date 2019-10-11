@@ -715,7 +715,7 @@ tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
       list_code = col_character(),
       tsc_criteria = col_character(),
       criteria_code = col_character(),
-      assigned_as = col_character(),
+      assigned_as_in_tsc = col_character(),
       comments = col_character()
     )
   ) %>%
@@ -730,8 +730,8 @@ setdiff(tfa_conscrit$criteria_code,fauna_cons_listing$criteria_code)
 fauna_cons_listing_w_tsc<-fauna_cons_listing %>% 
   left_join(tfa_conscrit,by=c("list_code","criteria_code"))
 ```
-There are 152 criteria in the fauna cons listings which do not match a new tsc criteria. 
-There are no criteria in the new tsc criteria which do not match a criteria in the fauna cons listings.
+There are 0 criteria in the fauna cons listings which do not match a new tsc criteria. 
+There is one criteria in the new tsc criteria which do not match a criteria in the fauna cons listings.
 
 
 Some cons listings have a name_id of 0. These are phrase names and require to be assigned the `name_id`
@@ -778,6 +778,7 @@ crit_map <- criteria_requiring_mapping %>%
   dplyr::select(list_code, criteria_code)
 readr::write_csv(crit_map, path = here::here("data","tfa_conscrit.csv"))
 
+## This is the one we want to use to manual map all criteria
 all_crit_map <- fauna_cons_listing %>%
   dplyr::group_by(list_code) %>% 
   dplyr::distinct(criteria_code) %>% 
@@ -868,8 +869,8 @@ tfa_listing_cat_iucn2012 <- fauna_cons_listing_w_tsc %>%
 tfa_listing_cat_iucn2012 %>%
   wastdr::wastd_POST(
     "taxon-conservationlisting",
-    # api_url = prod
-    api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
   )
 
 # IUCN(2001) 4
@@ -891,38 +892,15 @@ tfa_listing_cat_iucn2001 <- fauna_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-setdiff(fauna_cons_listing$taxon,tfa_listing_cat_iucn2001$taxon) # none missing from fauna_cons_listing
-setdiff(tfa_listing_cat_iucn2001$taxon,fauna_cons_listing$taxon) # 275 taxon missing from tfa_listing_cat_iucn2001
-
-str(fauna_cons_listing)
-
-species_wo_crit<-tfa_listing_cat_iucn2001 %>% 
-  dplyr::filter(criteria=="NULL") %>% 
-  dplyr::transmute(
-  name_id = taxon %>% as.character(),
-  source_id = source_id %>% as.character,
-  criteria = criteria
-  ) 
-
-species_miss_crit <- species_wo_crit %>%
-  dplyr::left_join(fauna_cons_listing,by=("name_id"))#%>% 
-  dplyr::group_by(list_code) %>% 
-  dplyr::distinct(criteria_code) %>% 
-  dplyr::arrange(list_code, criteria_code) %>% 
-  dplyr::select(list_code, criteria_code)
-readr::write_csv(species_miss_crit, path = here::here("data","tfa_conscrit_2001.csv"))
-
-unique(species_wo_crit$name_id)# 57 unique species
-
 tfa_listing_cat_iucn2001 %>%
   wastdr::wastd_POST(
     "taxon-conservationlisting", 
-    # api_url = prod
-    api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
     )
 
 # IUCN(1994) 5
-tfa_listing_cat_iucn1994 <- fauna_cons_listing %>% 
+tfa_listing_cat_iucn1994 <- fauna_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(1994)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 5), by="category_code") %>% 
   dplyr::transmute(
@@ -935,19 +913,20 @@ tfa_listing_cat_iucn1994 <- fauna_cons_listing %>%
         review_due=review_due,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
 tfa_listing_cat_iucn1994 %>%
-  # filter(taxon != 49208) %>% 
-  # filter(taxon != 49211) %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
-
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
 
 # WAWCA 1
-tfa_listing_cat_wawca <- fauna_cons_listing %>% 
+tfa_listing_cat_wawca <- fauna_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="WAWCA") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 1), by="category_code") %>% 
   dplyr::transmute(
@@ -960,19 +939,20 @@ tfa_listing_cat_wawca <- fauna_cons_listing %>%
         review_due=review_due,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_wawca %>% 
-  # filter(taxon != 49208) %>% 
-  # filter(taxon != 49210) %>% 
-  # filter(taxon != 49211) %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_wawca %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
 
 # SPFN 2
-tfa_listing_cat_spfn <- fauna_cons_listing %>% 
+tfa_listing_cat_spfn <- fauna_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="SPFN") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 2), by="category_code") %>% 
   dplyr::transmute(
@@ -985,19 +965,20 @@ tfa_listing_cat_spfn <- fauna_cons_listing %>%
         review_due=review_due,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_spfn %>% 
-  # filter(taxon != 49208) %>% 
-  # filter(taxon != 49210) %>% 
-  # filter(taxon != 49211) %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_spfn %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
 
 # WAPS 6
-tfa_listing_cat_waps <- fauna_cons_listing %>% 
+tfa_listing_cat_waps <- fauna_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="WAPF") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 6), by="category_code") %>% 
   dplyr::transmute(
@@ -1010,21 +991,20 @@ tfa_listing_cat_waps <- fauna_cons_listing %>%
         review_due=review_due,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_waps %>% 
-  # filter(taxon != 49200) %>% 
-  # filter(taxon != 49203) %>% 
-  # filter(taxon != 49205) %>% 
-  # filter(taxon != 49211) %>% 
-  # filter(taxon != 49212) %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_waps %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
 
 # EPBC 7
-tfa_listing_cat_epbc <- fauna_cons_listing %>% 
+tfa_listing_cat_epbc <- fauna_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="EPBC") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 7), by="category_code") %>% 
   dplyr::transmute(
@@ -1037,14 +1017,17 @@ tfa_listing_cat_epbc <- fauna_cons_listing %>%
         review_due=review_due,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_epbc %>% 
-  filter(taxon != 49211) %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+tfa_listing_cat_epbc %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
 ```
 
 
