@@ -701,6 +701,7 @@ fauna_cons_listing <- fauna_data$Gazettal %>%
   tibble::rowid_to_column("source_id")
 fauna_cons_listing %>% skim()
 fauna_cons_listing %>% head(10) %>% DT::datatable()
+readr::write_csv(fauna_cons_listing, path = here::here("data","fauna_cons_listing.csv"))
 ```
 
 ```{r compare_tsc_conscrit_listing_to_tfa_conscrit}
