@@ -56,9 +56,11 @@ A name mismatch is an indication for review.
 
 ```{r wacensus_names}
 wacensus_names <- here::here("data","wace_names.csv") %>%
-  readr::read_csv(col_types = cols())
-
-tfa_data_wacensus <- tfa_data %>% dplyr::left_join(wace_names, by="name_id")
+  readr::read_csv(col_types = cols(
+      name_id = col_character()
+      )
+)
+tfa_data_wacensus <- tfa_data %>% dplyr::left_join(wacensus_names, by="name_id")
 ```
 
 ```{r wacensus_name_mismatch}
@@ -79,14 +81,14 @@ NameID must be changed to the WACensus NameID of the correct taxon.
 name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% DT::datatable()
 ```
 
-### Remaining mismatches
+### Typo mismatches
 The remaining mismatches contain minor differences, such as "sp." vs "sp", parentheses and quotation marks.
 
 ```{r name_mismatches_typo}
 name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
 ```
 
-### Remaining mismatches
+### True mismatches
 The remaining mismatches require a review of the scientific name or NameID in TFA.
 
 **QA** If the TFA "scientific_name" is meant to refer to a different taxon than the "wace_name", 
@@ -94,13 +96,18 @@ TFA's NameID must be changed to the WACensus NameID of the correct taxon.
 
 ```{r name_mismatches_real}
 drop_cruft <- . %>% stringr::str_remove_all("[.()'\"]|sp|subsp") %>% stringr::str_replace_all("  ", " ")
-true_mismatches <- species_nid %>% 
+true_mismatches <- tfa_data_wacensus %>% 
     dplyr::mutate(
         scientific_name = scientific_name %>% drop_cruft,
         wace_name = wace_name %>% drop_cruft
     ) %>% 
     dplyr::filter(scientific_name != wace_name) %>% 
-    dplyr::select(name_id, species_code, short_code, scientific_name, wace_name)
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
 
 true_mismatches %>% DT::datatable()
+```
+
+
+```{}
+
 ```
