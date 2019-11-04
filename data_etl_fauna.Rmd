@@ -215,6 +215,8 @@ wace_names <- "public:herbie_hbvnames_public" %>%
         wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
     )}
 
+readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
+
 species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
 species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
 ```
