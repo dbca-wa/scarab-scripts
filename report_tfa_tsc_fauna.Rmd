@@ -1,6 +1,6 @@
 ---
 title: "Report TFA-TSC: Fauna"
-author: "Camilla Piggott, DBCA"
+author: "Florian Mayer and Camilla Piggott, DBCA"
 date: "`r Sys.time()`"
 always_allow_html: yes
 output:
@@ -29,7 +29,7 @@ on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
-```{r read in tfa data}
+```{r tfa_data}
 tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
   readr::read_csv(col_types = cols(
       list_code = col_character(),
@@ -37,12 +37,70 @@ tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
       name_id = col_character()))
 ```
 
-##  Check unique number of species and conservation criteria
+##  Summary statistics
 
-```{r uniqueness in data}
+Check unique number of species by both spcies code and scientific name. Check unique conservation criteria and conservation categories
+
+```{r species_summary}
 species_unique<-unique(tfa_data$species_code) #1004
 scientific_name_unique<-unique(tfa_data$scientific_name) #1004
 category_code_unique<-unique(tfa_data$category_code) #27
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Taxonomy
+
+## QA: Name mismatches
+For a given NameID, the scientific name in TFA should be identical to 
+the scientific name in WACensus with the same NameID. 
+A name mismatch is an indication for review.
+
+```{r wacensus_names}
+wacensus_names <- here::here("data","wace_names.csv") %>%
+  readr::read_csv(col_types = cols())
+
+tfa_data_wacensus <- tfa_data %>% dplyr::left_join(wace_names, by="name_id")
+```
+
+```{r wacensus_name_mismatch}
+name_mismatches <- tfa_data_wacensus %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
+```
+
+### Mismatches containing "subsp"
+WACensus names contain "subsp." whereas TFA don't. 
+Therefore, scientific name mismatches by only the "subsp" can be ignored.
+
+**QA** Review this list to make sure both WACensus and TFA mean the same name.
+If the TFA "scientific_name" means a different taxon than the "wace_name", TFA's
+NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_subsp}
+name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% DT::datatable()
+```
+
+### Remaining mismatches
+The remaining mismatches contain minor differences, such as "sp." vs "sp", parentheses and quotation marks.
+
+```{r name_mismatches_typo}
+name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
+```
+
+### Remaining mismatches
+The remaining mismatches require a review of the scientific name or NameID in TFA.
+
+**QA** If the TFA "scientific_name" is meant to refer to a different taxon than the "wace_name", 
+TFA's NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_real}
+drop_cruft <- . %>% stringr::str_remove_all("[.()'\"]|sp|subsp") %>% stringr::str_replace_all("  ", " ")
+true_mismatches <- species_nid %>% 
+    dplyr::mutate(
+        scientific_name = scientific_name %>% drop_cruft,
+        wace_name = wace_name %>% drop_cruft
+    ) %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, short_code, scientific_name, wace_name)
+
+true_mismatches %>% DT::datatable()
+```
