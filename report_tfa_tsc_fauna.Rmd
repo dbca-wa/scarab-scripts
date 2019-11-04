@@ -1,5 +1,5 @@
 ---
-title: "Report: Fauna"
+title: "Report TFA-TSC: Fauna"
 author: "Camilla Piggott, DBCA"
 date: "`r Sys.time()`"
 always_allow_html: yes
@@ -20,22 +20,29 @@ knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
 ```
 
-## R Markdown
+# Context
+[Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
+on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+[TSC Fauna database](https://tsc.dbca.wa.gov.au/species/?paraphyletic_groups=20&is_terminal_taxon=true) 
+on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
-```{r cars}
-summary(cars)
+```{r read in tfa data}
+tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
+  readr::read_csv(col_types = cols(
+      list_code = col_character(),
+      criteria_code = col_character(),
+      name_id = col_character()))
 ```
 
-## Including Plots
+##  Check unique number of species and conservation criteria
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r uniqueness in data}
+species_unique<-unique(tfa_data$species_code) #1004
+scientific_name_unique<-unique(tfa_data$scientific_name) #1004
+category_code_unique<-unique(tfa_data$category_code) #27
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
