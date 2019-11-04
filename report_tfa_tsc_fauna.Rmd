@@ -29,6 +29,8 @@ on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
+# Data
+
 ```{r tfa_data}
 tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
   readr::read_csv(col_types = cols(
@@ -37,7 +39,7 @@ tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
       name_id = col_character()))
 ```
 
-##  Summary statistics
+# Summary statistics
 
 Check unique number of species by both spcies code and scientific name. Check unique conservation criteria and conservation categories
 
