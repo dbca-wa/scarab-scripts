@@ -980,6 +980,7 @@ tec_cons_crit<- tec$CRITERIA_CODES %>%
     criterion_code = CRIT.CODE %>% as.character(),
     criterion_description = CRIT.DESC %>% as.character()
   )
+readr::write_csv(tec_cons_crit,path = here::here("data","tec_cons_crit.csv"))
 
 # Using a built-in function to turn uppercase into lowercase? Nah. Hold my beer.
 authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities.
