@@ -1,6 +1,6 @@
 ---
 title: "Report TFA-TSC: Fauna"
-author: "Florian Mayer and Camilla Piggott, DBCA"
+author: "Milly Piggott and Florian Mayer, DBCA"
 date: "`r Sys.time()`"
 always_allow_html: yes
 output:
@@ -21,37 +21,54 @@ source("helpers.R")
 ```
 
 # Context
-[Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
+QA TFL fauna dataset and TSC fauna dataset and make comparisons to check all data has been transfered correctly to TSC.
+
+[TFL Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 
 [TSC Fauna database](https://tsc.dbca.wa.gov.au/species/?paraphyletic_groups=20&is_terminal_taxon=true) 
 on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
-
-# Data
-
 ```{r tfa_data}
 tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
   readr::read_csv(col_types = cols(
       list_code = col_character(),
       criteria_code = col_character(),
       name_id = col_character()))
+
+tsc_data<- "taxonconservationlisting" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content(.) %>% 
+  magrittr::extract2("results") 
+%>% 
+  {tibble::tibble(
+    tsc_category_id = purrr::map_int(., "id"),
+    category_code = purrr::map_chr(., "code"),
+    tsc_label = purrr::map_chr(., "label"),
+    conservation_list = purrr::map_chr(., "conservation_list")
+  )} %>% 
+  dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
 ```
 
-# Summary statistics
+# TFL fauna dataset
+## Summary statistics
 
 Check unique number of species by both spcies code and scientific name. Check unique conservation criteria and conservation categories
-
 ```{r species_summary}
 species_unique<-unique(tfa_data$species_code) #1004
 scientific_name_unique<-unique(tfa_data$scientific_name) #1004
 category_code_unique<-unique(tfa_data$category_code) #27
+list_code_unique<-unique(tfa_data$list_code) #11
 ```
 
-# Taxonomy
+There are 4014 unique observations in TFL fauna dataset and 1004 unique species. 
+There are 11 unique conservation lists and 27 conservation category codes.
 
-## QA: Name mismatches
+## Taxonomy
+
+### QA: Name mismatches
 For a given NameID, the scientific name in TFA should be identical to 
 the scientific name in WACensus with the same NameID. 
 A name mismatch is an indication for review.
@@ -71,7 +88,7 @@ name_mismatches <- tfa_data_wacensus %>%
     dplyr::select(name_id, species_code, scientific_name, wace_name)
 ```
 
-### Mismatches containing "subsp"
+#### Mismatches containing "subsp"
 WACensus names contain "subsp." whereas TFA don't. 
 Therefore, scientific name mismatches by only the "subsp" can be ignored.
 
@@ -83,14 +100,14 @@ NameID must be changed to the WACensus NameID of the correct taxon.
 name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% DT::datatable()
 ```
 
-### Typo mismatches
+#### Typo mismatches
 The remaining mismatches contain minor differences, such as "sp." vs "sp", parentheses and quotation marks.
 
 ```{r name_mismatches_typo}
 name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
 ```
 
-### True mismatches
+#### True mismatches
 The remaining mismatches require a review of the scientific name or NameID in TFA.
 
 **QA** If the TFA "scientific_name" is meant to refer to a different taxon than the "wace_name", 
