@@ -801,9 +801,9 @@ Conservation lists used in Fauna cons listings:
 
 ## Find all criteria combinations for manually mapping
 all_crit_map <- flora_cons_listing %>%
-  dplyr::group_by(list_code) %>% 
+  dplyr::group_by(list_code_wa) %>% 
   dplyr::distinct(criteria_code_wa) %>% 
-  dplyr::arrange(list_code_wa, criteria_code_wa)%>% 
+  dplyr::arrange(list_code_wa, criteria_code_wa) %>% 
   dplyr::select(list_code_wa, criteria_code_wa)
 readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
   
