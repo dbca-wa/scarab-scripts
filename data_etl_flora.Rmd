@@ -791,10 +791,10 @@ flora_cons_listing <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
 flora_cons_listing[1:100, ] %>% DT::datatable(.)
 
 flcl_file <- here::here("data", "flora_cons_listings.Rdata")
-save(flora_cl, file=flcl_file)
+save(flora_cons_listing, file=flcl_file)
 if (file.exists(flcl_file)) load(flcl_file)
 ```
-Conservation lists used in Fauna cons listings:
+Conservation lists used in Flora cons listings:
 
 ```{r tfa_cons_listing_qa}
 # ETL nightmare fuel: condensed criteria mixed with free text
@@ -809,6 +809,34 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
   
 ```
 
+
+```{r compare_tsc_conscrit_listing_to_tfl_conscrit}
+chr2int <- . %>% 
+      stringr::str_split(",") %>% 
+      purrr::map(as.integer)
+
+
+tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      list_code_wa = col_character(),
+      tsc_criteria = col_character(),
+      criteria_code_wa = col_character(),
+      assigned_as = col_character(),
+      comments = col_character()
+    )
+  ) %>%
+  dplyr::mutate(
+    tsc_criteria = tsc_criteria %>% chr2int()
+  )
+
+
+setdiff(flora_cons_listing$criteria_code_wa,tfl_conscrit$criteria_code_wa) 
+setdiff(tfl_conscrit$criteria_code_wa,flora_cons_listing$criteria_code_wa)
+
+flora_cons_listing_w_tsc<-flora_cons_listing %>% 
+  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa"))
+```
 
 ```{r cons_listing_tsc_upload, eval=T}
 tsc_conscat_sp <- "conservationcategory" %>% 
@@ -826,7 +854,7 @@ tsc_conscat_sp <- "conservationcategory" %>%
 
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
-tfl_cl_priority <- flora_cl %>% 
+tfl_cl_priority <- flora_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="Priority") %>%
   dplyr::mutate(
     category_code=glue::glue("P{category_code}") %>% as.character) %>% 
@@ -843,13 +871,13 @@ tfl_cl_priority <- flora_cl %>%
         review_due = recovery_plan_expiry_date,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category))
 
 tfl_cl_priority %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose=TRUE)
+                     api_url = uat, verbose=TRUE)
 
 # Active Priority listings:
 tfl_cl_priority %>% dplyr::filter(status==80) %>% nrow
@@ -862,7 +890,7 @@ tfl_cl_priority %>% dplyr::filter(status==90) %>% nrow
 
 # List codes: "EPBC" 
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/7/
-tfl_cl_epbc <- flora_cl %>% 
+tfl_cl_epbc <- flora_cons_listing_w_tsc %>% 
   dplyr::filter(list_code=="EPBC") %>% 
   dplyr::left_join(
     dplyr::filter(tsc_conscat_sp, conservation_list == 7), 
@@ -877,19 +905,19 @@ tfl_cl_epbc <- flora_cl %>%
         review_due = recovery_plan_expiry_date,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category))
 
 tfl_cl_epbc %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose = TRUE)
+                     api_url = uat, verbose = TRUE)
 
 
 # List codes: "WCA_1991" = IUCN 1994/2001/2012
 # IUCN 1994 
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/5/change/
-tfl_cl_iucn1994 <- flora_cl %>% 
+tfl_cl_iucn1994 <- flora_cons_listing_w_tsc %>% 
   dplyr::filter(list_code_wa=="IUCN_1994") %>% 
   dplyr::mutate(category_code=category_code_wa) %>% 
   dplyr::left_join(
@@ -905,17 +933,17 @@ tfl_cl_iucn1994 <- flora_cl %>%
         review_due = recovery_plan_expiry_date,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category))
 
 tfl_cl_iucn1994 %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose = TRUE)
+                     api_url = uat, verbose = TRUE)
 
 # IUCN 2001
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
-tfl_cl_iucn2001 <- flora_cl %>% 
+tfl_cl_iucn2001 <- flora_cons_listing_w_tsc %>% 
   dplyr::filter(list_code_wa=="IUCN_2001") %>% 
   dplyr::mutate(category_code=category_code_wa) %>% 
   dplyr::left_join(
@@ -931,7 +959,7 @@ tfl_cl_iucn2001 <- flora_cl %>%
         review_due = recovery_plan_expiry_date,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category))
 
@@ -942,7 +970,7 @@ tfl_cl_iucn2001 %>%
 
 # IUCN 2012
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/3/change/
-tfl_cl_iucn2012 <- flora_cl %>% 
+tfl_cl_iucn2012 <- flora_cons_listing_w_tsc %>% 
   dplyr::filter(list_code_wa=="IUCN_2012") %>% 
   dplyr::mutate(category_code=category_code_wa) %>% 
   dplyr::left_join(
@@ -958,7 +986,7 @@ tfl_cl_iucn2012 <- flora_cl %>%
         review_due = recovery_plan_expiry_date,
         taxon = name_id %>% as.numeric,
         category = tsc_category_id %>% as.list(),
-        criteria = 1
+        criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category))
 
@@ -1044,7 +1072,7 @@ upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes",
                d$id, resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
 upload_to_ckan(pop_sectionmap, "TPFL Population section maps", 
                d$id, resource_id = "6d557642-cd1f-4cca-8f22-0149d244dd83")
-upload_to_ckan(flora_cl, "TPFL Conservation Listings", 
+upload_to_ckan(flora_cons_listing, "TPFL Conservation Listings", 
                d$id, resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
 upload_to_ckan(cons_prio, "TPFL Conservation priority", 
                d$id, resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")
