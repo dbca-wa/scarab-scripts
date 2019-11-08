@@ -1014,6 +1014,13 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
 
 # TODO: load cons crit from IUCN RLE into TSC, map resulting codes to:
 # tec_cons_crit$criterion_code
+
+## Extract criterion_codes to manual map all criteria
+all_crit_map <- tec_cons_listing_criteria %>%
+  dplyr::distinct(criterion_code) 
+readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
+  
+
 ```
 
 ### Cons listing TSC ETL
@@ -1077,6 +1084,23 @@ tsc_conscat <- "conservationcategory" %>%
     conservation_list = purrr::map_chr(., "conservation_list")
   )} %>% 
   dplyr::filter(conservation_list %in% c(11,12))
+
+tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content(.) %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    list_id = purrr::map_int(., "conservation_list"),
+    rank = wastdr::map_chr_hack(., "rank"),
+    code = purrr::map_chr(., "code")
+    # ,
+    # label = purrr::map_chr(., "label")
+  )} 
+%>% 
+  dplyr::arrange(list_id, rank) 
+%>% 
+  dplyr::left_join(tsc_conslists_com, by = "list_id")
 
 # TODO join by scope as well
 tec_cl_cat <- tec_cons_listing_categories %>% 
