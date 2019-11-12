@@ -830,6 +830,7 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
     tsc_criteria = tsc_criteria %>% chr2int()
   )
 
+glimpse(tfl_conscrit)
 
 setdiff(flora_cons_listing$criteria_code_wa,tfl_conscrit$criteria_code_wa) 
 setdiff(tfl_conscrit$criteria_code_wa,flora_cons_listing$criteria_code_wa)
@@ -911,7 +912,7 @@ tfl_cl_epbc <- flora_cons_listing_w_tsc %>%
 
 tfl_cl_epbc %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = uat, verbose = TRUE)
+                     api_url = prod, verbose = TRUE)
 
 
 # List codes: "WCA_1991" = IUCN 1994/2001/2012
@@ -962,6 +963,10 @@ tfl_cl_iucn2001 <- flora_cons_listing_w_tsc %>%
         criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category))
+
+str(tfl_cl_iucn2001)
+
+glimpse(tfl_cl_iucn2001)
 
 tfl_cl_iucn2001 %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
