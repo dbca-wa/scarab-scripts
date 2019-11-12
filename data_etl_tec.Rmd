@@ -1055,8 +1055,8 @@ tsc_conslists_com <- "conservationlist" %>%
   httr::content(.) %>% 
   magrittr::extract2("results") %>% 
   {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    code = purrr::map_chr(., "code"),
+    list_id = purrr::map_int(., "id"),
+    list_code = purrr::map_chr(., "code"),
     label = purrr::map_chr(., "label"),
     scope_communities = purrr::map_chr(., "scope_communities"),
     scope_wa = purrr::map_chr(., "scope_wa"),
@@ -1083,7 +1083,7 @@ tsc_conscat <- "conservationcategory" %>%
     tsc_label = purrr::map_chr(., "label"),
     conservation_list = purrr::map_chr(., "conservation_list")
   )} %>% 
-  dplyr::filter(conservation_list %in% c(11,12))
+  dplyr::filter(conservation_list %in% c(11,12,16))
 
 tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
   magrittr::extract2("response") %>% 
@@ -1096,15 +1096,51 @@ tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
     code = purrr::map_chr(., "code")
     # ,
     # label = purrr::map_chr(., "label")
-  )} 
-%>% 
-  dplyr::arrange(list_id, rank) 
-%>% 
+  )}%>% 
+  dplyr::arrange(id, rank) %>% 
   dplyr::left_join(tsc_conslists_com, by = "list_id")
+```
 
+```{r compare_tsc_conscrit_listing_to_tec_conscrit}
+chr2int <- . %>% 
+      stringr::str_split(",") %>% 
+      purrr::map(as.integer)
+
+
+tec_conscrit <- here::here("tec_conscrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      criterion_code = col_character(),
+      category_code = col_character(),
+      tsc_category_id = col_character(),
+      tec_criteria = col_character(),
+      tsc_criteria = col_character()
+    )
+  ) 
+ # %>%
+ #  dplyr::mutate(
+ #    tsc_criteria = tsc_criteria %>% chr2int()
+ #  )
+
+setdiff(fauna_cons_listing$criteria_code,tfa_conscrit$criteria_code) 
+setdiff(tfa_conscrit$criteria_code,fauna_cons_listing$criteria_code)
+
+tec_cl_crit_w_tsc<-tec_cons_listing_criteria %>% 
+  left_join(tec_conscrit,by=c("criterion_code"))
+```
+
+```{r}
+tec_tsc <- tec_cl_crit_w_tsc %>%
+  select()
+  
+
+```
+
+```{r }
 # TODO join by scope as well
 tec_cl_cat <- tec_cons_listing_categories %>% 
-  dplyr::left_join(tsc_conscat, by="category_code") %>% 
+  dplyr::left_join(tsc_conscat, by="category_code") 
+%>% 
   dplyr::transmute(
     source = 3, # TaxonGaz.source TFA 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
