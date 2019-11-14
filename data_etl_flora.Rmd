@@ -789,6 +789,7 @@ flora_cons_listing <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::arrange(name_id)
 
 flora_cons_listing[1:100, ] %>% DT::datatable(.)
+readr::write_csv(flora_cons_listing, path = here::here("data","flora_cons_listing.csv"))
 
 flcl_file <- here::here("data", "flora_cons_listings.Rdata")
 save(flora_cons_listing, file=flcl_file)
