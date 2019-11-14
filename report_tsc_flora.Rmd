@@ -1,0 +1,57 @@
+---
+title: "Report TSC: Flora"
+author: "Milly Piggott and Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = TRUE)
+source("helpers.R")
+```
+# Context
+QA TFL flora dataset and TSC flora dataset and make comparisons to check all data has been transfered correctly to TSC.
+
+[Flora dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
+on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
+
+[TSC Flora database](https://tsc.dbca.wa.gov.au/species/?paraphyletic_groups=21&is_terminal_taxon=true) 
+on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
+
+The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
+
+```{r tfa_data}
+tfl_data<- here::here("data","flora_cons_listing.csv") %>%
+  readr::read_csv(col_types = cols(
+      list_code = col_character(),
+      criteria_code_wa = col_character(),
+      name_id = col_character()))
+
+# tsc_taxon_cl_raw <- "taxon-conservationlisting" %>% 
+#   wastdr::wastd_GET(api_url = prod) %>% 
+#   magrittr::extract2("response") %>% 
+#   httr::content(.) %>% 
+#   magrittr::extract2("results") %>% 
+#   {tibble::tibble(
+#     list_id = purrr::map_int(., "id"),
+#     taxon_id = purrr::map_int(., "taxon"),
+#     source_id = purrr::map_chr(., "source_id"),
+#     effective_from = purrr::map_chr(., "effective_from"),
+#     effective_to = purrr::map_chr(., "effective_to"),
+#     category_cache = purrr::map_chr(., "category_cache"),
+#     criteria_cache = purrr::map_chr(., "criteria_cache"),
+#     label_cache = purrr::map_chr(., "label_cache"),
+#     category = purrr::map_chr(., "category"),
+#     criteria = purrr::map_chr(., "criteria")
+#   )} 
+```

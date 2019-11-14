@@ -980,6 +980,7 @@ tec_cons_crit<- tec$CRITERIA_CODES %>%
     criterion_code = CRIT.CODE %>% as.character(),
     criterion_description = CRIT.DESC %>% as.character()
   )
+readr::write_csv(tec_cons_crit,path = here::here("data","tec_cons_crit.csv"))
 
 # Using a built-in function to turn uppercase into lowercase? Nah. Hold my beer.
 authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities.
@@ -1013,6 +1014,13 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
 
 # TODO: load cons crit from IUCN RLE into TSC, map resulting codes to:
 # tec_cons_crit$criterion_code
+
+## Extract criterion_codes to manual map all criteria
+all_crit_map <- tec_cons_listing_criteria %>%
+  dplyr::distinct(criterion_code) 
+readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
+  
+
 ```
 
 ### Cons listing TSC ETL
@@ -1047,8 +1055,8 @@ tsc_conslists_com <- "conservationlist" %>%
   httr::content(.) %>% 
   magrittr::extract2("results") %>% 
   {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    code = purrr::map_chr(., "code"),
+    list_id = purrr::map_int(., "id"),
+    list_code = purrr::map_chr(., "code"),
     label = purrr::map_chr(., "label"),
     scope_communities = purrr::map_chr(., "scope_communities"),
     scope_wa = purrr::map_chr(., "scope_wa"),
@@ -1075,11 +1083,81 @@ tsc_conscat <- "conservationcategory" %>%
     tsc_label = purrr::map_chr(., "label"),
     conservation_list = purrr::map_chr(., "conservation_list")
   )} %>% 
-  dplyr::filter(conservation_list %in% c(11,12))
+  dplyr::filter(conservation_list %in% c(11,12,16))
 
+tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content(.) %>% 
+  magrittr::extract2("results") %>% 
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    list_id = purrr::map_int(., "conservation_list"),
+    rank = wastdr::map_chr_hack(., "rank"),
+    code = purrr::map_chr(., "code")
+    # ,
+    # label = purrr::map_chr(., "label")
+  )}%>% 
+  dplyr::arrange(id, rank) %>% 
+  dplyr::left_join(tsc_conslists_com, by = "list_id")
+```
+
+```{r join_tsc_conscrit_listing_to_tec_conscrit}
+chr2int <- . %>% 
+      stringr::str_split(",") %>% 
+      purrr::map(as.integer)
+
+tec_conscrit <- here::here("tec_conscrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      criterion_code = col_character(),
+      category_code = col_character(),
+      tsc_category_id = col_character(),
+      tec_criteria = col_character(),
+      tsc_criteria = col_character()
+    )
+  ) 
+
+tec_cl_crit_w_tsc<-tec_cons_listing_criteria %>% 
+  left_join(tec_conscrit,by=c("criterion_code"))
+```
+
+```{r summarise criterion codes into one row per date}
+comm_info <- tec_cl_crit_w_tsc %>%
+  dplyr::select(com_id,com_label,com_name) %>%
+  distinct()
+
+tec_cat_code <- tec_cl_crit_w_tsc %>%
+  dplyr::group_by(com_id,effective_from,tsc_category_id) %>% 
+  dplyr::arrange (criterion_code) %>%
+  dplyr::summarise(criterion_code = paste(criterion_code, collapse = ","))
+
+tec_crit_code <- tec_cl_crit_w_tsc %>%
+  dplyr::group_by(com_id,effective_from) %>% 
+  dplyr::arrange (tec_criteria) %>%
+  dplyr::summarise(tec_criteria = paste(tec_criteria, collapse = "")) 
+
+tsc_crit_code <- tec_cl_crit_w_tsc %>%
+  dplyr::group_by(com_id,effective_from) %>% 
+  dplyr::arrange (tsc_criteria) %>%
+  na.omit() %>% #remove na's prior to collapse
+  dplyr::summarise(tsc_criteria = paste(tsc_criteria, collapse = ",")) %>%
+  dplyr::mutate(
+    tsc_criteria = tsc_criteria %>% chr2int()
+  )
+
+glimpse(tsc_crit_code)
+
+tec_tsc <- tec_cons_listing_categories %>% 
+  dplyr::left_join(tec_cat_code, by = c("com_id","effective_from")) %>% 
+  dplyr::left_join(tec_crit_code, by = c("com_id","effective_from")) %>%
+  dplyr::left_join(tsc_crit_code, by = c("com_id","effective_from")) 
+  
+glimpse(tsc_crit_code)
+```
+
+```{r }
 # TODO join by scope as well
-tec_cl_cat <- tec_cons_listing_categories %>% 
-  dplyr::left_join(tsc_conscat, by="category_code") %>% 
+tec_cl_cat <- tec_tsc %>% 
   dplyr::transmute(
     source = 3, # TaxonGaz.source TFA 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
@@ -1088,11 +1166,13 @@ tec_cl_cat <- tec_cons_listing_categories %>%
         effective_from = effective_from,
         # effective_to = date_delisted, # where is the effective to date?
         review_due = cat_review_date,
-        community = com_label,
+        community = com_label, 
         category = tsc_category_id %>% as.list(),
-        criteria = 1
-    ) %>% 
+      criteria = tsc_criteria
+    ) %>%
   dplyr::filter(!is.na(category))
+
+glimpse(tec_cl_cat)
 ```
 
 

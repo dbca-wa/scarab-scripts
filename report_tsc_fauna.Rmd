@@ -1,0 +1,131 @@
+---
+title: "Report TSC: Fauna"
+author: "Milly Piggott and Florian Mayer, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = TRUE)
+source("helpers.R")
+```
+
+# Context
+QA TFA fauna dataset and TSC fauna dataset and make comparisons to check all data has been transfered correctly to TSC.
+
+[TFL Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
+on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
+
+[TSC Fauna database](https://tsc.dbca.wa.gov.au/species/?paraphyletic_groups=20&is_terminal_taxon=true) 
+on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
+
+The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
+```{r tfa_data}
+tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
+  readr::read_csv(col_types = cols(
+      list_code = col_character(),
+      criteria_code = col_character(),
+      name_id = col_character()))
+
+# tsc_data<- "taxonconservationlisting" %>% 
+#   wastdr::wastd_GET(api_url = prod) %>% 
+#   magrittr::extract2("response") %>% 
+#   httr::content(.) %>% 
+#   magrittr::extract2("results") %>% 
+#   {tibble::tibble(
+#     tsc_category_id = purrr::map_int(., "id"),
+#     category_code = purrr::map_chr(., "code"),
+#     tsc_label = purrr::map_chr(., "label"),
+#     conservation_list = purrr::map_chr(., "conservation_list")
+#   )} %>% 
+#   dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
+```
+
+# TFL fauna dataset
+## Summary statistics
+
+Check unique number of species by both spcies code and scientific name. Check unique conservation criteria and conservation categories
+```{r species_summary}
+species_unique<-unique(tfa_data$species_code) #1004
+scientific_name_unique<-unique(tfa_data$scientific_name) #1004
+category_code_unique<-unique(tfa_data$category_code) #27
+list_code_unique<-unique(tfa_data$list_code) #11
+```
+
+There are 4014 unique observations in TFL fauna dataset and 1004 unique species. 
+There are 11 unique conservation lists and 27 conservation category codes.
+
+## Taxonomy
+
+### QA: Name mismatches
+For a given NameID, the scientific name in TFA should be identical to 
+the scientific name in WACensus with the same NameID. 
+A name mismatch is an indication for review.
+
+```{r wacensus_names}
+wacensus_names <- here::here("data","wace_names.csv") %>%
+  readr::read_csv(col_types = cols(
+      name_id = col_character()
+      )
+)
+tfa_data_wacensus <- tfa_data %>% dplyr::left_join(wacensus_names, by="name_id")
+```
+
+```{r wacensus_name_mismatch}
+name_mismatches <- tfa_data_wacensus %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
+```
+
+#### Mismatches containing "subsp"
+WACensus names contain "subsp." whereas TFA don't. 
+Therefore, scientific name mismatches by only the "subsp" can be ignored.
+
+**QA** Review this list to make sure both WACensus and TFA mean the same name.
+If the TFA "scientific_name" means a different taxon than the "wace_name", TFA's
+NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_subsp}
+name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% DT::datatable()
+```
+
+#### Typo mismatches
+The remaining mismatches contain minor differences, such as "sp." vs "sp", parentheses and quotation marks.
+
+```{r name_mismatches_typo}
+name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% DT::datatable()
+```
+
+#### True mismatches
+The remaining mismatches require a review of the scientific name or NameID in TFA.
+
+**QA** If the TFA "scientific_name" is meant to refer to a different taxon than the "wace_name", 
+TFA's NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_real}
+drop_cruft <- . %>% stringr::str_remove_all("[.()'\"]|sp|subsp") %>% stringr::str_replace_all("  ", " ")
+true_mismatches <- tfa_data_wacensus %>% 
+    dplyr::mutate(
+        scientific_name = scientific_name %>% drop_cruft,
+        wace_name = wace_name %>% drop_cruft
+    ) %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
+
+true_mismatches %>% DT::datatable()
+```
+
+
+```{}
+
+```
