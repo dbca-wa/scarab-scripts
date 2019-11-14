@@ -113,6 +113,8 @@ This step uploads this workbook back to the data catalogue.
 ```{r upload_ckan, eval=TRUE}
 d <- ckanr::package_show("wacensus")
 # r <- resource_create(package_id = d$id, name = "WACensus ETL to BioSysTT", format = "HTML", upload = "data_etl_wacensus.html")
-ckanr::resource_update("2893ad10-dfbf-460d-a508-5195edfd9a89", "data_etl_wacensus.html")
+fn <- "data_etl_wacensus.html"
+rid <- "2893ad10-dfbf-460d-a508-5195edfd9a89"
+if (fs::file_exists(fn)) {ckanr::resource_update(rid, fn)}
 ```
 
