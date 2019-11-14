@@ -62,8 +62,10 @@ category_code_unique<-unique(tfa_data$category_code) #27
 list_code_unique<-unique(tfa_data$list_code) #11
 ```
 
-There are 4014 unique observations in TFL fauna dataset and 1004 unique species. 
-There are 11 unique conservation lists and 27 conservation category codes.
+There are 4014 unique observations in TFL fauna dataset and 
+`r unique(tfa_data$species_code)` unique species. 
+There are `r unique(tfa_data$list_code)` unique conservation lists and 
+`r unique(tfa_data$category_code)` conservation category codes.
 
 ## Taxonomy
 
@@ -126,6 +128,15 @@ true_mismatches %>% DT::datatable()
 ```
 
 
-```{}
+## Taxon Conservation Listings
 
+### TSC Taxon CL
+
+Make sure to run `wastdr` v 0.1.22 - `remotes::install_github("dbca-wa/wastdr")`.
+TODO: this contains fauna and flora. This report is only interested in fauna.
+
+```{r tsc_cl, message=F, warning=F}
+tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
+  wastdr::parse_taxon_conservationlisting()
+tsc_tcl %>% head(n=20) %>% knitr::kable()
 ```
