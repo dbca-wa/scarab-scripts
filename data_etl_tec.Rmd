@@ -1136,16 +1136,16 @@ tec_crit_code <- tec_cl_crit_w_tsc %>%
   dplyr::arrange (tec_criteria) %>%
   dplyr::summarise(tec_criteria = paste(tec_criteria, collapse = "")) 
 
-chr2int <- . %>% 
-      stringr::str_split(",") %>% 
-      purrr::map(as.integer)
-
-
 tsc_crit_code <- tec_cl_crit_w_tsc %>%
   dplyr::group_by(com_id,effective_from) %>% 
   dplyr::arrange (tsc_criteria) %>%
+  na.omit() %>% #remove na's prior to collapse
   dplyr::summarise(tsc_criteria = paste(tsc_criteria, collapse = ",")) %>%
-  dplyr::mutate(tsc_criteria = tsc_criteria %>% chr2int())
+  dplyr::mutate(
+    tsc_criteria = tsc_criteria %>% chr2int()
+  )
+
+glimpse(tsc_crit_code)
 
 tec_tsc <- tec_cons_listing_categories %>% 
   dplyr::left_join(tec_cat_code, by = c("com_id","effective_from")) %>% 
@@ -1153,9 +1153,6 @@ tec_tsc <- tec_cons_listing_categories %>%
   dplyr::left_join(tsc_crit_code, by = c("com_id","effective_from")) 
   
 glimpse(tsc_crit_code)
-as.data.frame(tec_tsc)  
-
-str(tec_tsc)
 ```
 
 ```{r }
