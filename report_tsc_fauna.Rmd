@@ -30,28 +30,17 @@ on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
 on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
 
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
+
+# TFL fauna conservation listings
+
 ```{r tfa_data}
 tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
   readr::read_csv(col_types = cols(
       list_code = col_character(),
       criteria_code = col_character(),
       name_id = col_character()))
-
-# tsc_data<- "taxonconservationlisting" %>% 
-#   wastdr::wastd_GET(api_url = prod) %>% 
-#   magrittr::extract2("response") %>% 
-#   httr::content(.) %>% 
-#   magrittr::extract2("results") %>% 
-#   {tibble::tibble(
-#     tsc_category_id = purrr::map_int(., "id"),
-#     category_code = purrr::map_chr(., "code"),
-#     tsc_label = purrr::map_chr(., "label"),
-#     conservation_list = purrr::map_chr(., "conservation_list")
-#   )} %>% 
-#   dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
 ```
 
-# TFL fauna dataset
 ## Summary statistics
 
 Check unique number of species by both spcies code and scientific name. Check unique conservation criteria and conservation categories
@@ -126,7 +115,6 @@ true_mismatches <- tfa_data_wacensus %>%
 
 true_mismatches %>% DT::datatable()
 ```
-
 
 ## Taxon Conservation Listings
 
