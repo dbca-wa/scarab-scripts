@@ -622,7 +622,7 @@ This is the data we need to map to: conservation lists, categories, and criteria
 conslist <- wastdr::wastd_GET("conservationlist", api_url = prod) %>% 
   magrittr::extract2("response") %>% 
   httr::content() %>% 
-  magrittr::extract2("results") %>% 
+  magrittr::extract2("features") %>% 
   {tibble::tibble(
     list_id = purrr::map_int(., "id"),
     list_code = purrr::map_chr(., "code"),
@@ -645,7 +645,7 @@ The conservation category serializer writes JSON, not GeoJSON.
 conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>% 
   magrittr::extract2("response") %>% 
   httr::content() %>% 
-  magrittr::extract2("results") %>% 
+  magrittr::extract2("results") %>% # will need to change to features
   {tibble::tibble(
     id = purrr::map_int(., "id"),
     list_id = purrr::map_int(., "conservation_list"),
@@ -663,18 +663,17 @@ conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>%
 
 ```{r conscrit}
 conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content() %>% 
-  magrittr::extract2("results") %>% 
+  magrittr::extract2("features") %>%
   {tibble::tibble(
     id = purrr::map_int(., "id"),
     list_id = purrr::map_int(., "conservation_list"),
-    rank = wastdr::map_chr_hack(., "rank"),
+    rank = purrr::map_chr(., "rank"),
     code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label")
+    label = purrr::map_chr(., "label", .default = "todo")
   )} %>% 
-  dplyr::arrange(list_id, rank) %>% 
+  dplyr::arrange(list_id, rank) %>%
   dplyr::left_join(conslist, by = "list_id")
+ 
 readr::write_csv(conscrit,path = here::here("data","tsc_conscrit.csv"))
 ```
 
