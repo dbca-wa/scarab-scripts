@@ -128,3 +128,18 @@ tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>%
   wastdr::parse_taxon_conservationlisting()
 tsc_tcl %>% head(n=20) %>% knitr::kable()
 ```
+
+### Summary statistics
+
+Check unique number of species by both spcies code and scientific name. Check unique conservation criteria and conservation categories
+```{r species_summary}
+species_unique<-unique(tsc_tcl$species_code) #1004
+scientific_name_unique<-unique(tsc_tcl$scientific_name) #1004
+category_code_unique<-unique(tsc_tcl$category_code) #27
+list_code_unique<-unique(tsc_tcl$list_code) #11
+```
+
+There are 4014 unique observations in TFL fauna dataset and 
+`r unique(tfa_data$species_code)` unique species. 
+There are `r unique(tfa_data$list_code)` unique conservation lists and 
+`r unique(tfa_data$category_code)` conservation category codes.
