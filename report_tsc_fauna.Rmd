@@ -20,6 +20,17 @@ knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
 ```
 
+Make sure to run `wastdr` v 0.1.22 - `remotes::install_github("dbca-wa/wastdr")`.
+TODO: this contains fauna and flora. This report is only interested in fauna.
+
+```{r load_data, message=F, warning=F, echo=F}
+# TODO load taxa, filter to kingdom==8 (Fauna) and kingdom!=8 (Flora)
+# TODO filter tcl to Fauna by right joining it to taxa_fauna
+tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
+  wastdr::parse_taxon_conservationlisting()
+tsc_tcl %>% head(n=20) %>% knitr::kable()
+```
+
 # Context
 QA TFA fauna dataset and TSC fauna dataset and make comparisons to check all data has been transfered correctly to TSC.
 
@@ -56,9 +67,11 @@ There are 4014 unique observations in TFL fauna dataset and
 There are `r unique(tfa_data$list_code)` unique conservation lists and 
 `r unique(tfa_data$category_code)` conservation category codes.
 
-## Taxonomy
+# Taxonomy
 
-### QA: Name mismatches
+## Data ETL QA
+
+### Name mismatches
 For a given NameID, the scientific name in TFA should be identical to 
 the scientific name in WACensus with the same NameID. 
 A name mismatch is an indication for review.
@@ -116,18 +129,39 @@ true_mismatches <- tfa_data_wacensus %>%
 true_mismatches %>% DT::datatable()
 ```
 
-## Taxon Conservation Listings
+## Reports
+TODO: find reports on Taxonomy. Note that taxa with conservation listings are reported below.
 
-### TSC Taxon CL
+# Conservation Listings
 
-Make sure to run `wastdr` v 0.1.22 - `remotes::install_github("dbca-wa/wastdr")`.
-TODO: this contains fauna and flora. This report is only interested in fauna.
+## Data ETL QA
 
-```{r tsc_cl, message=F, warning=F}
-tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
-  wastdr::parse_taxon_conservationlisting()
-tsc_tcl %>% head(n=20) %>% knitr::kable()
-```
+* TSC Taxonomy - get all taxa - filter by kingdom == 8 (Fauna) and anything else (Flora)
+* Always compare old TFA against new TSC
+* Total numbers cons listings
+* Group cons listings by Cons lists, tally
+* Anti-join everywhere to first show discrepancies, then (once fixed) prove absence of discrepancies = full equivalence
+* Include TSC admin URLs as hyperlinks so that TSC users can view the record live in TSC
+* Include `source` (with clear text) and `source_id` = TFA table PKs, taxon `name_id`, taxon shortcode so that TFA custodians can find a record in TFA
+* Tell latest conservation listing by `max(effective_from)` date, so we know how fresh the snapshot is
+
+## Reports
+
+### Report to minister for Government Gazette
+* Heading: Legislation is BCA
+* List taxa with canonical/taxonomic name, group by cons category
+
+### Report the history of one taxon
+Use an example taxon (`name_id`) and show:
+
+* Current cons listing in WA (BCA/WAWCA), CWTH (EPBC act)
+* Past cons listings in WA, CWTH
+
+
+## Part content, TODO move up
+
+
+
 
 ### Summary statistics
 
@@ -143,3 +177,10 @@ There are 4014 unique observations in TFL fauna dataset and
 `r unique(tfa_data$species_code)` unique species. 
 There are `r unique(tfa_data$list_code)` unique conservation lists and 
 `r unique(tfa_data$category_code)` conservation category codes.
+
+
+# Occurrences
+
+# Fire History and Actions
+
+# Conservation Threats and Actions
