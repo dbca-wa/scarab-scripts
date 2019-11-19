@@ -1051,9 +1051,7 @@ of next (if any) cons listing within same scope.
 # TSC cons lists applicable to communities
 tsc_conslists_com <- "conservationlist" %>% 
   wastdr::wastd_GET(api_url = prod, query = c(scope_communities = TRUE)) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content(.) %>% 
-  magrittr::extract2("results") %>% 
+  magrittr::extract2("features") %>% 
   {tibble::tibble(
     list_id = purrr::map_int(., "id"),
     list_code = purrr::map_chr(., "code"),
@@ -1074,9 +1072,7 @@ com_list_ids_wa <- tsc_conslists_com %>% extract2("id") %>% paste(collapse=",")
 # tsc_conscat$label = tec_cons_listing_categories$category_code
 tsc_conscat <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content(.) %>% 
-  magrittr::extract2("results") %>% 
+  magrittr::extract2("features") %>% 
   {tibble::tibble(
     tsc_category_id = purrr::map_int(., "id"),
     category_code = purrr::map_chr(., "code"),
@@ -1086,13 +1082,11 @@ tsc_conscat <- "conservationcategory" %>%
   dplyr::filter(conservation_list %in% c(11,12,16))
 
 tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content(.) %>% 
-  magrittr::extract2("results") %>% 
+magrittr::extract2("features") %>% 
   {tibble::tibble(
     id = purrr::map_int(., "id"),
     list_id = purrr::map_int(., "conservation_list"),
-    rank = wastdr::map_chr_hack(., "rank"),
+    rank = purrr::map_int(., "rank"),
     code = purrr::map_chr(., "code")
     # ,
     # label = purrr::map_chr(., "label")
