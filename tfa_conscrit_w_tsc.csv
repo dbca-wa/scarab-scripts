@@ -1,4 +1,4 @@
-list_code,criteria_code,assigned_as_in_tsc,tsc_criteria,comments_MP,actions
+﻿list_code,criteria_code,assigned_as_in_tsc,tsc_criteria,comments_MP,actions
 ActionPlan,(visiting population),,,To be added at a later date (Comment from FM to AM),
 ActionPlan,A1a,,,To be added at a later date (Comment from FM to AM),
 ActionPlan,A1abd,,,To be added at a later date (Comment from FM to AM),
@@ -261,7 +261,7 @@ IUCN(2001),A3be; A4be,"A3b, A3e,A4b, A4e","122,125,127,130",,
 IUCN(2001),A3c+4bc,"A3c, A4b, A4c","123,127,128",,
 IUCN(2001),A4ad,"A4a,A4d","126,129",,
 IUCN(2001),"A4c, C2a(i)","A4c, C2a(i)","128,152",,
-IUCN(2001),"A4ce, B1+2ab(iii)","A4c, A4e, B1a, B1b(iii), B2a, B2b(iii)","128,130,131,134,141,000",,
+IUCN(2001),"A4ce, B1+2ab(iii)","A4c, A4e, B1a, B1b(iii), B2a, B2b(iii)","128,130,131,134,141, 144",,
 IUCN(2001),B1+2ab,"B1a, B2a","131,141",No B1b or B2b in 2001,AM to check
 IUCN(2001),B1+2abcd,"B1a, B2a","131,132,137,141,142, 147",No B1bcd or B2bcd in 2001,AM to check
 IUCN(2001),"B1+2abcde, D","B1a, B2a, D","131,141,154",No B1bcde or B2bcde in 2001,AM to check
@@ -323,7 +323,7 @@ IUCN(2012),D,D,48,,
 IUCN(2012),D1,D1,44,,
 IUCN(2012),D2,D2,45,,
 IUCN(2012),Extinct,E,46,,
-IUCN(2012),Presumed�extinct,E,46,,
+IUCN(2012),Presumed extinct,E,46,,
 IUCN(2012),A2+3+4b; C1,"A2b,A3b,A4b","7,11,16,40",,
 IUCN(2012),A2+3+4bcde,"A2bcde, A3bcde, A4bcde","7,8,9,10,11,12,13,14,16,17,18,19",,
 IUCN(2012),A2+3+4bce,"A2bce, A3bce, A4bce","7,8,10,11,12,14,16,17,19",,
