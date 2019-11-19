@@ -643,9 +643,7 @@ The conservation category serializer writes JSON, not GeoJSON.
 
 ```{r conscat}
 conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content() %>% 
-  magrittr::extract2("results") %>% # will need to change to features
+  magrittr::extract2("features") %>% # will need to change to features
   {tibble::tibble(
     id = purrr::map_int(., "id"),
     list_id = purrr::map_int(., "conservation_list"),
@@ -837,9 +835,7 @@ Note 24 June 2019: Some very new WACensus name IDs (49200 range) are not yet mig
 # tsc_conscat$label = tec_cons_listing_categories$category_code
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content(.) %>% 
-  magrittr::extract2("results") %>% 
+  magrittr::extract2("features") %>% 
   {tibble::tibble(
     tsc_category_id = purrr::map_int(., "id"),
     category_code = purrr::map_chr(., "code"),
