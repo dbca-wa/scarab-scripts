@@ -718,7 +718,7 @@ readr::read_csv(
     tsc_criteria = col_character(),
     criteria_code = col_character(),
     assigned_as_in_tsc = col_character(),
-    comments = col_character(),
+    comments_MP = col_character(),
     actions = col_character()
   )
  ) %>%
@@ -867,7 +867,7 @@ tfa_listing_cat_iucn2012 <- fauna_cons_listing_w_tsc %>%
         criteria = tsc_criteria,
         comments = glue::glue("Reviewed by {reviewed_by}\n\n",
                               "Review outcome: {review_outcome}\n\n",
-                              "Comments: {comments.x}")
+                              "Comments: {comments}")
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
@@ -896,7 +896,7 @@ tfa_listing_cat_iucn2001 <- fauna_cons_listing_w_tsc %>%
         criteria = tsc_criteria,
         comments = glue::glue("Reviewed by {reviewed_by}\n\n",
                               "Review outcome: {review_outcome}\n\n",
-                              "Comments: {comments.x}")
+                              "Comments: {comments}")
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
@@ -925,7 +925,7 @@ tfa_listing_cat_iucn1994 <- fauna_cons_listing_w_tsc %>%
         criteria = tsc_criteria,
         comments = glue::glue("Reviewed by {reviewed_by}\n\n",
                               "Review outcome: {review_outcome}\n\n",
-                              "Comments: {comments.x}")
+                              "Comments: {comments}")
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
@@ -954,7 +954,7 @@ tfa_listing_cat_wawca <- fauna_cons_listing_w_tsc %>%
         criteria = tsc_criteria,
         comments = glue::glue("Reviewed by {reviewed_by}\n\n",
                               "Review outcome: {review_outcome}\n\n",
-                              "Comments: {comments.x}")
+                              "Comments: {comments}")
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
@@ -983,7 +983,7 @@ tfa_listing_cat_spfn <- fauna_cons_listing_w_tsc %>%
         criteria = tsc_criteria,
         comments = glue::glue("Reviewed by {reviewed_by}\n\n",
                               "Review outcome: {review_outcome}\n\n",
-                              "Comments: {comments.x}")
+                              "Comments: {comments}")
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
@@ -1012,7 +1012,7 @@ tfa_listing_cat_waps <- fauna_cons_listing_w_tsc %>%
         criteria = tsc_criteria,
         comments = glue::glue("Reviewed by {reviewed_by}\n\n",
                               "Review outcome: {review_outcome}\n\n",
-                              "Comments: {comments.x}")
+                              "Comments: {comments}")
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
@@ -1041,7 +1041,7 @@ tfa_listing_cat_epbc <- fauna_cons_listing_w_tsc %>%
         criteria = tsc_criteria,
         comments = glue::glue("Reviewed by {reviewed_by}\n\n",
                               "Review outcome: {review_outcome}\n\n",
-                              "Comments: {comments.x}")
+                              "Comments: {comments}")
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
