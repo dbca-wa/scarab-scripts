@@ -627,7 +627,7 @@ conslist <- wastdr::wastd_GET("conservationlist", api_url = prod) %>%
     list_id = purrr::map_int(., "id"),
     list_code = purrr::map_chr(., "code"),
     list_label = purrr::map_chr(., "label"),
-    list_description = wastdr::map_chr_hack(., "description"),
+    list_description = purrr::map_chr(., "description"),
     scope_wa = purrr::map_chr(., "scope_wa"),
     scope_cmw = purrr::map_chr(., "scope_cmw"),
     scope_intl = purrr::map_chr(., "scope_intl"),
@@ -649,10 +649,10 @@ conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>%
   {tibble::tibble(
     id = purrr::map_int(., "id"),
     list_id = purrr::map_int(., "conservation_list"),
-    rank = wastdr::map_chr_hack(., "rank"),
+    rank = purrr::map_chr(., "rank"),
     code = purrr::map_chr(., "code"),
     label = purrr::map_chr(., "label"),
-    description = wastdr::map_chr_hack(., "description"),
+    description = purrr::map_chr(., "description"),
     current = purrr::map_chr(., "current")
   )} %>% 
   dplyr::arrange(list_id, rank) %>% 
