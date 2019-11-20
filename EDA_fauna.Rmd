@@ -14,6 +14,10 @@ output:
     theme: lumen
   pdf_document: default
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = TRUE)
+source("helpers.R")
+```
 
 # Context
 QA TFA dataset and TSC fauna dataset and make comparisons to check all data has been transfered correctly to TSC.
@@ -185,9 +189,6 @@ DT::datatable(species)
 # Just the essentials: species code, name_id, names.
 species_names <- species %>%
   dplyr::select(species_code, name_id, scientific_name, common_name)
-
-# Without things that break saving to CSV
-species_save <- species %>% dplyr::select(-starts_with("file_number"))
 ```
 
 The table `species` contains info on:
@@ -235,8 +236,7 @@ tfa_cons_lists <- tfa_data$`Listing Names` %>%
     list_name = ListName %>% as.character(),
     list_order = ListOrder %>% as.integer()
   ) %>%
-  dplyr::arrange(list_order)
-tfa_cons_lists %>% dplyr::glimpse()
+  dplyr::arrange(list_order) %>% dplyr::glimpse()
 ```
 
 ## DEC Listing Names
