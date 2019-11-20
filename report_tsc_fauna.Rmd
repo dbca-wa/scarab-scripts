@@ -20,6 +20,219 @@ knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
 ```
 
+# Data
+The zip archive containing the MS Access database is downloaded from the data 
+catalogue, the archive is extracted, and a database connection is opened.
+
+```{r fauna_data_load, message=FALSE}
+fauna_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+```
+
+```{r lookup_tables}
+# Lookup tables
+shires <- fauna_data$Shires %>%
+  dplyr::transmute(
+    lga_id = LGACode %>% as.integer(),
+    shire_name = LGAName %>% as.character(),
+    shire_label = LGAName2 %>% as.character()
+  )
+
+tenure <- fauna_data$`Land Tenure` %>%
+  dplyr::transmute(
+    tenure_id = TenCode %>% as.character(),
+    tenure = Tenure %>% as.character()
+  )
+
+vegetation_types <- fauna_data$`Vegetation Types` %>%
+  dplyr::mutate(
+    vegetation_type_id = VegCode %>% as.character(),
+    vegetation_type = VegTypeName %>% as.character()
+  )
+
+certainty <- fauna_data$Certainty %>%
+  dplyr::transmute(
+    certainty_id = Code %>% as.integer(),
+    certainty = Certainty %>% as.character()
+  )
+
+users <- tibble::tibble(
+  username = c(
+    "AmyM", "AbbyT", "BrianaWingfield",
+    "ChristineFreegard", "GeorginaA", "KellieMantle",
+    "NickyMarlow", "PeterMawson", "PeterOrell"
+  ),
+  initials = c(
+    "AM", "AT", "BW",
+    "CF", "GA", "KM",
+    "NM", "PM", "PO"
+  ),
+  name = c(
+    "Amy Mutton", "Abby Thomas", "Briana Wingfield",
+    "Christine Freegard", "Georgina Anderson", "Kellie Mantle",
+    "Nicky Marlow", "Peter Mawson", "Peter Orell"
+  )
+)
+
+phylo_class <- fauna_data$`Class List` %>%
+  dplyr::transmute(
+    phylo_class_id = ClassCode %>% as.character(),
+    phylo_class_common_name = ClassName %>% as.character(),
+    phylo_class_scientific_name = Class %>% as.character(),
+    order = ClassOrder %>% as.character()
+  ) %>%
+  dplyr::arrange(order)
+
+phylo_group <- fauna_data$`Group List` %>%
+  dplyr::transmute(
+    phylo_group_id = Group %>% as.integer(),
+    phylo_group_name = GroupName %>% as.character(),
+    phylo_class_id = Class %>% as.character()
+    # order = GroupOrder %>% as.character()
+  ) %>%
+  dplyr::left_join(phylo_class, by = "phylo_class_id")
+# skimr::skim(group)
+
+species_notes <- fauna_data$`Species Notes` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    species_notes = Notes %>% as.character()
+  )
+
+resolution <- fauna_data$Resolution %>%
+  dplyr::transmute(
+    resolution_id = ResCode %>% as.integer(),
+    resolution_geographic_coords = ResolutionLL %>% as.character(),
+    resolution_projected_coords = ResolutionUTM %>% as.character()
+  )
+
+resolution_m <- tibble::tibble(
+    resolution_id = c(1,2,3,4,5,6),
+    accuracy = c(50,100,1000, 10000, 50000, 100000)
+)
+
+category <- fauna_data$`Category List` %>%
+  dplyr::transmute(
+    category_id = Category %>% as.character(),
+    phylogenetic_category = CategoryName %>% as.character()
+  )
+```
+
+```{r fauna_species}
+# TODO species notes
+species <- fauna_data$`Species List` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    old_species_code = OldCode %>% as.character(),
+    short_code = ShCode %>% as.character(),
+    name_id = NameID %>% as.character(),
+    scientific_name = ScName %>% as.character(),
+    common_name = ComName %>% as.character(),
+    phylo_group_id = PhyloGroup %>% as.integer(),
+    family = Family %>% as.character(),
+    genus = Genus %>% as.character(),
+    species = Species %>% as.character(),
+    authority_species = Authority.sp %>% as.character(),
+    subspecies = Subspecies %>% as.character(),
+    authority_subspecies = Authority.ssp %>% as.character(),
+    # file_number_calm = CALMFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "CALM")),
+    # file_number_dec = DECFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DEC")),
+    # file_number_dpaw = DPaWFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DPAW")),
+    # file_number_dbca = DBCAFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DBCA")),
+    category_id = Category %>% as.character(),
+    origin = Origin %>% as.character(), # N - native, I - introduced
+    # region_id_list = Region %>% map(~ as.list(strsplit(., ",")[[1]] %>% as.integer())),
+    taxon_id = TaxonId %>% as.logical()
+    # translocated = Trans %>% as.character(), # E - extant, T - translocated
+    # accept_new_records = Incl %>% as.logical(), # only FALSE in old records
+    # species_can_be_trapped = Trap %>% as.logical(),
+    # only_sighting_type_surveys = Sight %>% as.logical(),
+    # could_have_nest_box = Nbox %>% as.### Datalogical(),
+    # could_display_secondary_signs = Sign %>% as.logical(),
+    # can_associate_band_number = BANo %>% as.logical(),
+    # buffer = Buffer %>% as.character(), # NA 0 1 2 3 - unused
+    # estimated_lifespan = EST.LIFE %>% as.integer() # NA  0 10  7 15  6  8
+  ) %>%
+  dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
+  dplyr::left_join(species_notes, by = "species_code") %>%
+  dplyr::left_join(category, by = "category_id")
+species_skim <- skimr::skim(species)
+# print(species_skim)
+DT::datatable(species)
+
+# Just the essentials: species code, name_id, names.
+species_names <- species %>%
+  dplyr::select(species_code, name_id, scientific_name, common_name)
+```
+
+```{r tfa_cons_listing}
+fauna_cons_listing <- fauna_data$Gazettal %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    list_code = ListCode %>% as.character(),
+    category_code = StatCode %>% as.character(),
+    population = Popn %>% as.character(),
+    criteria_code = Reasons %>% as.character(),
+    authority = AUTHORITY %>% as.character(),
+    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
+    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    reviewed_by = INTERIM %>% as.character(),
+    review_outcome = TRANSLOCATION %>% as.character(),
+    comments = Comments %>% as.character()
+  ) %>%
+  dplyr::left_join(species_names, by = "species_code") %>% 
+  tibble::rowid_to_column("source_id")
+fauna_cons_listing %>% skim()
+fauna_cons_listing %>% head(10) %>% DT::datatable()
+readr::write_csv(fauna_cons_listing, path = here::here("data","fauna_cons_listing.csv"))
+```
+
+```{r compare_tsc_conscrit_listing_to_tfa_conscrit}
+chr2int <- . %>% 
+      stringr::str_split(",") %>% 
+      purrr::map(as.integer)
+
+tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
+readr::read_csv(
+  col_types = cols(
+    list_code = col_character(),
+    tsc_criteria = col_character(),
+    criteria_code = col_character(),
+    assigned_as_in_tsc = col_character(),
+    comments_MP = col_character(),
+    actions = col_character()
+  )
+ ) %>%
+dplyr::mutate(
+  tsc_criteria = tsc_criteria %>% chr2int()
+)
+
+fauna_cons_listing_w_tsc <- fauna_cons_listing %>%
+  left_join(tfa_conscrit,by=c("list_code","criteria_code")) #4014
+
+taxon_id <- fauna_cons_listing_w_tsc %>% 
+  dplyr::transmute(
+    taxon = name_id %>% as.integer()) %>% 
+  distinct() #1003
+
+tfa_cl <- fauna_cons_listing_w_tsc %>% 
+  dplyr::filter(criteria_code != "") #1364
+
+taxon_unique <- tfa_cl %>% 
+  dplyr::transmute(
+    taxon = name_id %>% as.integer()) %>% 
+  distinct() #615
+
+```
+
 Make sure to run `wastdr` v 0.1.22 - `remotes::install_github("dbca-wa/wastdr")`.
 TODO: this contains fauna and flora. This report is only interested in fauna.
 
@@ -29,6 +242,10 @@ TODO: this contains fauna and flora. This report is only interested in fauna.
 tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
   wastdr::parse_taxon_conservationlisting()
 tsc_tcl %>% head(n=20) %>% knitr::kable()
+
+tsc_tcl_fauna <- tsc_tcl %>% 
+  dplyr::right_join(taxon_id, by = "taxon")
+
 ```
 
 # Context
@@ -43,14 +260,6 @@ on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
 The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
 
 # TFL fauna conservation listings
-
-```{r tfa_data}
-tfa_data<- here::here("data","fauna_cons_listing.csv") %>%
-  readr::read_csv(col_types = cols(
-      list_code = col_character(),
-      criteria_code = col_character(),
-      name_id = col_character()))
-```
 
 ## Summary statistics
 
