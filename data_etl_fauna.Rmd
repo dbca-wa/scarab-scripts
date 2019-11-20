@@ -704,11 +704,6 @@ readr::write_csv(fauna_cons_listing, path = here::here("data","fauna_cons_listin
 ```
 
 ```{r compare_tsc_conscrit_listing_to_tfa_conscrit}
-chr2int <- . %>% 
-      stringr::str_split(",") %>% 
-      purrr::map(as.integer)
-
-
 tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
 readr::read_csv(
   col_types = cols(

@@ -14,6 +14,7 @@
 # install.packages("sf")
 # install.packages("styler")
 # install.packages("jsonlite")
+# devtools::install_github("glin/reactable")
 
 library(devtools)
 library(usethis)
@@ -47,6 +48,8 @@ library(gganimate)
 library(ggthemes)
 library(grDevices)
 
+library(reactable)
+
 # library(gapminder)
 
 # Configure ckanr to data.dpaw.wa.gov.au
@@ -56,9 +59,14 @@ ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"
 # Date conventions
 orders <- c("mdyHMS")
 tz <- "Australia/Perth"
-default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
+default_date <-
 parse_as_datetime <- function(x){
-    if (is.null(x)) return(default_date)
+    if (is.null(x)) {
+        return(
+            lubridate::parse_date_time(
+                "1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
+        )
+        }
     x %>%
         lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>%
         lubridate::as_datetime(.) %>%
@@ -105,6 +113,8 @@ as_filenumber <- function(body, prefix="DBCA", sep="-") {
 
 #' Parse a string into a list of integer numbers
 str_to_int_array <- . %>% strsplit(., ",")[[1]] %>% as.list
+chr2int <- . %>% stringr::str_split(",") %>% purrr::map(as.integer)
+
 
 #' Create or update a CKAN resource.
 #'
