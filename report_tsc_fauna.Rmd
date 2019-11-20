@@ -240,6 +240,11 @@ TODO: this contains fauna and flora. This report is only interested in fauna.
 ```{r load_data, message=F, warning=F, echo=F}
 # TODO load taxa, filter to kingdom==8 (Fauna) and kingdom!=8 (Flora)
 # TODO filter tcl to Fauna by right joining it to taxa_fauna
+# taxa_raw <- wastdr::wastd_GET(
+#   "taxon", 
+#   query = list(paraphyletic_groups_icontains=20))
+# taxa <- taxa_raw$features %>% tidyr::unnest_wider()
+
 tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
   wastdr::parse_taxon_conservationlisting() 
 tsc_tcl %>% head(n=20) %>% knitr::kable() #3061
