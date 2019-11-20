@@ -1,0 +1,127 @@
+---
+title: "Data ETL: Fauna"
+author: "Florian Mayer and Milly Piggott, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
+  pdf_document: default
+---
+
+# Context
+QA TFA fauna dataset and TSC fauna dataset and make comparisons to check all data has been transfered correctly to TSC.
+
+[TFL Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
+on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
+
+[TSC Fauna database](https://tsc.dbca.wa.gov.au/species/?paraphyletic_groups=20&is_terminal_taxon=true) 
+on the [TSC catalogue](https://tsc.dbca.wa.gov.au/).
+
+The code for all SCB workbooks is under version control at [github](https://github.com/dbca-wa/scarab-scripts).
+
+# Data
+The zip archive containing the MS Access database is downloaded from the data 
+catalogue, the archive is extracted, and a database connection is opened.
+
+```{r fauna_data_load, message=FALSE}
+fauna_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+```
+
+# Lookup tables
+Lookup table columns are renamed to facilitate joining.
+
+```{r lookup_tables}
+# Lookup tables
+shires <- fauna_data$Shires %>%
+  dplyr::transmute(
+    lga_id = LGACode %>% as.integer(),
+    shire_name = LGAName %>% as.character(),
+    shire_label = LGAName2 %>% as.character()
+  )
+
+tenure <- fauna_data$`Land Tenure` %>%
+  dplyr::transmute(
+    tenure_id = TenCode %>% as.character(),
+    tenure = Tenure %>% as.character()
+  )
+
+vegetation_types <- fauna_data$`Vegetation Types` %>%
+  dplyr::mutate(
+    vegetation_type_id = VegCode %>% as.character(),
+    vegetation_type = VegTypeName %>% as.character()
+  )
+
+certainty <- fauna_data$Certainty %>%
+  dplyr::transmute(
+    certainty_id = Code %>% as.integer(),
+    certainty = Certainty %>% as.character()
+  )
+
+users <- tibble::tibble(
+  username = c(
+    "AmyM", "AbbyT", "BrianaWingfield",
+    "ChristineFreegard", "GeorginaA", "KellieMantle",
+    "NickyMarlow", "PeterMawson", "PeterOrell"
+  ),
+  initials = c(
+    "AM", "AT", "BW",
+    "CF", "GA", "KM",
+    "NM", "PM", "PO"
+  ),
+  name = c(
+    "Amy Mutton", "Abby Thomas", "Briana Wingfield",
+    "Christine Freegard", "Georgina Anderson", "Kellie Mantle",
+    "Nicky Marlow", "Peter Mawson", "Peter Orell"
+  )
+)
+
+phylo_class <- fauna_data$`Class List` %>%
+  dplyr::transmute(
+    phylo_class_id = ClassCode %>% as.character(),
+    phylo_class_common_name = ClassName %>% as.character(),
+    phylo_class_scientific_name = Class %>% as.character(),
+    order = ClassOrder %>% as.character()
+  ) %>%
+  dplyr::arrange(order)
+
+phylo_group <- fauna_data$`Group List` %>%
+  dplyr::transmute(
+    phylo_group_id = Group %>% as.integer(),
+    phylo_group_name = GroupName %>% as.character(),
+    phylo_class_id = Class %>% as.character()
+    # order = GroupOrder %>% as.character()
+  ) %>%
+  dplyr::left_join(phylo_class, by = "phylo_class_id")
+# skimr::skim(group)
+
+species_notes <- fauna_data$`Species Notes` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    species_notes = Notes %>% as.character()
+  )
+
+resolution <- fauna_data$Resolution %>%
+  dplyr::transmute(
+    resolution_id = ResCode %>% as.integer(),
+    resolution_geographic_coords = ResolutionLL %>% as.character(),
+    resolution_projected_coords = ResolutionUTM %>% as.character()
+  )
+
+resolution_m <- tibble::tibble(
+    resolution_id = c(1,2,3,4,5,6),
+    accuracy = c(50,100,1000, 10000, 50000, 100000)
+)
+
+category <- fauna_data$`Category List` %>%
+  dplyr::transmute(
+    category_id = Category %>% as.character(),
+    phylogenetic_category = CategoryName %>% as.character()
+  )
+```
