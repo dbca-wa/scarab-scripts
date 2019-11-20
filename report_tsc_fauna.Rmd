@@ -218,18 +218,19 @@ dplyr::mutate(
 fauna_cons_listing_w_tsc <- fauna_cons_listing %>%
   left_join(tfa_conscrit,by=c("list_code","criteria_code")) #4014
 
-taxon_id <- fauna_cons_listing_w_tsc %>% 
-  dplyr::transmute(
-    taxon = name_id %>% as.integer()) %>% 
-  distinct() #1003
-
-tfa_cl <- fauna_cons_listing_w_tsc %>% 
-  dplyr::filter(criteria_code != "") #1364
-
-taxon_unique <- tfa_cl %>% 
-  dplyr::transmute(
-    taxon = name_id %>% as.integer()) %>% 
-  distinct() #615
+# taxon_id_tfa <- fauna_cons_listing_w_tsc %>% 
+#   dplyr::transmute(
+#     taxon = name_id %>% as.integer()) %>% 
+#   distinct() #1003
+# 
+# tfa_cl <- fauna_cons_listing_w_tsc %>% 
+#   dplyr::filter(tsc_criteria != "NULL") %>%
+#   dplyr::filter(tsc_criteria != "NA")#805 species with criteria
+# 
+# taxon_unique_tfa <- tfa_cl %>% 
+#   dplyr::transmute(
+#     taxon = name_id %>% as.integer()) %>% 
+#   distinct() #362 unique species with criteria
 
 ```
 
@@ -240,12 +241,24 @@ TODO: this contains fauna and flora. This report is only interested in fauna.
 # TODO load taxa, filter to kingdom==8 (Fauna) and kingdom!=8 (Flora)
 # TODO filter tcl to Fauna by right joining it to taxa_fauna
 tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
-  wastdr::parse_taxon_conservationlisting()
-tsc_tcl %>% head(n=20) %>% knitr::kable()
+  wastdr::parse_taxon_conservationlisting() 
+tsc_tcl %>% head(n=20) %>% knitr::kable() #3061
 
-tsc_tcl_fauna <- tsc_tcl %>% 
-  dplyr::right_join(taxon_id, by = "taxon")
-
+# taxon_id_tsc <- tsc_tcl %>% 
+#   dplyr::transmute(
+#     taxon = taxon %>% as.integer()) %>% 
+#   distinct() #870
+# 
+# tsc_cl <- tsc_tcl %>% 
+#   dplyr::filter(criteria != "NA") #626
+# 
+# taxon_unique_tsc <- tsc_cl %>% 
+#   dplyr::transmute(
+#     taxon = taxon %>% as.integer()) %>% 
+#   distinct() #321
+# 
+# taxon_missing_tsc <- as.list(setdiff(taxon_unique_tfa$taxon,taxon_unique_tsc$taxon)) #41 missing from tsc
+# taxon_missing_tfa <- as.list(setdiff(taxon_unique_tsc$taxon,taxon_unique_tfa$taxon))
 ```
 
 # Context
@@ -291,7 +304,7 @@ wacensus_names <- here::here("data","wace_names.csv") %>%
       name_id = col_character()
       )
 )
-tfa_data_wacensus <- tfa_data %>% dplyr::left_join(wacensus_names, by="name_id")
+tfa_data_wacensus <- fauna_cons_listing_w_tsc %>% dplyr::left_join(wacensus_names, by="name_id")
 ```
 
 ```{r wacensus_name_mismatch}
@@ -393,3 +406,6 @@ There are `r unique(tfa_data$list_code)` unique conservation lists and
 # Fire History and Actions
 
 # Conservation Threats and Actions
+
+# Management Plans
+
