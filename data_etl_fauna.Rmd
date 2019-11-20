@@ -667,7 +667,7 @@ conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
     list_id = purrr::map_int(., "conservation_list"),
     rank = purrr::map_chr(., "rank"),
     code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label", .default = "todo")
+    label = purrr::map_chr(., "label", .default = "NA")
   )} %>% 
   dplyr::arrange(list_id, rank) %>%
   dplyr::left_join(conslist, by = "list_id")
