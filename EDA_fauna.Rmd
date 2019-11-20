@@ -16,7 +16,7 @@ output:
 ---
 
 # Context
-QA TFA fauna dataset and TSC fauna dataset and make comparisons to check all data has been transfered correctly to TSC.
+QA TFA dataset and TSC fauna dataset and make comparisons to check all data has been transfered correctly to TSC.
 
 [TFL Fauna dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the [departmental data catalogue](https://data.dpaw.wa.gov.au/).
@@ -30,35 +30,35 @@ The code for all SCB workbooks is under version control at [github](https://gith
 The zip archive containing the MS Access database is downloaded from the data 
 catalogue, the archive is extracted, and a database connection is opened.
 
-```{r fauna_data_load, message=FALSE}
-fauna_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+```{r tfa_data_load, message=FALSE}
+tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
 ```
 
-# Lookup tables
+## Lookup tables
 Lookup table columns are renamed to facilitate joining.
 
 ```{r lookup_tables}
 # Lookup tables
-shires <- fauna_data$Shires %>%
+shires <- tfa_data$Shires %>%
   dplyr::transmute(
     lga_id = LGACode %>% as.integer(),
     shire_name = LGAName %>% as.character(),
     shire_label = LGAName2 %>% as.character()
   )
 
-tenure <- fauna_data$`Land Tenure` %>%
+tenure <- tfa_data$`Land Tenure` %>%
   dplyr::transmute(
     tenure_id = TenCode %>% as.character(),
     tenure = Tenure %>% as.character()
   )
 
-vegetation_types <- fauna_data$`Vegetation Types` %>%
+vegetation_types <- tfa_data$`Vegetation Types` %>%
   dplyr::mutate(
     vegetation_type_id = VegCode %>% as.character(),
     vegetation_type = VegTypeName %>% as.character()
   )
 
-certainty <- fauna_data$Certainty %>%
+certainty <- tfa_data$Certainty %>%
   dplyr::transmute(
     certainty_id = Code %>% as.integer(),
     certainty = Certainty %>% as.character()
@@ -82,7 +82,7 @@ users <- tibble::tibble(
   )
 )
 
-phylo_class <- fauna_data$`Class List` %>%
+phylo_class <- tfa_data$`Class List` %>%
   dplyr::transmute(
     phylo_class_id = ClassCode %>% as.character(),
     phylo_class_common_name = ClassName %>% as.character(),
@@ -91,7 +91,7 @@ phylo_class <- fauna_data$`Class List` %>%
   ) %>%
   dplyr::arrange(order)
 
-phylo_group <- fauna_data$`Group List` %>%
+phylo_group <- tfa_data$`Group List` %>%
   dplyr::transmute(
     phylo_group_id = Group %>% as.integer(),
     phylo_group_name = GroupName %>% as.character(),
@@ -101,13 +101,13 @@ phylo_group <- fauna_data$`Group List` %>%
   dplyr::left_join(phylo_class, by = "phylo_class_id")
 # skimr::skim(group)
 
-species_notes <- fauna_data$`Species Notes` %>%
+species_notes <- tfa_data$`Species Notes` %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
     species_notes = Notes %>% as.character()
   )
 
-resolution <- fauna_data$Resolution %>%
+resolution <- tfa_data$Resolution %>%
   dplyr::transmute(
     resolution_id = ResCode %>% as.integer(),
     resolution_geographic_coords = ResolutionLL %>% as.character(),
@@ -119,9 +119,308 @@ resolution_m <- tibble::tibble(
     accuracy = c(50,100,1000, 10000, 50000, 100000)
 )
 
-category <- fauna_data$`Category List` %>%
+category <- tfa_data$`Category List` %>%
   dplyr::transmute(
     category_id = Category %>% as.character(),
     phylogenetic_category = CategoryName %>% as.character()
   )
+```
+# Taxonomy
+Data is parsed into matching data types, dates are recognised, and lookup
+values are joined while lookup IDs are retained to facilitate later data ingestion
+into other systems.
+
+Legacy column names are capitalised, while new or reformatted column are lower-cased.
+
+```{r fauna_species}
+# TODO species notes
+species <- tfa_data$`Species List` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    old_species_code = OldCode %>% as.character(),
+    short_code = ShCode %>% as.character(),
+    name_id = NameID %>% as.character(),
+    scientific_name = ScName %>% as.character(),
+    common_name = ComName %>% as.character(),
+    phylo_group_id = PhyloGroup %>% as.integer(),
+    family = Family %>% as.character(),
+    genus = Genus %>% as.character(),
+    species = Species %>% as.character(),
+    authority_species = Authority.sp %>% as.character(),
+    subspecies = Subspecies %>% as.character(),
+    authority_subspecies = Authority.ssp %>% as.character(),
+    # file_number_calm = CALMFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "CALM")),
+    # file_number_dec = DECFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DEC")),
+    # file_number_dpaw = DPaWFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DPAW")),
+    # file_number_dbca = DBCAFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DBCA")),
+    category_id = Category %>% as.character(),
+    origin = Origin %>% as.character(), # N - native, I - introduced
+    # region_id_list = Region %>% map(~ as.list(strsplit(., ",")[[1]] %>% as.integer())),
+    taxon_id = TaxonId %>% as.logical()
+    # translocated = Trans %>% as.character(), # E - extant, T - translocated
+    # accept_new_records = Incl %>% as.logical(), # only FALSE in old records
+    # species_can_be_trapped = Trap %>% as.logical(),
+    # only_sighting_type_surveys = Sight %>% as.logical(),
+    # could_have_nest_box = Nbox %>% as.### Datalogical(),
+    # could_display_secondary_signs = Sign %>% as.logical(),
+    # can_associate_band_number = BANo %>% as.logical(),
+    # buffer = Buffer %>% as.character(), # NA 0 1 2 3 - unused
+    # estimated_lifespan = EST.LIFE %>% as.integer() # NA  0 10  7 15  6  8
+  ) %>%
+  dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
+  dplyr::left_join(species_notes, by = "species_code") %>%
+  dplyr::left_join(category, by = "category_id")
+species_skim <- skimr::skim(species)
+# print(species_skim)
+DT::datatable(species)
+
+# Just the essentials: species code, name_id, names.
+species_names <- species %>%
+  dplyr::select(species_code, name_id, scientific_name, common_name)
+
+# Without things that break saving to CSV
+species_save <- species %>% dplyr::select(-starts_with("file_number"))
+```
+
+The table `species` contains info on:
+
+* taxonomy (links to `name_id`, names, various hierarchy levels, 
+  paraphyletic groups e.g. `phylo_group`, category)
+* occurrence summary (e.g. region ID list, an unimplemented m2m relation)
+* some numeric fields: `est_life` `r unique(species$est_life)`
+* corporate file numbers (what's in those files?)
+* some now unused fields (see above for excluded fields)
+
+The field `region_id_list` should be a many-to-many relation to regions, 
+but is superseded by spatial lookup of occurrence to spatial entity.
+
+## Taxonomy masterlist: WACensus
+The current list of authoritative names resides in WACensus and is published
+through OIM's GeoServer.
+
+```{r list_names}
+wace_names <- "public:herbie_hbvnames_public" %>% 
+    gs_getFeature() %>% 
+    magrittr::extract2("features") %>% 
+    {tibble::tibble(
+        name_id = purrr::map(., c("properties", "name_id")) %>% flatten_chr(),
+        wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
+    )}
+
+readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
+
+species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
+species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
+```
+
+# Conservation status
+Gazettal, Listing Category, Listing Names, List Names deal with assigning conservation status from 
+various legal listings to species.
+
+## Listing Names
+Lookups for legal acts.
+
+```{r fauna_conservation_lists}
+tfa_cons_lists <- tfa_data$`Listing Names` %>%
+  dplyr::transmute(
+    list_code = ListCode %>% as.character(),
+    list_name = ListName %>% as.character(),
+    list_order = ListOrder %>% as.integer()
+  ) %>%
+  dplyr::arrange(list_order)
+tfa_cons_lists %>% dplyr::glimpse()
+```
+
+## DEC Listing Names
+```{r dec_fauna_conservation_lists}
+dec_tfa_cons_lists <- tfa_data$`DEC List Names` %>%
+  dplyr::transmute(
+    dec_listing_id = DECCode %>% as.character(),
+    dec_listing_name = DECList %>% as.character(),
+    dec_listing_order = DECOrder %>% as.integer()
+  ) %>%
+  dplyr::arrange(dec_listing_order)
+dec_tfa_cons_lists %>% skim() 
+dec_tfa_cons_lists %>% dplyr::glimpse()
+```
+
+## Conservation status listing
+Each act (listing) defines a number of possible conservation statuses.
+The table `Listing Category` contains all possible conservation statuses.
+Conservation status can be assigned (for a period of time) to a species.
+
+```{r listing_category}
+# make_coldef(listing_category)
+tfa_cons_cat <- tfa_data$`Listing Category` %>%
+  dplyr::transmute(
+    list_code = ListCode %>% as.character(),
+    category_code = StatCode %>% as.character(),
+    category_label = Status %>% as.character(),
+    status_expand = StatusExpand %>% as.character(),
+    explanations = Explanations %>% as.character(),
+    notes = Notes %>% as.character(),
+    order = Order %>% as.integer(),
+    dec_listing_id = DECCode %>% as.character()
+  ) %>%
+  dplyr::arrange(order) %>%
+  dplyr::left_join(tfa_conslists, by = "list_code") %>%
+  dplyr::left_join(dec_tfa_cons_lists, by = "dec_listing_id")
+tfa_cons_cat %>% skim()
+tfa_cons_cat %>%
+  head(10) %>%
+  DT::datatable(.)
+```
+
+## TSC Conservation Listing
+This is the data we need to map to: conservation lists, categories, and criteria.
+
+### TSC conservation lists
+
+```{r conslist}
+conslist <- wastdr::wastd_GET("conservationlist", api_url = prod) %>% 
+  magrittr::extract2("response") %>% 
+  httr::content() %>% 
+  magrittr::extract2("features") %>% 
+  {tibble::tibble(
+    list_id = purrr::map_int(., "id"),
+    list_code = purrr::map_chr(., "code"),
+    list_label = purrr::map_chr(., "label"),
+    list_description = purrr::map_chr(., "description"),
+    scope_wa = purrr::map_chr(., "scope_wa"),
+    scope_cmw = purrr::map_chr(., "scope_cmw"),
+    scope_intl = purrr::map_chr(., "scope_intl"),
+    scope_species = purrr::map_chr(., "scope_species"),
+    scope_communities = purrr::map_chr(., "scope_communities"),
+    approval_level = purrr::map_int(., "approval_level")
+  )} 
+```
+
+### TSC conservation categories
+The conservation category serializer writes JSON, not GeoJSON. 
+`wastdr` needs a `parse_conservationcategory` parser.
+
+```{r conscat}
+conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>% 
+  magrittr::extract2("features") %>% # will need to change to features
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    list_id = purrr::map_int(., "conservation_list"),
+    rank = purrr::map_chr(., "rank"),
+    code = purrr::map_chr(., "code"),
+    label = purrr::map_chr(., "label"),
+    description = purrr::map_chr(., "description"),
+    current = purrr::map_chr(., "current")
+  )} %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(conslist, by = "list_id")
+```
+
+### TSC conservation criteria
+
+```{r conscrit}
+conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+  magrittr::extract2("features") %>%
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    list_id = purrr::map_int(., "conservation_list"),
+    rank = purrr::map_chr(., "rank"),
+    code = purrr::map_chr(., "code"),
+    label = purrr::map_chr(., "label", .default = "NA")
+  )} %>% 
+  dplyr::arrange(list_id, rank) %>%
+  dplyr::left_join(conslist, by = "list_id")
+ 
+readr::write_csv(conscrit,path = here::here("data","tsc_conscrit.csv"))
+```
+
+## TFA Conservation Listing
+
+Conservation listing is the act of assigning a conservation status to a species for a span of time.
+Fauna cons listing columns are renamed and joined to species names by species code.
+
+```{r tfa_cons_listing}
+fauna_cons_listing <- tfa_data$Gazettal %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    list_code = ListCode %>% as.character(),
+    category_code = StatCode %>% as.character(),
+    population = Popn %>% as.character(),
+    criteria_code = Reasons %>% as.character(),
+    authority = AUTHORITY %>% as.character(),
+    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
+    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    reviewed_by = INTERIM %>% as.character(),
+    review_outcome = TRANSLOCATION %>% as.character(),
+    comments = Comments %>% as.character()
+  ) %>%
+  dplyr::left_join(species_names, by = "species_code") %>% 
+  tibble::rowid_to_column("source_id")
+fauna_cons_listing %>% skim()
+fauna_cons_listing %>% head(10) %>% DT::datatable()
+readr::write_csv(fauna_cons_listing, path = here::here("data","fauna_cons_listing.csv"))
+```
+
+```{r tfa_cons_listing_qa}
+fauna_cons_listing_w_tsc$list_code %>% unique # cons lists used
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "WAPF") %>% DT::datatable() # = WAPS
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "ActionPlan") %>% DT::datatable() # Discard those?
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "") %>% DT::datatable() # Discard those?
+fauna_cons_listing_w_tsc %>% dplyr::filter(list_code == "RedList") %>% DT::datatable() # Which IUCN version?
+
+# ETL nightmare fuel: condensed criteria mixed with free text
+all_crit_map <- fauna_cons_listing %>%
+  dplyr::group_by(list_code) %>% 
+  dplyr::distinct(criteria_code) %>% 
+  dplyr::arrange(list_code, criteria_code) %>% 
+  dplyr::select(list_code, criteria_code)
+readr::write_csv(all_crit_map, path = here::here("data","all_tfa_conscrit.csv"))
+```
+
+```{r reload manually mapped_tfa_conscrit and join to TFA cons listing}
+chr2int <- . %>% 
+      stringr::str_split(",") %>% 
+      purrr::map(as.integer)
+
+
+tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
+readr::read_csv(
+  col_types = cols(
+    list_code = col_character(),
+    tsc_criteria = col_character(),
+    criteria_code = col_character(),
+    assigned_as_in_tsc = col_character(),
+    comments_MP = col_character(),
+    actions = col_character()
+  )
+ ) %>%
+dplyr::mutate(
+  tsc_criteria = tsc_criteria %>% chr2int()
+)
+
+fauna_cons_listing_w_tsc<-fauna_cons_listing %>%
+  left_join(tfa_conscrit,by=c("list_code","criteria_code"))
+```
+
+Some cons listings have a name_id of 0. These are phrase names and require to be assigned the `name_id`
+of the published name.
+
+```{r}
+fauna_cons_listing_w_tsc %>% dplyr::filter(name_id == 0)
+```
+
+Let's save a snapshot of the cons listings.
+
+```{r tfa_cons_listing_save}
+fcl_file <- here::here("data", "fauna_cons_listing_w_tsc.Rdata")
+save(fauna_cons_listing_w_tsc, file=fcl_file)
+if (file.exists(fcl_file)) load(fcl_file)
 ```
