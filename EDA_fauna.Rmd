@@ -133,6 +133,30 @@ category <- tfa_data$`Category List` %>%
     phylogenetic_category = CategoryName %>% as.character()
   )
 ```
+
+The following code chunk loads all data from TSC that is used in this workbook.
+```{r load_tsc}
+tsc_taxa <- "taxon" %>% 
+  wastdr::wastd_GET(api_url=prod) %>% 
+  wastdr::wastd_parse()
+
+# tsc_comm <- "community" %>% 
+#   wastdr::wastd_GET(api_url=prod) %>% 
+#   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
+```
+
+```{r save_point}
+if (file.exists("tracks.Rda")){
+    load("tracks.Rda")
+} else {
+  save(
+    tsc_taxa,
+    # tsc_comm
+    file = here::here("data", "fauna.Rda")
+  )
+}
+```
+
 # Taxonomy
 Data is parsed into matching data types, dates are recognised, and lookup
 values are joined while lookup IDs are retained to facilitate later data ingestion
@@ -212,6 +236,10 @@ The current list of authoritative names resides in WACensus and is published
 through OIM's GeoServer.
 
 ```{r list_names}
+# TODO we should use TSC taxon here
+
+
+# Old: use HBV WACensus names
 wace_names <- "public:herbie_hbvnames_public" %>% 
     gs_getFeature() %>% 
     magrittr::extract2("features") %>% 
@@ -289,22 +317,9 @@ This is the data we need to map to: conservation lists, categories, and criteria
 ### TSC conservation lists
 
 ```{r conslist}
-tsc_cons_list <- wastdr::wastd_GET("conservationlist", api_url = prod) %>% 
-  magrittr::extract2("response") %>% 
-  httr::content() %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    list_id = purrr::map_int(., "id"),
-    list_code = purrr::map_chr(., "code"),
-    list_label = purrr::map_chr(., "label"),
-    list_description = purrr::map_chr(., "description"),
-    scope_wa = purrr::map_chr(., "scope_wa"),
-    scope_cmw = purrr::map_chr(., "scope_cmw"),
-    scope_intl = purrr::map_chr(., "scope_intl"),
-    scope_species = purrr::map_chr(., "scope_species"),
-    scope_communities = purrr::map_chr(., "scope_communities"),
-    approval_level = purrr::map_int(., "approval_level")
-  )} 
+tsc_cons_list <- "conservationlist" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  wastdr::wastd_parse()
 ```
 
 ### TSC conservation categories
@@ -312,35 +327,21 @@ The conservation category serializer writes JSON, not GeoJSON.
 `wastdr` needs a `parse_conservationcategory` parser.
 
 ```{r conscat}
-tsc_cons_cat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>% 
-  magrittr::extract2("features") %>% # will need to change to features
-  {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    list_id = purrr::map_int(., "conservation_list"),
-    rank = purrr::map_chr(., "rank"),
-    code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label"),
-    description = purrr::map_chr(., "description"),
-    current = purrr::map_chr(., "current")
-  )} %>% 
-  dplyr::arrange(list_id, rank) %>% 
-  dplyr::left_join(tsc_cons_list, by = "list_id")
+tsc_cons_cat <- "conservationcategory" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::arrange(conservation_list, rank) %>% 
+  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
 ```
 
 ### TSC conservation criteria
 
 ```{r conscrit}
-tsc_cons_crit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
-  magrittr::extract2("features") %>%
-  {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    list_id = purrr::map_int(., "conservation_list"),
-    rank = purrr::map_chr(., "rank"),
-    code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label", .default = "NA")
-  )} %>% 
-  dplyr::arrange(list_id, rank) %>%
-  dplyr::left_join(tsc_cons_list, by = "list_id")
+tsc_cons_crit <- "conservationcriterion" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::arrange(conservation_list, rank) %>% 
+  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
  
 readr::write_csv(conscrit,path = here::here("data","tsc_conscrit.csv"))
 ```
