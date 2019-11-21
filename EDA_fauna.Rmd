@@ -805,7 +805,7 @@ tfa_data %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-## Species mismatch between TFA and TSC
+## Category mismatch between TFA and TSC
 
 ```{r species_mismatches_}
 tfa_data %>% 
