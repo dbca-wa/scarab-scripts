@@ -342,7 +342,7 @@ tsc_cons_crit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
   dplyr::arrange(list_id, rank) %>%
   dplyr::left_join(tsc_cons_list, by = "list_id")
  
-readr::write_csv(conscrit,path = here::here("data","tsc_conscrit.csv"))
+readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
 ```
 
 ## TFA Conservation Listing
