@@ -265,36 +265,10 @@ tfa_cons_list_w_tsc <- tfa_cons_list %>%
   left_join(tfa_cons_crit,by=c("list_code","criteria_code"))
 ```
 
-# Extract and transform migrated Data from TSC
-Data from TSC is extracted through the TSC API and transformed into a useable
-format.
-
-Expand the code block below to view the process.
-
-```{r load_tsc, message=FALSE}
-# WACensus is the upstream source of taxonomic names
-wace_names <- "public:herbie_hbvnames_public" %>% 
-    gs_getFeature() %>% 
-    magrittr::extract2("features") %>% 
-    {tibble::tibble(
-        name_id = purrr::map(., c("properties", "name_id")) %>% flatten_chr(),
-        wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
-    )}
-
-readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
-
-species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
-species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
-
-# TSC contains taxonomic names from WACensus
-tsc_taxa <- "taxon" %>%
-  wastdr::wastd_GET(api_url=prod, query = list(paraphyletic_groups__icontains=20)) %>%
-  wastdr::wastd_parse()
-
-# tsc_comm <- "community" %>% 
-#   wastdr::wastd_GET(api_url=prod) %>% 
-#   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
-
+# Extract and transform conservation criteria Data from TSC
+Conservation criteria Data from TSC is extracted through the TSC API and transformed into a useable
+format for manual mapping to TFA.
+``` {r extract_tsc_cons_criteria}
 tsc_cons_list <- "conservationlist" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
   wastdr::wastd_parse()
@@ -313,28 +287,7 @@ tsc_cons_crit <- "conservationcriterion" %>%
  
 readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
 
-tsc_tcl_raw <- wastdr::wastd_GET("taxon-conservationlisting") 
-
-tsc_tcl <- tsc_tcl_raw %>% wastdr::parse_taxon_conservationlisting()
-
-tsc_data <- tsc_tcl %>% 
-  dplyr::rename(name_id = taxon) %>% 
-  dplyr::mutate(name_id = name_id %>% as.character)
 ```
-
-```{r save_point, message=FALSE}
-if (file.exists("tracks.Rda")){
-    load("tracks.Rda")
-} else {
-  save(
-    tsc_taxa,
-    # tsc_comm
-    # TODO add all data objects to keep in here
-    file = here::here("data", "fauna.Rda")
-  )
-}
-```
-
 
 # Load legacy data from TFA into TSC
 In this section, the extracted and transformed data from TFA are loaded into TSC
@@ -399,7 +352,7 @@ tsc_conscat_sp <- "conservationcategory" %>%
 
 # IUCN cons listing
 # IUCN 2012 3
-tfa_listing_cat_iucn2012 <- fauna_cons_listing_w_tsc %>% 
+tfa_listing_cat_iucn2012 <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(2012)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3), 
                    by="category_code") %>% 
@@ -429,7 +382,7 @@ tfa_listing_cat_iucn2012 %>%
   )
 
 # IUCN(2001) 4
-tfa_listing_cat_iucn2001 <- fauna_cons_listing_w_tsc %>% 
+tfa_listing_cat_iucn2001 <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(2001)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 4), 
                    by="category_code") %>% 
@@ -459,7 +412,7 @@ tfa_listing_cat_iucn2001 %>%
     )
 
 # IUCN(1994) 5
-tfa_listing_cat_iucn1994 <- fauna_cons_listing_w_tsc %>% 
+tfa_listing_cat_iucn1994 <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(1994)") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 5), 
                    by="category_code") %>% 
@@ -489,7 +442,7 @@ tfa_listing_cat_iucn1994 %>%
     )
 
 # WAWCA 1
-tfa_listing_cat_wawca <- fauna_cons_listing_w_tsc %>% 
+tfa_listing_cat_wawca <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="WAWCA") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 1), 
                    by="category_code") %>% 
@@ -519,7 +472,7 @@ tfa_listing_cat_wawca %>%
     )
 
 # SPFN 2
-tfa_listing_cat_spfn <- fauna_cons_listing_w_tsc %>% 
+tfa_listing_cat_spfn <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="SPFN") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 2), 
                    by="category_code") %>% 
@@ -549,7 +502,7 @@ tfa_listing_cat_spfn %>%
     )
 
 # WAPS 6
-tfa_listing_cat_waps <- fauna_cons_listing_w_tsc %>% 
+tfa_listing_cat_waps <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="WAPF") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 6), 
                    by="category_code") %>% 
@@ -579,7 +532,7 @@ tfa_listing_cat_waps %>%
     )
 
 # EPBC 7
-tfa_listing_cat_epbc <- fauna_cons_listing_w_tsc %>% 
+tfa_listing_cat_epbc <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="EPBC") %>% 
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 7), 
                    by="category_code") %>% 
@@ -618,6 +571,64 @@ tfa_listing_cat_epbc %>%
 
 ## Conservation Threats and Actions
 
+
+# Extract and transform migrated Data from TSC
+Data from TSC is extracted through the TSC API and transformed into a useable
+format.
+
+Expand the code block below to view the process.
+
+```{r load_tsc, message=FALSE}
+# WACensus is the upstream source of taxonomic names
+wace_names <- "public:herbie_hbvnames_public" %>% 
+    gs_getFeature() %>% 
+    magrittr::extract2("features") %>% 
+    {tibble::tibble(
+        name_id = purrr::map(., c("properties", "name_id")) %>% flatten_chr(),
+        wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
+    )}
+
+readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
+
+species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
+species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
+
+# TSC contains taxonomic names from WACensus
+tsc_taxa_raw <- "taxon" %>%
+  wastdr::wastd_GET(api_url=prod, query = list(paraphyletic_groups__icontains=20)) 
+
+tsc_taxa <- tsc_taxa_raw %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::mutate(name_id = name_id %>% as.character) 
+
+# tsc_comm <- "community" %>% 
+#   wastdr::wastd_GET(api_url=prod) %>% 
+#   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
+
+tsc_tcl_raw <- wastdr::wastd_GET("taxon-conservationlisting") 
+
+tsc_tcl <- tsc_tcl_raw %>% wastdr::parse_taxon_conservationlisting() %>% 
+  dplyr::rename(name_id = taxon) %>% 
+  dplyr::mutate(name_id = name_id %>% as.character) 
+
+tsc_data <- tsc_tcl %>% 
+  dplyr::inner_join(tsc_taxa,by = "name_id")
+```
+
+```{r save_point, message=FALSE}
+if (file.exists("tracks.Rda")){
+    load("tracks.Rda")
+} else {
+  save(
+    tsc_taxa,
+    # tsc_comm
+    # TODO add all data objects to keep in here
+    file = here::here("data", "fauna.Rda")
+  )
+}
+```
+
+
 # Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
 and TFA data as uploaded into TSC. 
@@ -630,31 +641,39 @@ Legacy data snapshot used for TFA was updated last on `r ckanr::resource_show("6
 
 ## Summary statistics
 
-Check unique number of species by both species code and scientific name. 
-Check unique conservation criteria and conservation categories.
+Check unique number of species by name_id.
+Check unique number of observations and identify observations missing from TSC compared to TFA.
 ```{r tfa_summary}
 tfa_data <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code!="ActionPlan") %>% 
   dplyr::filter(list_code!="BCA") %>% 
   dplyr::filter(list_code!="RedList") %>% 
-  unite("category_cache", list_code:category_code, sep = " ", remove = FALSE)
+  dplyr::mutate(source_id = source_id %>% as.character) %>% 
+  tidyr::unite("category_cache", list_code:category_code, sep = " ", remove = FALSE)
 
 tfa_unique<-unique(tfa_data$name_id) #870
-tfa_catcode_unique<-unique(tfa_data$category_cache) #41
 ```
 
-There are 3063 unique observations in TFL fauna dataset,  
-`r unique(tfa_data$species_code)` unique species and 
-`r unique(tfa_data$category_cache)` conservation category codes.
+There are 3063 unique observations in TFL fauna dataset and  
+`r unique(tfa_data$species_code)` unique species.
 
 ```{r tsc_summary}
 tsc_unique<-unique(tsc_data$name_id) #870
-tsc_catcode_unique<-unique(tsc_data$category_cache) #40
 ```
 
-There are 3061 unique observations in TSC fauna dataset,  
-`r unique(tfa_data$species_code)` unique species and 
-`r unique(tfa_data$category_cache)` unique conservation category codes.
+There are 3061 unique observations in TSC fauna dataset and  
+`r unique(tfa_data$species_code)` unique species.
+
+```{r missing_observations_}
+tfa_data %>% 
+anti_join(tsc_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+tsc_data %>% 
+anti_join(tfa_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+```
+There are two observations missing from TSC and none from TFA. Suggest this is becasue there is no list or category code assigned to these two records?
 
 ## Taxonomy
 
@@ -727,12 +746,9 @@ tfa_data %>%
   anti_join(tsc_data, by="name_id") %>% 
   reactable::reactable(filterable = TRUE)
 
-tfa_data %>% 
-  anti_join(tsc_data, by = "source_id") %>% 
+tsc_data %>% 
+  anti_join(tfa_data, by = "source_id") %>% 
   reactable::reactable(filterable = TRUE)
-
-tfa_data %>% 
-  effective_to
 
 ```
 
