@@ -38,14 +38,9 @@ The code for all SCB workbooks is under version control at [github](https://gith
 The zip archive containing the MS Access database is downloaded from the data 
 catalogue, the archive is extracted, and a database connection is opened.
 
-```{r tfa_data_load, message=FALSE}
+```{r load_tfa, message=FALSE}
 tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-```
 
-## Lookup tables
-Lookup table columns are renamed to facilitate joining.
-
-```{r lookup_tables}
 # Lookup tables
 shires <- tfa_data$Shires %>%
   dplyr::transmute(
@@ -134,8 +129,8 @@ category <- tfa_data$`Category List` %>%
   )
 ```
 
-The following code chunk loads all data from TSC that is used in this workbook.
-```{r load_tsc}
+
+```{r load_tsc, message=FALSE}
 tsc_taxa <- "taxon" %>% 
   wastdr::wastd_GET(api_url=prod) %>% 
   wastdr::wastd_parse()
@@ -145,7 +140,7 @@ tsc_taxa <- "taxon" %>%
 #   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
 ```
 
-```{r save_point}
+```{r save_point, message=FALSE}
 if (file.exists("tracks.Rda")){
     load("tracks.Rda")
 } else {
