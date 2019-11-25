@@ -30,6 +30,7 @@ library(dplyr)
 library(readr)
 library(knitr)
 library(styler)
+library(janitor)
 
 library(ckanr)
 library(wastdr)
