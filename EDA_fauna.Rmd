@@ -32,8 +32,8 @@ non-technical audience. Feel free to expand the code blocks to view the process.
 The code for all SCB workbooks is under version control at 
 [github](https://github.com/dbca-wa/scarab-scripts).
 
-# Data
-## Extract and transform TFA Data
+
+# Extract and transform legacy Data from TFA
 Data from the Threatened Fauna Database (TFA) is downloaded from the 
 [TFA dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the DBCA data catalogue, then extracted and transformed.
@@ -265,13 +265,28 @@ tfa_cons_list_w_tsc <- tfa_cons_list %>%
   left_join(tfa_cons_crit,by=c("list_code","criteria_code"))
 ```
 
-## Extract and transform TSC Data
+# Extract and transform migrated Data from TSC
 Data from TSC is extracted through the TSC API and transformed into a useable
 format.
 
 Expand the code block below to view the process.
 
 ```{r load_tsc, message=FALSE}
+# WACensus is the upstream source of taxonomic names
+wace_names <- "public:herbie_hbvnames_public" %>% 
+    gs_getFeature() %>% 
+    magrittr::extract2("features") %>% 
+    {tibble::tibble(
+        name_id = purrr::map(., c("properties", "name_id")) %>% flatten_chr(),
+        wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
+    )}
+
+readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
+
+species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
+species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
+
+# TSC contains taxonomic names from WACensus
 tsc_taxa <- "taxon" %>% 
   wastdr::wastd_GET(api_url=prod) %>% 
   wastdr::wastd_parse()
@@ -320,16 +335,16 @@ if (file.exists("tracks.Rda")){
 ```
 
 
-## Load TFA data into TSC
+# Load legacy data from TFA into TSC
 In this section, the extracted and transformed data from TFA are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the 
 process.
 
-### Taxonomy
+## Taxonomy
 Taxonomic names are uploaded to TSC directly from WACensus in a separate workbook.
 The QA part of this workbook will compare TFA names to TSC names.
 
-### Conservation Listings
+## Conservation Listings
 This section loads conservation listings from TFA into TSC.
 
 Conservation listings are entered in triplicate:
@@ -594,15 +609,15 @@ tfa_listing_cat_epbc %>%
 ```
 
 
-### Occurrences
+## Occurrences
 
-### Conservation Documents
+## Conservation Documents
 
-### Fire History
+## Fire History
 
-### Conservation Threats and Actions
+## Conservation Threats and Actions
 
-# QA TFA and TSC
+# Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
 and TFA data as uploaded into TSC. 
 
@@ -701,7 +716,7 @@ true_mismatches %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-## Species mismatch between TFA and TSC
+### Species mismatch between TFA and TSC
 
 ```{r species_mismatches_}
 tfa_data %>% 
@@ -709,7 +724,7 @@ tfa_data %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-## Category mismatch between TFA and TSC
+### Category mismatch between TFA and TSC
 
 ```{r species_mismatches_}
 tfa_data %>% 
@@ -728,4 +743,10 @@ into TSC.
 tfa_cons_list_w_tsc %>% dplyr::filter(name_id == 0)
 ```
 
+## Occurrences
 
+## Conservation Documents
+
+## Fire History
+
+## Conservation Threats and Actions
