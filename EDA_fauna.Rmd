@@ -752,7 +752,7 @@ tsc_data %>%
 
 ```
 
-### Category mismatch between TFA and TSC
+### Category mismatch between TFA and TSC- THIS DOESN'T WORK
 
 ```{r species_mismatches_}
 tfa_data %>% 
@@ -820,8 +820,6 @@ dates %>%
   reactable::reactable()
 ```
 ## Occurrences
-
-tfa_data %>% filter(max(last_date_effective_from)
 
 ## Conservation Documents
 
