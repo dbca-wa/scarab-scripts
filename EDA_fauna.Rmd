@@ -767,22 +767,61 @@ These are phrase names and require to be assigned the `name_id` of the published
 name, once the published name is known and entered into WACensus, then propagated
 into TSC.
 
-Some conservation listings were not parsed. ActionPlan and RedList are not part of TSC. ActionPlan is a paper resource and RedList a separate online resource. BCA?
+Some conservation listings were not parsed. ActionPlan and RedList are not part of TSC. ActionPlan is a currently a paper resource and RedList a separate online resource that cannot, as yet, be parsed to TSC. BCA?
 
 ```{r}
 tfa_data %>% dplyr::filter(name_id == 0)
 
 tfa_cons_list_w_tsc %>% 
-  dplyr::filter(list_code == "ActionPlan") %>% 
-  dplyr::filter(list_code == "BCA") %>% 
-  dplyr::filter(list_code == "RedList")
+  dplyr::filter(list_code==c("ActionPlan","BCA","RedList")) %>% 
+  reactable::reactable(filterable = TRUE)
 ```
 
+Below are the dates of the most recent conservation criteria changes made in snapshot of the TFA parsed to TSC
+
 ``` {r}
-`r max(as.date(x$last_date_effective_from, '%m/%d/%y',data = tfa_data))`
-`r tfa_data %>% filter(max(last_date_effective_from))`
+tsc_effective_to <- tsc_data %>% 
+  dplyr::arrange(desc(effective_to)) %>%
+     slice(1) %>% 
+  dplyr::select(effective_to)
+            
+tsc_effective_from <- tsc_data %>% 
+  dplyr::arrange(desc(effective_from)) %>%
+     slice(1) %>% 
+  dplyr::select(effective_from)
+
+tsc_last_reviewed_on <- tsc_data %>% 
+  dplyr::arrange(desc(last_reviewed_on)) %>%
+     slice(1) %>% 
+  dplyr::select(last_reviewed_on)
+
+tfa_effective_to <- tfa_data %>% 
+  dplyr::arrange(desc(delisted_on)) %>%
+     slice(1) %>% 
+  select(delisted_on) %>% 
+  dplyr::rename(effective_to = delisted_on)
+            
+tfa_effective_from <- tfa_data %>% 
+  dplyr::arrange(desc(gazetted_on)) %>%
+     slice(1) %>% 
+  dplyr::select(gazetted_on) %>% 
+  dplyr::rename(effective_from = gazetted_on)
+
+tfa_last_reviewed_on <- tfa_data %>% 
+  dplyr::arrange(desc(last_reviewed_on)) %>%
+     slice(1) %>% 
+  dplyr::select(last_reviewed_on) 
+
+TFA <- c(tfa_effective_from,tfa_effective_to,tfa_last_reviewed_on)
+TSC <- c(tsc_effective_from,tsc_effective_to,tsc_last_reviewed_on)
+dates <- cbind(TFA,TSC)
+
+dates %>% 
+  reactable::reactable()
 ```
 ## Occurrences
+
+tfa_data %>% filter(max(last_date_effective_from)
 
 ## Conservation Documents
 
