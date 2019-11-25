@@ -111,6 +111,12 @@ species_notes <- tfa_data$`Species Notes` %>%
     species_notes = Notes %>% as.character()
   )
 
+category <- tfa_data$`Category List` %>%
+  dplyr::transmute(
+    category_id = Category %>% as.character(),
+    phylogenetic_category = CategoryName %>% as.character()
+  )
+
 # TODO species notes
 species <- tfa_data$`Species List` %>%
   dplyr::transmute(
@@ -175,12 +181,6 @@ resolution_m <- tibble::tibble(
     resolution_id = c(1,2,3,4,5,6),
     accuracy = c(50,100,1000, 10000, 50000, 100000)
 )
-
-category <- tfa_data$`Category List` %>%
-  dplyr::transmute(
-    category_id = Category %>% as.character(),
-    phylogenetic_category = CategoryName %>% as.character()
-  )
 
 tfa_cons_listings <- tfa_data$`Listing Names` %>%
   dplyr::transmute(
@@ -287,8 +287,8 @@ species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
 species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
 
 # TSC contains taxonomic names from WACensus
-tsc_taxa <- "taxon" %>% 
-  wastdr::wastd_GET(api_url=prod) %>% 
+tsc_taxa <- "taxon" %>%
+  wastdr::wastd_GET(api_url=prod, query = list(paraphyletic_groups__icontains=20)) %>%
   wastdr::wastd_parse()
 
 # tsc_comm <- "community" %>% 
@@ -313,8 +313,9 @@ tsc_cons_crit <- "conservationcriterion" %>%
  
 readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
 
-tsc_tcl <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
-  wastdr::parse_taxon_conservationlisting()
+tsc_tcl_raw <- wastdr::wastd_GET("taxon-conservationlisting") 
+
+tsc_tcl <- tsc_tcl_raw %>% wastdr::parse_taxon_conservationlisting()
 
 tsc_data <- tsc_tcl %>% 
   dplyr::rename(name_id = taxon) %>% 
@@ -624,9 +625,12 @@ and TFA data as uploaded into TSC.
 Data custodians should be able to comprehend this section, and be able to verify 
 that the data migration has worked correctly.
 
+
+Legacy data snapshot used for TFA was updated last on `r ckanr::resource_show("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")$last_modified`
+
 ## Summary statistics
 
-Check unique number of species by both spcies code and scientific name. 
+Check unique number of species by both species code and scientific name. 
 Check unique conservation criteria and conservation categories.
 ```{r tfa_summary}
 tfa_data <- tfa_cons_list_w_tsc %>% 
@@ -636,15 +640,15 @@ tfa_data <- tfa_cons_list_w_tsc %>%
   unite("category_cache", list_code:category_code, sep = " ", remove = FALSE)
 
 tfa_unique<-unique(tfa_data$name_id) #870
-tfa_catcode_unique<-unique(tfa_data$category_cache) #40
+tfa_catcode_unique<-unique(tfa_data$category_cache) #41
 ```
 
-There are 4014 unique observations in TFL fauna dataset,  
+There are 3063 unique observations in TFL fauna dataset,  
 `r unique(tfa_data$species_code)` unique species and 
 `r unique(tfa_data$category_cache)` conservation category codes.
 
 ```{r tsc_summary}
-tsc_unique<-unique(tsc_data$taxon) #870
+tsc_unique<-unique(tsc_data$name_id) #870
 tsc_catcode_unique<-unique(tsc_data$category_cache) #40
 ```
 
@@ -722,6 +726,14 @@ true_mismatches %>%
 tfa_data %>% 
   anti_join(tsc_data, by="name_id") %>% 
   reactable::reactable(filterable = TRUE)
+
+tfa_data %>% 
+  anti_join(tsc_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+tfa_data %>% 
+  effective_to
+
 ```
 
 ### Category mismatch between TFA and TSC
@@ -740,8 +752,11 @@ name, once the published name is known and entered into WACensus, then propagate
 into TSC.
 
 ```{r}
-tfa_cons_list_w_tsc %>% dplyr::filter(name_id == 0)
+tfa_data %>% dplyr::filter(name_id == 0)
 ```
+
+`r max(as.date(x$last_date_effective_from, '%m/%d/%y',data = tfa_data))`
+`r tfa_data %>% filter(max(last_date_effective_from))`
 
 ## Occurrences
 
