@@ -338,7 +338,7 @@ tsc_cons_crit <- "conservationcriterion" %>%
   dplyr::arrange(conservation_list, rank) %>% 
   dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
  
-readr::write_csv(conscrit,path = here::here("data","tsc_conscrit.csv"))
+readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
 ```
 
 ## TFA Conservation Listing
