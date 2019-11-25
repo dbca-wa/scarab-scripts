@@ -767,13 +767,21 @@ These are phrase names and require to be assigned the `name_id` of the published
 name, once the published name is known and entered into WACensus, then propagated
 into TSC.
 
+Some conservation listings were not parsed. ActionPlan and RedList are not part of TSC. ActionPlan is a paper resource and RedList a separate online resource. BCA?
+
 ```{r}
 tfa_data %>% dplyr::filter(name_id == 0)
+
+tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code == "ActionPlan") %>% 
+  dplyr::filter(list_code == "BCA") %>% 
+  dplyr::filter(list_code == "RedList")
 ```
 
+``` {r}
 `r max(as.date(x$last_date_effective_from, '%m/%d/%y',data = tfa_data))`
 `r tfa_data %>% filter(max(last_date_effective_from))`
-
+```
 ## Occurrences
 
 ## Conservation Documents
