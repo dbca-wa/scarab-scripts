@@ -711,7 +711,7 @@ conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>%
     rank = purrr::map_int(., "rank"),
     code = purrr::map_chr(., "code"),
     label = purrr::map_chr(., "label"),
-    description = purrr::map_int(., "description"),
+    description = purrr::map_chr(., "description"),
     current = purrr::map_chr(., "current")
   )} %>% 
   dplyr::arrange(list_id, rank) %>% 
@@ -871,7 +871,7 @@ tfl_listing_cat_priority <- flora_cons_listing_w_tsc %>%
 
 tfl_listing_cat_priority %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = uat, verbose=TRUE)
+                     api_url = prod, verbose=TRUE)
 
 # Active Priority listings:
 tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
@@ -933,7 +933,7 @@ tfl_listing_cat_iucn1994 <- flora_cons_listing_w_tsc %>%
 
 tfl_listing_cat_iucn1994 %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = uat, verbose = TRUE)
+                     api_url = prod, verbose = TRUE)
 
 # IUCN 2001
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
