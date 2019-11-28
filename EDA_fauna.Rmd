@@ -752,14 +752,6 @@ tsc_data %>%
 
 ```
 
-### Category mismatch between TFA and TSC- THIS DOESN'T WORK
-
-```{r species_mismatches_}
-tfa_data %>% 
-  anti_join(tsc_data, by="category_cache") %>% 
-  reactable::reactable(filterable = TRUE)
-```
-
 ## Conservation Listing
 
 Some TFA cons listings have a name_id of 0. 
@@ -777,6 +769,16 @@ tfa_cons_list_w_tsc %>%
   reactable::reactable(filterable = TRUE)
 
 unique(tfa_cons_list_w_tsc$list_code)
+```
+
+**QA** Conservation criteria were manually mapped for each species, therefore they need to be checked to confirm whether the mapping is correct. In addition, some conservation criteria could not be mapped as they do not exist in the list/category_code. These need to be corrected before the manual mapping can be updated and the correct criteria assigned for all species.
+
+```{r }
+query_manual_mapping <- tfa_data %>% 
+  dplyr::select(c(source_id,name_id,list_code,category_code,criteria_code,assigned_as_in_tsc,comments_MP,actions))
+
+query_manual_mapping %>% 
+  reactable::reactable(filterable = TRUE) 
 ```
 
 Below are the dates of the most recent conservation criteria changes made in snapshot of the TFA parsed to TSC
@@ -828,7 +830,7 @@ dates %>%
                                       last_reviewed_on = colDef(format = colFormat(date = TRUE))))
 ```
 
-Summary of the number of conservation listings for each category found in TFA and TSC
+Summary of the number of conservation listings for each category found in TFA and TSC. 
 
 ```{r summary_conservation_category_listings}
 
