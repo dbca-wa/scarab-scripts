@@ -528,7 +528,6 @@ tfl_listing_cat_iucn2012 <- tfl_cons_listing_w_tsc %>%
 #   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 ```
 
-
 ## Occurrences
 
 ## Conservation Documents
@@ -545,23 +544,9 @@ format.
 Expand the code block below to view the process.
 
 ```{r load_tsc, message=FALSE}
-# WACensus is the upstream source of taxonomic names
-wace_names <- "public:herbie_hbvnames_public" %>% 
-    gs_getFeature() %>% 
-    magrittr::extract2("features") %>% 
-    {tibble::tibble(
-        name_id = purrr::map(., c("properties", "name_id")) %>% flatten_chr(),
-        wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
-    )}
-
-readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
-
-species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
-species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
-
 # TSC contains taxonomic names from WACensus
 tsc_taxa_raw <- "taxon" %>%
-  wastdr::wastd_GET(api_url=prod, query = list(paraphyletic_groups__icontains=20)) 
+  wastdr::wastd_GET(api_url=prod, query = list(paraphyletic_groups__icontains=21)) 
 
 tsc_taxa <- tsc_taxa_raw %>%
   wastdr::wastd_parse() %>% 
