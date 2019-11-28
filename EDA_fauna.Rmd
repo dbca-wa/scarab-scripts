@@ -767,7 +767,7 @@ These are phrase names and require to be assigned the `name_id` of the published
 name, once the published name is known and entered into WACensus, then propagated
 into TSC.
 
-Some conservation listings were not parsed. ActionPlan and RedList are not part of TSC. ActionPlan is a currently a paper resource and RedList a separate online resource that cannot, as yet, be parsed to TSC. BCA?
+Some conservation listings were not parsed. ActionPlan and RedList are not part of TSC. ActionPlan is currently a paper resource and RedList a separate online resource that cannot, as yet, be parsed to TSC. BCA?
 
 ```{r}
 tfa_data %>% dplyr::filter(name_id == 0)
@@ -775,11 +775,13 @@ tfa_data %>% dplyr::filter(name_id == 0)
 tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code==c("ActionPlan","BCA","RedList")) %>% 
   reactable::reactable(filterable = TRUE)
+
+unique(tfa_cons_list_w_tsc$list_code)
 ```
 
 Below are the dates of the most recent conservation criteria changes made in snapshot of the TFA parsed to TSC
 
-``` {r}
+``` {r effective_dates}
 tsc_effective_to <- tsc_data %>% 
   dplyr::arrange(desc(effective_to)) %>%
      slice(1) %>% 
@@ -810,15 +812,101 @@ tfa_effective_from <- tfa_data %>%
 tfa_last_reviewed_on <- tfa_data %>% 
   dplyr::arrange(desc(last_reviewed_on)) %>%
      slice(1) %>% 
-  dplyr::select(last_reviewed_on) 
+  dplyr::select(last_reviewed_on)
 
-TFA <- c(tfa_effective_from,tfa_effective_to,tfa_last_reviewed_on)
-TSC <- c(tsc_effective_from,tsc_effective_to,tsc_last_reviewed_on)
-dates <- cbind(TFA,TSC)
+TFA <- as.data.frame(c(tfa_effective_from,tfa_effective_to,tfa_last_reviewed_on))
+TSC <- as.data.frame(c(tsc_effective_from,tsc_effective_to,tsc_last_reviewed_on))
 
+dates <- TFA %>% 
+  rbind(TSC) %>% 
+  cbind(Database = c("TFA","TSC")) %>% 
+  select("Database", everything())
+ 
 dates %>% 
-  reactable::reactable()
+  reactable::reactable(columns = list(effective_from = colDef(format = colFormat(date = TRUE)),
+                                      effective_to = colDef(format = colFormat(date = TRUE)),
+                                      last_reviewed_on = colDef(format = colFormat(date = TRUE))))
 ```
+
+Summary of the number of conservation listings for each category found in TFA and TSC
+
+```{r summary_conservation_category_listings}
+
+iucn1994 <-as.data.frame(tfa_listing_cat_iucn1994 %>% 
+  nrow())
+colnames(iucn1994) <- "TFA"
+iucn2001 <-as.data.frame(tfa_listing_cat_iucn2001%>% 
+  nrow())
+colnames(iucn2001) <- "TFA"
+iucn2012 <-as.data.frame(tfa_listing_cat_iucn2012 %>% 
+  nrow())
+colnames(iucn2012) <- "TFA"
+wawca <-as.data.frame(tfa_listing_cat_wawca %>% 
+  nrow())
+colnames(wawca) <- "TFA"
+waps <-as.data.frame(tfa_listing_cat_waps %>% 
+  nrow())
+colnames(waps) <- "TFA"
+spfn <-as.data.frame(tfa_listing_cat_spfn %>% 
+  nrow())
+colnames(spfn) <- "TFA"
+epbc <-as.data.frame(tfa_listing_cat_epbc %>% 
+  nrow())
+colnames(epbc) <- "TFA"
+
+iucn1994_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN1994")) %>%
+  nrow())
+colnames(iucn1994_TSC) <- "TSC"
+
+iucn2001_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN2001")) %>%
+  nrow())
+colnames(iucn2001_TSC) <- "TSC"
+
+iucn2012_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN2012")) %>%
+  nrow())
+colnames(iucn2012_TSC) <- "TSC"
+
+wawca_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "WAWCA")) %>%
+  nrow())
+colnames(wawca_TSC) <- "TSC"
+
+waps_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "WAPS")) %>%
+  nrow())
+colnames(waps_TSC) <- "TSC"
+
+spfn_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "SPFN")) %>%
+  nrow())
+colnames(spfn_TSC) <- "TSC"
+
+epbc_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "EPBC")) %>%
+  nrow())
+colnames(epbc_TSC) <- "TSC"
+
+cons_cat_TFA <- rbind(iucn1994,iucn2001,iucn2012,epbc,spfn,wawca,waps)
+cons_cat_TSC <- rbind(iucn1994_TSC,iucn2001_TSC,iucn2012_TSC,epbc_TSC,spfn_TSC,wawca_TSC,waps_TSC) 
+
+cons_cat_summary <- cons_cat_TFA %>% 
+  cbind(cons_cat_TSC) %>% 
+  cbind(Category = c("IUCN1994","IUCN2001","IUCN2012","EPBC","SPFN","WAWCA","WAPF")) %>% 
+  dplyr::select("Category", everything())
+
+cons_cat_summary %>% reactable::reactable()
+```
+
 ## Occurrences
 
 ## Conservation Documents
