@@ -1,0 +1,918 @@
+---
+title: "Data ETL: Fauna"
+author: "Florian Mayer and Milly Piggott, DBCA"
+date: "`r Sys.time()`"
+always_allow_html: yes
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    fig_width: 10
+    fig_height: 6
+    code_folding: hide
+    theme: lumen
+  pdf_document: default
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = TRUE)
+source("helpers.R")
+```
+
+# Context
+This workbook summarises the legacy data migration and QA for the Threatened
+and Priority Fauna database (TFL).
+
+
+TODO diagram data flow
+
+By default, all code blocks are collapsed to provide better readability to the
+non-technical audience. Feel free to expand the code blocks to view the process.
+
+The code for all SCB workbooks is under version control at 
+[github](https://github.com/dbca-wa/scarab-scripts).
+
+
+# Extract and transform legacy Data from TFA
+Data from the Threatened Fauna Database (TFA) is downloaded from the 
+[TFA dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
+on the DBCA data catalogue, then extracted and transformed.
+
+```{r load_tfa, message=FALSE}
+tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+
+# Lookup tables
+shires <- tfa_data$Shires %>%
+  dplyr::transmute(
+    lga_id = LGACode %>% as.integer(),
+    shire_name = LGAName %>% as.character(),
+    shire_label = LGAName2 %>% as.character()
+  )
+
+tenure <- tfa_data$`Land Tenure` %>%
+  dplyr::transmute(
+    tenure_id = TenCode %>% as.character(),
+    tenure = Tenure %>% as.character()
+  )
+
+vegetation_types <- tfa_data$`Vegetation Types` %>%
+  dplyr::mutate(
+    vegetation_type_id = VegCode %>% as.character(),
+    vegetation_type = VegTypeName %>% as.character()
+  )
+
+certainty <- tfa_data$Certainty %>%
+  dplyr::transmute(
+    certainty_id = Code %>% as.integer(),
+    certainty = Certainty %>% as.character()
+  )
+
+users <- tibble::tibble(
+  username = c(
+    "AmyM", "AbbyT", "BrianaWingfield",
+    "ChristineFreegard", "GeorginaA", "KellieMantle",
+    "NickyMarlow", "PeterMawson", "PeterOrell"
+  ),
+  initials = c(
+    "AM", "AT", "BW",
+    "CF", "GA", "KM",
+    "NM", "PM", "PO"
+  ),
+  name = c(
+    "Amy Mutton", "Abby Thomas", "Briana Wingfield",
+    "Christine Freegard", "Georgina Anderson", "Kellie Mantle",
+    "Nicky Marlow", "Peter Mawson", "Peter Orell"
+  )
+)
+
+# Taxonomy
+phylo_class <- tfa_data$`Class List` %>%
+  dplyr::transmute(
+    phylo_class_id = ClassCode %>% as.character(),
+    phylo_class_common_name = ClassName %>% as.character(),
+    phylo_class_scientific_name = Class %>% as.character(),
+    order = ClassOrder %>% as.character()
+  ) %>%
+  dplyr::arrange(order)
+
+phylo_group <- tfa_data$`Group List` %>%
+  dplyr::transmute(
+    phylo_group_id = Group %>% as.integer(),
+    phylo_group_name = GroupName %>% as.character(),
+    phylo_class_id = Class %>% as.character()
+    # order = GroupOrder %>% as.character()
+  ) %>%
+  dplyr::left_join(phylo_class, by = "phylo_class_id")
+# skimr::skim(group)
+
+species_notes <- tfa_data$`Species Notes` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    species_notes = Notes %>% as.character()
+  )
+
+category <- tfa_data$`Category List` %>%
+  dplyr::transmute(
+    category_id = Category %>% as.character(),
+    phylogenetic_category = CategoryName %>% as.character()
+  )
+
+# TODO species notes
+species <- tfa_data$`Species List` %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    old_species_code = OldCode %>% as.character(),
+    short_code = ShCode %>% as.character(),
+    name_id = NameID %>% as.character(),
+    scientific_name = ScName %>% as.character(),
+    common_name = ComName %>% as.character(),
+    phylo_group_id = PhyloGroup %>% as.integer(),
+    family = Family %>% as.character(),
+    genus = Genus %>% as.character(),
+    species = Species %>% as.character(),
+    authority_species = Authority.sp %>% as.character(),
+    subspecies = Subspecies %>% as.character(),
+    authority_subspecies = Authority.ssp %>% as.character(),
+    # file_number_calm = CALMFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "CALM")),
+    # file_number_dec = DECFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DEC")),
+    # file_number_dpaw = DPaWFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DPAW")),
+    # file_number_dbca = DBCAFileNum %>%
+    #   as.character() %>%
+    #   map(~ as_filenumber(., prefix = "DBCA")),
+    category_id = Category %>% as.character(),
+    origin = Origin %>% as.character(), # N - native, I - introduced
+    # region_id_list = Region %>% map(~ as.list(strsplit(., ",")[[1]] %>% as.integer())),
+    taxon_id = TaxonId %>% as.logical()
+    # translocated = Trans %>% as.character(), # E - extant, T - translocated
+    # accept_new_records = Incl %>% as.logical(), # only FALSE in old records
+    # species_can_be_trapped = Trap %>% as.logical(),
+    # only_sighting_type_surveys = Sight %>% as.logical(),
+    # could_have_nest_box = Nbox %>% as.### Datalogical(),
+    # could_display_secondary_signs = Sign %>% as.logical(),
+    # can_associate_band_number = BANo %>% as.logical(),
+    # buffer = Buffer %>% as.character(), # NA 0 1 2 3 - unused
+    # estimated_lifespan = EST.LIFE %>% as.integer() # NA  0 10  7 15  6  8
+  ) %>%
+  dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
+  dplyr::left_join(species_notes, by = "species_code") %>%
+  dplyr::left_join(category, by = "category_id")
+species_skim <- skimr::skim(species)
+# print(species_skim)
+DT::datatable(species)
+
+# Just the essentials: species code, name_id, names.
+species_names <- species %>%
+  dplyr::select(species_code, name_id, scientific_name, common_name)
+
+resolution <- tfa_data$Resolution %>%
+  dplyr::transmute(
+    resolution_id = ResCode %>% as.integer(),
+    resolution_geographic_coords = ResolutionLL %>% as.character(),
+    resolution_projected_coords = ResolutionUTM %>% as.character()
+  )
+
+resolution_m <- tibble::tibble(
+    resolution_id = c(1,2,3,4,5,6),
+    accuracy = c(50,100,1000, 10000, 50000, 100000)
+)
+
+tfa_cons_listings <- tfa_data$`Listing Names` %>%
+  dplyr::transmute(
+    list_code = ListCode %>% as.character(),
+    list_name = ListName %>% as.character(),
+    list_order = ListOrder %>% as.integer()
+  ) %>%
+  dplyr::arrange(list_order) %>% dplyr::glimpse()
+
+dec_tfa_cons_lists <- tfa_data$`DEC List Names` %>%
+  dplyr::transmute(
+    dec_listing_id = DECCode %>% as.character(),
+    dec_listing_name = DECList %>% as.character(),
+    dec_listing_order = DECOrder %>% as.integer()
+  ) %>%
+  dplyr::arrange(dec_listing_order)
+dec_tfa_cons_lists %>% skim() 
+dec_tfa_cons_lists %>% dplyr::glimpse()
+
+# make_coldef(listing_category)
+tfa_cons_cat <- tfa_data$`Listing Category` %>%
+  dplyr::transmute(
+    list_code = ListCode %>% as.character(),
+    category_code = StatCode %>% as.character(),
+    category_label = Status %>% as.character(),
+    status_expand = StatusExpand %>% as.character(),
+    explanations = Explanations %>% as.character(),
+    notes = Notes %>% as.character(),
+    order = Order %>% as.integer(),
+    dec_listing_id = DECCode %>% as.character()
+  ) %>%
+  dplyr::arrange(order) %>%
+  dplyr::left_join(tfa_cons_listings, by = "list_code") %>%
+  dplyr::left_join(dec_tfa_cons_lists, by = "dec_listing_id")
+
+tfa_cons_list <- tfa_data$Gazettal %>%
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    list_code = ListCode %>% as.character(),
+    category_code = StatCode %>% as.character(),
+    population = Popn %>% as.character(),
+    criteria_code = Reasons %>% as.character(),
+    authority = AUTHORITY %>% as.character(),
+    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
+    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    reviewed_by = INTERIM %>% as.character(),
+    review_outcome = TRANSLOCATION %>% as.character(),
+    comments = Comments %>% as.character()
+  ) %>%
+  dplyr::left_join(species_names, by = "species_code") %>% 
+  tibble::rowid_to_column("source_id")
+tfa_cons_list %>% skim()
+tfa_cons_list %>% head(10) %>% DT::datatable()
+readr::write_csv(tfa_cons_list, path = here::here("data","tfa_cons_list.csv"))
+
+# ETL condensed criteria mixed with free text, therefore must be manually mapped
+all_crit_map <- tfa_cons_list %>%
+  dplyr::group_by(list_code) %>% 
+  dplyr::distinct(criteria_code) %>% 
+  dplyr::arrange(list_code, criteria_code) %>% 
+  dplyr::select(list_code, criteria_code)
+readr::write_csv(all_crit_map, path = here::here("data","all_tfa_conscrit.csv"))
+
+# Load manual mapping of TFA cons criteria from CSV file,  join to tfa_cons_crit
+tfa_cons_crit <- here::here("tfa_conscrit_w_tsc.csv") %>%
+readr::read_csv(
+  col_types = cols(
+    list_code = col_character(),
+    tsc_criteria = col_character(),
+    criteria_code = col_character(),
+    assigned_as_in_tsc = col_character(),
+    comments_MP = col_character(),
+    actions = col_character()
+  )
+ ) %>%
+dplyr::mutate(
+  tsc_criteria = tsc_criteria %>% chr2int()
+)
+
+tfa_cons_list_w_tsc <- tfa_cons_list %>%
+  left_join(tfa_cons_crit,by=c("list_code","criteria_code"))
+```
+
+# Extract and transform conservation criteria Data from TSC
+Conservation criteria Data from TSC is extracted through the TSC API and transformed into a useable
+format for manual mapping to TFA.
+``` {r extract_tsc_cons_criteria}
+tsc_cons_list <- "conservationlist" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  wastdr::wastd_parse()
+
+tsc_cons_cat <- "conservationcategory" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::arrange(conservation_list, rank) %>% 
+  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
+
+tsc_cons_crit <- "conservationcriterion" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::arrange(conservation_list, rank) %>% 
+  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
+ 
+readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
+
+```
+
+# Load legacy data from TFA into TSC
+In this section, the extracted and transformed data from TFA are loaded into TSC
+using the TSC API. The code is collapsed; expand the code blocks to view the 
+process.
+
+## Taxonomy
+Taxonomic names are uploaded to TSC directly from WACensus in a separate workbook.
+The QA part of this workbook will compare TFA names to TSC names.
+
+## Conservation Listings
+This section loads conservation listings from TFA into TSC.
+
+Conservation listings are entered in triplicate:
+
+Level 1: Legislation
+
+* WAWCA is the WA Wildlife Conservation Act, the legistation under which taxa 
+  can be gazetted as specially protected.
+* WAWCA has been superseded by the Biodiversity Conservation Act 2016 on 01/01/2019.
+* All conservation listings were/are gazetted under the respective act (WAWCA or BCA).
+
+Level 2: Gazette
+
+* SPFN = "Wildlife Conservation (Specially Protected Fauna) Notice, Schedules"
+* SPFN are the gazetted schedules.
+
+Level 3: Assigned conservation categories and criteria
+
+* DBCA has assigned actual conservation cat&crit to taxa following the IUCN definitions, 
+  or similar cat&crit of own design before IUCN was published.
+* These "IUCN" cons listings are the actual listings we want to preserve.
+
+In future, only IUCN 2012 cat&crit will be assigned to taxa.
+The list of all listed taxa will be published by the government gazette annually, 
+which will set the life cycle status of our IUN listings to "gazetted".
+The underlying legislation (from now on, the BCA) is evident out of the context 
+and does not have to be entered as conservation listing into TSC.
+
+ETL decisions for Fauna cons listings:
+
+* Fauna WAPF = TSC WAPS = Priority species.
+* Fauna RedList = TSC IUCN 2012 (or whichever earlier version was applicable 
+  at the time).
+* Fauna ActionPlan was decided to be discarded.
+* Fauna has three empty listings (no list, no cat, no crit) - discard?
+
+```{r tfa_cons_listing_upload, eval=F}
+# tsc_conscat$id is the TSC ID for the cons category
+# tsc_conscat$label = tec_cons_listing_categories$category_code
+tsc_conscat_sp <- "conservationcategory" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  magrittr::extract2("features") %>% 
+  {tibble::tibble(
+    tsc_category_id = purrr::map_int(., "id"),
+    category_code = purrr::map_chr(., "code"),
+    tsc_label = purrr::map_chr(., "label"),
+    conservation_list = purrr::map_chr(., "conservation_list")
+  )} %>% 
+  dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
+
+
+# IUCN cons listing
+# IUCN 2012 3
+tfa_listing_cat_iucn2012 <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code=="IUCN(2012)") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3), 
+                   by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        last_reviewed_on=last_reviewed_on,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = tsc_criteria,
+        comments = glue::glue("Reviewed by {reviewed_by}\n\n",
+                              "Review outcome: {review_outcome}\n\n",
+                              "Comments: {comments}")
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_iucn2012 %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting",
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+  )
+
+# IUCN(2001) 4
+tfa_listing_cat_iucn2001 <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code=="IUCN(2001)") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 4), 
+                   by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        last_reviewed_on=last_reviewed_on,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = tsc_criteria,
+        comments = glue::glue("Reviewed by {reviewed_by}\n\n",
+                              "Review outcome: {review_outcome}\n\n",
+                              "Comments: {comments}")
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_iucn2001 %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+# IUCN(1994) 5
+tfa_listing_cat_iucn1994 <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code=="IUCN(1994)") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 5), 
+                   by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        last_reviewed_on=last_reviewed_on,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = tsc_criteria,
+        comments = glue::glue("Reviewed by {reviewed_by}\n\n",
+                              "Review outcome: {review_outcome}\n\n",
+                              "Comments: {comments}")
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_iucn1994 %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+# WAWCA 1
+tfa_listing_cat_wawca <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code=="WAWCA") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 1), 
+                   by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        last_reviewed_on=last_reviewed_on,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = tsc_criteria,
+        comments = glue::glue("Reviewed by {reviewed_by}\n\n",
+                              "Review outcome: {review_outcome}\n\n",
+                              "Comments: {comments}")
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_wawca %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+# SPFN 2
+tfa_listing_cat_spfn <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code=="SPFN") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 2), 
+                   by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        last_reviewed_on=last_reviewed_on,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = tsc_criteria,
+        comments = glue::glue("Reviewed by {reviewed_by}\n\n",
+                              "Review outcome: {review_outcome}\n\n",
+                              "Comments: {comments}")
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_spfn %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+# WAPS 6
+tfa_listing_cat_waps <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code=="WAPF") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 6), 
+                   by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 0,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        last_reviewed_on=last_reviewed_on,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = tsc_criteria,
+        comments = glue::glue("Reviewed by {reviewed_by}\n\n",
+                              "Review outcome: {review_outcome}\n\n",
+                              "Comments: {comments}")
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_waps %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+# EPBC 7
+tfa_listing_cat_epbc <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code=="EPBC") %>% 
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 7), 
+                   by="category_code") %>% 
+  dplyr::transmute(
+        source = 1, # TaxonGaz.source TFA
+        source_id = source_id %>% as.character(),
+        scope = 1,
+        status = ifelse(is.na(delisted_on), 80, 90),
+        effective_from = gazetted_on,
+        effective_to=delisted_on,
+        last_reviewed_on=last_reviewed_on,
+        taxon = name_id %>% as.numeric,
+        category = tsc_category_id %>% as.list(),
+        criteria = tsc_criteria,
+        comments = glue::glue("Reviewed by {reviewed_by}\n\n",
+                              "Review outcome: {review_outcome}\n\n",
+                              "Comments: {comments}")
+    ) %>% 
+  dplyr::filter(!is.na(category)) %>% 
+  dplyr::filter(taxon!=0)
+
+tfa_listing_cat_epbc %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+```
+
+
+## Occurrences
+
+## Conservation Documents
+
+## Fire History
+
+## Conservation Threats and Actions
+
+
+# Extract and transform migrated Data from TSC
+Data from TSC is extracted through the TSC API and transformed into a useable
+format.
+
+Expand the code block below to view the process.
+
+```{r load_tsc, message=FALSE}
+# WACensus is the upstream source of taxonomic names
+wace_names <- "public:herbie_hbvnames_public" %>% 
+    gs_getFeature() %>% 
+    magrittr::extract2("features") %>% 
+    {tibble::tibble(
+        name_id = purrr::map(., c("properties", "name_id")) %>% flatten_chr(),
+        wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
+    )}
+
+readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
+
+species_nid <- species %>% dplyr::left_join(wace_names, by="name_id")
+species_name <- species %>% dplyr::left_join(wace_names, by=c("scientific_name" = "wace_name"))
+
+# TSC contains taxonomic names from WACensus
+tsc_taxa_raw <- "taxon" %>%
+  wastdr::wastd_GET(api_url=prod, query = list(paraphyletic_groups__icontains=20)) 
+
+tsc_taxa <- tsc_taxa_raw %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::mutate(name_id = name_id %>% as.character) 
+
+# tsc_comm <- "community" %>% 
+#   wastdr::wastd_GET(api_url=prod) %>% 
+#   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
+
+tsc_tcl_raw <- wastdr::wastd_GET("taxon-conservationlisting") 
+
+tsc_tcl <- tsc_tcl_raw %>% wastdr::parse_taxon_conservationlisting() %>% 
+  dplyr::rename(name_id = taxon) %>% 
+  dplyr::mutate(name_id = name_id %>% as.character) 
+
+tsc_data <- tsc_tcl %>% 
+  dplyr::inner_join(tsc_taxa,by = "name_id")
+```
+
+```{r save_point, message=FALSE}
+if (file.exists("tracks.Rda")){
+    load("tracks.Rda")
+} else {
+  save(
+    tsc_taxa,
+    # tsc_comm
+    # TODO add all data objects to keep in here
+    file = here::here("data", "fauna.Rda")
+  )
+}
+```
+
+
+# Compare legacy from TFA to migrated data from TSC
+This section provides an automated comparison between original data from TFA 
+and TFA data as uploaded into TSC. 
+
+Data custodians should be able to comprehend this section, and be able to verify 
+that the data migration has worked correctly.
+
+
+Legacy data snapshot used for TFA was updated last on `r ckanr::resource_show("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")$last_modified`
+
+## Summary statistics
+
+Check unique number of species by name_id.
+Check unique number of observations and identify observations missing from TSC compared to TFA.
+```{r tfa_summary}
+tfa_data <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code!="ActionPlan") %>% 
+  dplyr::filter(list_code!="BCA") %>% 
+  dplyr::filter(list_code!="RedList") %>% 
+  dplyr::mutate(source_id = source_id %>% as.character) %>% 
+  tidyr::unite("category_cache", list_code:category_code, sep = " ", remove = FALSE)
+
+tfa_unique<-unique(tfa_data$name_id) #870
+```
+
+There are 3063 unique observations in TFL fauna dataset and  
+`r unique(tfa_data$species_code)` unique species.
+
+```{r tsc_summary}
+tsc_unique<-unique(tsc_data$name_id) #870
+```
+
+There are 3061 unique observations in TSC fauna dataset and  
+`r unique(tfa_data$species_code)` unique species.
+
+```{r missing_observations_}
+tfa_data %>% 
+anti_join(tsc_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+tsc_data %>% 
+anti_join(tfa_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+```
+There are two observations missing from TSC and none from TFA. Suggest this is becasue there is no list or category code assigned to these two records?
+
+## Taxonomy
+
+### Name mismatches TFA
+For a given NameID, the scientific name in TFA should be identical to 
+the scientific name in WACensus with the same NameID. 
+A name mismatch is an indication for review.
+
+```{r wacensus_names}
+wacensus_names <- here::here("data","wace_names.csv") %>%
+  readr::read_csv(col_types = cols(
+      name_id = col_character()
+      )
+)
+tfa_data_wacensus <- tfa_cons_list_w_tsc %>% 
+  dplyr::left_join(wacensus_names, by="name_id")
+```
+
+```{r wacensus_name_mismatch}
+name_mismatches <- tfa_data_wacensus %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
+```
+
+#### Mismatches containing "subsp"
+WACensus names contain "subsp." whereas TFA don't. 
+Therefore, scientific name mismatches by only the "subsp" can be ignored.
+
+**QA** Review this list to make sure both WACensus and TFA mean the same name.
+If the TFA "scientific_name" means a different taxon than the "wace_name", TFA's
+NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_subsp}
+name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% 
+  reactable::reactable(filterable = TRUE)
+```
+
+#### Typo mismatches
+The remaining mismatches contain minor differences, such as "sp." vs "sp", parentheses and quotation marks.
+
+```{r name_mismatches_typo}
+name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% 
+  reactable::reactable(filterable = TRUE)
+```
+
+#### True mismatches
+The remaining mismatches require a review of the scientific name or NameID in TFA.
+
+**QA** If the TFA "scientific_name" is meant to refer to a different taxon than the "wace_name", 
+TFA's NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_real}
+drop_cruft <- . %>% stringr::str_remove_all("[.()'\"]|sp|subsp") %>% stringr::str_replace_all("  ", " ")
+true_mismatches <- tfa_data_wacensus %>% 
+    dplyr::mutate(
+        scientific_name = scientific_name %>% drop_cruft,
+        wace_name = wace_name %>% drop_cruft
+    ) %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
+
+true_mismatches %>% 
+  reactable::reactable(filterable = TRUE)
+```
+
+### Species mismatch between TFA and TSC
+
+```{r species_mismatches_}
+tfa_data %>% 
+  anti_join(tsc_data, by="name_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+tsc_data %>% 
+  anti_join(tfa_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+```
+
+## Conservation Listing
+
+Some TFA cons listings have a name_id of 0. 
+These are phrase names and require to be assigned the `name_id` of the published 
+name, once the published name is known and entered into WACensus, then propagated
+into TSC.
+
+Some conservation listings were not parsed. ActionPlan and RedList are not part of TSC. ActionPlan is currently a paper resource and RedList a separate online resource that cannot, as yet, be parsed to TSC. BCA?
+
+```{r}
+tfa_data %>% dplyr::filter(name_id == 0)
+
+tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code==c("ActionPlan","BCA","RedList")) %>% 
+  reactable::reactable(filterable = TRUE)
+
+unique(tfa_cons_list_w_tsc$list_code)
+```
+
+**QA** Conservation criteria were manually mapped for each species, therefore they need to be checked to confirm whether the mapping is correct. In addition, some conservation criteria could not be mapped as they do not exist in the list/category_code. These need to be corrected before the manual mapping can be updated and the correct criteria assigned for all species.
+
+```{r }
+query_manual_mapping <- tfa_data %>% 
+  dplyr::select(c(source_id,name_id,list_code,category_code,criteria_code,assigned_as_in_tsc,comments_MP,actions))
+
+query_manual_mapping %>% 
+  reactable::reactable(filterable = TRUE) 
+```
+
+Below are the dates of the most recent conservation criteria changes made in snapshot of the TFA parsed to TSC
+
+``` {r effective_dates}
+tsc_effective_to <- tsc_data %>% 
+  dplyr::arrange(desc(effective_to)) %>%
+     slice(1) %>% 
+  dplyr::select(effective_to)
+            
+tsc_effective_from <- tsc_data %>% 
+  dplyr::arrange(desc(effective_from)) %>%
+     slice(1) %>% 
+  dplyr::select(effective_from)
+
+tsc_last_reviewed_on <- tsc_data %>% 
+  dplyr::arrange(desc(last_reviewed_on)) %>%
+     slice(1) %>% 
+  dplyr::select(last_reviewed_on)
+
+tfa_effective_to <- tfa_data %>% 
+  dplyr::arrange(desc(delisted_on)) %>%
+     slice(1) %>% 
+  select(delisted_on) %>% 
+  dplyr::rename(effective_to = delisted_on)
+            
+tfa_effective_from <- tfa_data %>% 
+  dplyr::arrange(desc(gazetted_on)) %>%
+     slice(1) %>% 
+  dplyr::select(gazetted_on) %>% 
+  dplyr::rename(effective_from = gazetted_on)
+
+tfa_last_reviewed_on <- tfa_data %>% 
+  dplyr::arrange(desc(last_reviewed_on)) %>%
+     slice(1) %>% 
+  dplyr::select(last_reviewed_on)
+
+TFA <- as.data.frame(c(tfa_effective_from,tfa_effective_to,tfa_last_reviewed_on))
+TSC <- as.data.frame(c(tsc_effective_from,tsc_effective_to,tsc_last_reviewed_on))
+
+dates <- TFA %>% 
+  rbind(TSC) %>% 
+  cbind(Database = c("TFA","TSC")) %>% 
+  select("Database", everything())
+ 
+dates %>% 
+  reactable::reactable(columns = list(effective_from = colDef(format = colFormat(date = TRUE)),
+                                      effective_to = colDef(format = colFormat(date = TRUE)),
+                                      last_reviewed_on = colDef(format = colFormat(date = TRUE))))
+```
+
+Summary of the number of conservation listings for each category found in TFA and TSC. 
+
+```{r summary_conservation_category_listings}
+
+iucn1994 <-as.data.frame(tfa_listing_cat_iucn1994 %>% 
+  nrow())
+colnames(iucn1994) <- "TFA"
+iucn2001 <-as.data.frame(tfa_listing_cat_iucn2001%>% 
+  nrow())
+colnames(iucn2001) <- "TFA"
+iucn2012 <-as.data.frame(tfa_listing_cat_iucn2012 %>% 
+  nrow())
+colnames(iucn2012) <- "TFA"
+wawca <-as.data.frame(tfa_listing_cat_wawca %>% 
+  nrow())
+colnames(wawca) <- "TFA"
+waps <-as.data.frame(tfa_listing_cat_waps %>% 
+  nrow())
+colnames(waps) <- "TFA"
+spfn <-as.data.frame(tfa_listing_cat_spfn %>% 
+  nrow())
+colnames(spfn) <- "TFA"
+epbc <-as.data.frame(tfa_listing_cat_epbc %>% 
+  nrow())
+colnames(epbc) <- "TFA"
+
+iucn1994_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN1994")) %>%
+  nrow())
+colnames(iucn1994_TSC) <- "TSC"
+
+iucn2001_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN2001")) %>%
+  nrow())
+colnames(iucn2001_TSC) <- "TSC"
+
+iucn2012_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN2012")) %>%
+  nrow())
+colnames(iucn2012_TSC) <- "TSC"
+
+wawca_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "WAWCA")) %>%
+  nrow())
+colnames(wawca_TSC) <- "TSC"
+
+waps_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "WAPS")) %>%
+  nrow())
+colnames(waps_TSC) <- "TSC"
+
+spfn_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "SPFN")) %>%
+  nrow())
+colnames(spfn_TSC) <- "TSC"
+
+epbc_TSC <- as.data.frame(tsc_data %>% 
+  dplyr::select(category_cache) %>% 
+  dplyr::filter(str_detect(category_cache, "EPBC")) %>%
+  nrow())
+colnames(epbc_TSC) <- "TSC"
+
+cons_cat_TFA <- rbind(iucn1994,iucn2001,iucn2012,epbc,spfn,wawca,waps)
+cons_cat_TSC <- rbind(iucn1994_TSC,iucn2001_TSC,iucn2012_TSC,epbc_TSC,spfn_TSC,wawca_TSC,waps_TSC) 
+
+cons_cat_summary <- cons_cat_TFA %>% 
+  cbind(cons_cat_TSC) %>% 
+  cbind(Category = c("IUCN1994","IUCN2001","IUCN2012","EPBC","SPFN","WAWCA","WAPF")) %>% 
+  dplyr::select("Category", everything())
+
+cons_cat_summary %>% reactable::reactable()
+```
+
+## Occurrences
+
+## Conservation Documents
+
+## Fire History
+
+## Conservation Threats and Actions
