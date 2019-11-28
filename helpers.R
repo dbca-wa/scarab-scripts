@@ -31,7 +31,7 @@ library(readr)
 library(knitr)
 library(styler)
 library(janitor)
-
+library(stringr)
 library(ckanr)
 library(wastdr)
 
