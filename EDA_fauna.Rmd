@@ -21,7 +21,7 @@ source("helpers.R")
 
 # Context
 This workbook summarises the legacy data migration and QA for the Threatened
-and Priority Fauna database (TFL).
+and Priority Fauna database (TFA).
 
 
 TODO diagram data flow
@@ -244,25 +244,6 @@ all_crit_map <- tfa_cons_list %>%
   dplyr::arrange(list_code, criteria_code) %>% 
   dplyr::select(list_code, criteria_code)
 readr::write_csv(all_crit_map, path = here::here("data","all_tfa_conscrit.csv"))
-
-# Load manual mapping of TFA cons criteria from CSV file,  join to tfa_cons_crit
-tfa_cons_crit <- here::here("tfa_conscrit_w_tsc.csv") %>%
-readr::read_csv(
-  col_types = cols(
-    list_code = col_character(),
-    tsc_criteria = col_character(),
-    criteria_code = col_character(),
-    assigned_as_in_tsc = col_character(),
-    comments_MP = col_character(),
-    actions = col_character()
-  )
- ) %>%
-dplyr::mutate(
-  tsc_criteria = tsc_criteria %>% chr2int()
-)
-
-tfa_cons_list_w_tsc <- tfa_cons_list %>%
-  left_join(tfa_cons_crit,by=c("list_code","criteria_code"))
 ```
 
 # Extract and transform conservation criteria Data from TSC
@@ -286,6 +267,25 @@ tsc_cons_crit <- "conservationcriterion" %>%
   dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
  
 readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
+
+# Load manual mapping of TFA cons criteria from CSV file,  join to tfa_cons_crit
+tfa_cons_crit <- here::here("tfa_conscrit_w_tsc.csv") %>%
+readr::read_csv(
+  col_types = cols(
+    list_code = col_character(),
+    tsc_criteria = col_character(),
+    criteria_code = col_character(),
+    assigned_as_in_tsc = col_character(),
+    comments_MP = col_character(),
+    actions = col_character()
+  )
+ ) %>%
+dplyr::mutate(
+  tsc_criteria = tsc_criteria %>% chr2int()
+)
+
+tfa_cons_list_w_tsc <- tfa_cons_list %>%
+  left_join(tfa_cons_crit,by=c("list_code","criteria_code"))
 
 ```
 
