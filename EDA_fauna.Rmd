@@ -266,7 +266,9 @@ tsc_cons_crit <- "conservationcriterion" %>%
   dplyr::arrange(conservation_list, rank) %>% 
   dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
  
-readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
+tsc_cons_crit %>% 
+  dplyr::select(-"conservationcategory_set", -"conservationcriterion_set") %>% 
+  readr::write_csv(path = here::here("data","tsc_conscrit.csv"))
 
 # Load manual mapping of TFA cons criteria from CSV file,  join to tfa_cons_crit
 tfa_cons_crit <- here::here("tfa_conscrit_w_tsc.csv") %>%
@@ -286,7 +288,6 @@ dplyr::mutate(
 
 tfa_cons_list_w_tsc <- tfa_cons_list %>%
   left_join(tfa_cons_crit,by=c("list_code","criteria_code"))
-
 ```
 
 # Load legacy data from TFA into TSC
@@ -333,7 +334,7 @@ ETL decisions for Fauna cons listings:
 * Fauna RedList = TSC IUCN 2012 (or whichever earlier version was applicable 
   at the time).
 * Fauna ActionPlan was decided to be discarded.
-* Fauna has three empty listings (no list, no cat, no crit) - discard?
+* Fauna has three empty listings (no list, no cat, no crit) - discard.
 
 ```{r tfa_cons_listing_upload, eval=F}
 # tsc_conscat$id is the TSC ID for the cons category
@@ -620,7 +621,9 @@ if (file.exists("tracks.Rda")){
     load("tracks.Rda")
 } else {
   save(
+    wace_names,
     tsc_taxa,
+    tsc_tcl,
     # tsc_comm
     # TODO add all data objects to keep in here
     file = here::here("data", "fauna.Rda")
@@ -651,7 +654,7 @@ tfa_data <- tfa_cons_list_w_tsc %>%
   dplyr::mutate(source_id = source_id %>% as.character) %>% 
   tidyr::unite("category_cache", list_code:category_code, sep = " ", remove = FALSE)
 
-tfa_unique<-unique(tfa_data$name_id) #870
+tfa_unique <- unique(tfa_data$name_id) #870
 ```
 
 There are 3063 unique observations in TFL fauna dataset and  
@@ -664,7 +667,7 @@ tsc_unique<-unique(tsc_data$name_id) #870
 There are 3061 unique observations in TSC fauna dataset and  
 `r unique(tfa_data$species_code)` unique species.
 
-```{r missing_observations_}
+```{r missing_observations}
 tfa_data %>% 
 anti_join(tsc_data, by = "source_id") %>% 
   reactable::reactable(filterable = TRUE)
@@ -683,13 +686,13 @@ the scientific name in WACensus with the same NameID.
 A name mismatch is an indication for review.
 
 ```{r wacensus_names}
-wacensus_names <- here::here("data","wace_names.csv") %>%
-  readr::read_csv(col_types = cols(
-      name_id = col_character()
-      )
-)
+# wacensus_names <- here::here("data","wace_names.csv") %>%
+#   readr::read_csv(col_types = cols(
+#       name_id = col_character()
+#       )
+# )
 tfa_data_wacensus <- tfa_cons_list_w_tsc %>% 
-  dplyr::left_join(wacensus_names, by="name_id")
+  dplyr::left_join(wace_names, by="name_id")
 ```
 
 ```{r wacensus_name_mismatch}
