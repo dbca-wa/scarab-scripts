@@ -788,6 +788,7 @@ query_manual_mapping %>%
 Below are the dates of the most recent conservation criteria changes made in snapshot of the TFA parsed to TSC
 
 ``` {r effective_dates}
+
 tsc_effective_to <- tsc_data %>% 
   dplyr::arrange(desc(effective_to)) %>%
      slice(1) %>% 

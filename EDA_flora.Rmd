@@ -505,7 +505,6 @@ tfl_listing_cat_iucn2012 <- tfl_cons_listing_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-
 ```
 
 
