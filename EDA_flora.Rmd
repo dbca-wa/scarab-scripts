@@ -327,7 +327,7 @@ tfl_cons_listing_w_tsc<-tfl_cons_listing %>%
   left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa"))
 ```
 
-# Load legacy data from TFA into TSC
+# Load legacy data from TFL into TSC
 In this section, the extracted and transformed data from TFA are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the 
 process.
@@ -373,7 +373,7 @@ ETL decisions for Fauna cons listings:
 * Fauna ActionPlan was decided to be discarded.
 * Fauna has three empty listings (no list, no cat, no crit) - discard?
 
-```{r tfl_cons_listing_upload, eval=F}
+```{r tfl_cons_listing_subsetting}
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
   magrittr::extract2("features") %>% 
@@ -408,10 +408,6 @@ tfl_listing_cat_priority <- tfl_cons_listing_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfl_listing_cat_priority %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose=TRUE)
-
 # Active Priority listings:
 tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
 
@@ -442,11 +438,6 @@ tfl_listing_cat_epbc <- tfl_cons_listing_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfl_listing_cat_epbc %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose = TRUE)
-
-
 # List codes: "WCA_1991" = IUCN 1994/2001/2012
 # IUCN 1994 
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/5/change/
@@ -470,10 +461,6 @@ tfl_listing_cat_iucn1994 <- tfl_cons_listing_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfl_listing_cat_iucn1994 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose = TRUE)
-
 # IUCN 2001
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
 tfl_listing_cat_iucn2001 <- tfl_cons_listing_w_tsc %>% 
@@ -496,11 +483,6 @@ tfl_listing_cat_iucn2001 <- tfl_cons_listing_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category))
 
-tfl_listing_cat_iucn2001 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose=TRUE)
-
-
 # IUCN 2012
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/3/change/
 tfl_listing_cat_iucn2012 <- tfl_cons_listing_w_tsc %>% 
@@ -522,6 +504,28 @@ tfl_listing_cat_iucn2012 <- tfl_cons_listing_w_tsc %>%
         criteria = tsc_criteria
     ) %>% 
   dplyr::filter(!is.na(category))
+
+
+```
+
+
+```{r tfl_cons_listing_upload, eval=F}
+
+tfl_listing_cat_priority %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose=TRUE)
+
+tfl_listing_cat_epbc %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose = TRUE)
+
+tfl_listing_cat_iucn1994 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose = TRUE)
+
+tfl_listing_cat_iucn2001 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting", 
+                     api_url = prod, verbose=TRUE)
 
 # There are none, skip upload
 # tfl_cl_iucn2012 %>% 
