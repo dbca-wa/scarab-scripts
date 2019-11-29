@@ -336,7 +336,7 @@ ETL decisions for Fauna cons listings:
 * Fauna ActionPlan was decided to be discarded.
 * Fauna has three empty listings (no list, no cat, no crit) - discard.
 
-```{r tfa_cons_listing_upload, eval=F}
+```{r tfa_cons_listing_subsetting}
 # tsc_conscat$id is the TSC ID for the cons category
 # tsc_conscat$label = tec_cons_listing_categories$category_code
 tsc_conscat_sp <- "conservationcategory" %>% 
@@ -350,8 +350,6 @@ tsc_conscat_sp <- "conservationcategory" %>%
   )} %>% 
   dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
 
-
-# IUCN cons listing
 # IUCN 2012 3
 tfa_listing_cat_iucn2012 <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(2012)") %>% 
@@ -374,13 +372,6 @@ tfa_listing_cat_iucn2012 <- tfa_cons_list_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
-
-tfa_listing_cat_iucn2012 %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
 
 # IUCN(2001) 4
 tfa_listing_cat_iucn2001 <- tfa_cons_list_w_tsc %>% 
@@ -405,13 +396,6 @@ tfa_listing_cat_iucn2001 <- tfa_cons_list_w_tsc %>%
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_iucn2001 %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting", 
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-    )
-
 # IUCN(1994) 5
 tfa_listing_cat_iucn1994 <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="IUCN(1994)") %>% 
@@ -434,13 +418,6 @@ tfa_listing_cat_iucn1994 <- tfa_cons_list_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
-
-tfa_listing_cat_iucn1994 %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting", 
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-    )
 
 # WAWCA 1
 tfa_listing_cat_wawca <- tfa_cons_list_w_tsc %>% 
@@ -465,13 +442,6 @@ tfa_listing_cat_wawca <- tfa_cons_list_w_tsc %>%
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_wawca %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting", 
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-    )
-
 # SPFN 2
 tfa_listing_cat_spfn <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="SPFN") %>% 
@@ -494,13 +464,6 @@ tfa_listing_cat_spfn <- tfa_cons_list_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
-
-tfa_listing_cat_spfn %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting", 
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-    )
 
 # WAPS 6
 tfa_listing_cat_waps <- tfa_cons_list_w_tsc %>% 
@@ -525,13 +488,6 @@ tfa_listing_cat_waps <- tfa_cons_list_w_tsc %>%
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
 
-tfa_listing_cat_waps %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting", 
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-    )
-
 # EPBC 7
 tfa_listing_cat_epbc <- tfa_cons_list_w_tsc %>% 
   dplyr::filter(list_code=="EPBC") %>% 
@@ -554,6 +510,51 @@ tfa_listing_cat_epbc <- tfa_cons_list_w_tsc %>%
     ) %>% 
   dplyr::filter(!is.na(category)) %>% 
   dplyr::filter(taxon!=0)
+```
+
+
+```{r tfa_cons_listing_upload, eval=F}
+tfa_listing_cat_iucn2012 %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting",
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+  )
+
+tfa_listing_cat_iucn2001 %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+tfa_listing_cat_iucn1994 %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+tfa_listing_cat_wawca %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+tfa_listing_cat_spfn %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
+
+tfa_listing_cat_waps %>%
+  wastdr::wastd_POST(
+    "taxon-conservationlisting", 
+    api_url = prod
+    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
+    )
 
 tfa_listing_cat_epbc %>%
   wastdr::wastd_POST(
@@ -676,7 +677,7 @@ tsc_data %>%
 anti_join(tfa_data, by = "source_id") %>% 
   reactable::reactable(filterable = TRUE)
 ```
-There are two observations missing from TSC and none from TFA. Suggest this is becasue there is no list or category code assigned to these two records?
+There are two observations missing from TSC and none from TFA. Suggest this is because there is no list or category code assigned to these two records?
 
 ## Taxonomy
 
@@ -835,7 +836,23 @@ dates %>%
 
 Summary of the number of conservation listings for each category found in TFA and TSC. 
 
+The data for each category_cache is first tallied direct from the master TFA and TSC data sets. 
+
 ```{r summary_conservation_category_listings}
+
+cons_cat_tally_tfa <- tfa_data %>% 
+  dplyr::group_by(category_cache) %>% 
+  dplyr::tally() %>% 
+  dplyr::filter(category_cache != " ")
+
+cons_cat_tally_tsc <- tsc_data %>% 
+  dplyr::group_by(category_cache) %>% 
+  dplyr::tally()
+
+cons_cat_tally <- cons_cat_tally_tfa %>% 
+  cbind(cons_cat_tally_tsc)
+
+
 
 iucn1994 <-as.data.frame(tfa_listing_cat_iucn1994 %>% 
   nrow())
