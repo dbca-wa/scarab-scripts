@@ -328,50 +328,9 @@ tfl_cons_listing_w_tsc<-tfl_cons_listing %>%
 ```
 
 # Load legacy data from TFL into TSC
-In this section, the extracted and transformed data from TFA are loaded into TSC
+In this section, the extracted and transformed data from TFL are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the 
 process.
-
-## Taxonomy
-Taxonomic names are uploaded to TSC directly from WACensus in a separate workbook.
-The QA part of this workbook will compare TFA names to TSC names.
-
-## Conservation Listings
-This section loads conservation listings from TFA into TSC.
-
-Conservation listings are entered in triplicate:
-
-Level 1: Legislation
-
-* WAWCA is the WA Wildlife Conservation Act, the legistation under which taxa 
-  can be gazetted as specially protected.
-* WAWCA has been superseded by the Biodiversity Conservation Act 2016 on 01/01/2019.
-* All conservation listings were/are gazetted under the respective act (WAWCA or BCA).
-
-Level 2: Gazette
-
-* SPFN = "Wildlife Conservation (Specially Protected Fauna) Notice, Schedules"
-* SPFN are the gazetted schedules.
-
-Level 3: Assigned conservation categories and criteria
-
-* DBCA has assigned actual conservation cat&crit to taxa following the IUCN definitions, 
-  or similar cat&crit of own design before IUCN was published.
-* These "IUCN" cons listings are the actual listings we want to preserve.
-
-In future, only IUCN 2012 cat&crit will be assigned to taxa.
-The list of all listed taxa will be published by the government gazette annually, 
-which will set the life cycle status of our IUN listings to "gazetted".
-The underlying legislation (from now on, the BCA) is evident out of the context 
-and does not have to be entered as conservation listing into TSC.
-
-ETL decisions for Fauna cons listings:
-
-* Fauna WAPF = TSC WAPS = Priority species.
-* Fauna RedList = TSC IUCN 2012 (or whichever earlier version was applicable 
-  at the time).
-* Fauna ActionPlan was decided to be discarded.
-* Fauna has three empty listings (no list, no cat, no crit) - discard?
 
 ```{r tfl_cons_listing_subsetting}
 tsc_conscat_sp <- "conservationcategory" %>% 
@@ -575,6 +534,8 @@ if (file.exists("tracks.Rda")){
 } else {
   save(
     tsc_taxa,
+    tsc_tcl,
+    tsc_data,
     # tsc_comm
     # TODO add all data objects to keep in here
     file = here::here("data", "fauna.Rda")
@@ -582,4 +543,128 @@ if (file.exists("tracks.Rda")){
 }
 ```
 
+
+
+# Compare legacy from TFA to migrated data from TSC
+This section provides an automated comparison between original data from TFA 
+and TFA data as uploaded into TSC. 
+
+Data custodians should be able to comprehend this section, and be able to verify 
+that the data migration has worked correctly.
+
+
+Legacy data snapshot used for TFA was updated last on `r ckanr::resource_show("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")$last_modified`
+
+## Summary statistics
+
+Check unique number of species by name_id.
+Check unique number of observations and identify observations missing from TSC compared to TFA.
+```{r tfa_summary}
+tfl_data <- tfa_cons_list_w_tsc %>% 
+  dplyr::filter(list_code!="ActionPlan") %>% 
+  dplyr::filter(list_code!="BCA") %>% 
+  dplyr::filter(list_code!="RedList") %>% 
+  dplyr::mutate(source_id = source_id %>% as.character) %>% 
+  tidyr::unite("category_cache", list_code:category_code, sep = " ", remove = FALSE)
+
+tfa_unique <- unique(tfa_data$name_id) #870
+```
+
+There are 3063 unique observations in TFL fauna dataset and  
+`r unique(tfa_data$species_code)` unique species.
+
+```{r tsc_summary}
+tsc_unique<-unique(tsc_data$name_id) #870
+```
+
+There are 3061 unique observations in TSC fauna dataset and  
+`r unique(tfa_data$species_code)` unique species.
+
+```{r missing_observations}
+tfa_data %>% 
+anti_join(tsc_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+tsc_data %>% 
+anti_join(tfa_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+```
+There are two observations missing from TSC and none from TFA. Suggest this is because there is no list or category code assigned to these two records?
+
+## Taxonomy
+
+### Name mismatches TFA
+For a given NameID, the scientific name in TFA should be identical to 
+the scientific name in WACensus with the same NameID. 
+A name mismatch is an indication for review.
+
+```{r wacensus_names}
+# wacensus_names <- here::here("data","wace_names.csv") %>%
+#   readr::read_csv(col_types = cols(
+#       name_id = col_character()
+#       )
+# )
+tfa_data_wacensus <- tfa_cons_list_w_tsc %>% 
+  dplyr::left_join(wace_names, by="name_id")
+```
+
+```{r wacensus_name_mismatch}
+name_mismatches <- tfa_data_wacensus %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
+```
+
+#### Mismatches containing "subsp"
+WACensus names contain "subsp." whereas TFA don't. 
+Therefore, scientific name mismatches by only the "subsp" can be ignored.
+
+**QA** Review this list to make sure both WACensus and TFA mean the same name.
+If the TFA "scientific_name" means a different taxon than the "wace_name", TFA's
+NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_subsp}
+name_mismatches %>% dplyr::filter(grepl('subsp', wace_name)) %>% 
+  reactable::reactable(filterable = TRUE)
+```
+
+#### Typo mismatches
+The remaining mismatches contain minor differences, such as "sp." vs "sp", parentheses and quotation marks.
+
+```{r name_mismatches_typo}
+name_mismatches %>% dplyr::filter(!grepl('subsp', wace_name)) %>% 
+  reactable::reactable(filterable = TRUE)
+```
+
+#### True mismatches
+The remaining mismatches require a review of the scientific name or NameID in TFA.
+
+**QA** If the TFA "scientific_name" is meant to refer to a different taxon than the "wace_name", 
+TFA's NameID must be changed to the WACensus NameID of the correct taxon.
+
+```{r name_mismatches_real}
+drop_cruft <- . %>% stringr::str_remove_all("[.()'\"]|sp|subsp") %>% stringr::str_replace_all("  ", " ")
+true_mismatches <- tfa_data_wacensus %>% 
+    dplyr::mutate(
+        scientific_name = scientific_name %>% drop_cruft,
+        wace_name = wace_name %>% drop_cruft
+    ) %>% 
+    dplyr::filter(scientific_name != wace_name) %>% 
+    dplyr::select(name_id, species_code, scientific_name, wace_name)
+
+true_mismatches %>% 
+  reactable::reactable(filterable = TRUE)
+```
+
+### Species mismatch between TFA and TSC
+
+```{r species_mismatches_}
+tfa_data %>% 
+  anti_join(tsc_data, by="name_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+tsc_data %>% 
+  anti_join(tfa_data, by = "source_id") %>% 
+  reactable::reactable(filterable = TRUE)
+
+```
 
