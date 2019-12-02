@@ -944,3 +944,19 @@ cons_cat_tally %>% reactable::reactable(filterable = F)
 ## Fire History
 
 ## Conservation Threats and Actions
+
+# Upload to data catalogue
+The [compiled version of this workbook](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/2b136da7-35cf-44a5-b29e-9f568176b7ad/download/eda_fauna.html) is uploaded to the 
+[Threatened Fauna Dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database/) on the DBCA data catalogue.
+
+
+```{r upload_data_catalogue}
+fn <- "EDA_fauna.html"
+rid <- "2b136da7-35cf-44a5-b29e-9f568176b7ad"
+
+if (fs::file_exists(fn)) {
+  message("Uploading this workbook to data catalogue...")
+  r <- ckanr::resource_update(rid, fn)
+  glue::glue("Updated {r$name} at\n{r$url}") %>% as.character() %>% message
+}
+```
