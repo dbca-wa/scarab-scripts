@@ -23,8 +23,8 @@ source("helpers.R")
 This workbook summarises the legacy data migration and QA for the Threatened
 and Priority Fauna database (TFA).
 
-
-TODO diagram data flow
+<img src="https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg" 
+width="100%" alt="Legacy data migration and QA diagram"/>
 
 By default, all code blocks are collapsed to provide better readability to the
 non-technical audience. Feel free to expand the code blocks to view the process.
