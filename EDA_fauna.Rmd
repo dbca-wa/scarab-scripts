@@ -940,9 +940,15 @@ cl_corner_dates <- rbind(tfa_corner_dates, tsc_corner_dates) %>%
 cl_corner_dates %>% reactable::reactable()
 ```
 
-Summary of the number of conservation listings for each category found in TFA and TSC. 
 
-Number of records for each conservation list for TFA and TSC is tallied and combined in a table.
+### Conservation listing differences
+
+Summary of the number of conservation listings for each list.
+
+Discrepancies in numbers indicate the need for a closer review.
+
+Equality of numbers does not prove absence of equal numbers of false positives
+and false negatives.
 
 ```{r summary_conservation_list}
 make_tfa_cl_summary <- . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFA")
@@ -1003,29 +1009,34 @@ cons_cat_summary <- tfa_cons_cat_sum %>%
 cons_cat_summary %>% reactable::reactable()
 ```
 
-The data for each category_cache is tallied direct from the master TFA and TSC data sets. 
-However, the cell labels are do not match due to different naming conventions in 
-TFA and TSC, so this table must be manually checked by list-code e.g. 
-IUCN1994 etc, for comparison.
 
-```{r detailed_summary_conservation_categorys_and_listings}
+#### IUCN 2012
+TODO in TFA but missing in TSC
+TODO in TSC but missing in TFA
 
-# cons_cat_tally_tfa <- tfa_tcl %>%
-#   dplyr::group_by(category_cache) %>%
-#   dplyr::tally() %>%
-#   dplyr::filter(category_cache != " ") %>%
-#   dplyr::rename(tfa = category_cache)
-# 
-# cons_cat_tally_tsc <- tsc_tcl %>%
-#   dplyr::group_by(category_cache) %>%
-#   dplyr::tally() %>%
-#   dplyr::rename(tsc = category_cache)
-# 
-# cons_cat_tally <- cons_cat_tally_tfa %>%
-#   dplyr::bind_cols(cons_cat_tally_tsc)
-# 
-# cons_cat_tally %>% reactable::reactable(filterable = F)
-```
+#### IUCN 2001
+TODO in TFA but missing in TSC
+TODO in TSC but missing in TFA
+
+#### IUCN 1994
+TODO in TFA but missing in TSC
+TODO in TSC but missing in TFA
+
+#### WAWCA
+TODO in TFA but missing in TSC
+TODO in TSC but missing in TFA
+
+#### WAPF
+TODO in TFA but missing in TSC
+TODO in TSC but missing in TFA
+
+#### SPFN
+TODO in TFA but missing in TSC
+TODO in TSC but missing in TFA
+
+#### EPBC
+TODO in TFA but missing in TSC
+TODO in TSC but missing in TFA
 
 
 ## Occurrences
