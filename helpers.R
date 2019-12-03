@@ -166,6 +166,18 @@ upload_to_ckan <- function(data,
     r$id
 }
 
+#' Upload a file to an existing CKAN resource ID. Skip if file missing.
+upload_file_to_ckan <- function(rid, fn){
+    if (fs::file_exists(fn)) {
+        message("Uploading this workbook to data catalogue...")
+        r <- ckanr::resource_update(rid, fn)
+        message(glue::glue("Updated {r$name} at\n{r$url}"))
+    } else {
+        message(glue::glue("File {fn} does not exist, skipping."))
+    }
+}
+
+
 #' Load a CSV from a CKAN resource ID, requires ckanr_setup
 load_ckan_csv <- .  %>% resource_show() %>% magrittr::extract2("url") %>% read_csv()
 
