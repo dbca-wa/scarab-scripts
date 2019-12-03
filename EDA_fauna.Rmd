@@ -649,7 +649,7 @@ tsc_tcl <- tsc_tcl_raw %>%
   dplyr::rename(name_id = taxon) %>%
   dplyr::mutate(name_id = name_id %>% as.character())
 
-tsc_tcl_long <- tsc_tcl %>%
+tsc_tcl_fauna <- tsc_tcl %>%
   dplyr::inner_join(tsc_taxa, by = "name_id")
 ```
 
@@ -709,10 +709,10 @@ tfa_tcl <- tfa_tcl %>%
   dplyr::filter(list_code != "RedList") %>%
   dplyr::mutate(source_id = source_id %>% as.character())
 
-tfa_tcl_unique_taxa <- tsc_tcl_long$name_id %>%
+tfa_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
   unique() %>%
   length() # 870
-tsc_tcl_unique_taxa <- tsc_tcl_long$name_id %>%
+tsc_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
   unique() %>%
   length()
 ```
@@ -825,7 +825,7 @@ tsc_taxa %>%
 ## Conservation Listing
 
 TFA has `r nrow(tfa_tcl)` conservation listings of `r tfa_tcl_unique_taxa`.
-TSC has `r nrow(tsc_tcl_long)` fauna conservation listings of 
+TSC has `r nrow(tsc_tcl_fauna)` fauna conservation listings of 
 `r tsc_tcl_unique_taxa`, including animals but excluding plants *sensu latu*.
 
 TODO remove plant tcl from this analysis.
@@ -839,7 +839,7 @@ Already excluded are conservation listings from the excluded categories
 "ActionPlan", "RedList", and "BCA".
 
 ```{r missing_observations}
-tsc_tcl_long %>%
+tsc_tcl_fauna %>%
   dplyr::anti_join(tsc_tcl, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
@@ -850,7 +850,7 @@ The following table shows any conservation listings in TSC which are not in TFA.
 These can contain flora conservation listings. (TODO remove those)
 
 ```{r}
-tsc_tcl_long %>%
+tsc_tcl_fauna %>%
   dplyr::anti_join(tfa_tcl, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
@@ -888,7 +888,7 @@ in the list/category_code.
 These need to be corrected before the manual mapping can be updated and the 
 correct criteria assigned for all species.
 
-```{r }
+```{r}
 tfa_tcl %>%
   dplyr::select(
     c(
@@ -913,7 +913,7 @@ snapshot of the TFA.
 Excluded are TFA cons listings of unmigrated lists (AP, RL, BCA).
 
 ``` {r effective_dates}
-tsc_corner_dates <- tsc_tcl_long %>%
+tsc_corner_dates <- tsc_tcl_fauna %>%
   summarise(
     effective_from_min = min(effective_from, na.rm = T),
     effective_from_max = max(effective_from, na.rm = T),
