@@ -229,7 +229,7 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     authority = AUTHORITY %>% as.character(),
     gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
     delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReviewed %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -293,7 +293,7 @@ tfa_cons_crit <- here::here("tfa_conscrit_w_tsc.csv") %>%
     tsc_criteria = tsc_criteria %>% chr2int()
   )
 
-tfa_cons_list_w_tsc <- tfa_cons_listings %>%
+tfa_tcl <- tfa_cons_listings %>%
   left_join(tfa_cons_crit, by = c("list_code", "criteria_code"))
 ```
 
@@ -360,7 +360,7 @@ tsc_conscat_sp <- "conservationcategory" %>%
   dplyr::filter(conservation_list %in% c(1, 2, 3, 4, 5, 6, 7))
 
 # IUCN 2012 3
-tfa_listing_cat_iucn2012 <- tfa_cons_list_w_tsc %>%
+tfa_listing_cat_iucn2012 <- tfa_tcl %>%
   dplyr::filter(list_code == "IUCN(2012)") %>%
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3),
     by = "category_code"
@@ -386,7 +386,7 @@ tfa_listing_cat_iucn2012 <- tfa_cons_list_w_tsc %>%
   dplyr::filter(taxon != 0)
 
 # IUCN(2001) 4
-tfa_listing_cat_iucn2001 <- tfa_cons_list_w_tsc %>%
+tfa_listing_cat_iucn2001 <- tfa_tcl %>%
   dplyr::filter(list_code == "IUCN(2001)") %>%
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 4),
     by = "category_code"
@@ -412,7 +412,7 @@ tfa_listing_cat_iucn2001 <- tfa_cons_list_w_tsc %>%
   dplyr::filter(taxon != 0)
 
 # IUCN(1994) 5
-tfa_listing_cat_iucn1994 <- tfa_cons_list_w_tsc %>%
+tfa_listing_cat_iucn1994 <- tfa_tcl %>%
   dplyr::filter(list_code == "IUCN(1994)") %>%
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 5),
     by = "category_code"
@@ -438,7 +438,7 @@ tfa_listing_cat_iucn1994 <- tfa_cons_list_w_tsc %>%
   dplyr::filter(taxon != 0)
 
 # WAWCA 1
-tfa_listing_cat_wawca <- tfa_cons_list_w_tsc %>%
+tfa_listing_cat_wawca <- tfa_tcl %>%
   dplyr::filter(list_code == "WAWCA") %>%
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 1),
     by = "category_code"
@@ -464,7 +464,7 @@ tfa_listing_cat_wawca <- tfa_cons_list_w_tsc %>%
   dplyr::filter(taxon != 0)
 
 # SPFN 2
-tfa_listing_cat_spfn <- tfa_cons_list_w_tsc %>%
+tfa_listing_cat_spfn <- tfa_tcl %>%
   dplyr::filter(list_code == "SPFN") %>%
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 2),
     by = "category_code"
@@ -490,7 +490,7 @@ tfa_listing_cat_spfn <- tfa_cons_list_w_tsc %>%
   dplyr::filter(taxon != 0)
 
 # WAPS 6
-tfa_listing_cat_waps <- tfa_cons_list_w_tsc %>%
+tfa_listing_cat_waps <- tfa_tcl %>%
   dplyr::filter(list_code == "WAPF") %>%
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 6),
     by = "category_code"
@@ -516,7 +516,7 @@ tfa_listing_cat_waps <- tfa_cons_list_w_tsc %>%
   dplyr::filter(taxon != 0)
 
 # EPBC 7
-tfa_listing_cat_epbc <- tfa_cons_list_w_tsc %>%
+tfa_listing_cat_epbc <- tfa_tcl %>%
   dplyr::filter(list_code == "EPBC") %>%
   dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 7),
     by = "category_code"
@@ -666,7 +666,7 @@ if (file.exists(datafile)) {
 
 
     tfa_data, # entire TFA database
-    tfa_cons_list_w_tsc, # TFA conservation listings with TSC criteria IDs
+    tfa_tcl, # TFA conservation listings with TSC criteria IDs
     tfa_listing_cat_epbc, # TFA cons listings split up by cons list
     tfa_listing_cat_iucn1994,
     tfa_listing_cat_iucn2001,
@@ -703,16 +703,16 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tfa_data
 #
-tfa_tcl <- tfa_cons_list_w_tsc %>%
+tfa_tcl <- tfa_tcl %>%
   dplyr::filter(list_code != "ActionPlan") %>%
   dplyr::filter(list_code != "BCA") %>%
   dplyr::filter(list_code != "RedList") %>%
   dplyr::mutate(source_id = source_id %>% as.character())
 
-tfa_tcl_unique_taxa <- tfa_tcl$name_id %>%
+tfa_tcl_unique_taxa <- tsc_tcl_long$name_id %>%
   unique() %>%
   length() # 870
-tsc_tcl_unique_taxa <- tsc_tcl$name_id %>%
+tsc_tcl_unique_taxa <- tsc_tcl_long$name_id %>%
   unique() %>%
   length()
 ```
@@ -825,8 +825,8 @@ tsc_taxa %>%
 ## Conservation Listing
 
 TFA has `r nrow(tfa_tcl)` conservation listings of `r tfa_tcl_unique_taxa`.
-TSC has `r nrow(tsc_tcl)` conservation listings of `r tsc_tcl_unique_taxa`, 
-including animals and plants *sensu latu*.
+TSC has `r nrow(tsc_tcl_long)` fauna conservation listings of 
+`r tsc_tcl_unique_taxa`, including animals but excluding plants *sensu latu*.
 
 TODO remove plant tcl from this analysis.
 
@@ -839,7 +839,7 @@ Already excluded are conservation listings from the excluded categories
 "ActionPlan", "RedList", and "BCA".
 
 ```{r missing_observations}
-tfa_tcl %>%
+tsc_tcl_long %>%
   dplyr::anti_join(tsc_tcl, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
@@ -850,7 +850,7 @@ The following table shows any conservation listings in TSC which are not in TFA.
 These can contain flora conservation listings. (TODO remove those)
 
 ```{r}
-tsc_tcl %>%
+tsc_tcl_long %>%
   dplyr::anti_join(tfa_tcl, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
@@ -873,7 +873,7 @@ listings (erroneous) are excluded from the data migration.
 They are listed here.
 
 ```{r}
-tfa_cons_list_w_tsc %>%
+tfa_tcl %>%
   dplyr::filter(list_code == c("ActionPlan", "BCA", "RedList")) %>%
   reactable::reactable(filterable = TRUE)
 ```
@@ -889,7 +889,7 @@ These need to be corrected before the manual mapping can be updated and the
 correct criteria assigned for all species.
 
 ```{r }
-tfa_cons_list_w_tsc %>%
+tfa_tcl %>%
   dplyr::select(
     c(
       source_id,
@@ -913,7 +913,7 @@ snapshot of the TFA.
 Excluded are TFA cons listings of unmigrated lists (AP, RL, BCA).
 
 ``` {r effective_dates}
-tsc_corner_dates <- tsc_tcl %>%
+tsc_corner_dates <- tsc_tcl_long %>%
   summarise(
     effective_from_min = min(effective_from, na.rm = T),
     effective_from_max = max(effective_from, na.rm = T),
@@ -965,13 +965,13 @@ make_tsc_cl_summary <- function(data, cn){
   magrittr::set_colnames("TSC")
 }
 
-tsc_cl_sum_iucn1994 <- tsc_tcl %>% make_tsc_cl_summary("IUCN1994")
-tsc_cl_sum_iucn2001 <- tsc_tcl %>% make_tsc_cl_summary("IUCN2001")
-tsc_cl_sum_iucn2012 <- tsc_tcl %>% make_tsc_cl_summary("IUCN2012")
-tsc_cl_sum_wawca <- tsc_tcl %>% make_tsc_cl_summary("WAWCA")
-tsc_cl_sum_waps <- tsc_tcl %>% make_tsc_cl_summary("WAPS")
-tsc_cl_sum_spfn <- tsc_tcl %>% make_tsc_cl_summary("SPFN")
-tsc_cl_sum_epbc <- tsc_tcl %>% make_tsc_cl_summary("EPBC")
+tsc_cl_sum_iucn1994 <- tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN1994")
+tsc_cl_sum_iucn2001 <- tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN2001")
+tsc_cl_sum_iucn2012 <- tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN2012")
+tsc_cl_sum_wawca <- tsc_tcl_fauna %>% make_tsc_cl_summary("WAWCA")
+tsc_cl_sum_waps <- tsc_tcl_fauna %>% make_tsc_cl_summary("WAPS")
+tsc_cl_sum_spfn <- tsc_tcl_fauna %>% make_tsc_cl_summary("SPFN")
+tsc_cl_sum_epbc <- tsc_tcl_fauna %>% make_tsc_cl_summary("EPBC")
 
 
 tfa_cons_cat_sum <- rbind(
@@ -996,7 +996,8 @@ tsc_cons_cat_sum <- rbind(
 
 cons_cat_summary <- tfa_cons_cat_sum %>%
   cbind(tsc_cons_cat_sum) %>%
-  cbind(Category = c("IUCN1994", "IUCN2001", "IUCN2012", "WAWCA", "WAPF", "SPFN", "EPBC")) %>%
+  cbind(Category = c("IUCN1994", "IUCN2001", "IUCN2012", 
+                     "WAWCA", "WAPF", "SPFN", "EPBC")) %>%
   dplyr::select("Category", everything())
 
 cons_cat_summary %>% reactable::reactable()
