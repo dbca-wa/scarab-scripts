@@ -323,7 +323,7 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
 
 glimpse(tfl_conscrit)
 
-tfl_cons_listing_w_tsc<-tfl_cons_listing %>% 
+tfl_tcl<-tfl_cons_listing %>% 
   left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa"))
 ```
 
@@ -508,7 +508,9 @@ Expand the code block below to view the process.
 ```{r load_tsc, message=FALSE}
 # TSC contains taxonomic names from WACensus
 tsc_taxa_raw <- "taxon" %>%
-  wastdr::wastd_GET(api_url=prod, query = list(paraphyletic_groups__icontains=21)) 
+  wastdr::wastd_GET(
+    api_url=prod, 
+    query = list(paraphyletic_groups__icontains=21)) 
 
 tsc_taxa <- tsc_taxa_raw %>%
   wastdr::wastd_parse() %>% 
@@ -524,26 +526,41 @@ tsc_tcl <- tsc_tcl_raw %>% wastdr::parse_taxon_conservationlisting() %>%
   dplyr::rename(name_id = taxon) %>% 
   dplyr::mutate(name_id = name_id %>% as.character) 
 
-tsc_data <- tsc_tcl %>% 
+tsc_tcl_flora <- tsc_tcl %>% 
   dplyr::inner_join(tsc_taxa,by = "name_id")
 ```
 
+
 ```{r save_point, message=FALSE}
-if (file.exists("tracks.Rda")){
-    load("tracks.Rda")
+datafile <- here::here("data", "flora.Rda")
+if (file.exists(datafile)) {
+  load(datafile)
 } else {
   save(
-    tsc_taxa,
-    tsc_tcl,
-    tsc_data,
+    wace_names, # WAHerb names
+
+    tsc_taxa, # TSC taxonomic flora names (????)
+    tsc_tcl, # TSC taxon conservation listings (????)
+
+    tfl_data, # entire TFL database
+    tfl_tcl, # TFA conservation listings with TSC criteria IDs
+    tfl_listing_cat_priority,
+    tfl_listing_cat_epbc, # TFA cons listings split up by cons list
+    tfl_listing_cat_iucn1994,
+    tfl_listing_cat_iucn2001,
+    tfl_listing_cat_iucn2012,
+
     # tsc_comm
-    # TODO add all data objects to keep in here
-    file = here::here("data", "fauna.Rda")
+    file = datafile
   )
 }
+
+snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
+  ckanr::resource_show() %>%
+  magrittr::extract2("last_modified") %>%
+  lubridate::as_datetime() %>%
+  lubridate::with_tz("Australia/Perth")
 ```
-
-
 
 # Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
