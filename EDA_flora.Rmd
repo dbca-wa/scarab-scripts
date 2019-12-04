@@ -539,8 +539,8 @@ if (file.exists(datafile)) {
   load(datafile)
 } else {
   save(
-    tsc_taxa_flora, # TSC taxonomic flora names (????)
-    tsc_tcl_flora, # TSC taxon conservation listings (????)
+    tsc_taxa_flora, # TSC taxonomic flora names
+    tsc_tcl_flora, # TSC taxon conservation listings
 
     tfl_data, # entire TFL database
     tfl_tcl, # TFA conservation listings with TSC criteria IDs
