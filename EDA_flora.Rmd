@@ -188,7 +188,7 @@ pop_forms <- tfl_data$DRF_POP_FORMS %>%
     chg_type_code = CHG.TYPE.CODE %>% as.character(),
     deact_by = DEACT.BY %>% as.character()
   )
-pop_forms[1:100, ] %>% DT::datatable(.)
+# pop_forms[1:100, ] %>% DT::datatable(.)
 
 pop_threats <- tfl_data$DRF_POP_THREATS %>%
   dplyr::transmute(
@@ -211,7 +211,7 @@ pop_threats <- tfl_data$DRF_POP_THREATS %>%
     sheetno = SHEETNO %>% as.character(),
     observation_date = OBSERVATION.DATE %>% as.character()
   )
-pop_threats[1:100, ] %>% DT::datatable(.)
+# pop_threats[1:100, ] %>% DT::datatable(.)
 
 pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
   dplyr::transmute(
@@ -221,7 +221,7 @@ pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
     veg_class_dom1 = VEG.CLASS.DOM1 %>% as.character(),
     veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
   )
-pop_vegclass[1:100, ] %>% DT::datatable(.)
+# pop_vegclass[1:100, ] %>% DT::datatable(.)
 
 tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
@@ -267,7 +267,7 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   tibble::rowid_to_column("source_id") %>% 
   dplyr::arrange(name_id)
 
-tfl_cons_listing[1:100, ] %>% DT::datatable(.)
+# tfl_cons_listing[1:100, ] %>% DT::datatable(.)
 readr::write_csv(tfl_cons_listing, path = here::here("data","tfl_cons_listing.csv"))
 
 flcl_file <- here::here("data", "tfl_cons_listings.Rdata")
@@ -324,12 +324,11 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
     tsc_criteria = tsc_criteria %>% chr2int()
   )
 
-glimpse(tfl_conscrit)
+# glimpse(tfl_conscrit)
 
-tfl_tcl<-tfl_cons_listing %>% 
+tfl_tcl <- tfl_cons_listing %>% 
   left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% 
-  dplyr::mutate(source_id = source_id %>% as.character) %>% 
-  glimpse()
+  dplyr::mutate(source_id = source_id %>% as.character)
 ```
 
 # Load legacy data from TFL into TSC
@@ -374,10 +373,10 @@ tfl_listing_cat_priority <- tfl_tcl %>%
   dplyr::filter(!is.na(category))
 
 # Active Priority listings:
-tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
+tfl_no_active_listings <- tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
 
 # Inactive Priority listings:
-tfl_listing_cat_priority %>% dplyr::filter(status==90) %>% nrow
+tfl_no_inactive_listings <- tfl_listing_cat_priority %>% dplyr::filter(status==90) %>% nrow
 
 # tfl_cl_priority[3888,] 
 # taxonid 315936 does not exist, 31593 does - typo confirmed
@@ -517,27 +516,20 @@ Expand the code block below to view the process.
 
 ```{r load_tsc, message=FALSE}
 # TSC contains taxonomic names from WACensus
-tsc_taxa_raw <- "taxon" %>%
+tsc_taxa_flora <- "taxon" %>%
   wastdr::wastd_GET(
     api_url=prod, 
-    query = list(paraphyletic_groups__icontains=21)) 
-
-tsc_taxa <- tsc_taxa_raw %>%
-  wastdr::wastd_parse() %>% 
-  dplyr::mutate(name_id = name_id %>% as.character) 
+    query = list(paraphyletic_groups__icontains=21)) %>%
+  wastdr::wastd_parse()
 
 # tsc_comm <- "community" %>% 
 #   wastdr::wastd_GET(api_url=prod) %>% 
 #   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
 
-tsc_tcl_raw <- wastdr::wastd_GET("taxon-conservationlisting") 
-
-tsc_tcl <- tsc_tcl_raw %>% wastdr::parse_taxon_conservationlisting() %>% 
-  dplyr::rename(name_id = taxon) %>% 
-  dplyr::mutate(name_id = name_id %>% as.character) 
-
-tsc_tcl_flora <- tsc_tcl %>% 
-  dplyr::inner_join(tsc_taxa,by = "name_id") %>% glimpse()
+tsc_tcl_flora <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
+  wastdr::parse_taxon_conservationlisting() %>% 
+  dplyr::mutate(name_id = taxon) %>% 
+  dplyr::inner_join(tsc_taxa_flora, by = "name_id")
 ```
 
 
@@ -547,8 +539,8 @@ if (file.exists(datafile)) {
   load(datafile)
 } else {
   save(
-    tsc_taxa, # TSC taxonomic flora names (????)
-    tsc_tcl, # TSC taxon conservation listings (????)
+    tsc_taxa_flora, # TSC taxonomic flora names (????)
+    tsc_tcl_flora, # TSC taxon conservation listings (????)
 
     tfl_data, # entire TFL database
     tfl_tcl, # TFA conservation listings with TSC criteria IDs
@@ -583,14 +575,12 @@ Legacy data snapshot used for TFL was updated last on `r snapshot_last_updated`.
 
 Check unique number of species by name_id.
 Check unique number of observations and identify observations missing from TSC compared to TFL.
-```{r tfa_summary}
-tfl_tcl_flora <- tfl_tcl %>%
-  dplyr::mutate(source_id = source_id %>% as.character())
-
-tfl_tcl_unique_taxa <- tfl_tcl_flora$name_id %>%
+```{r tfl_summary}
+tfl_tcl_unique_taxa <- tfl_tcl$name_id %>%
   unique() %>%
   length() 
-tsc_tcl_unique_taxa <- tfl_tcl_flora$name_id %>%
+
+tsc_tcl_unique_taxa <- tsc_tcl_flora$name_id %>%
   unique() %>%
   length()
 ```
@@ -606,24 +596,21 @@ TFL has `r nrow(tfl_tcl)` conservation listings of `r tfl_tcl_unique_taxa`.
 TSC has `r nrow(tsc_tcl_flora)` flora conservation listings of 
 `r tsc_tcl_unique_taxa`, including plants *sensu latu* but excluding animals.
 
-TODO remove animal tcl from this analysis.
-
 ### TFL conservation listings not in TSC
 
 Any records in the following table indicate conservation listings in TFL that
 were not migrated into TSC.
 
 ```{r missing_observations}
-tsc_tcl_flora %>%
-  dplyr::anti_join(tsc_tcl, by = "source_id") %>%
+tfl_tcl %>%
+  dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>%
   dplyr::mutate(source_id = source_id %>% as.integer()) %>% 
   reactable::reactable(filterable = TRUE)
 ```
 
 ### TSC conservation listings not in TFA
 
-The following table shows any conservation listings in TSC which are not in TFA.
-These can contain flora conservation listings. (TODO remove those)
+The following table shows any conservation listings in TSC which are not in TFL.
 
 ```{r}
 tsc_tcl_flora %>%
@@ -639,7 +626,7 @@ name, once the published name is known and entered into WACensus, then propagate
 into TSC.
 
 ```{r}
-tfl_tcl %>% dplyr::filter(name_id == 0)
+tfl_tcl %>% dplyr::filter(name_id == 0) %>% reactable::reactable()
 ```
 
 ### Conservation criteria mapping
@@ -762,5 +749,67 @@ cons_cat_summary <- tfl_cons_cat_sum %>%
   dplyr::select("Category", everything())
 
 cons_cat_summary %>% reactable::reactable()
+```
+
+
+#### IUCN 2012
+TODO in TFL but missing in TSC
+TODO in TSC but missing in TFL
+
+#### IUCN 2001
+TODO in TFL but missing in TSC
+TODO in TSC but missing in TFL
+
+#### IUCN 1994
+TODO in TFL but missing in TSC
+TODO in TSC but missing in TFL
+
+#### WAWCA
+TODO in TFL but missing in TSC
+TODO in TSC but missing in TFL
+
+#### WAPF
+TODO in TFL but missing in TSC
+TODO in TSC but missing in TFL
+
+#### SPFN
+TODO in TFL but missing in TSC
+TODO in TSC but missing in TFL
+
+#### EPBC
+TODO in TFL but missing in TSC
+TODO in TSC but missing in TFL
+
+
+## Occurrences
+
+## Conservation Documents
+
+## Fire History
+
+## Conservation Threats and Actions
+
+# Upload to data catalogue
+The [compiled version of this workbook]() is uploaded to the 
+[Threatened Fauna Dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database/) 
+on the DBCA data catalogue.
+
+The manual mapping of conservation criteria, plus all legacy data is also
+uploaded as CSV snapshots.
+
+```{r upload_data_catalogue}
+# This workbook
+# upload_file_to_ckan("", "EDA_flora.html")
+
+# Manual mapping of conservation criteria
+# upload_file_to_ckan("", here::here("tfl_conscrit_w_tsc.csv"))
+
+# Legacy TFA data
+d <- ckanr::package_show("threatened-and-priority-flora-database")
+# upload_to_ckan(
+#   tfa_cons_listings, "Threatened Flora Conservation Status Gazettal", d$id,
+#   resource_id = ""
+# )
+# same for other TFA legacy data, copy over from data_etl_fauna.Rmd
 ```
 
