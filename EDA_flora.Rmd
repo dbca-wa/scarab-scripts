@@ -616,6 +616,7 @@ were not migrated into TSC.
 ```{r missing_observations}
 tsc_tcl_flora %>%
   dplyr::anti_join(tsc_tcl, by = "source_id") %>%
+  dplyr::mutate(source_id = source_id %>% as.integer()) %>% 
   reactable::reactable(filterable = TRUE)
 ```
 
