@@ -22,10 +22,10 @@ source("helpers.R")
 
 # Context
 This workbook summarises the legacy data migration and QA for the Threatened
-and Priority Ecological Communities database (TEC).
+Ecological Communities database (TEC).
 
-
-TODO diagram data flow
+<img src="https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg" 
+width="100%" alt="Legacy data migration and QA diagram"/>
 
 By default, all code blocks are collapsed to provide better readability to the
 non-technical audience. Feel free to expand the code blocks to view the process.
@@ -33,4 +33,418 @@ non-technical audience. Feel free to expand the code blocks to view the process.
 The code for all SCB workbooks is under version control at 
 [github](https://github.com/dbca-wa/scarab-scripts).
 
+# Extract and transform legacy Data from TEC
+Data from the Threatened Ecological Communities Database (TEC) is downloaded from the 
+[TEC dataset](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database)
+on the DBCA data catalogue, then extracted and transformed.
 
+```{r load_tec, message=FALSE}
+tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+
+tec_cons_cat <- tec$CATEGORY_TYPES %>%
+  dplyr::transmute(
+    category_code = CT.TYPE %>% as.character(),
+    category_label = CT.DESC %>% as.character(),
+    authority = CT.AUTHORITY.CODE %>% as.character()
+  )
+
+tec_cons_crit<- tec$CRITERIA_CODES %>%
+  dplyr::transmute(
+    criterion_code = CRIT.CODE %>% as.character(),
+    criterion_description = CRIT.DESC %>% as.character()
+  )
+readr::write_csv(tec_cons_crit,path = here::here("data","tec_cons_crit.csv"))
+
+# Using a built-in function to turn uppercase into lowercase? Nah. Hold my beer.
+authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities.
+endorsement <- tec$ENDORSED_BY # another lookup for lower case.
+
+# primary
+tec_cons_listing_categories <- tec$CATEGORIES %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    effective_from = CAT.EFFECT.DATE %>% parse_as_datetime(),
+    category_code = CAT.CT.TYPE %>% as.character(),
+    cat_comment = CAT.COMMENT %>% as.character(),
+    cat_review_date = CAT.REVIEW.DATE %>% parse_as_datetime(),
+    cat_endorsed_code = CAT.ENDORSED.CODE %>% as.character(),
+    cat_endorsed_date = CAT.ENDORSED.DATE %>% parse_as_datetime(),
+    cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(tec_cons_cat, by = "category_code") %>% 
+  tibble::rowid_to_column("source_id")
+
+tec_cons_listing <- tec$CATEGORY_CRITERIA %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    effective_from = CAT.EFFECT.DATE %>% parse_as_datetime(),
+    criterion_code = CC.CRIT.CODE %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(tec_cons_crit, by = "criterion_code")
+# join com_short, criteria codes
+
+# TODO: load cons crit from IUCN RLE into TSC, map resulting codes to:
+# tec_cons_crit$criterion_code
+
+## Extract criterion_codes to manual map all criteria
+all_crit_map <- tec_cons_listing_criteria %>%
+  dplyr::distinct(criterion_code) 
+readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
+
+```
+
+# Extract and transform conservation criteria Data from TSC
+Conservation criteria from TSC are downloaded from the TSC API 
+and transformed into a usable format for manual mapping to TEC.
+
+A manual step annotated legacy conservation criteria exported from TEC to 
+conservation criteria IDs in TSC in a spreadsheet.
+
+``` {r extract_tsc_cons_criteria}
+# TSC cons lists applicable to communities
+tsc_conslists_com <- "conservationlist" %>% 
+  wastdr::wastd_GET(api_url = prod, query = c(scope_communities = TRUE)) %>% 
+  magrittr::extract2("features") %>% 
+  {tibble::tibble(
+    list_id = purrr::map_int(., "id"),
+    list_code = purrr::map_chr(., "code"),
+    label = purrr::map_chr(., "label"),
+    scope_communities = purrr::map_chr(., "scope_communities"),
+    scope_wa = purrr::map_chr(., "scope_wa"),
+    scope_cmw = purrr::map_chr(., "scope_cmw")
+  )}
+
+# IDs of TSC cons lists applicable to communities
+com_list_ids_wa <- tsc_conslists_com %>% extract2("id") %>% paste(collapse=",")
+# DBCA_RLE 11
+# WAPEC 12
+# IUCN_RLE 16
+
+# tsc_conscat$id = TSC ID for the cons category
+# tsc_conscat$label = tec_cons_listing_categories$category_code
+tsc_conscat <- "conservationcategory" %>% 
+  wastdr::wastd_GET(api_url = prod) %>% 
+  magrittr::extract2("features") %>% 
+  {tibble::tibble(
+    tsc_category_id = purrr::map_int(., "id"),
+    category_code = purrr::map_chr(., "code"),
+    tsc_label = purrr::map_chr(., "label"),
+    conservation_list = purrr::map_chr(., "conservation_list")
+  )} %>% 
+  dplyr::filter(conservation_list %in% c(11,12,16))
+
+tsc_cons_crit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+magrittr::extract2("features") %>% 
+  {tibble::tibble(
+    id = purrr::map_int(., "id"),
+    list_id = purrr::map_int(., "conservation_list"),
+    rank = purrr::map_int(., "rank"),
+    code = purrr::map_chr(., "code")
+    # ,
+    # label = purrr::map_chr(., "label")
+  )}%>% 
+  dplyr::arrange(id, rank) %>% 
+  dplyr::left_join(tsc_conslists_com, by = "list_id")
+
+# Load manual mapping of TEC cons criteria from CSV file, join to tec_cons_crit
+tec_cons_crit <- here::here("tec_conscrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      criterion_code = col_character(),
+      category_code = col_character(),
+      tsc_category_id = col_character(),
+      tec_criteria = col_character(),
+      tsc_criteria = col_character()
+    )
+  ) 
+
+tec_tcl<-tec_cons_listing %>% 
+  left_join(tec_cons_crit,by=c("criterion_code"))
+```
+
+# Load legacy data from TEC into TSC
+In this section, the extracted and transformed data from TEC are loaded into TSC
+using the TSC API. The code is collapsed; expand the code blocks to view the 
+process.
+
+## Conservation Listings
+This section loads conservation listings from TEC into TSC.
+
+```{r summarise criterion codes into one row per date}
+comm_info <- tec_cl_crit_w_tsc %>%
+  dplyr::select(com_id,com_label,com_name) %>%
+  distinct()
+
+tec_cat_code <- tec_cl_crit_w_tsc %>%
+  dplyr::group_by(com_id,effective_from,tsc_category_id) %>% 
+  dplyr::arrange (criterion_code) %>%
+  dplyr::summarise(criterion_code = paste(criterion_code, collapse = ","))
+
+tec_crit_code <- tec_cl_crit_w_tsc %>%
+  dplyr::group_by(com_id,effective_from) %>% 
+  dplyr::arrange (tec_criteria) %>%
+  dplyr::summarise(tec_criteria = paste(tec_criteria, collapse = "")) 
+
+tsc_crit_code <- tec_cl_crit_w_tsc %>%
+  dplyr::group_by(com_id,effective_from) %>% 
+  dplyr::arrange (tsc_criteria) %>%
+  na.omit() %>% #remove na's prior to collapse
+  dplyr::summarise(tsc_criteria = paste(tsc_criteria, collapse = ",")) %>%
+  dplyr::mutate(
+    tsc_criteria = tsc_criteria %>% chr2int()
+  )
+
+glimpse(tsc_crit_code)
+
+tec_tsc <- tec_cons_listing_categories %>% 
+  dplyr::left_join(tec_cat_code, by = c("com_id","effective_from")) %>% 
+  dplyr::left_join(tec_crit_code, by = c("com_id","effective_from")) %>%
+  dplyr::left_join(tsc_crit_code, by = c("com_id","effective_from")) 
+  
+glimpse(tsc_crit_code)
+
+tec_cl_tsc <- tec_tsc %>% 
+  dplyr::transmute(
+    source = 3, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source_id = source_id %>% as.character(),
+        scope = 0, # state 0, cwth 1, intl 2, ap 3
+        status = 80,
+        effective_from = effective_from,
+        # effective_to = date_delisted, # where is the effective to date?
+        review_due = cat_review_date,
+        community = com_label, 
+        category = tsc_category_id %>% as.list(),
+      criteria = tsc_criteria
+    ) %>%
+  dplyr::filter(!is.na(category))
+
+glimpse(tec_cl_tsc)
+
+```
+
+```{r conslist_tsc_upload, eval=F}
+tec_cl_tsc %>% 
+  wastdr::wastd_POST("community-conservationlisting", api_url = prod)
+```
+
+## Occurrences
+
+## Conservation Documents
+
+## Fire History
+
+## Conservation Threats and Actions
+
+
+# Extract and transform migrated Data from TSC
+Data from TSC is extracted through the TSC API and transformed into a useable
+format.
+
+Expand the code block below to view the process.
+
+```{r load_tsc, message=FALSE}
+# TSC communities
+tsc_comm <- "community" %>%
+  wastdr::wastd_GET(
+    api_url = prod
+  ) %>%
+  wastdr::wastd_parse() 
+
+tsc_tcl_raw <- wastdr::wastd_GET("community-conservationlisting")
+
+tsc_tcl <- tsc_tcl_raw %>%
+  wastdr::parse_community_conservationlisting()
+
+tsc_tcl_comm <- tsc_tcl %>%
+  dplyr::inner_join(tsc_comm, by = "count")
+```
+
+```{r save_point, message=FALSE}
+datafile <- here::here("data", "community.Rda")
+if (file.exists(datafile)) {
+  load(datafile)
+} else {
+  save(
+    tsc_comm, # TSC communities (????)
+    tsc_tcl, # TSC taxon conservation listings (????)
+
+
+    tec_data, # entire TEC database
+    tec_tcl, # TEC conservation listings with TSC criteria IDs
+    tec_cl_tsc,
+    
+
+    file = datafile
+  )
+}
+
+snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
+  ckanr::resource_show() %>%
+  magrittr::extract2("last_modified") %>%
+  lubridate::as_datetime() %>%
+  lubridate::with_tz("Australia/Perth")
+
+
+```
+
+
+# Compare legacy from TEC to migrated data from TSC
+This section provides an automated comparison between original data from TEC 
+and TEC data as uploaded into TSC. 
+
+Data custodians should be able to comprehend this section, and be able to verify 
+that the data migration has worked correctly.
+
+Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
+
+## Summary statistics
+
+```{r tfa_summary}
+#
+# General note: variable names should now be recycled like tfa_data
+#
+tec_tcl_unique_comm <- tsc_tcl_comm$name_id %>%
+  unique() %>%
+  length() # 870
+tsc_tcl_unique_comm <- tsc_tcl_comm$name_id %>%
+  unique() %>%
+  length()
+```
+
+## Conservation Listing
+
+TEC has `r nrow(tfa_tcl)` conservation listings of `r tec_tcl_unique_comm`.
+TSC has `r nrow(tsc_tcl_communities)` fauna conservation listings of 
+`r tsc_tcl_unique_comm`, including animals but excluding plants *sensu latu*.
+
+### TEC conservation listings not in TSC
+
+Any records in the following table indicate conservation listings in TEC that
+were not migrated into TSC.
+
+```{r missing_observations}
+tsc_tcl_comm %>%
+  dplyr::anti_join(tsc_tcl, by = "source_id") %>%
+  reactable::reactable(filterable = TRUE)
+```
+
+### TSC conservation listings not in TEC
+
+The following table shows any conservation listings in TSC which are not in TEC.
+
+```{r}
+tsc_tcl_comm %>%
+  dplyr::anti_join(tec_tcl, by = "source_id") %>%
+  reactable::reactable(filterable = TRUE)
+```
+
+### Conservation criteria mapping
+
+Conservation criteria were manually mapped for each species, 
+therefore they need to be checked to confirm whether the mapping is correct. 
+
+In addition, some conservation criteria could not be mapped as they do not exist 
+in the list/category_code. 
+These need to be corrected before the manual mapping can be updated and the 
+correct criteria assigned for all species.
+
+```{r}
+tec_tcl_comm %>%
+  dplyr::select(
+    c(
+      # source_id,
+      # name_id,
+      # list_code,
+      category_code,
+      criteria_code,
+      assigned_as_in_tsc,
+      comments_MP,
+      actions
+    )
+  ) %>%
+  reactable::reactable(filterable = TRUE)
+```
+
+### Conservation listing dates
+
+Below are the dates of the most recent conservation criteria changes made in the
+snapshot of the TFA.
+
+Excluded are TFA cons listings of unmigrated lists (AP, RL, BCA).
+
+``` {r effective_dates}
+tsc_corner_dates <- tsc_tcl_comm %>%
+  summarise(
+    effective_from_min = min(effective_from, na.rm = T),
+    effective_from_max = max(effective_from, na.rm = T),
+    effective_to_min = min(effective_to, na.rm = T),
+    effective_to_max = max(effective_to, na.rm = T),
+    last_reviewed_on_min = min(last_reviewed_on, na.rm = T),
+    last_reviewed_on_max = max(last_reviewed_on, na.rm = T)
+  )
+
+tec_corner_dates <- tec_tcl %>%
+  summarise(
+    # effective_from_min = min(gazetted_on, na.rm = T),
+    # effective_from_max = max(gazetted_on, na.rm = T),
+    # effective_to_min = min(delisted_on, na.rm = T),
+    # effective_to_max = max(delisted_on, na.rm = T),
+    # last_reviewed_on_min = min(last_reviewed_on, na.rm = T),
+    # last_reviewed_on_max = max(last_reviewed_on, na.rm = T)
+  )
+
+cl_corner_dates <- rbind(tec_corner_dates, tsc_corner_dates) %>%
+  t() %>%
+  magrittr::set_colnames(c("TEC", "TSC"))
+
+cl_corner_dates %>% reactable::reactable()
+```
+
+
+### Conservation listing differences
+
+Summary of the number of conservation listings for each list.
+
+Discrepancies in numbers indicate the need for a closer review.
+
+Equality of numbers does not prove absence of equal numbers of false positives
+and false negatives.
+
+```{r summary_conservation_list}
+make_tec_cl_summary <- . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("tec")
+
+tec_cl_sum_wapec <- tec_listing_cat_wapec %>% make_tec_cl_summary
+tec_cl_sum_dbcarle <- tec_listing_cat_dbcarle %>% make_tec_cl_summary
+
+make_tsc_cl_summary <- function(data, cn){
+  data %>%
+  dplyr::select(category_cache) %>%
+  dplyr::filter(str_detect(category_cache, cn)) %>%
+  nrow() %>% 
+  as.data.frame %>% 
+  magrittr::set_colnames("TSC")
+}
+
+tsc_cl_sum_iucn1994 <- tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN1994")
+tsc_cl_sum_iucn2001 <- tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN2001")
+
+tfa_cons_cat_sum <- rbind(
+  tec_cl_sum_wapec, 
+  tec_cl_sum_dbcarle
+)
+
+tsc_cons_cat_sum <- rbind(
+  tsc_cl_sum_iucn1994, 
+  tsc_cl_sum_iucn2001
+  )
+
+cons_cat_summary <- tfa_cons_cat_sum %>%
+  cbind(tsc_cons_cat_sum) %>%
+  cbind(Category = c("IUCN1994", "IUCN2001", "IUCN2012", 
+                     "WAWCA", "WAPF", "SPFN", "EPBC")) %>%
+  dplyr::select("Category", everything())
+
+cons_cat_summary %>% reactable::reactable()
+```
