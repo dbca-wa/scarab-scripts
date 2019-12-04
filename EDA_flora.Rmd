@@ -302,9 +302,11 @@ tsc_cons_crit <- "conservationcriterion" %>%
   wastdr::wastd_GET(api_url = prod) %>% 
   wastdr::wastd_parse() %>% 
   dplyr::arrange(conservation_list, rank) %>% 
-  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
- 
-readr::write_csv(tsc_cons_crit,path = here::here("data","tsc_conscrit.csv"))
+  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id")) 
+
+tsc_cons_crit %>%
+  dplyr::select(-"conservationcategory_set", -"conservationcriterion_set") %>%
+  readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
 
 # Load manual mapping of TFA cons criteria from CSV file,  join to tfa_cons_crit
 tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
