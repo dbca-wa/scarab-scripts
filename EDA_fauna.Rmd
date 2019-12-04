@@ -703,7 +703,7 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tfa_data
 #
-tfa_tcl <- tfa_tcl %>%
+tfa_tcl_fauna <- tfa_tcl %>%
   dplyr::filter(list_code != "ActionPlan") %>%
   dplyr::filter(list_code != "BCA") %>%
   dplyr::filter(list_code != "RedList") %>%
