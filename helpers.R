@@ -188,7 +188,7 @@ upload_to_ckan <- function(data,
 #' Upload a file to an existing CKAN resource ID. Skip if file missing.
 upload_file_to_ckan <- function(rid, fn){
     if (fs::file_exists(fn)) {
-        message("Uploading this workbook to data catalogue...")
+        message(glue::glue("Uploading {fn} to data catalogue..."))
         r <- ckanr::resource_update(rid, fn)
         message(glue::glue("Updated {r$name} at\n{r$url}"))
     } else {

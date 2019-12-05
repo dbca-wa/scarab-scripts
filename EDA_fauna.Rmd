@@ -41,6 +41,15 @@ on the DBCA data catalogue, then extracted and transformed.
 ```{r load_tfa, message=FALSE}
 tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
 
+snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
+  ckanr::resource_show() %>%
+  magrittr::extract2("last_modified") %>%
+  lubridate::as_datetime() %>%
+  lubridate::with_tz("Australia/Perth")
+
+# Cached data from TSC - delete to force refresh
+datafile_tsc <- here::here("data", "etl_fauna_tsc.Rda")
+
 # Lookup tables
 shires <- tfa_data$Shires %>%
   dplyr::transmute(
@@ -358,7 +367,7 @@ tsc_conscat_sp <- "conservationcategory" %>%
       conservation_list = purrr::map_chr(., "conservation_list")
     )
   } %>%
-  dplyr::filter(conservation_list %in% c(1, 2, 3, 4, 5, 6, 7))
+  dplyr::filter(conservation_list %in% 1:7)
 
 # IUCN 2012 3
 tfa_listing_cat_iucn2012 <- tfa_tcl %>%
@@ -546,53 +555,28 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
 
 ```{r tfa_cons_listing_upload, eval=F}
 tfa_listing_cat_iucn2012 %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 tfa_listing_cat_iucn2001 %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 tfa_listing_cat_iucn1994 %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 tfa_listing_cat_wawca %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 tfa_listing_cat_spfn %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 tfa_listing_cat_waps %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 tfa_listing_cat_epbc %>%
-  wastdr::wastd_POST(
-    "taxon-conservationlisting",
-    api_url = prod
-    # api_url = uat, api_token = Sys.getenv("WASTDR_API_TOKEN_UAT")
-  )
+  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+
+# Expire cached TSC TCL
+if (file.exists(datafile_tsc)) {fs::file_delete(datafile_tsc)}
 ```
 
 
@@ -606,7 +590,7 @@ tfa_listing_cat_epbc %>%
 
 
 # Extract and transform migrated Data from TSC
-Data from TSC is extracted through the TSC API and transformed into a useable
+Data from TSC is extracted through the TSC API and transformed into a usable
 format.
 
 Expand the code block below to view the process.
@@ -622,62 +606,34 @@ wace_names <- "public:herbie_hbvnames_public" %>%
       wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
     )
   }
-
 # readr::write_csv(wace_names,path = here::here("data","wace_names.csv"))
 
-species_nid <- species %>%
+tfa_species_nid <- species %>%
   dplyr::left_join(wace_names, by = "name_id")
-species_name <- species %>%
+tfa_species_name <- species %>%
   dplyr::left_join(wace_names, by = c("scientific_name" = "wace_name"))
 
-# TSC contains taxonomic names from WACensus
-tsc_taxa_fauna <- "taxon" %>%
-  wastdr::wastd_GET(
-    api_url = prod,
-    query = list(paraphyletic_groups__icontains = 20)
-  ) %>%
-  wastdr::wastd_parse() %>% 
-  dplyr::mutate(name_id = name_id %>% as.character())
-
-tsc_tcl_fauna <- wastdr::wastd_GET("taxon-conservationlisting") %>%
-  wastdr::parse_taxon_conservationlisting() %>%
-  dplyr::rename(name_id = taxon) %>%
-  dplyr::mutate(name_id = name_id %>% as.character()) %>% 
-  dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
-```
-
-```{r save_point, message=FALSE}
-datafile <- here::here("data", "fauna.Rda")
-if (file.exists(datafile)) {
-  load(datafile)
+# Taxonomic names and taxon conservation listings for fauna from TSC
+if (file.exists(datafile_tsc)) {
+  load(datafile_tsc)
 } else {
-  save(
-    wace_names, # WAHerb names
-
-    tsc_taxa_fauna, # TSC taxonomic animal names (3655)
-    tsc_tcl, # TSC taxon conservation listings (7841)
-
-
-    tfa_data, # entire TFA database
-    tfa_tcl, # TFA conservation listings with TSC criteria IDs
-    tfa_listing_cat_epbc, # TFA cons listings split up by cons list
-    tfa_listing_cat_iucn1994,
-    tfa_listing_cat_iucn2001,
-    tfa_listing_cat_iucn2012,
-    tfa_listing_cat_spfn,
-    tfa_listing_cat_waps,
-    tfa_listing_cat_wawca,
-
-    # tsc_comm
-    file = datafile
-  )
+  # TSC contains taxonomic names from WACensus
+  tsc_taxa_fauna <- "taxon" %>%
+    wastdr::wastd_GET(api_url = prod,
+                      query = list(paraphyletic_groups__icontains = 20)) %>%
+    wastdr::wastd_parse() %>%
+    dplyr::mutate(name_id = name_id %>% as.character())
+  
+  # Taxon conservation listings for fauna
+  tsc_tcl_fauna <-
+    wastdr::wastd_GET("taxon-conservationlisting") %>%
+    wastdr::parse_taxon_conservationlisting() %>%
+    dplyr::rename(name_id = taxon) %>%
+    dplyr::mutate(name_id = name_id %>% as.character()) %>%
+    dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
+  
+  save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc)
 }
-
-snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
-  ckanr::resource_show() %>%
-  magrittr::extract2("last_modified") %>%
-  lubridate::as_datetime() %>%
-  lubridate::with_tz("Australia/Perth")
 ```
 
 
@@ -1056,7 +1012,8 @@ uploaded as CSV snapshots.
 upload_file_to_ckan("2b136da7-35cf-44a5-b29e-9f568176b7ad", "EDA_fauna.html")
 
 # Manual mapping of conservation criteria
-upload_file_to_ckan("e1c3119b-f44d-4244-8915-21097bd16b90", here::here("tfa_conscrit_w_tsc.csv"))
+upload_file_to_ckan("e1c3119b-f44d-4244-8915-21097bd16b90", 
+                    here::here("tfa_conscrit_w_tsc.csv"))
 
 # Legacy TFA data
 d <- ckanr::package_show("threatened-and-priority-fauna-database")
