@@ -48,7 +48,7 @@ snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
   lubridate::with_tz("Australia/Perth")
 
 # Cached data from TSC - delete to force refresh
-datafile_tsc <- here::here("data", "etl_fauna_tsc.Rda")
+datafile_tsc_fauna <- here::here("data", "etl_fauna_tsc.Rda")
 
 # Lookup tables
 shires <- tfa_data$Shires %>%
@@ -576,7 +576,7 @@ tfa_listing_cat_epbc %>%
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
 
 # Expire cached TSC TCL
-if (file.exists(datafile_tsc)) {fs::file_delete(datafile_tsc)}
+if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
 ```
 
 
@@ -614,8 +614,8 @@ tfa_species_name <- species %>%
   dplyr::left_join(wace_names, by = c("scientific_name" = "wace_name"))
 
 # Taxonomic names and taxon conservation listings for fauna from TSC
-if (file.exists(datafile_tsc)) {
-  load(datafile_tsc)
+if (file.exists(datafile_tsc_fauna)) {
+  load(datafile_tsc_fauna)
 } else {
   # TSC contains taxonomic names from WACensus
   tsc_taxa_fauna <- "taxon" %>%
@@ -628,11 +628,10 @@ if (file.exists(datafile_tsc)) {
   tsc_tcl_fauna <-
     wastdr::wastd_GET("taxon-conservationlisting") %>%
     wastdr::parse_taxon_conservationlisting() %>%
-    dplyr::rename(name_id = taxon) %>%
-    dplyr::mutate(name_id = name_id %>% as.character()) %>%
+    dplyr::rename(name_id = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
   
-  save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc)
+  save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc_fauna)
 }
 ```
 

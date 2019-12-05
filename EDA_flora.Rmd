@@ -42,6 +42,15 @@ on the DBCA data catalogue, then extracted and transformed.
 ```{r load_tfl, message=TRUE}
 tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
 
+snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
+  ckanr::resource_show() %>%
+  magrittr::extract2("last_modified") %>%
+  lubridate::as_datetime() %>%
+  lubridate::with_tz("Australia/Perth")
+
+# Cached data from TSC - delete to force refresh
+datafile_tsc_flora <- here::here("data", "etl_flora_tsc.Rda")
+
 # Look up tables
 populations <- tfl_data$DRF_POPULATION %>%
   dplyr::transmute(
@@ -517,53 +526,26 @@ format.
 Expand the code block below to view the process.
 
 ```{r load_tsc, message=FALSE}
-# TSC contains taxonomic names from WACensus
-tsc_taxa_flora <- "taxon" %>%
-  wastdr::wastd_GET(
-    api_url=prod, 
-    query = list(paraphyletic_groups__icontains=21)) %>%
-  wastdr::wastd_parse() %>% 
-  dplyr::mutate(name_id = name_id %>% as.character())
-
-# tsc_comm <- "community" %>% 
-#   wastdr::wastd_GET(api_url=prod) %>% 
-#   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
-
-tsc_tcl_flora <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
-  wastdr::parse_taxon_conservationlisting() %>% 
-  dplyr::mutate(name_id = taxon) %>%
-  dplyr::mutate(name_id = name_id %>% as.character()) %>%
-  dplyr::inner_join(tsc_taxa_flora, by = "name_id")
-```
-
-
-```{r save_point, message=FALSE}
-datafile <- here::here("data", "flora.Rda")
-if (file.exists(datafile)) {
-  load(datafile)
+# Taxonomic names and taxon conservation listings for fauna from TSC
+if (file.exists(datafile_tsc_flora)) {
+  load(datafile_tsc_flora)
 } else {
-  save(
-    tsc_taxa_flora, # TSC taxonomic flora names
-    tsc_tcl_flora, # TSC taxon conservation listings
-
-    tfl_data, # entire TFL database
-    tfl_tcl, # TFL conservation listings with TSC criteria IDs
-    tfl_listing_cat_priority,
-    tfl_listing_cat_epbc, # TFL cons listings split up by cons list
-    tfl_listing_cat_iucn1994,
-    tfl_listing_cat_iucn2001,
-    tfl_listing_cat_iucn2012,
-
-    # tsc_comm
-    file = datafile
-  )
+  # TSC contains taxonomic names from WACensus
+  tsc_taxa_flora <- "taxon" %>%
+    wastdr::wastd_GET(api_url = prod,
+                      query = list(paraphyletic_groups__icontains = 21)) %>%
+    wastdr::wastd_parse() %>%
+    dplyr::mutate(name_id = name_id %>% as.character())
+  
+  # Taxon conservation listings for fauna
+  tsc_tcl_flora <-
+    wastdr::wastd_GET("taxon-conservationlisting") %>%
+    wastdr::parse_taxon_conservationlisting() %>%
+    dplyr::rename(name_id = taxon %>% as.character()) %>%
+    dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
+  
+  save(tsc_taxa_flora, tsc_tcl_flora, file = datafile_tsc_flora)
 }
-
-snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
-  ckanr::resource_show() %>%
-  magrittr::extract2("last_modified") %>%
-  lubridate::as_datetime() %>%
-  lubridate::with_tz("Australia/Perth")
 ```
 
 # Compare legacy from TFL to migrated data from TSC
