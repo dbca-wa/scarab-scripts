@@ -630,27 +630,17 @@ species_name <- species %>%
   dplyr::left_join(wace_names, by = c("scientific_name" = "wace_name"))
 
 # TSC contains taxonomic names from WACensus
-tsc_taxa <- "taxon" %>%
+tsc_taxa_fauna <- "taxon" %>%
   wastdr::wastd_GET(
     api_url = prod,
     query = list(paraphyletic_groups__icontains = 20)
   ) %>%
-  wastdr::wastd_parse() %>%
-  dplyr::mutate(name_id = name_id %>% as.character())
+  wastdr::wastd_parse()
 
-# tsc_comm <- "community" %>%
-#   wastdr::wastd_GET(api_url=prod) %>%
-#   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
-
-tsc_tcl_raw <- wastdr::wastd_GET("taxon-conservationlisting")
-
-tsc_tcl <- tsc_tcl_raw %>%
+tsc_tcl_fauna <- wastdr::wastd_GET("taxon-conservationlisting") %>%
   wastdr::parse_taxon_conservationlisting() %>%
   dplyr::rename(name_id = taxon) %>%
-  dplyr::mutate(name_id = name_id %>% as.character())
-
-tsc_tcl_fauna <- tsc_tcl %>%
-  dplyr::inner_join(tsc_taxa, by = "name_id")
+  dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
 ```
 
 ```{r save_point, message=FALSE}
@@ -661,7 +651,7 @@ if (file.exists(datafile)) {
   save(
     wace_names, # WAHerb names
 
-    tsc_taxa, # TSC taxonomic animal names (3655)
+    tsc_taxa_fauna, # TSC taxonomic animal names (3655)
     tsc_tcl, # TSC taxon conservation listings (7841)
 
 
@@ -804,7 +794,7 @@ Any records in the following table require review.
 ```{r species_mismatches}
 # names_in_tfa_not_in_tsc
 species_names %>%
-  anti_join(tsc_taxa, by = "name_id") %>%
+  anti_join(tsc_taxa_fauna, by = "name_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -817,7 +807,7 @@ completeness.
 
 ```{r}
 # names_in_tsc_not_in_tfa
-tsc_taxa %>%
+tsc_taxa_fauna %>%
   anti_join(species_names, by = "name_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
