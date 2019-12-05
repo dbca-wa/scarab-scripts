@@ -16,22 +16,17 @@
 # install.packages("jsonlite")
 # devtools::install_github("glin/reactable")
 
+library(tidyverse)
 library(devtools)
 library(usethis)
-library(tidyverse)
 library(lubridate)
 library(skimr)
 library(Hmisc)
 library(ckanr)
 library(glue)
-library(magrittr)
-library(readr)
-library(dplyr)
-library(readr)
 library(knitr)
 library(styler)
 library(janitor)
-library(stringr)
 library(ckanr)
 library(wastdr)
 # library(rstan)
@@ -39,7 +34,7 @@ library(leaflet)
 # library(RColorBrewer)
 # library(sf)
 library(jsonlite)
-# library(geojsonio)
+library(geojsonio)
 library(geojsonsf)
 library(mapview)
 library(maps)
@@ -78,25 +73,49 @@ dev <- "http://localhost:8220/api/1/"
 uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
 prod <- "https://tsc.dbca.wa.gov.au/api/1/"
 
-#' Download, extract and open a zipped Access database from a CKAN dataset
+#' Download, extract and open a zipped Access database from a CKAN dataset.
 #'
-#' @param resource_id The CKAN resource ID of a zipped Access DB
+#' The extracted file will be kept in `destdir`.
+#' If a file with the expected filename already exists in `destdir`, this file
+#' will be used.
+#' To force a fresh download, remove or rename the file in `destdir`.
+#'
+#' @param resource_id The CKAN resource ID of a zipped Access DB.
 #' @param destdir The local destination directory for the extracted file,
-#'  will be created if not existing. Default: "data"
-#' @param dateformat The parameter dateformat for Hmisc::mdb.get(), default: '%Y-%m-%d'
-#' @param asis The parameter as.is for Hmisc::mdb.get(), default: TRUE
-#' @returns The Hmisc::mdb.get connection
+#'  will be created if not existing. Default: `here::here("data")`.
+#' @param dateformat The parameter dateformat for `Hmisc::mdb.get()`,
+#'   default: `%Y-%m-%d`.
+#' @param as.is The parameter `as.is` for `Hmisc::mdb.get()`, default: TRUE.
+#' @returns The `Hmisc::mdb.get` connection.
 dl_mdbzip <- function(resource_id,
-                      destdir="data",
+                      destdir=here::here("data"),
                       dateformat = "%m-%d-%Y",
-                      asis = TRUE) {
-    dir.create(file.path(getwd(), destdir), showWarnings = FALSE)
-    tmp <- tempfile()
-    res_url <- ckanr::resource_show(resource_id)$url
-    utils::download.file(res_url, tmp)
-    dbfile <- utils::unzip(tmp, exdir = destdir)
-    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = asis)
-    unlink(tmp)
+                      as.is = TRUE,
+                      verbose=TRUE) {
+    if (!fs::dir_exists(destdir)) {fs::dir_create(destdir)}
+
+    r <- ckanr::resource_show(resource_id)
+    res_url <- r$url
+    res_fn <- r$url %>% fs::path_file()
+    res_file <- fs::path(fs::path(destdir, res_fn))
+
+    if (!fs::file_exists(res_file)){
+        if (verbose==TRUE) {
+            message(
+                glue::glue("Downloading {r$name} from CKAN to {res_file}..."))
+            }
+        utils::download.file(res_url, res_file)
+    } else {
+        if (verbose==TRUE) {
+        message(glue::glue("Keeping already downloaded file {res_fn}.\n",
+                           "Delete {res_fn} to force fresh download."))
+        }
+    }
+
+    if (verbose==TRUE) {message(glue::glue("Extracting {res_file}..."))}
+    dbfile <- utils::unzip(res_file, exdir = destdir)
+    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = as.is)
+    if (verbose==TRUE) {message("Done, returning open db connection.")}
     con
 }
 
