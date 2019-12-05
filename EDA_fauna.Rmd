@@ -235,7 +235,8 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     comments = Comments %>% as.character()
   ) %>%
   dplyr::left_join(species_names, by = "species_code") %>%
-  tibble::rowid_to_column("source_id")
+  tibble::rowid_to_column("source_id") %>% 
+  dplyr::mutate(source_id = source_id %>% as.character())
 # tfa_cons_listings %>% skim()
 # tfa_cons_listings %>% head(10) %>% DT::datatable()
 
@@ -630,27 +631,19 @@ species_name <- species %>%
   dplyr::left_join(wace_names, by = c("scientific_name" = "wace_name"))
 
 # TSC contains taxonomic names from WACensus
-tsc_taxa <- "taxon" %>%
+tsc_taxa_fauna <- "taxon" %>%
   wastdr::wastd_GET(
     api_url = prod,
     query = list(paraphyletic_groups__icontains = 20)
   ) %>%
-  wastdr::wastd_parse() %>%
+  wastdr::wastd_parse() %>% 
   dplyr::mutate(name_id = name_id %>% as.character())
 
-# tsc_comm <- "community" %>%
-#   wastdr::wastd_GET(api_url=prod) %>%
-#   wastdr::wastd_parse() # needs an upgrade to handle complex geometries
-
-tsc_tcl_raw <- wastdr::wastd_GET("taxon-conservationlisting")
-
-tsc_tcl <- tsc_tcl_raw %>%
+tsc_tcl_fauna <- wastdr::wastd_GET("taxon-conservationlisting") %>%
   wastdr::parse_taxon_conservationlisting() %>%
   dplyr::rename(name_id = taxon) %>%
-  dplyr::mutate(name_id = name_id %>% as.character())
-
-tsc_tcl_fauna <- tsc_tcl %>%
-  dplyr::inner_join(tsc_taxa, by = "name_id")
+  dplyr::mutate(name_id = name_id %>% as.character()) %>% 
+  dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
 ```
 
 ```{r save_point, message=FALSE}
@@ -661,7 +654,7 @@ if (file.exists(datafile)) {
   save(
     wace_names, # WAHerb names
 
-    tsc_taxa, # TSC taxonomic animal names (3655)
+    tsc_taxa_fauna, # TSC taxonomic animal names (3655)
     tsc_tcl, # TSC taxon conservation listings (7841)
 
 
@@ -703,13 +696,13 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tfa_data
 #
-tfa_tcl_fauna <- tfa_tcl %>%
+tfa_tcl_edit <- tfa_tcl %>%
   dplyr::filter(list_code != "ActionPlan") %>%
   dplyr::filter(list_code != "BCA") %>%
   dplyr::filter(list_code != "RedList") %>%
   dplyr::mutate(source_id = source_id %>% as.character())
 
-tfa_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
+tfa_tcl_unique_taxa <- tfa_tcl_edit$name_id %>%
   unique() %>%
   length() # 870
 tsc_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
@@ -804,7 +797,7 @@ Any records in the following table require review.
 ```{r species_mismatches}
 # names_in_tfa_not_in_tsc
 species_names %>%
-  anti_join(tsc_taxa, by = "name_id") %>%
+  anti_join(tsc_taxa_fauna, by = "name_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -817,14 +810,14 @@ completeness.
 
 ```{r}
 # names_in_tsc_not_in_tfa
-tsc_taxa %>%
+tsc_taxa_fauna %>%
   anti_join(species_names, by = "name_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
 ## Conservation Listing
 
-TFA has `r nrow(tfa_tcl)` conservation listings of `r tfa_tcl_unique_taxa`.
+TFA has `r nrow(tfa_tcl_edit)` conservation listings of `r tfa_tcl_unique_taxa`.
 TSC has `r nrow(tsc_tcl_fauna)` fauna conservation listings of 
 `r tsc_tcl_unique_taxa`, including animals but excluding plants *sensu latu*.
 
@@ -840,7 +833,7 @@ Already excluded are conservation listings from the excluded categories
 
 ```{r missing_observations}
 tsc_tcl_fauna %>%
-  dplyr::anti_join(tsc_tcl, by = "source_id") %>%
+  dplyr::anti_join(tfa_tcl_edit, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -863,7 +856,7 @@ name, once the published name is known and entered into WACensus, then propagate
 into TSC.
 
 ```{r}
-tfa_tcl %>% dplyr::filter(name_id == 0)
+tfa_tcl_edit %>% dplyr::filter(name_id == 0)
 ```
 
 ### TFA unmigrated conservatin listings
@@ -923,7 +916,7 @@ tsc_corner_dates <- tsc_tcl_fauna %>%
     last_reviewed_on_max = max(last_reviewed_on, na.rm = T)
   )
 
-tfa_corner_dates <- tfa_tcl %>%
+tfa_corner_dates <- tfa_tcl_edit %>%
   summarise(
     effective_from_min = min(gazetted_on, na.rm = T),
     effective_from_max = max(gazetted_on, na.rm = T),
