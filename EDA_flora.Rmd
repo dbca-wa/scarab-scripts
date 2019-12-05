@@ -776,7 +776,7 @@ TODO in TSC but missing in TFL
 
 # Upload to data catalogue
 The [compiled version of this workbook]() is uploaded to the 
-[Threatened Fauna Dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database/) 
+[Threatened Flora Dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database/) 
 on the DBCA data catalogue.
 
 The manual mapping of conservation criteria, plus all legacy data is also
@@ -784,7 +784,7 @@ uploaded as CSV snapshots.
 
 ```{r upload_data_catalogue}
 # This workbook
-# upload_file_to_ckan("1b5e6401-82fe-4728-83be-f3f8ea4b5876", "EDA_flora.html")
+upload_file_to_ckan("1b5e6401-82fe-4728-83be-f3f8ea4b5876", "EDA_flora.html")
 
 # Manual mapping of conservation criteria
 # upload_file_to_ckan("", here::here("tfl_conscrit_w_tsc.csv"))
