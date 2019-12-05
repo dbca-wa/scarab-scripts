@@ -235,7 +235,8 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     comments = Comments %>% as.character()
   ) %>%
   dplyr::left_join(species_names, by = "species_code") %>%
-  tibble::rowid_to_column("source_id")
+  tibble::rowid_to_column("source_id") %>% 
+  dplyr::mutate(source_id = source_id %>% as.character())
 # tfa_cons_listings %>% skim()
 # tfa_cons_listings %>% head(10) %>% DT::datatable()
 
@@ -635,11 +636,13 @@ tsc_taxa_fauna <- "taxon" %>%
     api_url = prod,
     query = list(paraphyletic_groups__icontains = 20)
   ) %>%
-  wastdr::wastd_parse()
+  wastdr::wastd_parse() %>% 
+  dplyr::mutate(name_id = name_id %>% as.character())
 
 tsc_tcl_fauna <- wastdr::wastd_GET("taxon-conservationlisting") %>%
   wastdr::parse_taxon_conservationlisting() %>%
   dplyr::rename(name_id = taxon) %>%
+  dplyr::mutate(name_id = name_id %>% as.character()) %>% 
   dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
 ```
 
@@ -693,13 +696,13 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tfa_data
 #
-tfa_tcl_fauna <- tfa_tcl %>%
+tfa_tcl_edit <- tfa_tcl %>%
   dplyr::filter(list_code != "ActionPlan") %>%
   dplyr::filter(list_code != "BCA") %>%
   dplyr::filter(list_code != "RedList") %>%
   dplyr::mutate(source_id = source_id %>% as.character())
 
-tfa_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
+tfa_tcl_unique_taxa <- tfa_tcl_edit$name_id %>%
   unique() %>%
   length() # 870
 tsc_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
@@ -814,7 +817,7 @@ tsc_taxa_fauna %>%
 
 ## Conservation Listing
 
-TFA has `r nrow(tfa_tcl)` conservation listings of `r tfa_tcl_unique_taxa`.
+TFA has `r nrow(tfa_tcl_edit)` conservation listings of `r tfa_tcl_unique_taxa`.
 TSC has `r nrow(tsc_tcl_fauna)` fauna conservation listings of 
 `r tsc_tcl_unique_taxa`, including animals but excluding plants *sensu latu*.
 
@@ -830,7 +833,7 @@ Already excluded are conservation listings from the excluded categories
 
 ```{r missing_observations}
 tsc_tcl_fauna %>%
-  dplyr::anti_join(tsc_tcl, by = "source_id") %>%
+  dplyr::anti_join(tfa_tcl_edit, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -853,7 +856,7 @@ name, once the published name is known and entered into WACensus, then propagate
 into TSC.
 
 ```{r}
-tfa_tcl %>% dplyr::filter(name_id == 0)
+tfa_tcl_edit %>% dplyr::filter(name_id == 0)
 ```
 
 ### TFA unmigrated conservatin listings
@@ -913,7 +916,7 @@ tsc_corner_dates <- tsc_tcl_fauna %>%
     last_reviewed_on_max = max(last_reviewed_on, na.rm = T)
   )
 
-tfa_corner_dates <- tfa_tcl %>%
+tfa_corner_dates <- tfa_tcl_edit %>%
   summarise(
     effective_from_min = min(gazetted_on, na.rm = T),
     effective_from_max = max(gazetted_on, na.rm = T),
