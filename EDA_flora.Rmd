@@ -541,7 +541,7 @@ if (file.exists(datafile_tsc_flora)) {
   tsc_tcl_flora <-
     wastdr::wastd_GET("taxon-conservationlisting") %>%
     wastdr::parse_taxon_conservationlisting() %>%
-    dplyr::rename(name_id = taxon %>% as.character()) %>%
+    dplyr::mutate(name_id = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
   
   save(tsc_taxa_flora, tsc_tcl_flora, file = datafile_tsc_flora)
