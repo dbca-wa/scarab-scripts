@@ -39,7 +39,7 @@ Data from the Threatened Flora Database (TFL) is downloaded from the
 [TFL dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
 on the DBCA data catalogue, then extracted and transformed.
 
-```{r load_tfl, message=FALSE}
+```{r load_tfl, message=TRUE}
 tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
 
 # Look up tables
@@ -264,7 +264,8 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
     file_comments = FILE.COMMENTS %>% as.character(),
     file_no = FILE.NO %>% as.character()
   ) %>% 
-  tibble::rowid_to_column("source_id") %>% 
+  tibble::rowid_to_column("source_id") %>%
+  dplyr::mutate(source_id = source_id %>% as.character()) %>% 
   dplyr::arrange(name_id)
 
 # tfl_cons_listing[1:100, ] %>% DT::datatable(.)
@@ -327,8 +328,7 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
 # glimpse(tfl_conscrit)
 
 tfl_tcl <- tfl_cons_listing %>% 
-  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% 
-  dplyr::mutate(source_id = source_id %>% as.character)
+  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa"))
 ```
 
 # Load legacy data from TFL into TSC
@@ -347,6 +347,8 @@ tsc_conscat_sp <- "conservationcategory" %>%
     conservation_list = purrr::map_chr(., "conservation_list")
   )} %>% 
   dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
+
+unique(tfl_tcl$list_code) # "Priority", "EPBC", "WCA_1991", "FIDMS", "FLORABASE"
 
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
@@ -520,7 +522,8 @@ tsc_taxa_flora <- "taxon" %>%
   wastdr::wastd_GET(
     api_url=prod, 
     query = list(paraphyletic_groups__icontains=21)) %>%
-  wastdr::wastd_parse()
+  wastdr::wastd_parse() %>% 
+  dplyr::mutate(name_id = name_id %>% as.character())
 
 # tsc_comm <- "community" %>% 
 #   wastdr::wastd_GET(api_url=prod) %>% 
@@ -528,7 +531,8 @@ tsc_taxa_flora <- "taxon" %>%
 
 tsc_tcl_flora <- wastdr::wastd_GET("taxon-conservationlisting") %>% 
   wastdr::parse_taxon_conservationlisting() %>% 
-  dplyr::mutate(name_id = taxon) %>% 
+  dplyr::mutate(name_id = taxon) %>%
+  dplyr::mutate(name_id = name_id %>% as.character()) %>%
   dplyr::inner_join(tsc_taxa_flora, by = "name_id")
 ```
 
@@ -543,9 +547,9 @@ if (file.exists(datafile)) {
     tsc_tcl_flora, # TSC taxon conservation listings
 
     tfl_data, # entire TFL database
-    tfl_tcl, # TFA conservation listings with TSC criteria IDs
+    tfl_tcl, # TFL conservation listings with TSC criteria IDs
     tfl_listing_cat_priority,
-    tfl_listing_cat_epbc, # TFA cons listings split up by cons list
+    tfl_listing_cat_epbc, # TFL cons listings split up by cons list
     tfl_listing_cat_iucn1994,
     tfl_listing_cat_iucn2001,
     tfl_listing_cat_iucn2012,
@@ -603,8 +607,7 @@ were not migrated into TSC.
 
 ```{r missing_observations}
 tfl_tcl %>%
-  dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>%
-  dplyr::mutate(source_id = source_id %>% as.integer()) %>% 
+  dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>% 
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -799,7 +802,7 @@ uploaded as CSV snapshots.
 
 ```{r upload_data_catalogue}
 # This workbook
-# upload_file_to_ckan("", "EDA_flora.html")
+# upload_file_to_ckan("1b5e6401-82fe-4728-83be-f3f8ea4b5876", "EDA_flora.html")
 
 # Manual mapping of conservation criteria
 # upload_file_to_ckan("", here::here("tfl_conscrit_w_tsc.csv"))
