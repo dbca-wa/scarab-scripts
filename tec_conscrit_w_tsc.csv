@@ -1,27 +1,27 @@
-criterion_code,category_code,tsc_category_id,tec_criteria,tsc_criteria
-EN B) ii),EN,31,B) ii),83
-EN B) III),EN,31,B) III),84
-CR A) ii),CR,32,A) ii),81
-CR B) ii),CR,32,B) ii),83
-CR C),CR,32,C),85
-CR A) i),CR,32,A) i),80
-CR B) iii),CR,32,B) iii),84
-EN B) i),EN,31,B) i),82
-CR B) i),CR,32,B) i),82
-VU B),VU,34,B),79
-VU C),VU,34,C),85
-DD,DD,23,,
-LR,LR,24,,
-P 4 (a),P4,38,(a),
-P 1,P1,35,,
-PD B),PD,29,B),79
-P 2,P2,36,,
-P 4(b),P4,38,(b),
-VU A),VU,34,A),78
-P 3(i),P3,37,(i),
-P 3(iii),P3,37,(iii),
-P 3(ii),P3,37,(ii),
-EN A) i),EN,31,A) i),80
-PD A),PD,29,A),78
-NE,NE,25,,
-EN A) ii),EN,31,A) ii),81
+category_code,tsc_category_id,criterion_code,criteria_code,assigned_as_in_tsc,tsc_criteria,comments_MP,actions
+EN,31,EN B) ii),B(ii),B(ii),83,,
+EN,31,EN B) III),B(iii),B(iii),84,,
+CR,32,CR A) ii),A(ii),A(ii),81,,
+CR,32,CR B) ii),B(ii),B(ii),83,,
+CR,32,CR C),C,C,85,,
+CR,32,CR A) i),A(i),A(i),80,,
+CR,32,CR B) iii),B(iii),B(iii),84,,
+EN,31,EN B) i),B(i),B(i),82,,
+CR,32,CR B) i),B(i),B(i),82,,
+VU,34,VU B),B,B,79,,
+VU,34,VU C),C,C,85,,
+DD,23,DD,,,,No criteria code,
+LR,24,LR,,,,No criteria code,
+P4,38,P 4 (a),a,,,No (a),
+P1,35,P 1,,,,No criteria code,
+PD,29,PD B),B,B,79,,
+P2,36,P 2,,,,No criteria code,
+P4,38,P 4(b),b,,,No (b),
+VU,34,VU A),A,A,78,,
+P3,37,P 3(i),(i),,,No (i),
+P3,37,P 3(iii),(iii),,,No (iii),
+P3,37,P 3(ii),(ii),,,No (ii),
+EN,31,EN A) i),A(i),A(i),80,,
+PD,29,PD A),A,A,78,,
+NE,25,NE,,,,No criteria code,
+EN,31,EN A) ii),A(ii),A(ii),81,,
