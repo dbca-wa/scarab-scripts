@@ -328,8 +328,7 @@ Expand the code block below to view the process.
 tsc_ccl <- wastdr::wastd_GET("community-conservationlisting") %>%
   wastdr::parse_community_conservationlisting()
 
-tsc_ccl <- tsc_ccl %>% 
-  dplyr::mutate(com_label = community)
+
 # tsc_ccl_comm <- tsc_ccl %>%
 #   dplyr::inner_join(tsc_comm, by = "count")
 ```
@@ -364,6 +363,9 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tec_data
 #
+tsc_ccl <- tsc_ccl %>% 
+  dplyr::mutate(com_label = community)
+
 tec_ccl_unique_comm <- tec_ccl$com_label %>%
   unique() %>%
   length() # 476
