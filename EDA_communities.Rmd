@@ -41,6 +41,69 @@ on the DBCA data catalogue, then extracted and transformed.
 ```{r load_tec, message=FALSE}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 
+snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
+  ckanr::resource_show() %>%
+  magrittr::extract2("last_modified") %>%
+  lubridate::as_datetime() %>%
+  lubridate::with_tz("Australia/Perth")
+
+# Cached data from TSC - delete to force refresh
+datafile_tsc_comm <- here::here("data", "etl_comm_tsc.Rda")
+
+former_range <- tec$FORMER_RANGES %>%
+  dplyr::transmute(
+    former_range_code = FORMER.RANGE %>% as.character(),
+    former_range = FORMER.RANGE.DESC %>% as.character()
+  )
+# make_coldef(former_range)
+
+range_decline <- tec$RANGE_DECLINE %>%
+  dplyr::transmute(
+    range_decline_id = RANGE.DECLINE %>% as.integer(),
+    range_decline = RANGE.DECLINE.DESC %>% as.character()
+  )
+# make_coldef(range_decline)
+
+occ_decline <- tec$OCCURRENCES_DECLINE %>%
+  dplyr::transmute(
+    occ_decline_id = OCC.DECLINE %>% as.integer(),
+    occ_decline = OCC.DECLINE.DESC %>% as.character()
+  )
+# make_coldef(occ_decline)
+
+status <- tec$STATUS %>%
+  dplyr::transmute(
+    status_code = STATUS.CODE %>% as.character(),
+    status = STATUS.DESC %>% as.character()
+  )
+# status %>% make_coldef()
+# unique(status$status_code) # "BELIEVED"   "IDENTIFIED" - where used?
+
+communities <- tec$COMMUNITIES %>%
+  tibble::as_tibble() %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    com_label = COM.ID %>% as.character(),
+    com_name = COM.NAME %>% as.character(),
+    former_range_code = COM.FORMER.RANGE %>% as.character(),
+    range_decline_id = COM.RANGE.DECLINE %>% as.integer(),
+    occ_decline_id = COM.OCC.DECLINE %>% as.integer(),
+    com_tec_listing = COM.TEC.LISTING %>% as.integer(),
+    com_original_area = COM.ORIG.AREA %>% as.double(),
+    com_area_accuracy = COM.AREA.ACC %>% as.double(),
+    preliminary = COM.PRELIMINARY %>% as.character(),
+    status = COM.STATUS %>% as.character()
+  ) %>%
+  dplyr::left_join(former_range, by = "former_range_code") %>%
+  dplyr::left_join(range_decline, by = "range_decline_id") %>%
+  dplyr::left_join(occ_decline, by = "occ_decline_id") %>%
+  dplyr::select(-former_range_code, -range_decline_id, -occ_decline_id)
+
+communities %>% skim()
+communities %>% DT::datatable(.)
+
+com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
+
 tec_cons_cat <- tec$CATEGORY_TYPES %>%
   dplyr::transmute(
     category_code = CT.TYPE %>% as.character(),
@@ -75,7 +138,7 @@ tec_cons_listing_categories <- tec$CATEGORIES %>%
   dplyr::left_join(tec_cons_cat, by = "category_code") %>% 
   tibble::rowid_to_column("source_id")
 
-tec_cons_listing <- tec$CATEGORY_CRITERIA %>%
+tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     effective_from = CAT.EFFECT.DATE %>% parse_as_datetime(),
@@ -88,8 +151,18 @@ tec_cons_listing <- tec$CATEGORY_CRITERIA %>%
 # TODO: load cons crit from IUCN RLE into TSC, map resulting codes to:
 # tec_cons_crit$criterion_code
 
+## Check for differences between categories and criteria and then join criteria to categories for all communities
+tec_cons_cat_mis_crit <- tec_cons_listing_categories %>% 
+  anti_join(tec_cons_listing_criteria, by = c("com_id","effective_from")) #132
+
+tec_cons_crit_mis_cat <- tec_cons_listing_criteria %>% 
+  anti_join(tec_cons_listing_categories, by = c("com_id","effective_from")) # 0
+
+tec_cons_listing <- tec_cons_listing_categories %>% 
+  left_join(tec_cons_listing_criteria, by = c("com_id","effective_from","com_label","com_name"))
+
 ## Extract criterion_codes to manual map all criteria
-all_crit_map <- tec_cons_listing_criteria %>%
+all_crit_map <- tec_cons_listing %>%
   dplyr::distinct(criterion_code) 
 readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
 
@@ -117,7 +190,8 @@ tsc_conslists_com <- "conservationlist" %>%
   )}
 
 # IDs of TSC cons lists applicable to communities
-com_list_ids_wa <- tsc_conslists_com %>% extract2("id") %>% paste(collapse=",")
+com_list_ids_wa <- tsc_conslists_com %>% 
+  magrittr::extract2("id") %>% paste(collapse=",") ## This doesn't work
 # DBCA_RLE 11
 # WAPEC 12
 # IUCN_RLE 16
@@ -152,16 +226,19 @@ magrittr::extract2("features") %>%
 tec_cons_crit <- here::here("tec_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      criterion_code = col_character(),
       category_code = col_character(),
       tsc_category_id = col_character(),
-      tec_criteria = col_character(),
-      tsc_criteria = col_character()
+      criterion_code = col_character(),
+      criteria_code = col_character(),
+      assigned_as_in_tsc = col_character(),
+      tsc_criteria = col_character(),
+      comments_MP = col_character(),
+      actions = col_character()
     )
   ) 
 
-tec_tcl<-tec_cons_listing %>% 
-  left_join(tec_cons_crit,by=c("criterion_code"))
+tec_ccl<-tec_cons_listing %>% 
+  left_join(tec_cons_crit,by=c("criterion_code","category_code")) 
 ```
 
 # Load legacy data from TEC into TSC
@@ -173,37 +250,33 @@ process.
 This section loads conservation listings from TEC into TSC.
 
 ```{r summarise criterion codes into one row per date}
-comm_info <- tec_cl_crit_w_tsc %>%
+comm_info <- tec_ccl %>%
   dplyr::select(com_id,com_label,com_name) %>%
   distinct()
 
-tec_cat_code <- tec_cl_crit_w_tsc %>%
+tec_cat_code <- tec_ccl %>%
   dplyr::group_by(com_id,effective_from,tsc_category_id) %>% 
-  dplyr::arrange (criterion_code) %>%
-  dplyr::summarise(criterion_code = paste(criterion_code, collapse = ","))
+  dplyr::arrange (category_code) %>%
+  dplyr::summarise(category_code = paste(category_code, collapse = ","))
 
-tec_crit_code <- tec_cl_crit_w_tsc %>%
+tec_crit_code <- tec_ccl %>%
   dplyr::group_by(com_id,effective_from) %>% 
-  dplyr::arrange (tec_criteria) %>%
-  dplyr::summarise(tec_criteria = paste(tec_criteria, collapse = "")) 
+  dplyr::arrange (criteria_code) %>%
+  dplyr::summarise(criteria_code = paste(criteria_code, collapse = ",")) 
 
-tsc_crit_code <- tec_cl_crit_w_tsc %>%
+## We get NA introduced by coercion. The problem is community 241- Albany Blackbutt, where tsc_criteria = c(NA,NA)
+tsc_crit_code <- tec_ccl %>%
   dplyr::group_by(com_id,effective_from) %>% 
   dplyr::arrange (tsc_criteria) %>%
-  na.omit() %>% #remove na's prior to collapse
   dplyr::summarise(tsc_criteria = paste(tsc_criteria, collapse = ",")) %>%
   dplyr::mutate(
     tsc_criteria = tsc_criteria %>% chr2int()
   )
 
-glimpse(tsc_crit_code)
-
 tec_tsc <- tec_cons_listing_categories %>% 
-  dplyr::left_join(tec_cat_code, by = c("com_id","effective_from")) %>% 
+  dplyr::left_join(tec_cat_code, by = c("com_id","effective_from","category_code")) %>% 
   dplyr::left_join(tec_crit_code, by = c("com_id","effective_from")) %>%
   dplyr::left_join(tsc_crit_code, by = c("com_id","effective_from")) 
-  
-glimpse(tsc_crit_code)
 
 tec_cl_tsc <- tec_tsc %>% 
   dplyr::transmute(
@@ -246,19 +319,18 @@ Expand the code block below to view the process.
 
 ```{r load_tsc, message=FALSE}
 # TSC communities
-tsc_comm <- "community" %>%
-  wastdr::wastd_GET(
-    api_url = prod
-  ) %>%
-  wastdr::wastd_parse() 
+# tsc_comm <- "community" %>%
+#   wastdr::wastd_GET(
+#     api_url = prod
+#   ) %>%
+#   wastdr::wastd_parse() 
 
-tsc_tcl_raw <- wastdr::wastd_GET("community-conservationlisting")
+tsc_ccl <- wastdr::wastd_GET("community-conservationlisting") %>%
+  wastdr::parse_community_conservationlisting() %>% 
+  dplyr::mutate(com_label = community)
 
-tsc_tcl <- tsc_tcl_raw %>%
-  wastdr::parse_community_conservationlisting()
-
-tsc_tcl_comm <- tsc_tcl %>%
-  dplyr::inner_join(tsc_comm, by = "count")
+# tsc_ccl_comm <- tsc_ccl %>%
+#   dplyr::inner_join(tsc_comm, by = "count")
 ```
 
 ```{r save_point, message=FALSE}
@@ -267,25 +339,11 @@ if (file.exists(datafile)) {
   load(datafile)
 } else {
   save(
-    tsc_comm, # TSC communities (????)
-    tsc_tcl, # TSC taxon conservation listings (????)
-
-
-    tec_data, # entire TEC database
-    tec_tcl, # TEC conservation listings with TSC criteria IDs
-    tec_cl_tsc,
+    tsc_ccl, # TSC taxon conservation listings 
     
-
     file = datafile
   )
 }
-
-snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
-  ckanr::resource_show() %>%
-  magrittr::extract2("last_modified") %>%
-  lubridate::as_datetime() %>%
-  lubridate::with_tz("Australia/Perth")
-
 
 ```
 
@@ -303,30 +361,31 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 
 ```{r tfa_summary}
 #
-# General note: variable names should now be recycled like tfa_data
+# General note: variable names should now be recycled like tec_data
 #
-tec_tcl_unique_comm <- tsc_tcl_comm$name_id %>%
+tec_ccl_unique_comm <- tec_ccl$com_label %>%
   unique() %>%
-  length() # 870
-tsc_tcl_unique_comm <- tsc_tcl_comm$name_id %>%
+  length() # 432
+tsc_ccl_unique_comm <- tsc_ccl$com_label %>%
   unique() %>%
-  length()
+  length() #378
 ```
 
 ## Conservation Listing
 
-TEC has `r nrow(tfa_tcl)` conservation listings of `r tec_tcl_unique_comm`.
-TSC has `r nrow(tsc_tcl_communities)` fauna conservation listings of 
-`r tsc_tcl_unique_comm`, including animals but excluding plants *sensu latu*.
+TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique_comm`.
+TSC has `r nrow(tsc_ccl)` fauna conservation listings of 
+`r tsc_ccl_unique_comm`, including animals but excluding plants *sensu latu*.
+
 
 ### TEC conservation listings not in TSC
 
-Any records in the following table indicate conservation listings in TEC that
-were not migrated into TSC.
+Any records in the following table indicate community conservation listings in TEC that
+were not migrated into TSC because they have not been assigned a conservation 'Category'.
 
 ```{r missing_observations}
-tsc_tcl_comm %>%
-  dplyr::anti_join(tsc_tcl, by = "source_id") %>%
+tec_ccl %>%
+  dplyr::anti_join(tsc_ccl, by = "com_label") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -335,8 +394,8 @@ tsc_tcl_comm %>%
 The following table shows any conservation listings in TSC which are not in TEC.
 
 ```{r}
-tsc_tcl_comm %>%
-  dplyr::anti_join(tec_tcl, by = "source_id") %>%
+tsc_ccl %>%
+  dplyr::anti_join(tec_ccl, by = "com_label") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -351,12 +410,10 @@ These need to be corrected before the manual mapping can be updated and the
 correct criteria assigned for all species.
 
 ```{r}
-tec_tcl_comm %>%
+tec_ccl %>%
   dplyr::select(
-    c(
-      # source_id,
-      # name_id,
-      # list_code,
+    c(com_id,
+      effective_from,
       category_code,
       criteria_code,
       assigned_as_in_tsc,
@@ -375,20 +432,20 @@ snapshot of the TFA.
 Excluded are TFA cons listings of unmigrated lists (AP, RL, BCA).
 
 ``` {r effective_dates}
-tsc_corner_dates <- tsc_tcl_comm %>%
+tsc_corner_dates <- tsc_ccl %>%
   summarise(
     effective_from_min = min(effective_from, na.rm = T),
     effective_from_max = max(effective_from, na.rm = T),
-    effective_to_min = min(effective_to, na.rm = T),
-    effective_to_max = max(effective_to, na.rm = T),
-    last_reviewed_on_min = min(last_reviewed_on, na.rm = T),
-    last_reviewed_on_max = max(last_reviewed_on, na.rm = T)
+    # effective_to_min = min(effective_to, na.rm = T),
+    # effective_to_max = max(effective_to, na.rm = T),
+    # last_reviewed_on_min = min(last_reviewed_on, na.rm = T),
+    # last_reviewed_on_max = max(last_reviewed_on, na.rm = T)
   )
 
-tec_corner_dates <- tec_tcl %>%
+tec_corner_dates <- tec_ccl %>%
   summarise(
-    # effective_from_min = min(gazetted_on, na.rm = T),
-    # effective_from_max = max(gazetted_on, na.rm = T),
+    effective_from_min = min(effective_from, na.rm = T),
+    effective_from_max = max(effective_from, na.rm = T),
     # effective_to_min = min(delisted_on, na.rm = T),
     # effective_to_max = max(delisted_on, na.rm = T),
     # last_reviewed_on_min = min(last_reviewed_on, na.rm = T),
@@ -427,8 +484,8 @@ make_tsc_cl_summary <- function(data, cn){
   magrittr::set_colnames("TSC")
 }
 
-tsc_cl_sum_iucn1994 <- tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN1994")
-tsc_cl_sum_iucn2001 <- tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN2001")
+tsc_cl_sum_iucn1994 <- tsc_ccl_fauna %>% make_tsc_cl_summary("IUCN1994")
+tsc_cl_sum_iucn2001 <- tsc_ccl_fauna %>% make_tsc_cl_summary("IUCN2001")
 
 tfa_cons_cat_sum <- rbind(
   tec_cl_sum_wapec, 
