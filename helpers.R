@@ -39,6 +39,7 @@ library(geojsonsf)
 library(mapview)
 library(maps)
 library(mapproj)
+library(stringr)
 
 library(gganimate)
 library(ggthemes)
