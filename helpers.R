@@ -134,7 +134,10 @@ as_filenumber <- function(body, prefix="DBCA", sep="-") {
 
 #' Parse a string into a list of integer numbers
 str_to_int_array <- . %>% strsplit(., ",")[[1]] %>% as.list
-chr2int <- . %>% stringr::str_split(",") %>% purrr::map(as.integer)
+
+
+
+
 
 #' Create or update a CKAN resource.
 #'
