@@ -733,7 +733,7 @@ cons_cat_summary <- tfl_cons_cat_sum %>%
   cbind(Category = c("Priority","IUCN1994", "IUCN2001", "IUCN2012", "EPBC")) %>%
   dplyr::select("Category", everything())
 
-cons_cat_summary %>% reactable::reactable()
+cons_cat_summary %>% reactable::reactable() ## ARE THESE DIFFERENCES FROM USE OF CATEGORY_CODE AND NOT CATEGORY_CODE_WA?
 ```
 
 
