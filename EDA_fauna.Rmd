@@ -814,7 +814,7 @@ into TSC.
 tfa_tcl_edit %>% dplyr::filter(name_id == 0)
 ```
 
-### TFA unmigrated conservatin listings
+### TFA unmigrated conservation listings
 ActionPlan (a book), the IUCN RedList (accessible online and via API), and BCA
 listings (erroneous) are excluded from the data migration.
 
