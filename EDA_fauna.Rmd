@@ -781,14 +781,14 @@ TODO remove plant tcl from this analysis.
 ### TFA conservation listings not in TSC
 
 Any records in the following table indicate conservation listings in TFA that
-were not migrated into TSC.
+were not migrated into TSC. The species listed were likely not migrated because they do not contain list_codes or category_codes.
 
 Already excluded are conservation listings from the excluded categories 
 "ActionPlan", "RedList", and "BCA".
 
 ```{r missing_observations}
-tsc_tcl_fauna %>%
-  dplyr::anti_join(tfa_tcl_edit, by = "source_id") %>%
+tfa_tcl_edit %>%
+  dplyr::anti_join(tsc_tcl_fauna, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -799,7 +799,7 @@ These can contain flora conservation listings. (TODO remove those)
 
 ```{r}
 tsc_tcl_fauna %>%
-  dplyr::anti_join(tfa_tcl, by = "source_id") %>%
+  dplyr::anti_join(tfa_tcl_edit, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -837,7 +837,7 @@ These need to be corrected before the manual mapping can be updated and the
 correct criteria assigned for all species.
 
 ```{r}
-tfa_tcl %>%
+tfa_tcl_edit %>%
   dplyr::select(
     c(
       source_id,
@@ -954,43 +954,217 @@ tsc_cons_cat_sum <- rbind(
 cons_cat_summary <- tfa_cons_cat_sum %>%
   cbind(tsc_cons_cat_sum) %>%
   cbind(Category = c("IUCN1994", "IUCN2001", "IUCN2012", 
-                     "WAWCA", "WAPF", "SPFN", "EPBC")) %>%
+                     "WAWCA", "WAPS", "SPFN", "EPBC")) %>%
   dplyr::select("Category", everything())
 
 cons_cat_summary %>% reactable::reactable()
 ```
 
+The following tables show any conservation listings in TFA which are not in TSC, for each conservation list.
 
+```{r }
 #### IUCN 2012
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_iucn2012 <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"IUCN(2012)"))
+
+tfa_listing_cat_iucn2012 %>% anti_join(tsc_listing_cat_iucn2012,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### IUCN 2001
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_iucn2001 <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"IUCN(2001)"))
+
+tfa_listing_cat_iucn2001 %>% anti_join(tsc_listing_cat_iucn2001,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### IUCN 1994
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_iucn1994 <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"IUCN(1994)"))
+
+tfa_listing_cat_iucn1994 %>% anti_join(tsc_listing_cat_iucn1994,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### WAWCA
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_wawca <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"WAWCA"))
 
-#### WAPF
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tfa_listing_cat_wawca %>% anti_join(tsc_listing_cat_wawca,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### WAPS
+tsc_listing_cat_waps <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"WAPS"))
+
+tfa_listing_cat_waps %>% anti_join(tsc_listing_cat_waps,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### SPFN
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_spfn <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"SPFN"))
+
+tfa_listing_cat_spfn %>% anti_join(tsc_listing_cat_spfn,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### EPBC
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_epbc <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"EPBC"))
 
+tfa_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+```
+
+The following tables show any conservation listings in TSC which are not in TFA, for each conservation list.
+
+```{r }
+#### IUCN 2012
+tsc_listing_cat_iucn2012 %>% anti_join(tfa_listing_cat_iucn2012,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### IUCN 2001
+tsc_listing_cat_iucn2001 %>% anti_join(tfa_listing_cat_iucn2001,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### IUCN 1994
+tsc_listing_cat_iucn1994 %>% anti_join(tfa_listing_cat_iucn1994,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### WAWCA
+tsc_listing_cat_wawca %>% anti_join(tfa_listing_cat_wawca,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### WAPS
+tsc_listing_cat_waps %>% anti_join(tfa_listing_cat_waps,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### SPFN
+tsc_listing_cat_spfn %>% anti_join(tfa_listing_cat_spfn,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### EPBC
+tsc_listing_cat_epbc %>% anti_join(tfa_listing_cat_epbc,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+```
 
 ## Occurrences
+
+```{r}
+tfa_raw <- tfa_data$`Fauna Records` 
+
+tfa_occ <- tfa_raw %>% dplyr::transmute(
+    id = DBNo %>% as.integer(),
+    # district_db = DistDB %>% as.integer(),
+    # district_db_no = DistDBNo %>% as.character(),
+    species_code = SpCode %>% as.character(),
+    # name_id = NameId %>% as.character(), # they're all NA
+    orig_date = Date,
+    orig_time = Time,
+    o_date = ifelse(
+        Date == "",
+        default_date,
+        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 18L)
+        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    o_time = ifelse(
+        Time == "",
+        default_date,
+        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 18L)
+        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    datetime = ifelse(
+        is.na(o_date),
+        default_date,
+        ifelse(
+            is.na(o_time),
+            o_date,
+            o_date + hours(hour(o_time)) + minutes(minute(o_time))
+        )) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    observer_name = Observer %>% as.character(),
+    observer_role = OrgRole %>% as.character(),
+    observer_address = Address %>% as.character(),
+    observer_phone = Phone %>% as.character(),
+    certainty_id = Certainty %>% as.integer(),
+    number_seen = NumSeen %>% as.integer(), # sum of number_*
+    animal_features = Features %>% as.character(),
+    number_adult_males = AdultM %>% as.integer(),
+    number_adult_females = AdultF %>% as.integer(),
+    number_adult_unknown = AdultU %>% as.integer(),
+    number_juvenile_males = JuvM %>% as.integer(),
+    number_juvenile_females = JuvF %>% as.integer(),
+    number_juvenile_unknown = JuvU %>% as.integer(),
+    location_id = Location. %>% as.character(),
+    location_name = LocName %>% as.character(),
+    tenure_id = TenCode %>% as.character(),
+    lga_id = LGACode %>% as.integer(),
+    district_id = DistrictNo %>% as.character(),
+    site_comment = Site %>% as.character(),
+    latitude = Lat %>% as.double(),
+    longitude = Long %>% as.double(),
+    zone = MapZone %>% as.character(),
+    northing = SightNorth %>% as.character(),
+    easting = SightEast %>% as.character(),
+    datum = Datum %>% as.character(),
+    resolution_id = Resolution %>% as.integer(),
+    landform_id = Landform %>% as.character(),
+    vegetation_type_id = VegType %>% as.character(),
+    fire_history = Fire %>% as.character(),
+    associated_flora_species_1 = Sp1 %>% as.character(),
+    associated_flora_species_2 = Sp2 %>% as.character(),
+    associated_flora_species_3 = Sp3 %>% as.character(),
+    associated_flora_species_4 = Sp4 %>% as.character(),
+    associated_flora_species_5 = Sp5 %>% as.character(),
+    associated_flora_species_6 = Sp6 %>% as.character(),
+    observation_method = ObservMethod %>% as.character(),
+    observation_type = ObservType %>% as.character(),
+    secondary_signs = SecSign %>% as.character(),
+    observation_comments = Observation %>% as.character(),
+    breeding_status = Breeding %>% as.character(),
+    specimen_status = Specimen %>% as.character(),
+    species_id_confirmed_by = Identification %>% as.character(),
+    map_provided = Map %>% as.character(), # TODO parse bool
+    mudmap_provided = MudMap %>% as.character(), # TODO parse bool
+    photo_taken = Photo %>% as.character(), # TODO parse bool
+    notes = Notes %>% as.character(),
+    comments = Comments %>% as.character(),
+    entered_by = EnName %>% as.character(),
+    entered_on = parse_date_time(EnDate, orders = orders, tz = tz),
+    changed_by = ChName %>% as.character(),
+    changed_on = parse_date_time(ChDate, orders = orders, tz = tz),
+    specimen_voucher_exists = SpVoucher %>% as.logical(),
+    specimen_voucher_location = SpHeld %>% as.character(), # specimen catalogue
+    specimen_voucher_catalogue_number = SpCatNum %>% as.character(),
+    occurence_not_published = UnPublished %>% as.logical(),
+    occurrence_citation = ReportTitle %>% as.character(),
+    # occurrence_citation_author = Author %>% as.character(),
+    malleefowl_MFeggsH = MFeggsH %>% as.character(),
+    malleefowl_MFeggsU = MFeggsU %>% as.character(),
+    malleefowl_MFmoundU = MFmoundU %>% as.character(),
+    malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
+    malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
+    malleefowl_MFmoundI = MFmoundI %>% as.character(),
+    malleefowl_MFMage = MFMage %>% as.character(),
+    malleefowl_MFMdiam = MFMdiam %>% as.character(),
+    malleefowl_MFMheight = MFMheight %>% as.character(),
+    malleefowl_MFMwidth = MFMwidth %>% as.character(),
+    malleefowl_MFMdepth = MFMdepth %>% as.character(),
+    malleefowl_MFMsoil = MFMsoil %>% as.character(),
+    malleefowl_MFMcomment = MFMcomment %>% as.character(),
+    malleefowl_MFextract = MFextract %>% as.character()
+    # Field* are empty, skipping:
+    # Field1 = Field1 %>% as.character(),
+    # Field2 = Field2 %>% as.character(),
+    # Field3 = Field3 %>% as.character(),
+    # Field4 = Field4 %>% as.character(),
+    # Field5 = Field5 %>% as.character()
+  ) #
+
+%>%
+  dplyr::left_join(shires, by = "lga_id") %>%
+  dplyr::left_join(tenure, by = "tenure_id") %>%
+  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
+  dplyr::left_join(certainty, by = "certainty_id") %>%
+  dplyr::left_join(species_names, by = "species_code") %>%
+  dplyr::left_join(resolution_m, by = "resolution_id") %>%
+  invisible()
+
+```
 
 ## Conservation Documents
 
