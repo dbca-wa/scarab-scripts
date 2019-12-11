@@ -35,6 +35,15 @@ The zipped MS Access snapshot is downloaded, unpacked, and accessed as object `f
 # flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>%
 # read.csv(., as.is = TRUE, encoding = "utf8", fileEncoding = "latin1")
 flora_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
+
+snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
+  ckanr::resource_show() %>%
+  magrittr::extract2("last_modified") %>%
+  lubridate::as_datetime() %>%
+  lubridate::with_tz("Australia/Perth")
+
+# Cached data from TSC - delete to force refresh
+datafile_tsc_flora <- here::here("data", "etl_flora_tsc.Rda")
 ```
 
 ```{r flora_map, eval=F, echo=F}
