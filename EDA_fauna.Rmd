@@ -954,51 +954,95 @@ tsc_cons_cat_sum <- rbind(
 cons_cat_summary <- tfa_cons_cat_sum %>%
   cbind(tsc_cons_cat_sum) %>%
   cbind(Category = c("IUCN1994", "IUCN2001", "IUCN2012", 
-                     "WAWCA", "WAPF", "SPFN", "EPBC")) %>%
+                     "WAWCA", "WAPS", "SPFN", "EPBC")) %>%
   dplyr::select("Category", everything())
 
 cons_cat_summary %>% reactable::reactable()
 ```
 
+The following tables show any conservation listings in TFA which are not in TSC, for each conservation list.
+
 ```{r }
 #### IUCN 2012
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_iucn2012 <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"IUCN(2012)"))
 
-tsc_cl_summary <- function(data, cn){
-  data %>%
-  dplyr::select(category_cache) %>%
-  dplyr::filter(str_detect(category_cache, cn))
-  as.data.frame %>% 
-  magrittr::set_colnames("TSC")
-}
-
-
-tfa_listing_cat_iucn2012 %>% anti_join()
+tfa_listing_cat_iucn2012 %>% anti_join(tsc_listing_cat_iucn2012,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### IUCN 2001
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_iucn2001 <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"IUCN(2001)"))
+
+tfa_listing_cat_iucn2001 %>% anti_join(tsc_listing_cat_iucn2001,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### IUCN 1994
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_iucn1994 <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"IUCN(1994)"))
+
+tfa_listing_cat_iucn1994 %>% anti_join(tsc_listing_cat_iucn1994,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### WAWCA
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_wawca <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"WAWCA"))
 
-#### WAPF
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tfa_listing_cat_wawca %>% anti_join(tsc_listing_cat_wawca,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### WAPS
+tsc_listing_cat_waps <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"WAPS"))
+
+tfa_listing_cat_waps %>% anti_join(tsc_listing_cat_waps,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### SPFN
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_spfn <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"SPFN"))
+
+tfa_listing_cat_spfn %>% anti_join(tsc_listing_cat_spfn,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 
 #### EPBC
-TODO in TFA but missing in TSC
-TODO in TSC but missing in TFA
+tsc_listing_cat_epbc <- tsc_tcl_fauna %>%
+  dplyr::filter(str_detect(category_cache,"EPBC"))
+
+tfa_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+```
+
+The following tables show any conservation listings in TSC which are not in TFA, for each conservation list.
+
+```{r }
+#### IUCN 2012
+tsc_listing_cat_iucn2012 %>% anti_join(tfa_listing_cat_iucn2012,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### IUCN 2001
+tsc_listing_cat_iucn2001 %>% anti_join(tfa_listing_cat_iucn2001,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### IUCN 1994
+tsc_listing_cat_iucn1994 %>% anti_join(tfa_listing_cat_iucn1994,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### WAWCA
+tsc_listing_cat_wawca %>% anti_join(tfa_listing_cat_wawca,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### WAPS
+tsc_listing_cat_waps %>% anti_join(tfa_listing_cat_waps,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### SPFN
+tsc_listing_cat_spfn %>% anti_join(tfa_listing_cat_spfn,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
+
+#### EPBC
+tsc_listing_cat_epbc %>% anti_join(tfa_listing_cat_epbc,by = "taxon") %>% 
+  reactable::reactable(filterable = T)
 ```
 
 ## Occurrences
