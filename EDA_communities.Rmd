@@ -273,18 +273,6 @@ tsc_crit_code <- tec_ccl %>%
     tsc_criteria = tsc_criteria %>% chr2int()
   )
 
-test <- tec_ccl %>% 
-  filter(com_id == 241) %>%
-  dplyr::group_by(com_id,effective_from) %>% 
-  dplyr::arrange (tsc_criteria) %>%
-  dplyr::summarise(tsc_criteria = paste(tsc_criteria, collapse = ",")) %>%
-  dplyr::mutate(
-    tsc_criteria = tsc_criteria %>% chr2int()
-  )
-
-
-
-
 tec_tsc <- tec_cons_listing_categories %>% 
   dplyr::left_join(tec_cat_code, by = c("com_id","effective_from","category_code")) %>% 
   dplyr::left_join(tec_crit_code, by = c("com_id","effective_from")) %>%
