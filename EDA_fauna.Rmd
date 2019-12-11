@@ -1048,6 +1048,9 @@ tsc_listing_cat_epbc %>% anti_join(tfa_listing_cat_epbc,by = "taxon") %>%
 ## Occurrences
 
 ```{r}
+default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
+                                           orders = "ymd HMS",
+                                           tz = tz)
 tfa_raw <- tfa_data$`Fauna Records` 
 
 tfa_occ <- tfa_raw %>% dplyr::transmute(
