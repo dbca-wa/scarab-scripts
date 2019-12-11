@@ -51,6 +51,16 @@ Data comes from four sources:
 
 ```{r tec_data_load}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+
+snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
+  ckanr::resource_show() %>%
+  magrittr::extract2("last_modified") %>%
+  lubridate::as_datetime() %>%
+  lubridate::with_tz("Australia/Perth")
+
+# Cached data from TSC - delete to force refresh
+datafile_tsc_comm <- here::here("data", "etl_comm_tsc.Rda")
+
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
 tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
