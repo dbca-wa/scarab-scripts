@@ -38,6 +38,7 @@ Data from the Threatened Fauna Database (TFA) is downloaded from the
 [TFA dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the DBCA data catalogue, then extracted and transformed.
 
+## Taxonomy
 ```{r load_tfa, message=FALSE}
 tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
 
@@ -190,7 +191,10 @@ resolution_m <- tibble::tibble(
   resolution_id = c(1, 2, 3, 4, 5, 6),
   accuracy = c(50, 100, 1000, 10000, 50000, 100000)
 )
+```
 
+## Conservation listings
+```{r}
 # TFA conservation lists
 tfa_cons_lists <- tfa_data$`Listing Names` %>%
   dplyr::transmute(
@@ -257,6 +261,126 @@ all_crit_map <- tfa_cons_listings %>%
   dplyr::arrange(list_code, criteria_code) %>%
   dplyr::select(list_code, criteria_code)
 readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv"))
+```
+
+## Occurances
+```{r}
+default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
+                                           orders = "ymd HMS",
+                                           tz = tz)
+tfa_raw <- tfa_data$`Fauna Records` 
+
+tfa_occ <- tfa_raw %>% dplyr::transmute(
+    id = DBNo %>% as.integer(),
+    # district_db = DistDB %>% as.integer(),
+    # district_db_no = DistDBNo %>% as.character(),
+    species_code = SpCode %>% as.character(),
+    # name_id = NameId %>% as.character(), # they're all NA
+    orig_date = Date,
+    orig_time = Time,
+    o_date = ifelse(
+        Date == "",
+        default_date,
+        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 18L)
+        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    o_time = ifelse(
+        Time == "",
+        default_date,
+        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 18L)
+        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    datetime = ifelse(
+        is.na(o_date),
+        default_date,
+        ifelse(
+            is.na(o_time),
+            o_date,
+            o_date + hours(hour(o_time)) + minutes(minute(o_time))
+        )) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    observer_name = Observer %>% as.character(),
+    observer_role = OrgRole %>% as.character(),
+    observer_address = Address %>% as.character(),
+    observer_phone = Phone %>% as.character(),
+    certainty_id = Certainty %>% as.integer(),
+    number_seen = NumSeen %>% as.integer(), # sum of number_*
+    animal_features = Features %>% as.character(),
+    number_adult_males = AdultM %>% as.integer(),
+    number_adult_females = AdultF %>% as.integer(),
+    number_adult_unknown = AdultU %>% as.integer(),
+    number_juvenile_males = JuvM %>% as.integer(),
+    number_juvenile_females = JuvF %>% as.integer(),
+    number_juvenile_unknown = JuvU %>% as.integer(),
+    location_id = Location. %>% as.character(),
+    location_name = LocName %>% as.character(),
+    tenure_id = TenCode %>% as.character(),
+    lga_id = LGACode %>% as.integer(),
+    district_id = DistrictNo %>% as.character(),
+    site_comment = Site %>% as.character(),
+    latitude = Lat %>% as.double(),
+    longitude = Long %>% as.double(),
+    zone = MapZone %>% as.character(),
+    northing = SightNorth %>% as.character(),
+    easting = SightEast %>% as.character(),
+    datum = Datum %>% as.character(),
+    resolution_id = Resolution %>% as.integer(),
+    landform_id = Landform %>% as.character(),
+    vegetation_type_id = VegType %>% as.character(),
+    fire_history = Fire %>% as.character(),
+    associated_flora_species_1 = Sp1 %>% as.character(),
+    associated_flora_species_2 = Sp2 %>% as.character(),
+    associated_flora_species_3 = Sp3 %>% as.character(),
+    associated_flora_species_4 = Sp4 %>% as.character(),
+    associated_flora_species_5 = Sp5 %>% as.character(),
+    associated_flora_species_6 = Sp6 %>% as.character(),
+    observation_method = ObservMethod %>% as.character(),
+    observation_type = ObservType %>% as.character(),
+    secondary_signs = SecSign %>% as.character(),
+    observation_comments = Observation %>% as.character(),
+    breeding_status = Breeding %>% as.character(),
+    specimen_status = Specimen %>% as.character(),
+    species_id_confirmed_by = Identification %>% as.character(),
+    map_provided = Map %>% as.character(), # TODO parse bool
+    mudmap_provided = MudMap %>% as.character(), # TODO parse bool
+    photo_taken = Photo %>% as.character(), # TODO parse bool
+    notes = Notes %>% as.character(),
+    comments = Comments %>% as.character(),
+    entered_by = EnName %>% as.character(),
+    entered_on = parse_date_time(EnDate, orders = orders, tz = tz),
+    changed_by = ChName %>% as.character(),
+    changed_on = parse_date_time(ChDate, orders = orders, tz = tz),
+    specimen_voucher_exists = SpVoucher %>% as.logical(),
+    specimen_voucher_location = SpHeld %>% as.character(), # specimen catalogue
+    specimen_voucher_catalogue_number = SpCatNum %>% as.character(),
+    occurence_not_published = UnPublished %>% as.logical(),
+    occurrence_citation = ReportTitle %>% as.character(),
+    # occurrence_citation_author = Author %>% as.character(),
+    malleefowl_MFeggsH = MFeggsH %>% as.character(),
+    malleefowl_MFeggsU = MFeggsU %>% as.character(),
+    malleefowl_MFmoundU = MFmoundU %>% as.character(),
+    malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
+    malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
+    malleefowl_MFmoundI = MFmoundI %>% as.character(),
+    malleefowl_MFMage = MFMage %>% as.character(),
+    malleefowl_MFMdiam = MFMdiam %>% as.character(),
+    malleefowl_MFMheight = MFMheight %>% as.character(),
+    malleefowl_MFMwidth = MFMwidth %>% as.character(),
+    malleefowl_MFMdepth = MFMdepth %>% as.character(),
+    malleefowl_MFMsoil = MFMsoil %>% as.character(),
+    malleefowl_MFMcomment = MFMcomment %>% as.character(),
+    malleefowl_MFextract = MFextract %>% as.character()
+    # Field* are empty, skipping:
+    # Field1 = Field1 %>% as.character(),
+    # Field2 = Field2 %>% as.character(),
+    # Field3 = Field3 %>% as.character(),
+    # Field4 = Field4 %>% as.character(),
+    # Field5 = Field5 %>% as.character()
+  ) %>% 
+  # dplyr::left_join(shires, by = "lga_id") %>%
+  # dplyr::left_join(tenure, by = "tenure_id") %>%
+  # dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
+  # dplyr::left_join(certainty, by = "certainty_id") %>%
+  # dplyr::left_join(species_names, by = "species_code") %>%
+  # dplyr::left_join(resolution_m, by = "resolution_id") %>% 
+  invisible()
 ```
 
 # Extract and transform conservation criteria Data from TSC
@@ -579,8 +703,9 @@ tfa_listing_cat_epbc %>%
 if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
 ```
 
-
 ## Occurrences
+
+
 
 ## Conservation Documents
 
@@ -644,27 +769,6 @@ Data custodians should be able to comprehend this section, and be able to verify
 that the data migration has worked correctly.
 
 Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
-
-## Summary statistics
-
-```{r tfa_summary}
-#
-# General note: variable names should now be recycled like tfa_data
-#
-tfa_tcl_edit <- tfa_tcl %>%
-  dplyr::filter(list_code != "ActionPlan") %>%
-  dplyr::filter(list_code != "BCA") %>%
-  dplyr::filter(list_code != "RedList") %>%
-  dplyr::mutate(source_id = source_id %>% as.character())
-
-tfa_tcl_unique_taxa <- tfa_tcl_edit$name_id %>%
-  unique() %>%
-  length() # 870
-tsc_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
-  unique() %>%
-  length()
-```
-
 
 ## Taxonomy
 
@@ -771,6 +875,22 @@ tsc_taxa_fauna %>%
 ```
 
 ## Conservation Listing
+
+```{r}
+# General note: variable names should now be recycled like tfa_data
+tfa_tcl_edit <- tfa_tcl %>%
+  dplyr::filter(list_code != "ActionPlan") %>%
+  dplyr::filter(list_code != "BCA") %>%
+  dplyr::filter(list_code != "RedList") %>%
+  dplyr::mutate(source_id = source_id %>% as.character())
+
+tfa_tcl_unique_taxa <- tfa_tcl_edit$name_id %>%
+  unique() %>%
+  length()
+tsc_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
+  unique() %>%
+  length()
+```
 
 TFA has `r nrow(tfa_tcl_edit)` conservation listings of `r tfa_tcl_unique_taxa`.
 TSC has `r nrow(tsc_tcl_fauna)` fauna conservation listings of 
@@ -1047,127 +1167,117 @@ tsc_listing_cat_epbc %>% anti_join(tfa_listing_cat_epbc,by = "taxon") %>%
 
 ## Occurrences
 
-```{r}
-default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
-                                           orders = "ymd HMS",
-                                           tz = tz)
-tfa_raw <- tfa_data$`Fauna Records` 
+### Occurrence data overview
+The table `tfa_occ` contains species occurrence records with information about:
 
-tfa_occ <- tfa_raw %>% dplyr::transmute(
-    id = DBNo %>% as.integer(),
-    # district_db = DistDB %>% as.integer(),
-    # district_db_no = DistDBNo %>% as.character(),
-    species_code = SpCode %>% as.character(),
-    # name_id = NameId %>% as.character(), # they're all NA
-    orig_date = Date,
-    orig_time = Time,
-    o_date = ifelse(
-        Date == "",
-        default_date,
-        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 18L)
-        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    o_time = ifelse(
-        Time == "",
-        default_date,
-        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 18L)
-        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    datetime = ifelse(
-        is.na(o_date),
-        default_date,
-        ifelse(
-            is.na(o_time),
-            o_date,
-            o_date + hours(hour(o_time)) + minutes(minute(o_time))
-        )) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    observer_name = Observer %>% as.character(),
-    observer_role = OrgRole %>% as.character(),
-    observer_address = Address %>% as.character(),
-    observer_phone = Phone %>% as.character(),
-    certainty_id = Certainty %>% as.integer(),
-    number_seen = NumSeen %>% as.integer(), # sum of number_*
-    animal_features = Features %>% as.character(),
-    number_adult_males = AdultM %>% as.integer(),
-    number_adult_females = AdultF %>% as.integer(),
-    number_adult_unknown = AdultU %>% as.integer(),
-    number_juvenile_males = JuvM %>% as.integer(),
-    number_juvenile_females = JuvF %>% as.integer(),
-    number_juvenile_unknown = JuvU %>% as.integer(),
-    location_id = Location. %>% as.character(),
-    location_name = LocName %>% as.character(),
-    tenure_id = TenCode %>% as.character(),
-    lga_id = LGACode %>% as.integer(),
-    district_id = DistrictNo %>% as.character(),
-    site_comment = Site %>% as.character(),
-    latitude = Lat %>% as.double(),
-    longitude = Long %>% as.double(),
-    zone = MapZone %>% as.character(),
-    northing = SightNorth %>% as.character(),
-    easting = SightEast %>% as.character(),
-    datum = Datum %>% as.character(),
-    resolution_id = Resolution %>% as.integer(),
-    landform_id = Landform %>% as.character(),
-    vegetation_type_id = VegType %>% as.character(),
-    fire_history = Fire %>% as.character(),
-    associated_flora_species_1 = Sp1 %>% as.character(),
-    associated_flora_species_2 = Sp2 %>% as.character(),
-    associated_flora_species_3 = Sp3 %>% as.character(),
-    associated_flora_species_4 = Sp4 %>% as.character(),
-    associated_flora_species_5 = Sp5 %>% as.character(),
-    associated_flora_species_6 = Sp6 %>% as.character(),
-    observation_method = ObservMethod %>% as.character(),
-    observation_type = ObservType %>% as.character(),
-    secondary_signs = SecSign %>% as.character(),
-    observation_comments = Observation %>% as.character(),
-    breeding_status = Breeding %>% as.character(),
-    specimen_status = Specimen %>% as.character(),
-    species_id_confirmed_by = Identification %>% as.character(),
-    map_provided = Map %>% as.character(), # TODO parse bool
-    mudmap_provided = MudMap %>% as.character(), # TODO parse bool
-    photo_taken = Photo %>% as.character(), # TODO parse bool
-    notes = Notes %>% as.character(),
-    comments = Comments %>% as.character(),
-    entered_by = EnName %>% as.character(),
-    entered_on = parse_date_time(EnDate, orders = orders, tz = tz),
-    changed_by = ChName %>% as.character(),
-    changed_on = parse_date_time(ChDate, orders = orders, tz = tz),
-    specimen_voucher_exists = SpVoucher %>% as.logical(),
-    specimen_voucher_location = SpHeld %>% as.character(), # specimen catalogue
-    specimen_voucher_catalogue_number = SpCatNum %>% as.character(),
-    occurence_not_published = UnPublished %>% as.logical(),
-    occurrence_citation = ReportTitle %>% as.character(),
-    # occurrence_citation_author = Author %>% as.character(),
-    malleefowl_MFeggsH = MFeggsH %>% as.character(),
-    malleefowl_MFeggsU = MFeggsU %>% as.character(),
-    malleefowl_MFmoundU = MFmoundU %>% as.character(),
-    malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
-    malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
-    malleefowl_MFmoundI = MFmoundI %>% as.character(),
-    malleefowl_MFMage = MFMage %>% as.character(),
-    malleefowl_MFMdiam = MFMdiam %>% as.character(),
-    malleefowl_MFMheight = MFMheight %>% as.character(),
-    malleefowl_MFMwidth = MFMwidth %>% as.character(),
-    malleefowl_MFMdepth = MFMdepth %>% as.character(),
-    malleefowl_MFMsoil = MFMsoil %>% as.character(),
-    malleefowl_MFMcomment = MFMcomment %>% as.character(),
-    malleefowl_MFextract = MFextract %>% as.character()
-    # Field* are empty, skipping:
-    # Field1 = Field1 %>% as.character(),
-    # Field2 = Field2 %>% as.character(),
-    # Field3 = Field3 %>% as.character(),
-    # Field4 = Field4 %>% as.character(),
-    # Field5 = Field5 %>% as.character()
-  ) #
+* taxonomy,
+* location (coordinates, accuracy and derived information) and datetime of observation,
+* observers, taxonomic ID confirmation,
+* data entry and last change (date and operator),
+* info on type specimens,
+* info on surroundings of observation,
+* info on animal(s) like group size, age, breeding condition,
+* additional info (comments, whether photo was taken),
+* MalleeFowl-specific observations (MF*),
+* empty columns (Field*).
 
-%>%
-  dplyr::left_join(shires, by = "lga_id") %>%
-  dplyr::left_join(tenure, by = "tenure_id") %>%
-  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
-  dplyr::left_join(certainty, by = "certainty_id") %>%
-  dplyr::left_join(species_names, by = "species_code") %>%
-  dplyr::left_join(resolution_m, by = "resolution_id") %>%
-  invisible()
+A condensed overview over data values (completeness, ranges and distribution):
 
+```{r fauna_skim, eval=F}
+tfa_skim <- tfa_occ %>% skimr::skim()
+print(tfa_skim)
 ```
+
+There are `r nrow(fauna_occ)` species occurrence records (encounters). 
+The following columns are incomplete, which may only pose a problem for mandatory columns:
+
+```{r fauna_missing_values, eval=F}
+tfa_skim %>%
+  filter(stat == "missing", value > 0) %>%
+  select(-stat, -level, -formatted) %>%
+  DT::datatable(.)
+```
+
+#### Taxonomic caveats
+Fauna occurrences link to the name that was current / legal at the time.
+Occurrence query should show hints linking to current / legal names and their history.
+
+`zone` and `datum` are standard names expected by BioSys.
+
+#### Date/ Location caveats
+This section lists data issues which need to be fixed at the source (here, in legacy TFA).
+
+The column `datetime` is required in BioSys to be populated.
+R generates `NA` where datetime is missing, but BioSys can't handle `NA` strings.
+
+Where a time is missing, we'll default to midnight (00:00).
+Where a date is missing, we'll default to 1900-01-01.
+
+While this modifies the original data, the consequences will not have a dramatic effect on analyses for
+conservation management purposes:
+
+* A safe default of the observation time (midnight) could introduce an error of up to one day. 
+  Compared to the time frame considered (past 10-50 years of observations relative to time of 
+  calculation), this error is minuscule.
+* A safe default for missing dates (1900-01-01) will both exclude those observations from any recent
+  observations (past 10-50 years), but still make the data available to identify the records for the
+  purpose of backfilling a credible date.
+
+Please review legacy data until the following numbers are all zero (or accept default handling):
+
+* `r tfa_occ %>% dplyr::filter(is.na(datetime)) %>% nrow()` datetimes couldn't be restored and require
+  a valid date (and ideally time) to be set at the source.
+* `r tfa_occ %>% dplyr::filter(orig_time == "") %>% nrow()` records lack an explicit time and were 
+  defaulted to midnight AWST.
+* `r tfa_occ %>% dplyr::filter(orig_date == "") %>% nrow()` records lack an explicit date and were
+  defaulted to 1900-01-01.
+* `r tfa_occ %>% dplyr::filter(is.na(latitude)) %>% nrow` latitudes are missing.
+* `r tfa_occ %>% dplyr::filter(is.na(longitude)) %>% nrow` longitudes are missing.
+* `r tfa_occ %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the minus sign and turn up in China.
+
+#### Missing NameID
+```{r}
+tfa_occ_no_nameid <- tfa_occ %>% 
+    filter(name_id == 0) %>% 
+    select(scientific_name) %>% 
+    unique()
+tfa_occ_no_nameid %>% kable
+```
+
+There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names without NameID.
+Some are known to TSC: E.g. the Western Brush Wallaby, Notamacropus irma, 
+NameID [48022](https://tsc.dbca.wa.gov.au/species/48022/).
+These records need to be fixed in the original Threatened Fauna database.
+
+#### Missing coordinates
+```{r}
+tfa_occ_no_latlng <- tfa_occ %>% 
+    filter(is.na(latitude) | is.na(longitude))
+tfa_occ_no_latlng %>% head %>% kable
+```
+
+There are `r nrow(fauna_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
+
+#### NameID mismatch
+TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
+
+#### Trust level of occurrence records
+Currently, we assume that all occurrence records in the legacy databases are trustworthy.
+If this weren't the case, this analysis should exclude the non-trustworthy records.
+
+### TFA occurances not in TSC
+```{r tally_occ}
+tfa_tally <- tfa_occ %>%
+  dplyr::group_by(name_id, scientific_name) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n))
+
+tfa_tally %>% head(n = 20) %>% kable(.)
+```
+
+There are `r nrow(fauna_tally)` fauna taxa
+
+
 
 ## Conservation Documents
 
