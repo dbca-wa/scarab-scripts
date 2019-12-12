@@ -224,3 +224,105 @@ chunk_post <- function(data, serializer = "names", api_url = wastdr::get_wastdr_
     message("[chunk_post] Finished, ", len, " records created/updated.")
 }
 
+#' Return the convex hull plus minimal buffer around all given points.
+#'
+#' A minimal buffer is included to turn single point observations
+#' into actual polygons.
+#' @param lonlat_cols A vector of lon and lat column names,
+#'   default: c("longitude", "latitude")
+#' @param crs The coordinate reference system ID (4283=GDA94)
+#' @return An object of class "sfc_POLYGON" "sfc" (package sf)
+lonlat_to_convex_hull <- function(data,
+                                  lonlat_cols=c("longitude", "latitude"),
+                                  crs=4283) {
+    data %>%
+        sf::st_as_sf(coords = lonlat_cols, crs = crs, agr = "constant") %>%
+        sf::st_union(.) %>%
+        sf::st_convex_hull(.) %>%
+        sf::st_buffer(., 0.00001)
+}
+
+#' Convert occurrence records into a dataframe of distinct name_id:eoo
+#'
+#' **Data** must have the columns `name_id`, `latitude`, and `longitude`.
+#' **Filter** out occurrences of invalid NameIDs (NA and 0).
+#' **Nest** occurrence data by name_id to generate two columns,
+#'   `name_id` and `data` (all records of that `name_id`).
+#' **Map** `lonlat_to_convex_hull` over data column to generate convex
+#'   hulls (class `sfc`) from all points in `data` column.
+#' **Map** `sfc_geojson` to convert the convex hulls into GeoJSON.
+#' @param data A dataframe with at least the columns
+#'   `name_id`, `latitude`, and `longitude`.
+#' @return A dataframe with columns `name_id`, `data`, `eeo_sfc`, and `eeo`:
+#'      name_id: one row per distinct name_id in input dataframe.
+#'      data: the nested data of all rows with that name_id.
+#'      eeo_sfc: the extent of occurrence as object of class `sfc`.
+#'      eeo: the extent of occurrence as GeoJSON string.
+#' @examples
+#'   \notrun{
+#'   data %>% make_eoo %>% mapview(.$eoo_sfc)
+#'   data %>% make_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
+#'   }
+make_eoo <- function(data) {
+    data %>%
+        dplyr::filter(
+            !name_id %in% c(NA, 0),
+            !is.na(longitude),
+            !is.na(latitude)
+        ) %>%
+        tidyr::nest(-name_id) %>%
+        dplyr::mutate(
+            eoo_sfc = purrr::map(data, lonlat_to_convex_hull),
+            eoo = purrr::map(eoo_sfc, geojsonsf::sfc_geojson)
+        )
+}
+
+#' Return the convex hull around all points with given name_id
+#'
+#' @param data A tibble or data.frame with columns
+#'   `longitude`, `latitude`, `name_id`
+#' @param nid A numeric name_id, default: null (use all rows)
+#' @param nid_col The column name of the NameID column, default: "name_id"
+#' @param lonlat_cols A vector of lon and lat column names,
+#'   default: c("longitude", "latitude")
+#' @param crs The coordinate reference system ID (4283=GDA94)
+#' @return An object of class "sfc_POLYGON" "sfc" (package sf)
+#'   if points are given, else NULL.
+eoo_polygon <- function(data,
+                        nid=NULL,
+                        nid_col="name_id",
+                        lonlat_cols=c("longitude", "latitude"),
+                        crs=4283) {
+    if (is.null(nid)) {
+        selected <- data
+    } else {
+        selected <- dplyr::filter(data, (!! rlang::sym(nid_col)) == nid)
+    }
+    if (nrow(selected) == 0) return(NULL)
+    lonlat_to_convex_hull(selected, lonlat_cols = lonlat_cols, crs = crs)
+}
+
+anim_fauna <- function(data, title, nid){
+    d <- data %>%
+        dplyr::mutate(year = lubridate::year(datetime)) %>%
+        dplyr::filter(name_id == nid)
+
+    ggplot() +
+        borders("world", colour = "gray75", fill = "gray95") +
+        coord_equal(xlim = c(110, 130), ylim = c(-40,-12)) +
+        ggthemes::theme_map(base_size = 14) +
+        ggtitle(title, subtitle = "{lubridate::year(frame_time)}") +
+        geom_point(data = d,
+                   aes(x = longitude,
+                       y = latitude,
+                       size = number_seen,
+                       colour = observation_type),
+                   alpha = 0.7,
+                   show.legend = FALSE) +
+        scale_size(range = c(2,8)) +
+        transition_time(o_date) +
+        ease_aes('linear')
+
+    # anim_save(glue::glue("data/occ_{nid}.gif"))
+}
+
