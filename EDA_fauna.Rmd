@@ -704,8 +704,12 @@ if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
 ```
 
 ## Occurrences
+```{r upload_eoo, eval=F}
+fauna_eoo %>%
+  dplyr::select(-data, -eoo_sfc) %>%
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 
-
+```
 
 ## Conservation Documents
 
@@ -1277,7 +1281,7 @@ tfa_tally %>% head(n = 20) %>% kable(.)
 
 There are `r nrow(fauna_tally)` fauna taxa
 
-
+### TSC occurances not in TFA
 
 ## Conservation Documents
 
