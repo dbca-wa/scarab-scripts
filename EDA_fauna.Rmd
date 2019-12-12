@@ -270,6 +270,7 @@ default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
                                            tz = tz)
 tfa_raw <- tfa_data$`Fauna Records` 
 
+# taxon occurances
 tfa_occ <- tfa_raw %>% dplyr::transmute(
     id = DBNo %>% as.integer(),
     # district_db = DistDB %>% as.integer(),
@@ -381,6 +382,42 @@ tfa_occ <- tfa_raw %>% dplyr::transmute(
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible()
+
+# Taxon area encounter
+tfa_tae <- tfa_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  # dplyr::left_join(taxa, by="name_id") %>% 
+  dplyr::transmute(
+    taxon = name_id,
+    code = location_name,
+    name = location_name,
+    description = glue::glue(
+        "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}. ",
+        "Species ID {certainty}. ",
+        "Number seen: {number_seen}. ",
+        "Site comments: {site_comment}. ",
+        "Observation comments: {observation_comments}. ",
+        "Curator comments: {comments}"),
+    source = 10,
+    source_id = id,
+    encounter_type = 1, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/1/change/ = opportunistic 
+    encountered_on = glue::glue("{datetime}+08:00"),
+    encountered_by = 1,
+    area_type = 30,
+    geolocation_capture_method='gps-point',
+    accuracy = accuracy,
+    point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
+  ) %>%
+  dplyr::arrange(taxon)
+
+occ_file <- here::here("data", "occ.Rdata")
+save(tfa_occ, tfa_tae, file=occ_file)
+if (file.exists(occ_file)) load(occ_file)
+
+tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+
+# Big Fauna: taxa with a lot of sightings
+tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
 ```
 
 # Extract and transform conservation criteria Data from TSC
@@ -704,11 +741,78 @@ if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
 ```
 
 ## Occurrences
+
+### Occurance examples 
+The next sections show a handful of example taxa and their calculated EOOs.
+
+Once this workbook has generated and uploaded the EOO polygons to TSC, 
+the EOOs shown in the following examples should be the same as the EOO shown 
+in TSC (see the respective TSC GUI links to view them in TSC).
+
+Leipoa ocellata (Malleefowl)
+
+* TSC GUI: https://tsc.dbca.wa.gov.au/species/24557/
+* TSC API: https://tsc.dbca.wa.gov.au/api/1/taxon/?name_id=24557
+
+```{r ex_malleefowl, warning=F}
+eoo_24557 <- eoo_polygon(tfa_occ, nid = 24557)
+mapview::mapview(eoo_24557)
+
+anim_fauna(tfa_occ, "Malleefowl", 24557)
+```
+
+Calyptorhynchus latirostris (Carnaby's Black Cockatoo): 14k occurrences.
+
+* TSC GUI: https://tsc.dbca.wa.gov.au/species/24734/
+* TSC API: https://tsc.dbca.wa.gov.au/api/1/taxon/?name_id=24734
+
+```{r ex_carnabys, warning=F}
+eoo_24734 <- eoo_polygon(tfa_occ, nid = 24734)
+mapview::mapview(eoo_24734)
+
+anim_fauna(tfa_occ, "Carnaby's Black Cockatoo", 24734)
+```
+
+### TSC upload examples
+Writing an `sf` object to a GeoJSON string:
+https://cran.r-project.org/web/packages/geojsonsf/vignettes/geojson-sf-conversions.html
+
+```{r ex_upload_one_eoo, eval=F}
+one_taxon_eoo <- tibble::tibble(
+  name_id = 24162,
+  eoo = eoo_polygon(tfa_occ, nid = 24162) %>% sfc_geojson()
+)
+wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
+```
+
+A single record, or a list of (one or) many records, can be uploaded to the TSC API as follows.
+
+```{r fauna_single_occ, eval=F}
+# 25755
+taxonpoint = rjson::fromJSON('[{"taxon": 25757, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,    "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT(119.732234 -32.35756)"}]')
+wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api_url = dev)
+```
+
+### Upload to TSC- run manually. This could overwrite data or time out (depending on network load)
+**Note** Only occurrence records with valid NameIDs and coordinates are uploaded.
+
+```{r prepare eoo}
+# extract all eoo
+fna <- tfa_occ %>% dplyr::filter(!is.na(latitude)) %>% dplyr::filter(!is.na(longitude))
+fna_eoo_all <- eoo_polygon(fna)
+mapview(fna_eoo_all)
+
+# Calculate_eoo
+fauna_eoo <- fna %>% make_eoo()
+
+# map_eoo
+mapview::mapview(head(fauna_eoo$eoo_sfc))
+```
+
 ```{r upload_eoo, eval=F}
 fauna_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
   wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
-
 ```
 
 ## Conservation Documents
@@ -763,6 +867,8 @@ if (file.exists(datafile_tsc_fauna)) {
   save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc_fauna)
 }
 ```
+
+
 
 
 # Compare legacy from TFA to migrated data from TSC
@@ -1192,7 +1298,7 @@ tfa_skim <- tfa_occ %>% skimr::skim()
 print(tfa_skim)
 ```
 
-There are `r nrow(fauna_occ)` species occurrence records (encounters). 
+There are `r nrow(tfa_occ)` species occurrence records (encounters). 
 The following columns are incomplete, which may only pose a problem for mandatory columns:
 
 ```{r fauna_missing_values, eval=F}
@@ -1260,7 +1366,7 @@ tfa_occ_no_latlng <- tfa_occ %>%
 tfa_occ_no_latlng %>% head %>% kable
 ```
 
-There are `r nrow(fauna_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
+There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
 
 #### NameID mismatch
 TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
