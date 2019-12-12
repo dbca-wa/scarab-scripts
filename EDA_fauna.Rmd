@@ -461,7 +461,7 @@ tfa_cons_crit <- here::here("tfa_conscrit_w_tsc.csv") %>%
     )
   ) %>%
   dplyr::mutate(
-    tsc_criteria = tsc_criteria %>% chr2int()
+    tsc_criteria = purrr::map(tsc_criteria, chr2int)
   )
 
 tfa_tcl <- tfa_cons_listings %>%
@@ -798,9 +798,11 @@ wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api
 
 ```{r prepare eoo}
 # extract all eoo
-fna <- tfa_occ %>% dplyr::filter(!is.na(latitude)) %>% dplyr::filter(!is.na(longitude))
+fna <- tfa_occ %>% 
+  dplyr::filter(!is.na(latitude)) %>% 
+  dplyr::filter(!is.na(longitude))
 fna_eoo_all <- eoo_polygon(fna)
-mapview(fna_eoo_all)
+mapview::mapview(fna_eoo_all)
 
 # Calculate_eoo
 fauna_eoo <- fna %>% make_eoo()
@@ -1195,51 +1197,65 @@ The following tables show any conservation listings in TFA which are not in TSC,
 ```{r }
 #### IUCN 2012
 tsc_listing_cat_iucn2012 <- tsc_tcl_fauna %>%
-  dplyr::filter(str_detect(category_cache,"IUCN(2012)"))
+  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN(2012)"))
 
-tfa_listing_cat_iucn2012 %>% anti_join(tsc_listing_cat_iucn2012,by = "taxon") %>% 
+tfa_listing_cat_iucn2012 %>% 
+  dplyr::anti_join(tsc_listing_cat_iucn2012, by = "taxon") %>%
   reactable::reactable(filterable = T)
 
 #### IUCN 2001
 tsc_listing_cat_iucn2001 <- tsc_tcl_fauna %>%
-  dplyr::filter(str_detect(category_cache,"IUCN(2001)"))
+  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN(2001)"))
 
-tfa_listing_cat_iucn2001 %>% anti_join(tsc_listing_cat_iucn2001,by = "taxon") %>% 
+tfa_listing_cat_iucn2001 %>% 
+  dplyr::anti_join(tsc_listing_cat_iucn2001, by = "taxon") %>%
   reactable::reactable(filterable = T)
 
 #### IUCN 1994
 tsc_listing_cat_iucn1994 <- tsc_tcl_fauna %>%
-  dplyr::filter(str_detect(category_cache,"IUCN(1994)"))
+  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+  dplyr::filter(str_detect(category_cache, "IUCN(1994)"))
 
-tfa_listing_cat_iucn1994 %>% anti_join(tsc_listing_cat_iucn1994,by = "taxon") %>% 
+tfa_listing_cat_iucn1994 %>% 
+  dplyr::anti_join(tsc_listing_cat_iucn1994, by = "taxon") %>%
   reactable::reactable(filterable = T)
 
 #### WAWCA
 tsc_listing_cat_wawca <- tsc_tcl_fauna %>%
-  dplyr::filter(str_detect(category_cache,"WAWCA"))
+  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+  dplyr::filter(str_detect(category_cache, "WAWCA"))
 
-tfa_listing_cat_wawca %>% anti_join(tsc_listing_cat_wawca,by = "taxon") %>% 
+tfa_listing_cat_wawca %>% 
+  dplyr::anti_join(tsc_listing_cat_wawca, by = "taxon") %>%
   reactable::reactable(filterable = T)
 
 #### WAPS
 tsc_listing_cat_waps <- tsc_tcl_fauna %>%
-  dplyr::filter(str_detect(category_cache,"WAPS"))
+  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+  dplyr::filter(str_detect(category_cache, "WAPS"))
 
-tfa_listing_cat_waps %>% anti_join(tsc_listing_cat_waps,by = "taxon") %>% 
+tfa_listing_cat_waps %>% 
+  dplyr::anti_join(tsc_listing_cat_waps, by = "taxon") %>%
   reactable::reactable(filterable = T)
 
 #### SPFN
 tsc_listing_cat_spfn <- tsc_tcl_fauna %>%
-  dplyr::filter(str_detect(category_cache,"SPFN"))
+  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+  dplyr::filter(str_detect(category_cache, "SPFN"))
 
-tfa_listing_cat_spfn %>% anti_join(tsc_listing_cat_spfn,by = "taxon") %>% 
+tfa_listing_cat_spfn %>% 
+  dplyr::anti_join(tsc_listing_cat_spfn, by = "taxon") %>%
   reactable::reactable(filterable = T)
 
 #### EPBC
 tsc_listing_cat_epbc <- tsc_tcl_fauna %>%
-  dplyr::filter(str_detect(category_cache,"EPBC"))
+  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+  dplyr::filter(str_detect(category_cache, "EPBC"))
 
-tfa_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = "taxon") %>% 
+tfa_listing_cat_epbc %>% 
+  dplyr::anti_join(tsc_listing_cat_epbc, by = "taxon") %>%
   reactable::reactable(filterable = T)
 ```
 
@@ -1247,31 +1263,38 @@ The following tables show any conservation listings in TSC which are not in TFA,
 
 ```{r }
 #### IUCN 2012
-tsc_listing_cat_iucn2012 %>% anti_join(tfa_listing_cat_iucn2012,by = "taxon") %>% 
+tsc_listing_cat_iucn2012 %>%
+  dplyr::anti_join(tfa_listing_cat_iucn2012, by = "taxon") %>%
   reactable::reactable(filterable = T)
 
 #### IUCN 2001
-tsc_listing_cat_iucn2001 %>% anti_join(tfa_listing_cat_iucn2001,by = "taxon") %>% 
+tsc_listing_cat_iucn2001 %>% 
+  dplyr::anti_join(tfa_listing_cat_iucn2001,by = "taxon") %>% 
   reactable::reactable(filterable = T)
 
 #### IUCN 1994
-tsc_listing_cat_iucn1994 %>% anti_join(tfa_listing_cat_iucn1994,by = "taxon") %>% 
+tsc_listing_cat_iucn1994 %>% 
+  dplyr::anti_join(tfa_listing_cat_iucn1994,by = "taxon") %>% 
   reactable::reactable(filterable = T)
 
 #### WAWCA
-tsc_listing_cat_wawca %>% anti_join(tfa_listing_cat_wawca,by = "taxon") %>% 
+tsc_listing_cat_wawca %>% 
+  dplyr::anti_join(tfa_listing_cat_wawca,by = "taxon") %>% 
   reactable::reactable(filterable = T)
 
 #### WAPS
-tsc_listing_cat_waps %>% anti_join(tfa_listing_cat_waps,by = "taxon") %>% 
+tsc_listing_cat_waps %>% 
+  dplyr::anti_join(tfa_listing_cat_waps,by = "taxon") %>% 
   reactable::reactable(filterable = T)
 
 #### SPFN
-tsc_listing_cat_spfn %>% anti_join(tfa_listing_cat_spfn,by = "taxon") %>% 
+tsc_listing_cat_spfn %>% 
+  dplyr::anti_join(tfa_listing_cat_spfn,by = "taxon") %>% 
   reactable::reactable(filterable = T)
 
 #### EPBC
-tsc_listing_cat_epbc %>% anti_join(tfa_listing_cat_epbc,by = "taxon") %>% 
+tsc_listing_cat_epbc %>% 
+  dplyr::anti_join(tfa_listing_cat_epbc,by = "taxon") %>% 
   reactable::reactable(filterable = T)
 ```
 
@@ -1316,7 +1339,7 @@ leaflet(width = 800, height = 600) %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
   clearBounds() %>%
   addAwesomeMarkers(
-    data = fauna_occ,
+    data = tfa_occ,
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
     label = ~ glue::glue(
@@ -1420,9 +1443,9 @@ tfa_tally <- tfa_occ %>%
 tfa_tally %>% head(n = 20) %>% kable(.)
 ```
 
-There are `r nrow(fauna_tally)` fauna taxa
+There are `r nrow(tfa_tally)` fauna taxa with occurrences.
 
-### TSC occurances not in TFA
+### TSC occurences not in TFA
 
 ## Conservation Documents
 
