@@ -398,7 +398,6 @@ tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>
     wastdr::wastd_POST("community", verbose=T, api_url = prod)
 ```
 
-
 # TSC Occurrences
 A single record, or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
