@@ -336,6 +336,9 @@ true_mismatches %>% DT::datatable()
 ```{r fauna_occ}
 # Generate column config:
 # fauna_data$`Fauna Records` %>% make_coldef()
+default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
+                                           orders = "ymd HMS",
+                                           tz = tz)
 
 fauna_raw <- fauna_data$`Fauna Records`
 fauna_occ <- fauna_raw %>%
@@ -347,24 +350,24 @@ fauna_occ <- fauna_raw %>%
     # name_id = NameId %>% as.character(), # they're all NA
     orig_date = Date,
     orig_time = Time,
-    o_date = ifelse(
-        Date == "",
-        default_date, 
-        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 18L)
-        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz), 
-    o_time = ifelse(
-        Time == "",
-        default_date,
-        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 18L)
-        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    datetime = ifelse(
+    o_date = orig_date %>% 
+      lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    o_time = orig_time %>% 
+      lubridate::parse_date_time2(., orders, tz = tz, cutoff_2000 = 18L) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    datetime =
+      ifelse(
         is.na(o_date),
         default_date,
         ifelse(
-            is.na(o_time),
-            o_date,
-            o_date + hours(hour(o_time)) + minutes(minute(o_time))
-        )) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+          is.na(o_time),
+          o_date,
+          o_date +
+            lubridate::hours(lubridate::hour(o_time)) +
+            lubridate::minutes(lubridate::minute(o_time))
+        )
+      ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     observer_name = Observer %>% as.character(),
     observer_role = OrgRole %>% as.character(),
     observer_address = Address %>% as.character(),
