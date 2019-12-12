@@ -374,12 +374,12 @@ tfa_occ <- tfa_raw %>% dplyr::transmute(
     # Field4 = Field4 %>% as.character(),
     # Field5 = Field5 %>% as.character()
   ) %>% 
-  # dplyr::left_join(shires, by = "lga_id") %>%
-  # dplyr::left_join(tenure, by = "tenure_id") %>%
-  # dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
-  # dplyr::left_join(certainty, by = "certainty_id") %>%
-  # dplyr::left_join(species_names, by = "species_code") %>%
-  # dplyr::left_join(resolution_m, by = "resolution_id") %>% 
+  dplyr::left_join(shires, by = "lga_id") %>%
+  dplyr::left_join(tenure, by = "tenure_id") %>%
+  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
+  dplyr::left_join(certainty, by = "certainty_id") %>%
+  dplyr::left_join(species_names, by = "species_code") %>%
+  dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible()
 ```
 
