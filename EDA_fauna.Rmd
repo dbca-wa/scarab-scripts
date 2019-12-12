@@ -1308,6 +1308,41 @@ tfa_skim %>%
   DT::datatable(.)
 ```
 
+An interactive map of fauna occurrences.
+
+```{r fauna_map}
+leaflet(width = 800, height = 600) %>%
+  addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  clearBounds() %>%
+  addAwesomeMarkers(
+    data = fauna_occ,
+    lng = ~ longitude, lat = ~ latitude,
+    icon = leaflet::makeAwesomeIcon(icon = "leaf"),
+    label = ~ glue::glue(
+        "{scientific_name} ({stringr::str_to_title(common_name)})"
+    ),
+    popup = ~ glue::glue(
+        "<h3>{stringr::str_to_title(common_name)}</h3>
+        <strong>{scientific_name}</strong> ({species_code})<br/>
+        <strong>Encountered on</strong> {with_tz(datetime, tz=tz)} AWST<br/>
+        <strong>by</strong> {observer_name}<br/>
+        <strong>through</strong> {observation_method} ({observation_type})<br/>
+        <strong>at </strong> {site_comment} ({shire_label})<br/>
+        <strong>Tenure</strong> {tenure} ({tenure_id})<br/>
+        <strong>Vegetation type</strong> {vegetation_type} ({vegetation_type_id})<br/>
+        <strong>Certainty</strong> {certainty} ({certainty})<br/>"
+    ),
+    group = "Fauna",
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    overlayGroups = c("Fauna"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
 #### Taxonomic caveats
 Fauna occurrences link to the name that was current / legal at the time.
 Occurrence query should show hints linking to current / legal names and their history.
