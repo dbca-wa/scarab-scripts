@@ -263,7 +263,7 @@ all_crit_map <- tfa_cons_listings %>%
 readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv"))
 ```
 
-## Occurances
+## Occurences
 ```{r}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
                                            orders = "ymd HMS",
