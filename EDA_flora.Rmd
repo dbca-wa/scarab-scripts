@@ -329,9 +329,9 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
       comments_MP = col_character(),
       actions = col_character()
     )
-  ) %>%
+  )  %>%
   dplyr::mutate(
-    tsc_criteria = tsc_criteria %>% chr2int()
+    tsc_criteria = purrr::map(tsc_criteria, chr2int)
   )
 
 # glimpse(tfl_conscrit)
