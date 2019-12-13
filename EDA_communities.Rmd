@@ -270,7 +270,7 @@ tsc_crit_code <- tec_ccl %>%
   dplyr::arrange (tsc_criteria) %>%
   dplyr::summarise(tsc_criteria = paste(tsc_criteria, collapse = ",")) %>%
   dplyr::mutate(
-    tsc_criteria = tsc_criteria %>% chr2int()
+    tsc_criteria = purrr::map(tsc_criteria, chr2int)
   )
 
 tec_tsc <- tec_cons_listing_categories %>% 
