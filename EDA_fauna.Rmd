@@ -1006,8 +1006,6 @@ TFA has `r nrow(tfa_tcl_edit)` conservation listings of `r tfa_tcl_unique_taxa`.
 TSC has `r nrow(tsc_tcl_fauna)` fauna conservation listings of 
 `r tsc_tcl_unique_taxa`, including animals but excluding plants *sensu latu*.
 
-TODO remove plant tcl from this analysis.
-
 ### TFA conservation listings not in TSC
 
 Any records in the following table indicate conservation listings in TFA that
@@ -1025,7 +1023,7 @@ tfa_tcl_edit %>%
 ### TSC conservation listings not in TFA
 
 The following table shows any conservation listings in TSC which are not in TFA.
-These can contain flora conservation listings. (TODO remove those)
+
 
 ```{r}
 tsc_tcl_fauna %>%
