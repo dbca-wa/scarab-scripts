@@ -871,8 +871,6 @@ if (file.exists(datafile_tsc_fauna)) {
 ```
 
 
-
-
 # Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
 and TFA data as uploaded into TSC. 
