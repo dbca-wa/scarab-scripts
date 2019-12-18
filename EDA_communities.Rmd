@@ -101,9 +101,6 @@ communities <- tec$COMMUNITIES %>%
   dplyr::left_join(occ_decline, by = "occ_decline_id") %>%
   dplyr::select(-former_range_code, -range_decline_id, -occ_decline_id)
 
-# communities %>% skim()
-# communities %>% DT::datatable(.)
-
 com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
 ```
 
@@ -173,7 +170,7 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
 
 ```
 
-## Occurances
+## occurences
 ```{r tec_occ}
 reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability_id = BR.CODE %>% as.character(),
@@ -471,6 +468,7 @@ tsc_ccl %>%
   reactable::reactable(filterable = TRUE)
 ```
 
+
 ### Conservation criteria mapping
 
 Conservation criteria were manually mapped for each species, 
@@ -592,7 +590,42 @@ cons_cat_summary <- tec_cons_cat_sum %>%
 cons_cat_summary %>% reactable::reactable()
 ```
 
-#### Missing listings
+The following tables show any conservation listings in TFA which are not in TSC, for each conservation list.
+
+WAPEC
+```{r}
+#### WAPEC
+tec_listing_cat_wapec %>% 
+  dplyr::anti_join(tsc_listing_cat_wapec, by = "com_label") %>% 
+  reactable::reactable(filterable = TRUE) #106
+```
+
+DBCA_RLE
+```{r}
+#### DBCA_RLE
+tec_listing_cat_dbcarle %>% 
+  dplyr::anti_join(tsc_listing_cat_dbcarle, by = "com_label") %>% 
+  reactable::reactable(filterable = TRUE) #26
+```
+
+The following tables show any conservation listings in TSC which are not in TFA, for each conservation list.
+
+WAPEC
+```{r}
+tsc_listing_cat_wapec %>% 
+  dplyr::anti_join(tec_listing_cat_wapec, by = "com_label") %>% 
+  reactable::reactable(filterable = TRUE) #0
+```
+
+DBCA_RLE
+```{r}
+tsc_listing_cat_dbcarle %>% 
+  dplyr::anti_join(tec_listing_cat_dbcarle, by = "com_label") %>% 
+  reactable::reactable(filterable = TRUE) #12
+
+```
+
+### TEC unmigrated conservation listings
 
 Below are the listings from TEC that could not be assigned to either WAPEC or DBCA_RLE as the category_code does not correlate to a list_code
 
@@ -601,29 +634,9 @@ tec_ccl %>%
   dplyr::anti_join(tec_listing_cat_wapec, by = c("com_id", "effective_from", "category_code")) %>% 
   dplyr::anti_join(tec_listing_cat_dbcarle, by = c("com_id", "effective_from", "category_code")) %>% 
   reactable::reactable(filterable = TRUE) #76
-
-#### WAPEC
-tec_listing_cat_wapec %>% 
-  dplyr::anti_join(tsc_listing_cat_wapec, by = "com_label") %>% 
-  reactable::reactable(filterable = TRUE) #106
-
-tsc_listing_cat_wapec %>% 
-  dplyr::anti_join(tec_listing_cat_wapec, by = "com_label") %>% 
-  reactable::reactable(filterable = TRUE) #0
-
-
-#### DBCA_RLE
-tec_listing_cat_dbcarle %>% 
-  dplyr::anti_join(tsc_listing_cat_dbcarle, by = "com_label") %>% 
-  reactable::reactable(filterable = TRUE) #26
-
-tsc_listing_cat_dbcarle %>% 
-  dplyr::anti_join(tec_listing_cat_dbcarle, by = "com_label") %>% 
-  reactable::reactable(filterable = TRUE) #12
-
 ```
 
-## Occurances
+## Occurences
 
 # Upload to data catalogue
 ```{r upload_data_catalogue}
