@@ -478,7 +478,7 @@ process.
 Taxonomic names are uploaded to TSC directly from WACensus in a separate workbook.
 The QA part of this workbook will compare TFA names to TSC names.
 
-## Conservation Listings
+## Conservation listings
 This section loads conservation listings from TFA into TSC.
 
 Conservation listings are entered in triplicate:
@@ -767,14 +767,14 @@ fna_eoo_all <- eoo_polygon(fna)
 # mapview::mapview(fna_eoo_all)
 
 # Calculate_eoo
-fauna_eoo <- fna %>% make_eoo()
+tfa_eoo <- fna %>% make_eoo()
 
 # map_eoo
 # mapview::mapview(head(fauna_eoo$eoo_sfc))
 ```
 
 ```{r upload_eoo, eval=F}
-fauna_eoo %>%
+tfa_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
   wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 ```
@@ -1371,7 +1371,6 @@ Currently, we assume that all occurrence records in the legacy databases are tru
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
 ### TFA occurances not in TSC
-
 
 ```{r tally_occ,echo=FALSE}
 tfa_tally <- tfa_occ %>%
