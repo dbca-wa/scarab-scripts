@@ -39,6 +39,7 @@ Data from the Threatened Ecological Communities Database (TEC) is downloaded fro
 [TEC dataset](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database)
 on the DBCA data catalogue, then extracted and transformed.
 
+## Communities
 ```{r load_tec, message=FALSE}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
 
@@ -104,7 +105,10 @@ communities <- tec$COMMUNITIES %>%
 # communities %>% DT::datatable(.)
 
 com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
+```
 
+## Conservation listings
+```{r load_tec_cons, message=FALSE}
 tec_cons_cat <- tec$CATEGORY_TYPES %>%
   dplyr::transmute(
     category_code = CT.TYPE %>% as.character(),
@@ -230,7 +234,7 @@ tsc_cons_crit <-
   dplyr::left_join(tsc_conslists_com, by = "list_id")
 
 # Load manual mapping of TEC cons criteria from CSV file, join to tec_cons_crit
-tec_cons_crit <- here::here("tec_conscrit_w_tsc.csv") %>%
+tec_conscrit <- here::here("tec_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       category_code = col_character(),
@@ -402,6 +406,10 @@ tsc_ccl %>%
 
 Conservation criteria were manually mapped for each species, 
 therefore they need to be checked to confirm whether the mapping is correct. 
+```{r}
+tec_conscrit %>%
+  reactable::reactable(filterable = TRUE)
+```
 
 In addition, some conservation criteria could not be mapped as they do not exist 
 in the list/category_code. 

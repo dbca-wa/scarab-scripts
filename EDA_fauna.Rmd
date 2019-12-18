@@ -450,7 +450,7 @@ tsc_cons_crit %>%
   readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
 
 # Load manual mapping of TFA cons criteria from CSV file, join to tfa_cons_crit
-tfa_cons_crit <- here::here("tfa_conscrit_w_tsc.csv") %>%
+tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       list_code = col_character(),
@@ -1027,6 +1027,11 @@ tfa_tcl %>%
 
 Conservation criteria were manually mapped for each species, 
 therefore they need to be checked to confirm whether the mapping is correct. 
+
+```{r}
+tfa_conscrit %>%
+  reactable::reactable(filterable = TRUE)
+```
 
 In addition, some conservation criteria could not be mapped as they do not exist 
 in the list/category_code. 
