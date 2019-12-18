@@ -33,6 +33,7 @@ non-technical audience. Feel free to expand the code blocks to view the process.
 The code for all SCB workbooks is under version control at 
 [github](https://github.com/dbca-wa/scarab-scripts).
 
+
 # Extract and transform legacy Data from TEC
 Data from the Threatened Ecological Communities Database (TEC) is downloaded from the 
 [TEC dataset](https://data.dpaw.wa.gov.au/dataset/threatened-ecological-communities-database)
@@ -99,8 +100,8 @@ communities <- tec$COMMUNITIES %>%
   dplyr::left_join(occ_decline, by = "occ_decline_id") %>%
   dplyr::select(-former_range_code, -range_decline_id, -occ_decline_id)
 
-communities %>% skim()
-communities %>% DT::datatable(.)
+# communities %>% skim()
+# communities %>% DT::datatable(.)
 
 com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
 
@@ -177,49 +178,55 @@ conservation criteria IDs in TSC in a spreadsheet.
 
 ``` {r extract_tsc_cons_criteria}
 # TSC cons lists applicable to communities
-tsc_conslists_com <- "conservationlist" %>% 
-  wastdr::wastd_GET(api_url = prod, query = c(scope_communities = TRUE)) %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    list_id = purrr::map_int(., "id"),
-    list_code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label"),
-    scope_communities = purrr::map_chr(., "scope_communities"),
-    scope_wa = purrr::map_chr(., "scope_wa"),
-    scope_cmw = purrr::map_chr(., "scope_cmw")
-  )}
+tsc_conslists_com <- "conservationlist" %>%
+  wastdr::wastd_GET(api_url = prod,
+                    query = c(scope_communities = TRUE)) %>%
+  magrittr::extract2("features") %>%
+  {
+    tibble::tibble(
+      list_id = purrr::map_int(., "id"),
+      list_code = purrr::map_chr(., "code"),
+      label = purrr::map_chr(., "label"),
+      scope_communities = purrr::map_chr(., "scope_communities"),
+      scope_wa = purrr::map_chr(., "scope_wa"),
+      scope_cmw = purrr::map_chr(., "scope_cmw")
+    )
+  }
 
-# IDs of TSC cons lists applicable to communities
-com_list_ids_wa <- tsc_conslists_com %>% 
-  magrittr::extract2("id") %>% paste(collapse=",") ## This doesn't work
+# list_id of TSC cons lists applicable to communities
 # DBCA_RLE 11
 # WAPEC 12
 # IUCN_RLE 16
 
 # tsc_conscat$id = TSC ID for the cons category
 # tsc_conscat$label = tec_cons_listing_categories$category_code
-tsc_conscat <- "conservationcategory" %>% 
-  wastdr::wastd_GET(api_url = prod) %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    tsc_category_id = purrr::map_int(., "id"),
-    category_code = purrr::map_chr(., "code"),
-    tsc_label = purrr::map_chr(., "label"),
-    conservation_list = purrr::map_chr(., "conservation_list")
-  )} %>% 
-  dplyr::filter(conservation_list %in% c(11,12,16))
+tsc_conscat <- "conservationcategory" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  magrittr::extract2("features") %>%
+  {
+    tibble::tibble(
+      tsc_category_id = purrr::map_int(., "id"),
+      category_code = purrr::map_chr(., "code"),
+      tsc_label = purrr::map_chr(., "label"),
+      conservation_list = purrr::map_chr(., "conservation_list")
+    )
+  } %>%
+  dplyr::filter(conservation_list %in% c(11, 12, 16))
 
-tsc_cons_crit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
-magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    list_id = purrr::map_int(., "conservation_list"),
-    rank = purrr::map_int(., "rank"),
-    code = purrr::map_chr(., "code")
-    # ,
-    # label = purrr::map_chr(., "label")
-  )}%>% 
-  dplyr::arrange(id, rank) %>% 
+tsc_cons_crit <-
+  wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
+  magrittr::extract2("features") %>%
+  {
+    tibble::tibble(
+      id = purrr::map_int(., "id"),
+      list_id = purrr::map_int(., "conservation_list"),
+      rank = purrr::map_int(., "rank"),
+      code = purrr::map_chr(., "code")
+      # ,
+      # label = purrr::map_chr(., "label")
+    )
+  } %>%
+  dplyr::arrange(id, rank) %>%
   dplyr::left_join(tsc_conslists_com, by = "list_id")
 
 # Load manual mapping of TEC cons criteria from CSV file, join to tec_cons_crit
@@ -235,10 +242,10 @@ tec_cons_crit <- here::here("tec_conscrit_w_tsc.csv") %>%
       comments_MP = col_character(),
       actions = col_character()
     )
-  ) 
+  )
 
-tec_ccl<-tec_cons_listing %>% 
-  left_join(tec_cons_crit,by=c("criterion_code","category_code")) 
+tec_ccl <- tec_cons_listing %>%
+  left_join(tec_cons_crit, by = c("criterion_code", "category_code")) 
 ```
 
 # Load legacy data from TEC into TSC
@@ -251,50 +258,46 @@ This section loads conservation listings from TEC into TSC.
 
 ```{r summarise criterion codes into one row per date}
 comm_info <- tec_ccl %>%
-  dplyr::select(com_id,com_label,com_name) %>%
+  dplyr::select(com_id, com_label, com_name) %>%
   distinct()
 
 tec_cat_code <- tec_ccl %>%
-  dplyr::group_by(com_id,effective_from,tsc_category_id) %>% 
+  dplyr::group_by(com_id, effective_from, tsc_category_id) %>%
   dplyr::arrange (category_code) %>%
   dplyr::summarise(category_code = paste(category_code, collapse = ","))
 
 tec_crit_code <- tec_ccl %>%
-  dplyr::group_by(com_id,effective_from) %>% 
+  dplyr::group_by(com_id, effective_from) %>%
   dplyr::arrange (criteria_code) %>%
-  dplyr::summarise(criteria_code = paste(criteria_code, collapse = ",")) 
+  dplyr::summarise(criteria_code = paste(criteria_code, collapse = ","))
 
-## We get NA introduced by coercion. The problem is community 241- Albany Blackbutt, where tsc_criteria = c(NA,NA)
 tsc_crit_code <- tec_ccl %>%
-  dplyr::group_by(com_id,effective_from) %>% 
+  dplyr::group_by(com_id, effective_from) %>%
   dplyr::arrange (tsc_criteria) %>%
   dplyr::summarise(tsc_criteria = paste(tsc_criteria, collapse = ",")) %>%
-  dplyr::mutate(
-    tsc_criteria = purrr::map(tsc_criteria, chr2int)
-  )
+  dplyr::mutate(tsc_criteria = purrr::map(tsc_criteria, chr2int))
 
 tec_tsc <- tec_cons_listing_categories %>% 
   dplyr::left_join(tec_cat_code, by = c("com_id","effective_from","category_code")) %>% 
   dplyr::left_join(tec_crit_code, by = c("com_id","effective_from")) %>%
   dplyr::left_join(tsc_crit_code, by = c("com_id","effective_from")) 
 
-tec_cl_tsc <- tec_tsc %>% 
+tec_cl_tsc <- tec_tsc %>%
   dplyr::transmute(
     source = 3, # TaxonGaz.source TFA 1, TFL 2, TEC 3
-        source_id = source_id %>% as.character(),
-        scope = 0, # state 0, cwth 1, intl 2, ap 3
-        status = 80,
-        effective_from = effective_from,
-        # effective_to = date_delisted, # where is the effective to date?
-        review_due = cat_review_date,
-        community = com_label, 
-        category = tsc_category_id %>% as.list(),
-      criteria = tsc_criteria
-    ) %>%
+    source_id = source_id %>% as.character(),
+    scope = 0, # state 0, cwth 1, intl 2, ap 3
+    status = 80,
+    effective_from = effective_from,
+    # effective_to = date_delisted,
+    review_due = cat_review_date,
+    community = com_label,
+    category = tsc_category_id %>% as.list(),
+    criteria = tsc_criteria
+  ) %>%
   dplyr::filter(!is.na(category))
 
-glimpse(tec_cl_tsc)
-
+# dplyr::glimpse(tec_cl_tsc)
 ```
 
 ```{r conslist_tsc_upload, eval=F}
@@ -363,23 +366,15 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tec_data
 #
-tsc_ccl <- tsc_ccl %>% 
-  dplyr::mutate(com_label = community)
-
-tec_ccl_unique_comm <- tec_ccl$com_label %>%
-  unique() %>%
-  length() # 476
-
-tsc_ccl_unique_comm <- tsc_ccl$com_label %>%
-  unique() %>%
-  length() #378
+tsc_ccl <- tsc_ccl %>% dplyr::mutate(com_label = community)
+tec_ccl_unique_comm <- tec_ccl$com_label %>% unique() %>% length() # 476
+tsc_ccl_unique_comm <- tsc_ccl$com_label %>% unique() %>% length() #378
 ```
 
 ## Conservation Listing
 
-TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique_comm`.
-TSC has `r nrow(tsc_ccl)` fauna conservation listings of 
-`r tsc_ccl_unique_comm`, including animals but excluding plants *sensu latu*.
+TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique_comm` communities.
+TSC has `r nrow(tsc_ccl)` conservation listings of `r tsc_ccl_unique_comm` communities.
 
 
 ### TEC conservation listings not in TSC
