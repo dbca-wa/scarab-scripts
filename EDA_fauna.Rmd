@@ -1372,7 +1372,7 @@ If this weren't the case, this analysis should exclude the non-trustworthy recor
 
 ### TFA occurances not in TSC
 
-```{r tally_occ,echo=FALSE}
+```{r tally_occ,eval=FALSE}
 tfa_tally <- tfa_occ %>%
   dplyr::group_by(name_id, scientific_name) %>%
   dplyr::tally() %>%
@@ -1382,7 +1382,7 @@ tfa_tally %>% reactable::reactable()
 
 ```
 
-There are `r nrow(tfa_tally)` fauna taxa with occurrences.
+There are ???? fauna taxa with occurrences.
 
 ### TSC occurences not in TFA
 
