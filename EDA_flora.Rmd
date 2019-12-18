@@ -298,11 +298,10 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 ```
 
 ## Occurences
-
 ```{r load_tfa_occ, message=FALSE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
-flora_occ <- flora_data$DRF_RFR_FORMS %>%
+tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
     sheetno = SHEETNO %>% as.integer(),
@@ -466,12 +465,113 @@ flora_occ <- flora_data$DRF_RFR_FORMS %>%
     florabus_ind = FLORABUS.IND %>% as.character(),
     licence = LICENCE %>% as.character()
   )
+
+# Occurrence vegetation classes
+occ_vegclass <- tfl_data$DRF_SHEET_VEG_CLASSES %>%
+  dplyr::transmute(
+    veg_class_id = VEG.CLASS.ID %>% as.integer(),
+    veg_class_code = VEG.CLASS.CODE %>% as.character(),
+    sheetno = SHEETNO %>% as.character(),
+    veg_class_dom1 = VEG.CLASS.DOM1 %>% as.character(),
+    veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
+  )
+
+## Occurrence threats
+occ_threats <- tfl_data$DRF_SHEET_THREATS %>%
+  dplyr::transmute(
+    sheet_threat_id = SHEET.THREAT.ID %>% as.character(),
+    sheetno = SHEETNO %>% as.character(),
+    threat_code = THREAT.CODE %>% as.character(),
+    cur_impact = CUR.IMPACT %>% as.character(),
+    pot_impact = POT.IMPACT %>% as.character(),
+    onset = ONSET %>% as.character(),
+    agent_code = AGENT.CODE %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    status = STATUS %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character()
+  )
+
+## Occurrence fire details
+occ_fire <- tfl_data$DRF_FIRE_DETAILS %>%
+  dplyr::transmute(
+    fire_det_id = FIRE.DET.ID %>% as.character(),
+    sheet_no = SHEET.NO %>% as.character(),
+    sit_id = SIT.ID %>% as.character(),
+    quadrat_name = QUADRAT.NAME %>% as.character(),
+    fire_date = FIRE.DATE %>% as.character(),
+    other_treatment_date = OTHER.TREATMENT.DATE %>% as.character(),
+    other_treatment_type = OTHER.TREATMENT.TYPE %>% as.character(),
+    unburnt_postburn = UNBURNT.POSTBURN %>% as.character(),
+    months_since_fire = MONTHS.SINCE.FIRE %>% as.character(),
+    fire_type = FIRE.TYPE %>% as.character(),
+    burnt_pct = BURNT.PCT %>% as.character(),
+    fuel_age = FUEL.AGE %>% as.character(),
+    flammability = FLAMMABILITY %>% as.character(),
+    seedlings_new = SEEDLINGS.NEW %>% as.character(),
+    seedlings_old = SEEDLINGS.OLD %>% as.character(),
+    juveniles = JUVENILES %>% as.character(),
+    adults_pre_burn_alive = ADULTS.PRE.BURN.ALIVE %>% as.character(),
+    adults_pre_burn_dead = ADULTS.PRE.BURN.DEAD %>% as.character(),
+    adults_post_burn_unburnt = ADULTS.POST.BURN.UNBURNT %>% as.character(),
+    adults_post_burn_burnt = ADULTS.POST.BURN.BURNT %>% as.character(),
+    adults_post_burn_respr = ADULTS.POST.BURN.RESPR %>% as.character(),
+    adults_post_burn_dead = ADULTS.POST.BURN.DEAD %>% as.character(),
+    flowering_pct_seeder = FLOWERING.PCT.SEEDER %>% as.character(),
+    flowering_pct_respr = FLOWERING.PCT.RESPR %>% as.character(),
+    fruiting_pct_seeder = FRUITING.PCT.SEEDER %>% as.character(),
+    fruiting_pct_respr = FRUITING.PCT.RESPR %>% as.character(),
+    dehisced_fruit_pct = DEHISCED.FRUIT.PCT %>% as.character(),
+    native_alive_pct = NATIVE.ALIVE.PCT %>% as.character(),
+    weed_cover_pct = WEED.COVER.PCT %>% as.character(),
+    bare_ground_pct = BARE.GROUND.PCT %>% as.character(),
+    litter_depth = LITTER.DEPTH %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character()
+  )
+
+## Taxon area encounter
+tfl_tae <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id)) %>% 
+  dplyr::filter(!is.na(observation_date)) %>%
+  dplyr::filter(!is.na(latitude)) %>%
+  dplyr::filter(!is.na(longitude)) %>%
+  dplyr::transmute(
+    taxon = name_id,
+    code = pop_id,
+    name = glue::glue("{pop_id}{subpop_code}"),
+    description = glue::glue(
+        "Population {pop_id}, Subpopulation {subpop_code}. ",
+        "Location: {location}. Nearest known place: {nearplace}. "
+        ),
+    source = 11,
+    source_id = sheetno,
+    encounter_type = 3, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
+    encountered_on = glue::glue("{observation_date}+08:00"),
+    encountered_by = 1,
+    area_type = 20, # pop:20, subpop: 21
+    geolocation_capture_method='gps-point',
+    accuracy = 1000,
+    point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
+  )
+
+## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
+tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) %>% reactable::reactable(filterable = TRUE)
 ```
 
 # Extract and transform conservation criteria Data from TSC
 Conservation criteria Data from TSC is extracted through the TSC API and transformed into a useable
 format for manual mapping to TFA.
-``` {r extract_tsc_cons_criteria}
+
+``` {r extract_tsc_cons_criteria, message = FALSE}
 tsc_cons_list <- "conservationlist" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
   wastdr::wastd_parse()
@@ -511,7 +611,7 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
 # glimpse(tfl_conscrit)
 
 tfl_tcl <- tfl_cons_listing %>% 
-  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa"))
+  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% glimpse
 ```
 
 # Load legacy data from TFL into TSC
@@ -519,6 +619,10 @@ In this section, the extracted and transformed data from TFL are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the 
 process.
 
+## Taxonomy
+The QA part of this workbook will compare TFL names to TSC names.
+
+## Conservation listings
 ```{r tfl_cons_listing_subsetting}
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
@@ -531,7 +635,7 @@ tsc_conscat_sp <- "conservationcategory" %>%
   )} %>% 
   dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
 
-unique(tfl_tcl$list_code) # "Priority", "EPBC", "WCA_1991", "FIDMS", "FLORABASE"
+ # "Priority", "EPBC", "WCA_1991", "FIDMS", "FLORABASE"
 
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
@@ -685,6 +789,47 @@ tfl_listing_cat_iucn2001 %>%
 ```
 
 ## Occurrences
+The EOO (Extent of occurance) is calculated as the convex hull around all recorded fauna occurances, including fossil records.
+For further details on the methodology behind the movement of EOO data, please follow the link to the workbook.
+
+### TSC upload example for EOOs
+
+```{r ex_upload_one_eoo, eval=F}
+one_taxon_eoo <- tibble::tibble(
+  name_id = 24162,
+  eoo = eoo_polygon(fauna_occ, nid = 24162) %>% sfc_geojson()
+)
+wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
+```
+
+### Upload EOOs to TSC
+
+```{r prepare eoo, eval=F}
+# extract all eoo
+fna <- tfl_occ %>% 
+  dplyr::filter(!is.na(latitude)) %>% 
+  dplyr::filter(!is.na(longitude))
+fna_eoo_all <- eoo_polygon(tfl_eoo)
+# mapview::mapview(fna_eoo_all)
+
+# Calculate_eoo
+tfl_eoo <- fna %>% make_eoo()
+
+# map_eoo
+# mapview::mapview(head(fauna_eoo$eoo_sfc))
+```
+
+```{r upload_eoo, eval=F}
+tfl_eoo %>%
+  dplyr::select(-data, -eoo_sfc) %>%
+  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
+```
+
+### Upload TAEs to TSC
+```{r flora_occ_tsc_upload, eval=F}
+flora_tae10 = flora_tae[95:100,]
+flora_tae[33000:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+```
 
 ## Conservation Documents
 
@@ -792,6 +937,10 @@ tfl_tcl %>% dplyr::filter(name_id == 0) %>% reactable::reactable()
 
 Conservation criteria were manually mapped for each species, 
 therefore they need to be checked to confirm whether the mapping is correct. 
+```{r}
+tfl_conscrit %>%
+  reactable::reactable(filterable = TRUE)
+```
 
 In addition, some conservation criteria could not be mapped as they do not exist 
 in the list/category_code. 
@@ -911,8 +1060,9 @@ cons_cat_summary %>% reactable::reactable() ## ARE THESE DIFFERENCES FROM USE OF
 ```
 
 
-The following tables show any conservation listings in TFA which are not in TSC, for each conservation list.
+The following tables show any conservation listings in TFL which are not in TSC, for each conservation list.
 
+IUCN 2012
 ```{r }
 #### IUCN 2012
 tsc_listing_cat_iucn2012 <- tsc_tcl_flora %>%
@@ -920,28 +1070,36 @@ tsc_listing_cat_iucn2012 <- tsc_tcl_flora %>%
 
 tfl_listing_cat_iucn2012 %>% anti_join(tsc_listing_cat_iucn2012,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+IUCN 2001
+```{r}
 #### IUCN 2001
 tsc_listing_cat_iucn2001 <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"IUCN(2001)"))
 
 tfl_listing_cat_iucn2001 %>% anti_join(tsc_listing_cat_iucn2001,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+IUCN 1994
+```{r}
 #### IUCN 1994
 tsc_listing_cat_iucn1994 <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"IUCN(1994)"))
 
 tfl_listing_cat_iucn1994 %>% anti_join(tsc_listing_cat_iucn1994,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+Priority
+```{r}
 #### Priority
 tsc_listing_cat_priority <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"Priority"))
 
 tfl_listing_cat_priority %>% anti_join(tsc_listing_cat_priority,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+EPBC
+```{r}
 #### EPBC
 tsc_listing_cat_epbc <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"EPBC")) ## what is the category_cache made from? List_code or list_code_wa?
@@ -952,29 +1110,95 @@ tfl_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = "taxon") %>%
 
 The following tables show any conservation listings in TSC which are not in TFA, for each conservation list.
 
+IUCN 2012
 ```{r }
 #### IUCN 2012
 tsc_listing_cat_iucn2012 %>% anti_join(tfl_listing_cat_iucn2012,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+IUCN 2001
+```{r}
 #### IUCN 2001
 tsc_listing_cat_iucn2001 %>% anti_join(tfl_listing_cat_iucn2001,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+IUCN 1994
+```{r}
 #### IUCN 1994
 tsc_listing_cat_iucn1994 %>% anti_join(tfl_listing_cat_iucn1994,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+IUCN Priority
+```{r}
 #### Priority
 tsc_listing_cat_priority %>% anti_join(tfl_listing_cat_priority,by = "taxon") %>% 
   reactable::reactable(filterable = T)
-
+```
+EPBC
+```{r}
 #### EPBC
 tsc_listing_cat_epbc %>% anti_join(tfl_listing_cat_epbc,by = "taxon") %>% 
   reactable::reactable(filterable = T)
 ```
 
 ## Occurrences
+
+There are `r nrow(tfl_occ)` species occurrence records (encounters)in TFL. 
+The following columns are incomplete.
+
+```{r fauna_missing_values}
+tfl_skim <- tfl_occ %>% skimr::skim()
+
+tfl_skim %>%
+  filter(n_missing > 0) %>%
+  # select(-stat, -level, -formatted) %>%
+  reactable::reactable(filterable = TRUE)
+```
+
+### Flora occurrences missing a NameID
+
+```{r missing_name_id}
+tfl_occ_no_nameid <- tfl_occ %>% 
+    filter(name_id == 0) %>% 
+    select(species_name) %>% 
+    unique()
+tfl_occ_no_nameid %>% reactable::reactable()
+```
+
+There are `r nrow(tfl_occ_no_nameid)` distinct scientific flora names without NameID.
+
+## Missing coordinates
+
+```{r missing coordinates}
+tfl_occ_no_latlng <- tfl_occ %>% 
+    filter(is.na(latitude) | is.na(longitude))
+tfl_occ_no_latlng %>% head %>% reactable::reactable()
+```
+
+There are `r nrow(tfl_occ_no_latlng)` distinct flora records with missing latitude or longitude.
+These records need to be fixed in the original Threatened Flora database.
+
+## NameID mismatch
+TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
+
+## Trust level of occurrence records
+Currently, we assume that all occurrence records in the legacy databases are trustworthy.
+If this weren't the case, this analysis should exclude the non-trustworthy records.
+
+### TFL occurances not in TSC
+
+```{r tally_occ,eval=FALSE}
+tfl_tally <- tfl_occ %>%
+  dplyr::group_by(name_id, species_name) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n))
+
+tfl_tally %>% head(n = 20) %>% reactable::reactable()
+```
+
+There are ???? flora taxa with occurrences.
+
+### TSC occurences not in TFA
 
 ## Conservation Documents
 
