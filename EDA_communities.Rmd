@@ -173,6 +173,76 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
 
 ```
 
+## Occurances
+```{r tec_occ}
+reliability <- tec$RELIABILITY %>% dplyr::transmute(
+  reliability_id = BR.CODE %>% as.character(),
+  reliability = BR.DESC %>% as.character()
+)
+  
+tec_occ <- tec$OCCURRENCES %>%
+  tibble::as_tibble() %>%
+  dplyr::transmute(
+    # IDs
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    com_id = COM.NO %>% as.integer(),
+    occ_no = OCC.NO %>% as.integer(),
+    source_code = OCC.SOURCE.CODE %>% as.character(),
+
+    # spatial references
+    boundary_id = BDY.ID %>% as.integer(),
+    boundary_desc = OCC.BOUNDARY.DESC %>% as.character(),
+    # boundary_no = OCC.NO.BOUNDARY %>% as.integer, # empty
+    buffer_radius = OCC.BUFFER.RADIUS %>% as.integer(),
+    original_area = OCC.ORIGINAL.AREA %>% as.double(),
+    area_accuracy = OCC.AREA.ACCURACY %>% as.double(),
+
+    # occ details
+    species_desc = OCC.SPECIES.DESC %>% as.character(),
+    commonwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character(),
+    confidential_id = OCC.CONFIDENTIAL %>% as.integer(),
+    reliability_id = OCC.BR.CODE %>% as.character(),
+    desc = OCC.DESC %>% as.character(),
+    status_code = OCC.STATUS.CODE %>% as.logical(),
+    ctrc_sys = OCC.CTRC.SYS %>% as.integer(), # FK CTRC_SYSTEMS
+    ctrc_recommendation = OCC.CTRC.RECOMMENDATION %>% as.character(),
+    cwealth_listing = OCC.CWEALTH.LISTING %>% as.character(),
+    data = OCC.DATA %>% as.character(),
+    other = OCC.OTHER %>% as.character(),
+    soil = OCC.SOIL %>% as.character(),
+    surf_geology = OCC.SURF.GEOLOGY %>% as.character(),
+    land_element = OCC.LAND.ELEMENT %>% as.character(),
+    water = OCC.WATER %>% as.character(),
+    drainage = OCC.DRAINAGE %>% as.character(),
+    com_structure = OCC.COM.STRUCTURE %>% as.character(),
+    classification = OCC.CLASSIFICATION %>% as.character(),
+    other_attr = OCC.OTHER.ATTR %>% as.character(),
+
+    # spatial lookups
+    beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character(),
+    beard_map_code = OCC.BEARD.MAP.CODE %>% as.character(),
+    beard_desc = OCC.BEARD.DESC %>% as.character(),
+    ibra_reg_code = OCC.IBRA.REG.CODE %>% as.character(),
+    dola_ref = OCC.DOLA.REF %>% as.character(),
+    bush_forever_site_no = OCC.BUSH.FOREVER.SITE.NO %>% as.integer(),
+    zone_code = OCC.ZONE.CODE %>% as.character(),
+
+    # audit
+    created_by = USERNAME %>% as.character(),
+    created_on = OCC.DATE.ENTERED %>%
+      lubridate::parse_date_time(., orders = orders, tz = tz),
+    changed_on = OCC.DATE.EDITED %>%
+      as.character() %>%
+      lubridate::parse_date_time(., orders = orders, tz = tz)
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  # dplyr::left_join(confidentiality, by = "confidential_id") %>%
+  dplyr::left_join(reliability, by = "reliability_id") %>%
+  dplyr::select(-confidential_id, reliability_id)
+
+tec_occ %>% skimr::skim() %>% reactable::reactable(filterable = TRUE)
+```
+
 # Extract and transform conservation criteria Data from TSC
 Conservation criteria from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TEC.
@@ -180,8 +250,7 @@ and transformed into a usable format for manual mapping to TEC.
 A manual step annotated legacy conservation criteria exported from TEC to 
 conservation criteria IDs in TSC in a spreadsheet.
 
-``` {r extract_tsc_cons_criteria}
-# TSC cons lists applicable to communities
+``` {r extract_tsc_cons_criteria, message=FALSE}
 tsc_conslists_com <- "conservationlist" %>%
   wastdr::wastd_GET(api_url = prod,
                     query = c(scope_communities = TRUE)) %>%
@@ -249,7 +318,7 @@ tec_conscrit <- here::here("tec_conscrit_w_tsc.csv") %>%
   )
 
 tec_ccl <- tec_cons_listing %>%
-  left_join(tec_cons_crit, by = c("criterion_code", "category_code")) 
+  left_join(tec_conscrit, by = c("category_code","criterion_code")) 
 ```
 
 # Load legacy data from TEC into TSC
@@ -554,7 +623,9 @@ tsc_listing_cat_dbcarle %>%
 
 ```
 
+## Occurances
 
+# Upload to data catalogue
 ```{r upload_data_catalogue}
 # This workbook
 upload_file_to_ckan("7942b979-f768-4365-8303-f1b1e00b3a61", "EDA_communities.html")
