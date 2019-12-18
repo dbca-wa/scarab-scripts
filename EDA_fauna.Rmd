@@ -466,7 +466,7 @@ tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_cons_crit, by = c("list_code", "criteria_code")) %>% glimpse
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) %>% glimpse
 ```
 
 # Load legacy data from TFA into TSC
