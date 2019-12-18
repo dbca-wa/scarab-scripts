@@ -39,6 +39,7 @@ Data from the Threatened Flora Database (TFL) is downloaded from the
 [TFL dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database) 
 on the DBCA data catalogue, then extracted and transformed.
 
+## Taxonomy
 ```{r load_tfl, message=TRUE}
 tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
 
@@ -231,7 +232,10 @@ pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
     veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
   )
 # pop_vegclass[1:100, ] %>% DT::datatable(.)
+```
 
+## Conservation listings
+```{r load_tfa_cons, message=FALSE}
 tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
@@ -293,6 +297,176 @@ all_crit_map <- tfl_cons_listing %>%
 readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 ```
 
+## Occurences
+
+```{r load_tfa_occ, message=FALSE}
+default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
+
+flora_occ <- flora_data$DRF_RFR_FORMS %>%
+  dplyr::transmute(
+    # IDs
+    sheetno = SHEETNO %>% as.integer(),
+    name_id = TAXONID %>% as.character(),
+    species_name = SPNAME %>% as.character(),
+    new_pop_ind = NEW.POP.IND %>% as.character(), # Y N
+    pop_id = SHEET.POP.NUMBER %>% as.integer(),
+    subpop_code = SHEET.SUBPOP.CODE %>% as.character(),
+    record_src_code = RECORD.SRC.CODE %>% as.character(),
+
+    # location
+    latitude = GDA94LAT %>% as.double(),
+    longitude = GDA94LONG %>% as.double(),
+    location = LOCATION %>% as.character(),
+    district = DISTRICT %>% as.character(),
+    landdistrict = LANDDISTRICT %>% as.character(),
+    lga_code = LGA.CODE %>% as.character(),
+    nearplace = NEARPLACE %>% as.character(),
+    distance = DISTANCE %>% as.character(),
+    direction = DIRECTION %>% as.character(),
+    purpose1 = PURPOSE1 %>% as.character(),
+    purpose2 = PURPOSE2 %>% as.character(),
+    vesting = VESTING %>% as.character(),
+    land_loc_no = LAND.LOC.NO %>% as.character(),
+    reserve = RESERVE %>% as.character(),
+    class = CLASS %>% as.character(),
+    utility_ref = UTILITY.REF %>% as.character(),
+    co_ord_type_code = CO.ORD.TYPE.CODE %>% as.character(),
+    co_ord_source_code = CO.ORD.SOURCE.CODE %>% as.character(),
+    datum = DATUM %>% as.character(),
+    # latdeg = LATDEG %>% as.character(),
+    # latmin = LATMIN %>% as.character(),
+    # latsec = LATSEC %>% as.character(),
+    # longdeg = LONGDEG %>% as.character(),
+    # longmin = LONGMIN %>% as.character(),
+    # longsec = LONGSEC %>% as.character(),
+    # gps_zone = GPS.ZONE %>% as.character(),
+    # northing = NORTHING %>% as.character(),
+    # easting = EASTING %>% as.character(),
+    no_of_satellites = NO.OF.SATELLITES %>% as.character(),
+    resolution = RESOLUTION %>% as.character(),
+    map_used = MAP.USED %>% as.character(),
+    map_scale = MAP.SCALE %>% as.character(),
+    # dec_latitude = DEC.LATITUDE %>% as.character(),
+    # dec_longitude = DEC.LONGITUDE %>% as.character(),
+
+    # habitat description
+    landform = LANDFORM %>% as.character(),
+    rock_type = ROCK.TYPE %>% as.character(),
+    gravel = GRAVEL %>% as.character(),
+    soil_type = SOIL.TYPE %>% as.character(),
+    soil_color = SOIL.COLOR %>% as.character(),
+    drainage = DRAINAGE %>% as.character(),
+    aspect = ASPECT %>% as.character(),
+    associated_species = ASSOCIATED.SPECIES %>% as.character(),
+    fire_intensity = FIRE.INTENSITY %>% as.character(),
+    fire_year = FIRE.YEAR %>% as.character(),
+    fire_season = FIRE.SEASON %>% as.character(),
+    fire_ind = FIRE.IND %>% as.character(),
+    fencing_status = FENCING.STATUS %>% as.character(),
+    fencing_comments = FENCING.COMMENTS %>% as.character(),
+    roadside_marker_status = ROADSIDE.MARKER.STATUS %>% as.character(),
+    rdside_mkr_comments = RDSIDE.MKR.COMMENTS %>% as.character(),
+    other_comments = OTHER.COMMENTS %>% as.character(),
+
+    # habitat condition
+    habitat_condition = HABITAT.CONDITION %>% as.character(),
+    habitat_notes = HABITAT.NOTES %>% as.character(),
+    soil_condition = SOIL.CONDITION %>% as.character(),
+
+    # site quadrat info
+    quad_num = QUAD.NUM %>% as.character(),
+    quad_size = QUAD.SIZE %>% as.character(),
+    quad_tot_sq_m = QUAD.TOT.SQ.M %>% as.character(),
+    quad_num_mature = QUAD.NUM.MATURE %>% as.character(),
+    quad_num_juvenile = QUAD.NUM.JUVENILE %>% as.character(),
+    quad_num_seedlings = QUAD.NUM.SEEDLINGS %>% as.character(),
+    quad_num_total = QUAD.NUM.TOTAL %>% as.character(),
+
+    # survey / site visit
+    observation_date = OBSERVATION.DATE %>% 
+            lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
+            lubridate::as_datetime(.) %>%
+            lubridate::with_tz(tzone = tz),
+        # ifelse(
+        # is.na(OBSERVATION.DATE),
+        # default_date,
+        # OBSERVATION.DATE %>% 
+        #     lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
+        #     lubridate::as_datetime(.) %>%
+        #     with_tz(tzone = tz)
+        # ),
+    svy_extent = SVY.EXTENT %>% as.character(),
+    svy_effort_area = SVY.EFFORT.AREA %>% as.character(),
+    svy_effort_time = SVY.EFFORT.TIME %>% as.character(),
+    svy_effort = SVY.EFFORT %>% as.character(),
+    landowner_present = LANDOWNER.PRESENT %>% as.character(),
+
+    # observer
+    observer_code = OBSERVER.CODE %>% as.character(),
+    obs_name = OBS.NAME %>% as.character(),
+    observer_phone = OBSERVER.PHONE %>% as.character(),
+    obs_role_code = OBS.ROLE.CODE %>% as.character(),
+    obs_org_code = OBS.ORG.CODE %>% as.character(),
+    obs_org_name = OBS.ORG.NAME %>% as.character(),
+
+    # measurements
+    quality_ind = QUALITY.IND %>% as.character(),
+    count_mthd_code = COUNT.MTHD.CODE %>% as.character(),
+    mature_plants = MATURE.PLANTS %>% as.character(),
+    mature_dead = MATURE.DEAD %>% as.character(),
+    juvenile_plants = JUVENILE.PLANTS %>% as.character(),
+    juvenile_dead = JUVENILE.DEAD %>% as.character(),
+    seedling_plants = SEEDLING.PLANTS %>% as.character(),
+    seedling_dead = SEEDLING.DEAD %>% as.character(),
+    cnt_plant_type_code = CNT.PLANT.TYPE.CODE %>% as.character(),
+    simple_live_tot = SIMPLE.LIVE.TOT %>% as.character(),
+    area_occupied = AREA.OCCUPIED %>% as.character(),
+    area_occupied_method = AREA.OCCUPIED.METHOD %>% as.character(),
+
+    # plant properties
+    clonal = CLONAL %>% as.character(),
+    vegetative = VEGETATIVE %>% as.character(),
+    in_buds = IN.BUDS %>% as.character(),
+    in_flower = IN.FLOWER %>% as.character(),
+    immature_fruit = IMMATURE.FRUIT %>% as.character(),
+    fruit = FRUIT %>% as.character(),
+    dehisced_fruit = DEHISCED.FRUIT %>% as.character(),
+    flower_percentage = FLOWER.PERCENTAGE %>% as.character(),
+    simple_dead_tot = SIMPLE.DEAD.TOT %>% as.integer(),
+    pollinator = POLLINATOR %>% as.character(),
+
+    # population
+    population_condition = POPULATION.CONDITION %>% as.character(),
+    population_notes = POPULATION.NOTES %>% as.character(),
+
+    # taxonomy, voucher specimens
+    voucher_location = VOUCHER.LOCATION %>% as.character(),
+    dupvouch_location = DUPVOUCH.LOCATION %>% as.character(),
+    collector_no = COLLECTOR.NO %>% as.character(),
+    barcode = BARCODE %>% as.character(),
+    vchr_status_code = VCHR.STATUS.CODE %>% as.character(),
+
+    # attachments
+    attached_doc1 = ATTACHED.DOC1 %>% as.character(),
+    attached_doc2 = ATTACHED.DOC2 %>% as.character(),
+    attached_doc3 = ATTACHED.DOC3 %>% as.character(),
+    attached_other_doc = ATTACHED.OTHER.DOC %>% as.character(),
+    report_key = REPORT.KEY %>% as.character(),
+
+    # metadata
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    form_status_code = FORM.STATUS.CODE %>% as.character(),
+    classification_code = CLASSIFICATION.CODE %>% as.character(),
+    florabus_ind = FLORABUS.IND %>% as.character(),
+    licence = LICENCE %>% as.character()
+  )
+```
 
 # Extract and transform conservation criteria Data from TSC
 Conservation criteria Data from TSC is extracted through the TSC API and transformed into a useable
