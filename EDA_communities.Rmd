@@ -545,3 +545,21 @@ tsc_listing_cat_dbcarle %>%
   reactable::reactable(filterable = TRUE) #12
 
 ```
+
+
+```{r upload_data_catalogue}
+# This workbook
+upload_file_to_ckan("7942b979-f768-4365-8303-f1b1e00b3a61", "EDA_communities.html")
+
+# # Manual mapping of conservation criteria
+# upload_file_to_ckan("e1c3119b-f44d-4244-8915-21097bd16b90", 
+#                     here::here("tfa_conscrit_w_tsc.csv"))
+
+# Legacy TFA data
+# d <- ckanr::package_show("threatened-and-priority-fauna-database")
+# upload_to_ckan(
+#   tfa_cons_listings, "Threatened Fauna Conservation Status Gazettal", d$id,
+#   resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f"
+# )
+# same for other TFA legacy data, copy over from data_etl_fauna.Rmd
+```
