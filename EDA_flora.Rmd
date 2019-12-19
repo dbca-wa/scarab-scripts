@@ -635,7 +635,10 @@ tsc_conscat_sp <- "conservationcategory" %>%
   )} %>% 
   dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
 
- # "Priority", "EPBC", "WCA_1991", "FIDMS", "FLORABASE"
+unique(tfl_tcl$list_code)
+# "Priority"  "EPBC"      "WCA_1991"  "FIDMS"     "FLORABASE"
+unique(tfl_tcl$list_code_wa)
+# ""          "IUCN_1994" "IUCN_2001"
 
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
@@ -856,7 +859,7 @@ if (file.exists(datafile_tsc_flora)) {
     wastdr::wastd_parse() %>%
     dplyr::mutate(name_id = name_id %>% as.character())
   
-  # Taxon conservation listings for fauna
+  # Taxon conservation listings for flora
   tsc_tcl_flora <-
     wastdr::wastd_GET("taxon-conservationlisting") %>%
     wastdr::parse_taxon_conservationlisting() %>%
@@ -947,23 +950,6 @@ in the list/category_code.
 These need to be corrected before the manual mapping can be updated and the 
 correct criteria assigned for all species.
 
-```{r}
-tfl_tcl %>%
-  dplyr::select(
-    c(
-      source_id,
-      name_id,
-      list_code_wa,
-      category_code_wa,
-      criteria_code_wa,
-      assigned_as_in_tsc,
-      comments_MP,
-      actions_required
-    )
-  ) %>%
-  reactable::reactable(filterable = TRUE)
-```
-
 ### Conservation listing dates
 
 Below are the dates of the most recent conservation criteria changes made in the
@@ -1028,6 +1014,7 @@ make_tsc_cl_summary <- function(data, cn){
   magrittr::set_colnames("TSC")
 }
 
+
 tsc_cl_sum_priority <- tsc_tcl_flora %>% make_tsc_cl_summary("Priority")
 tsc_cl_sum_iucn1994 <- tsc_tcl_flora %>% make_tsc_cl_summary("IUCN1994")
 tsc_cl_sum_iucn2001 <- tsc_tcl_flora %>% make_tsc_cl_summary("IUCN2001")
@@ -1068,7 +1055,7 @@ IUCN 2012
 tsc_listing_cat_iucn2012 <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"IUCN(2012)"))
 
-tfl_listing_cat_iucn2012 %>% anti_join(tsc_listing_cat_iucn2012,by = "taxon") %>% 
+tfl_listing_cat_iucn2012 %>% anti_join(tsc_listing_cat_iucn2012,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 IUCN 2001
@@ -1077,7 +1064,7 @@ IUCN 2001
 tsc_listing_cat_iucn2001 <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"IUCN(2001)"))
 
-tfl_listing_cat_iucn2001 %>% anti_join(tsc_listing_cat_iucn2001,by = "taxon") %>% 
+tfl_listing_cat_iucn2001 %>% anti_join(tsc_listing_cat_iucn2001,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 IUCN 1994
@@ -1086,7 +1073,7 @@ IUCN 1994
 tsc_listing_cat_iucn1994 <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"IUCN(1994)"))
 
-tfl_listing_cat_iucn1994 %>% anti_join(tsc_listing_cat_iucn1994,by = "taxon") %>% 
+tfl_listing_cat_iucn1994 %>% anti_join(tsc_listing_cat_iucn1994,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 Priority
@@ -1095,16 +1082,16 @@ Priority
 tsc_listing_cat_priority <- tsc_tcl_flora %>%
   dplyr::filter(str_detect(category_cache,"Priority"))
 
-tfl_listing_cat_priority %>% anti_join(tsc_listing_cat_priority,by = "taxon") %>% 
+tfl_listing_cat_priority %>% anti_join(tsc_listing_cat_priority,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 EPBC
 ```{r}
 #### EPBC
 tsc_listing_cat_epbc <- tsc_tcl_flora %>%
-  dplyr::filter(str_detect(category_cache,"EPBC")) ## what is the category_cache made from? List_code or list_code_wa?
+  dplyr::filter(str_detect(category_cache,"EPBC")) 
 
-tfl_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = "taxon") %>% 
+tfl_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 
@@ -1113,31 +1100,31 @@ The following tables show any conservation listings in TSC which are not in TFA,
 IUCN 2012
 ```{r }
 #### IUCN 2012
-tsc_listing_cat_iucn2012 %>% anti_join(tfl_listing_cat_iucn2012,by = "taxon") %>% 
+tsc_listing_cat_iucn2012 %>% anti_join(tfl_listing_cat_iucn2012,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 IUCN 2001
 ```{r}
 #### IUCN 2001
-tsc_listing_cat_iucn2001 %>% anti_join(tfl_listing_cat_iucn2001,by = "taxon") %>% 
+tsc_listing_cat_iucn2001 %>% anti_join(tfl_listing_cat_iucn2001,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 IUCN 1994
 ```{r}
 #### IUCN 1994
-tsc_listing_cat_iucn1994 %>% anti_join(tfl_listing_cat_iucn1994,by = "taxon") %>% 
+tsc_listing_cat_iucn1994 %>% anti_join(tfl_listing_cat_iucn1994,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 IUCN Priority
 ```{r}
 #### Priority
-tsc_listing_cat_priority %>% anti_join(tfl_listing_cat_priority,by = "taxon") %>% 
+tsc_listing_cat_priority %>% anti_join(tfl_listing_cat_priority,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 EPBC
 ```{r}
 #### EPBC
-tsc_listing_cat_epbc %>% anti_join(tfl_listing_cat_epbc,by = "taxon") %>% 
+tsc_listing_cat_epbc %>% anti_join(tfl_listing_cat_epbc,by = c("source_id","effective_from","status","effective_to")) %>% 
   reactable::reactable(filterable = T)
 ```
 
