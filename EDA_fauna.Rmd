@@ -1038,23 +1038,6 @@ in the list/category_code.
 These need to be corrected before the manual mapping can be updated and the 
 correct criteria assigned for all species.
 
-```{r}
-tfa_tcl_edit %>%
-  dplyr::select(
-    c(
-      source_id,
-      name_id,
-      list_code,
-      category_code,
-      criteria_code,
-      assigned_as_in_tsc,
-      comments_MP,
-      actions
-    )
-  ) %>%
-  reactable::reactable(filterable = TRUE)
-```
-
 ### Conservation listing dates
 
 Below are the dates of the most recent conservation criteria changes made in the

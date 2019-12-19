@@ -481,22 +481,7 @@ tec_conscrit %>%
 In addition, some conservation criteria could not be mapped as they do not exist 
 in the list/category_code. 
 These need to be corrected before the manual mapping can be updated and the 
-correct criteria assigned for all species.
-
-```{r}
-tec_ccl %>%
-  dplyr::select(
-    c(com_id,
-      effective_from,
-      category_code,
-      criteria_code,
-      assigned_as_in_tsc,
-      comments_MP,
-      actions
-    )
-  ) %>%
-  reactable::reactable(filterable = TRUE)
-```
+correct criteria assigned for all communities.
 
 ### Conservation listing dates
 
