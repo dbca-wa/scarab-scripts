@@ -183,7 +183,7 @@ populations <- tfl_data$DRF_POPULATION %>%
     land_mgr_notes = LAND.MGR.NOTES %>% as.character()
   )
 
-pop_forms <- tfl_data$DRF_POP_FORMS %>%
+pop_forms <- tfl_data$DRF_POP_FORMS %>% #This is the paper form, not the shape of the population!
   dplyr::transmute(
     pop_forms_id = POP.FORMS.ID %>% as.character(),
     pop_id = POP.ID %>% as.character(),
