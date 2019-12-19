@@ -283,12 +283,12 @@ tfa_occ <- tfa_raw %>% dplyr::transmute(
     o_date = ifelse(
         Date == "",
         default_date,
-        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 18L)
+        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 19L)
         ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     o_time = ifelse(
         Time == "",
         default_date,
-        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 18L)
+        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 19L)
         ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     datetime = ifelse(
         is.na(o_date),
@@ -409,14 +409,12 @@ tfa_tae <- tfa_occ %>%
     accuracy = accuracy,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   ) %>%
-  dplyr::arrange(taxon) %>% glimpse
+  dplyr::arrange(taxon)
 
 occ_file <- here::here("data", "occ.Rdata")
 save(tfa_occ, tfa_tae, file=occ_file)
 if (file.exists(occ_file)) load(occ_file)
 
-# Big Fauna: taxa with a lot of sightings
-tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
 ```
 
 # Extract and transform conservation criteria Data from TSC
@@ -778,7 +776,7 @@ tfa_eoo %>%
 ```
 
 
-### Upload occurances
+### Upload occurrences
 A single record (taxon area encounter), or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
 ```{r fauna_single_occ, eval=F}
@@ -789,6 +787,8 @@ wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api
 
 ```{r, eval = FALSE}
 tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+
+tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 
 tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurances
 ```
@@ -1294,6 +1294,9 @@ tfa_skim %>%
   filter(n_missing > 0) %>%
   # select(-stat, -level, -formatted) %>%
   reactable::reactable(filterable = TRUE)
+
+# Big Fauna: taxa with a lot of sightings
+tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
 ```
 
 #### Taxonomic caveats
