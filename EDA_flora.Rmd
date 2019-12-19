@@ -235,7 +235,7 @@ pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
 ```
 
 ## Conservation listings
-```{r load_tfa_cons, message=FALSE}
+```{r load_tfa_cons, message=TRUE}
 tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
@@ -298,7 +298,7 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 ```
 
 ## Occurences
-```{r load_tfa_occ, message=FALSE}
+```{r load_tfa_occ, message=TRUE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
@@ -564,7 +564,7 @@ tfl_tae <- tfl_occ %>%
   )
 
 ## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
-tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) %>% reactable::reactable(filterable = TRUE)
+tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
 ```
 
 # Extract and transform conservation criteria Data from TSC
@@ -601,7 +601,7 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
       criteria_code_wa = col_character(),
       assigned_as_in_tsc = col_character(),
       comments_MP = col_character(),
-      actions = col_character()
+      actions_required = col_character()
     )
   )  %>%
   dplyr::mutate(
@@ -797,7 +797,7 @@ For further details on the methodology behind the movement of EOO data, please f
 ```{r ex_upload_one_eoo, eval=F}
 one_taxon_eoo <- tibble::tibble(
   name_id = 24162,
-  eoo = eoo_polygon(fauna_occ, nid = 24162) %>% sfc_geojson()
+  eoo = eoo_polygon(tfl_occ, nid = 24162) %>% sfc_geojson()
 )
 wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
 ```
@@ -827,8 +827,8 @@ tfl_eoo %>%
 
 ### Upload TAEs to TSC
 ```{r flora_occ_tsc_upload, eval=F}
-flora_tae10 = flora_tae[95:100,]
-flora_tae[33000:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfl_tae10 = tlf_tae[95:100,]
+tfl_tae[33000:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
 ## Conservation Documents
@@ -868,7 +868,7 @@ if (file.exists(datafile_tsc_flora)) {
 ```
 
 # Compare legacy from TFL to migrated data from TSC
-This section provides an automated comparison between original data from TFL
+This section provides an automated comparison between original data from TFL,
 and TFL data as uploaded into TSC. 
 
 Data custodians should be able to comprehend this section, and be able to verify 
@@ -897,9 +897,9 @@ Flora use a live copy of WACensus names, therefore we don't need to QA taxonomy.
 
 ## Conservation Listing
 
-TFL has `r nrow(tfl_tcl)` conservation listings of `r tfl_tcl_unique_taxa`.
+TFL has `r nrow(tfl_tcl)` conservation listings of `r tfl_tcl_unique_taxa` unique taxa.
 TSC has `r nrow(tsc_tcl_flora)` flora conservation listings of 
-`r tsc_tcl_unique_taxa`, including plants *sensu latu* but excluding animals.
+`r tsc_tcl_unique_taxa` unique taxa.
 
 ### TFL conservation listings not in TSC
 
@@ -958,7 +958,7 @@ tfl_tcl %>%
       criteria_code_wa,
       assigned_as_in_tsc,
       comments_MP,
-      actions
+      actions_required
     )
   ) %>%
   reactable::reactable(filterable = TRUE)
@@ -1004,7 +1004,7 @@ cl_corner_dates %>% reactable::reactable()
 
 Summary of the number of conservation listings for each list.
 
-Discrepancies in numbers indicate the need for a closer review.
+Discrepancies in numbers indicate the need for a closer review of category_code and criteria_code in TFL.
 
 Equality of numbers does not prove absence of equal numbers of false positives
 and false negatives.
