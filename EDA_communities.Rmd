@@ -390,7 +390,7 @@ format.
 
 Expand the code block below to view the process.
 
-```{r load_tsc, message=FALSE}
+```{r load_tsc, message=FALSE,warning=FALSE}
 # TSC communities
 # tsc_comm <- "community" %>%
 #   wastdr::wastd_GET(
