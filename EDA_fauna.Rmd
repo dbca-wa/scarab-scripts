@@ -415,8 +415,6 @@ occ_file <- here::here("data", "occ.Rdata")
 save(tfa_occ, tfa_tae, file=occ_file)
 if (file.exists(occ_file)) load(occ_file)
 
-tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
-
 # Big Fauna: taxa with a lot of sightings
 tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
 ```
@@ -779,14 +777,21 @@ tfa_eoo %>%
   wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
 ```
 
+
+### Upload occurances
 A single record (taxon area encounter), or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
 ```{r fauna_single_occ, eval=F}
 # 25755
-taxonpoint = rjson::fromJSON('[{"taxon": 25757, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,    "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT(119.732234 -32.35756)"}]')
-wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api_url = dev)
+taxonpoint = rjson::fromJSON('[{"taxon": 25757, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,  "encounter_type":1,  "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT(119.732234 -32.35756)"}]')
+wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
+```{r, eval = FALSE}
+tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+
+tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurances
+```
 ## Conservation Documents
 
 ## Fire History
