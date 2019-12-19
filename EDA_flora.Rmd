@@ -383,7 +383,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
 
     # survey / site visit
     observation_date = OBSERVATION.DATE %>% 
-            lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
+            lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 19L) %>% 
             lubridate::as_datetime(.) %>%
             lubridate::with_tz(tzone = tz),
         # ifelse(
