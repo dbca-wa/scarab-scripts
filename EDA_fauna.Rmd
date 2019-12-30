@@ -259,7 +259,8 @@ all_crit_map <- tfa_cons_listings %>%
   dplyr::group_by(list_code) %>%
   dplyr::distinct(criteria_code) %>%
   dplyr::arrange(list_code, criteria_code) %>%
-  dplyr::select(list_code, criteria_code)
+  dplyr::select(list_code, criteria_code) %>% 
+  ungroup()
 readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv"))
 ```
 
@@ -269,7 +270,7 @@ Occurance data is extracted and transformed.
 
 Mallee Fowl data is extracted seperatly and exported, to be stored as a csv file on the data catalogue 
 
-[Mallee Fowl] (https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
+[Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
 
 ```{r load_tfa_occ, message=FALSE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
@@ -780,7 +781,7 @@ one_taxon_eoo <- tibble::tibble(
 wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
 ```
 
-### Upload EOOs to TSC
+### Upload EOOs
 
 ```{r prepare eoo, eval=F}
 # extract all eoo
@@ -804,7 +805,7 @@ tfa_eoo %>%
 ```
 
 
-### Upload occurrences
+### Upload taxon area encounters
 A single record (taxon area encounter), or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
 ```{r fauna_single_occ, eval=F}
@@ -1324,7 +1325,7 @@ tfa_skim %>%
   reactable::reactable(filterable = TRUE)
 
 # Big Fauna: taxa with a lot of sightings
-tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400)
+tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400) %>% ungroup()
 ```
 
 #### Taxonomic caveats
@@ -1373,8 +1374,31 @@ tfa_occ_no_nameid <- tfa_occ %>%
 tfa_occ_no_nameid %>% reactable::reactable()
 ```
 
-There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names without NameID.
+#### Missing Species Code
+```{r missing_name_id}
+tfa_occ_no_specode <- tfa_occ %>% 
+    filter(species_code == 0) %>% 
+    select(scientific_name) %>% 
+    unique()
+tfa_occ_no_nameid %>% reactable::reactable()
+```
+
+There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names without NameID, and `r nrow(tfa_occ_no_specode)` distinct scientific fauna names without a Species Code.
 Any records listed here need to be fixed in the original Threatened Fauna database.
+
+#### Default/ missing dates
+```{r missing coordinates}
+tfa_occ_no_date<- tfa_occ %>% 
+    filter(o_date == "1900-01-01")
+tfa_occ_no_date %>% reactable::reactable()
+```
+
+#### Default/ missing times
+```{r missing coordinates}
+tfa_occ_no_time<- tfa_occ %>% 
+    filter(o_time == "1900-01-01 00:00:00")
+tfa_occ_no_time %>% reactable::reactable()
+```
 
 #### Missing coordinates
 ```{r missing coordinates}
@@ -1385,6 +1409,35 @@ tfa_occ_no_latlng %>% reactable::reactable()
 
 There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
 
+```{r missing coordinates}
+tfa_occ_no_latlng_w_ne <- tfa_occ %>% 
+  filter(is.na(latitude) | is.na(longitude)) %>% 
+  filter((northing != "NA") | (easting!= "NA"))
+tfa_occ_no_latlng_w_ne %>% reactable::reactable()
+```
+
+There are `r nrow(tfa_occ_no_latlng_w_ne)` distinct fauna records with missing latitude or longitude, which have northings and eastings.
+
+```{r datum_tally}
+datum_tally <- tfa_occ %>%
+  dplyr::group_by(datum) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+datum_tally %>% reactable::reactable()
+```
+
+There are `r nrow(datum_tally)` different datums used across all distict fauna records. 
+
+```{r datum_blank}
+datum_blank<- tfa_occ %>% 
+    filter(datum == "")
+```
+
+There are `r nrow(datum_blank)` distinct fauna records with missing datum.
+
+TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
+
 #### NameID mismatch
 TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
 
@@ -1394,19 +1447,81 @@ If this weren't the case, this analysis should exclude the non-trustworthy recor
 
 ### TFA occurances not in TSC
 
-```{r tally_occ,eval=FALSE}
+```{r tally_tfa_occ}
 tfa_tally <- tfa_occ %>%
-  dplyr::group_by(name_id, scientific_name) %>%
+  dplyr::group_by(name_id, scientific_name) %>% 
   dplyr::tally() %>%
-  dplyr::arrange(desc(n))
-
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
 tfa_tally %>% reactable::reactable()
 
+tfa_tally_top <- tfa_tally %>% 
+  top_n(20,n)
+
+tfa_tally_btm <- tfa_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) # There are actually 151 species with an occurance of 1
 ```
 
-There are ???? fauna taxa with occurrences.
+There are `r nrow(tfa_tally)` fauna taxa with occurrences.
 
 ### TSC occurences not in TFA
+
+```{r tally_tsc_occ,eval=FALSE}
+tsc_tally <- tsc_occ %>%
+  dplyr::group_by(name_id, scientific_name) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+tsc_tally %>% reactable::reactable()
+
+tsc_tally_top <- tsc_tally %>% 
+  top_n(20,n)
+
+tsc_tally_btm <- tsc_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) # There are actually 151 species with an occurance of 1
+```
+
+## TFA occurences not in TAE
+```{r tally_tfa_occ}
+tae_tally <- tfa_tae %>%
+  dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() %>% 
+  dplyr::rename(name_id = taxon)
+tae_tally %>% reactable::reactable()
+
+tae_tally_top <- tae_tally %>% 
+  top_n(20,n)
+
+tae_tally_btm <- tae_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) # There are actually 151 species with an occurance of 1
+
+missing_species <- tae_tally %>% anti_join(tfa_tally,by = "name_id")
+
+tfa_tally %>%
+  dplyr::rename(tfa = n) %>% 
+  left_join(tae_tally,by = "name_id") %>% 
+  dplyr::rename(tae = n) %>% 
+  filter_(~tfa != tae) %>% reactable::reactable()
+```
+
+There are `r nrow(missing_species)` species missing from tfa_tae when compared to tfa_occ 
+One species has different numbers of occurrences between tfa_occ and tfa_tae, and another two species have their populations combined (see NOTE). 
+
+** NOTE** In tfa_tae Ninox connivens and Ixobrychus flavicollis australis are their combined north and south subpops from tfa_occ.
+
+```{r tally_tfa_occ}
+tfa_possum <- tfa_occ %>% filter(name_id == 24166) 
+tae_possum <- tfa_tae %>% filter(taxon == 24166)
+
+possum_diff <- tfa_possum %>% 
+  anti_join(tae_possum,by = c("id"="source_id")) %>% reactable::reactable()
+```
+The two occurances above do not appear in tfa_tae becasue there is no lat or long data, which is a criteria for taxon area encounters
 
 ## Conservation Documents
 
