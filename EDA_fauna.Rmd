@@ -265,6 +265,12 @@ readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv")
 
 ## Occurences
 
+Occurance data is extracted and transformed. 
+
+Mallee Fowl data is extracted seperatly and exported, to be stored as a csv file on the data catalogue 
+
+[Mallee Fowl] (https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
+
 ```{r load_tfa_occ, message=FALSE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
                                            orders = "ymd HMS",
@@ -355,20 +361,20 @@ tfa_occ <- tfa_raw %>% dplyr::transmute(
     occurence_not_published = UnPublished %>% as.logical(),
     occurrence_citation = ReportTitle %>% as.character(),
     # occurrence_citation_author = Author %>% as.character(),
-    malleefowl_MFeggsH = MFeggsH %>% as.character(),
-    malleefowl_MFeggsU = MFeggsU %>% as.character(),
-    malleefowl_MFmoundU = MFmoundU %>% as.character(),
-    malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
-    malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
-    malleefowl_MFmoundI = MFmoundI %>% as.character(),
-    malleefowl_MFMage = MFMage %>% as.character(),
-    malleefowl_MFMdiam = MFMdiam %>% as.character(),
-    malleefowl_MFMheight = MFMheight %>% as.character(),
-    malleefowl_MFMwidth = MFMwidth %>% as.character(),
-    malleefowl_MFMdepth = MFMdepth %>% as.character(),
-    malleefowl_MFMsoil = MFMsoil %>% as.character(),
-    malleefowl_MFMcomment = MFMcomment %>% as.character(),
-    malleefowl_MFextract = MFextract %>% as.character()
+    # malleefowl_MFeggsH = MFeggsH %>% as.character(),
+    # malleefowl_MFeggsU = MFeggsU %>% as.character(),
+    # malleefowl_MFmoundU = MFmoundU %>% as.character(),
+    # malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
+    # malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
+    # malleefowl_MFmoundI = MFmoundI %>% as.character(),
+    # malleefowl_MFMage = MFMage %>% as.character(),
+    # malleefowl_MFMdiam = MFMdiam %>% as.character(),
+    # malleefowl_MFMheight = MFMheight %>% as.character(),
+    # malleefowl_MFMwidth = MFMwidth %>% as.character(),
+    # malleefowl_MFMdepth = MFMdepth %>% as.character(),
+    # malleefowl_MFMsoil = MFMsoil %>% as.character(),
+    # malleefowl_MFMcomment = MFMcomment %>% as.character(),
+    # malleefowl_MFextract = MFextract %>% as.character()
     # Field* are empty, skipping:
     # Field1 = Field1 %>% as.character(),
     # Field2 = Field2 %>% as.character(),
@@ -383,6 +389,28 @@ tfa_occ <- tfa_raw %>% dplyr::transmute(
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible() 
+
+## Put Malleefowl in separate csv file and add to data catalogue
+malleefowl_data <- tfa_raw %>% dplyr::transmute(
+  id = DBNo %>% as.integer(),
+  malleefowl_MFeggsH = MFeggsH %>% as.character(),
+  malleefowl_MFeggsU = MFeggsU %>% as.character(),
+  malleefowl_MFmoundU = MFmoundU %>% as.character(),
+  malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
+  malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
+  malleefowl_MFmoundI = MFmoundI %>% as.character(),
+  malleefowl_MFMage = MFMage %>% as.character(),
+  malleefowl_MFMdiam = MFMdiam %>% as.character(),
+  malleefowl_MFMheight = MFMheight %>% as.character(),
+  malleefowl_MFMwidth = MFMwidth %>% as.character(),
+  malleefowl_MFMdepth = MFMdepth %>% as.character(),
+  malleefowl_MFMsoil = MFMsoil %>% as.character(),
+  malleefowl_MFMcomment = MFMcomment %>% as.character(),
+  malleefowl_MFextract = MFextract %>% as.character()
+  ) %>% 
+  na.omit() %>% 
+  dplyr::left_join(tfa_occ,by = "id")
+  readr::write_csv(malleefowl_data, path = here::here("data", "malleefowl_data.csv"))
 
 # Taxon area encounter
 tfa_tae <- tfa_occ %>%
@@ -1346,15 +1374,13 @@ tfa_occ_no_nameid %>% reactable::reactable()
 ```
 
 There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names without NameID.
-Some are known to TSC: E.g. the Western Brush Wallaby, Notamacropus irma, 
-NameID [48022](https://tsc.dbca.wa.gov.au/species/48022/).
-These records need to be fixed in the original Threatened Fauna database.
+Any records listed here need to be fixed in the original Threatened Fauna database.
 
 #### Missing coordinates
 ```{r missing coordinates}
 tfa_occ_no_latlng <- tfa_occ %>% 
     filter(is.na(latitude) | is.na(longitude))
-tfa_occ_no_latlng %>% head %>% kable
+tfa_occ_no_latlng %>% reactable::reactable()
 ```
 
 There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
