@@ -41,6 +41,7 @@ on the DBCA data catalogue, then extracted and transformed.
 ## Taxonomy
 ```{r load_tfa, message=FALSE}
 tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+names_tfa <- as.data.frame(names(tfa_data))
 
 snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
   ckanr::resource_show() %>%
@@ -277,6 +278,7 @@ default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
                                            orders = "ymd HMS",
                                            tz = tz)
 tfa_raw <- tfa_data$`Fauna Records` 
+names_tfa_raw <- (as.data.frame(names(tfa_raw)))
 
 # taxon occurances
 tfa_occ <- tfa_raw %>% dplyr::transmute(
@@ -391,6 +393,8 @@ tfa_occ <- tfa_raw %>% dplyr::transmute(
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible() 
 
+names_tfa_occ <- (as.data.frame(names(tfa_occ)))
+
 ## Put Malleefowl in separate csv file and add to data catalogue
 malleefowl_data <- tfa_raw %>% dplyr::transmute(
   id = DBNo %>% as.integer(),
@@ -419,7 +423,7 @@ tfa_tae <- tfa_occ %>%
   # dplyr::left_join(taxa, by="name_id") %>% 
   dplyr::transmute(
     taxon = name_id,
-    code = location_name,
+    code = location_id,
     name = location_name,
     description = glue::glue(
         "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}. ",
@@ -439,6 +443,8 @@ tfa_tae <- tfa_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   ) %>%
   dplyr::arrange(taxon)
+
+names_tfa_tae <- (as.data.frame(names(tfa_tae)))
 
 occ_file <- here::here("data", "occ.Rdata")
 save(tfa_occ, tfa_tae, file=occ_file)
@@ -1375,7 +1381,7 @@ tfa_occ_no_nameid %>% reactable::reactable()
 ```
 
 #### Missing Species Code
-```{r missing_name_id}
+```{r missing_species_code}
 tfa_occ_no_specode <- tfa_occ %>% 
     filter(species_code == 0) %>% 
     select(scientific_name) %>% 
@@ -1387,14 +1393,14 @@ There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names without Na
 Any records listed here need to be fixed in the original Threatened Fauna database.
 
 #### Default/ missing dates
-```{r missing coordinates}
+```{r missing dates}
 tfa_occ_no_date<- tfa_occ %>% 
     filter(o_date == "1900-01-01")
 tfa_occ_no_date %>% reactable::reactable()
 ```
 
 #### Default/ missing times
-```{r missing coordinates}
+```{r missing times}
 tfa_occ_no_time<- tfa_occ %>% 
     filter(o_time == "1900-01-01 00:00:00")
 tfa_occ_no_time %>% reactable::reactable()
@@ -1409,7 +1415,7 @@ tfa_occ_no_latlng %>% reactable::reactable()
 
 There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
 
-```{r missing coordinates}
+```{r has eastnorthings}
 tfa_occ_no_latlng_w_ne <- tfa_occ %>% 
   filter(is.na(latitude) | is.na(longitude)) %>% 
   filter((northing != "NA") | (easting!= "NA"))
@@ -1427,7 +1433,7 @@ datum_tally <- tfa_occ %>%
 datum_tally %>% reactable::reactable()
 ```
 
-There are `r nrow(datum_tally)` different datums used across all distict fauna records. 
+There are `r nrow(datum_tally)` different datums used across all distinct fauna records. 
 
 ```{r datum_blank}
 datum_blank<- tfa_occ %>% 
@@ -1463,7 +1469,9 @@ tfa_tally_btm <- tfa_tally %>%
   slice(1:20) # There are actually 151 species with an occurance of 1
 ```
 
-There are `r nrow(tfa_tally)` fauna taxa with occurrences.
+There are `r nrow(tfa_tally)` fauna taxa with occurrences in TFA.
+
+TODO Once we have data out of TSC compare tally of occurances for top 20 and bottom 20 species
 
 ### TSC occurences not in TFA
 
@@ -1484,14 +1492,13 @@ tsc_tally_btm <- tsc_tally %>%
 ```
 
 ## TFA occurences not in TAE
-```{r tally_tfa_occ}
+```{r tally_tfa_tae}
 tae_tally <- tfa_tae %>%
   dplyr::group_by(taxon) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup() %>% 
   dplyr::rename(name_id = taxon)
-tae_tally %>% reactable::reactable()
 
 tae_tally_top <- tae_tally %>% 
   top_n(20,n)
@@ -1506,22 +1513,21 @@ tfa_tally %>%
   dplyr::rename(tfa = n) %>% 
   left_join(tae_tally,by = "name_id") %>% 
   dplyr::rename(tae = n) %>% 
-  filter_(~tfa != tae) %>% reactable::reactable()
+  filter(tfa != tae) %>% reactable::reactable()
 ```
 
-There are `r nrow(missing_species)` species missing from tfa_tae when compared to tfa_occ 
+There are `r nrow(missing_species)` species missing from tfa_tae when compared to tfa_occ. 
 One species has different numbers of occurrences between tfa_occ and tfa_tae, and another two species have their populations combined (see NOTE). 
 
 ** NOTE** In tfa_tae Ninox connivens and Ixobrychus flavicollis australis are their combined north and south subpops from tfa_occ.
 
-```{r tally_tfa_occ}
+```{r tally_tfa_possum}
 tfa_possum <- tfa_occ %>% filter(name_id == 24166) 
 tae_possum <- tfa_tae %>% filter(taxon == 24166)
-
-possum_diff <- tfa_possum %>% 
+tfa_possum %>% 
   anti_join(tae_possum,by = c("id"="source_id")) %>% reactable::reactable()
 ```
-The two occurances above do not appear in tfa_tae becasue there is no lat or long data, which is a criteria for taxon area encounters
+The two occurances above do not appear in tfa_tae because there is no lat or long data, which is a criteria for taxon area encounters
 
 ## Conservation Documents
 
