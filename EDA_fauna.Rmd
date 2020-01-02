@@ -277,11 +277,11 @@ Mallee Fowl data is extracted seperatly and exported, to be stored as a csv file
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
                                            orders = "ymd HMS",
                                            tz = tz)
-tfa_raw <- tfa_data$`Fauna Records` 
-names_tfa_raw <- (as.data.frame(names(tfa_raw)))
+tfa_rec <- tfa_data$`Fauna Records` 
+names_tfa_rec <- (as.data.frame(names(tfa_rec)))
 
 # taxon occurances
-tfa_occ <- tfa_raw %>% dplyr::transmute(
+tfa_occ <- tfa_rec %>% dplyr::transmute(
     id = DBNo %>% as.integer(),
     # district_db = DistDB %>% as.integer(),
     # district_db_no = DistDBNo %>% as.character(),
