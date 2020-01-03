@@ -339,8 +339,8 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     # longmin = LONGMIN %>% as.character(),
     # longsec = LONGSEC %>% as.character(),
     # gps_zone = GPS.ZONE %>% as.character(),
-    # northing = NORTHING %>% as.character(),
-    # easting = EASTING %>% as.character(),
+    northing = NORTHING %>% as.character(),
+    easting = EASTING %>% as.character(),
     no_of_satellites = NO.OF.SATELLITES %>% as.character(),
     resolution = RESOLUTION %>% as.character(),
     map_used = MAP.USED %>% as.character(),
@@ -562,6 +562,8 @@ tfl_tae <- tfl_occ %>%
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   )
+
+names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
 ## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
 tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
@@ -1130,10 +1132,34 @@ tsc_listing_cat_epbc %>% anti_join(tfl_listing_cat_epbc,by = c("source_id","effe
 
 ## Occurrences
 
+#### Date/ Location caveats
+This section lists data issues which need to be fixed at the source (here, in legacy TFL).
+
+Where a time is missing, we'll default to midnight (00:00).
+Where a date is missing, we'll default to 1900-01-01.
+
+While this modifies the original data, the consequences will not have a dramatic effect on analyses for
+conservation management purposes:
+
+* A safe default of the observation time (midnight) could introduce an error of up to one day. 
+  Compared to the time frame considered (past 10-50 years of observations relative to time of 
+  calculation), this error is minuscule.
+* A safe default for missing dates (1900-01-01) will both exclude those observations from any recent
+  observations (past 10-50 years), but still make the data available to identify the records for the
+  purpose of backfilling a credible date.
+
+Please review legacy data until the following numbers are all zero (or accept default handling):
+
+* `r tfl_occ %>% dplyr::filter(created_date == "") %>% nrow()` records lack an explicit date\time and were 
+  defaulted to midnight AWST.
+* `r tfl_occ %>% dplyr::filter(is.na(latitude)) %>% nrow` latitudes are missing.
+* `r tfl_occ %>% dplyr::filter(is.na(longitude)) %>% nrow` longitudes are missing.
+* `r tfl_occ %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the minus sign and turn up in China.
+
 There are `r nrow(tfl_occ)` species occurrence records (encounters)in TFL. 
 The following columns are incomplete.
 
-```{r fauna_missing_values}
+```{r flora_missing_values}
 tfl_skim <- tfl_occ %>% skimr::skim()
 
 tfl_skim %>%
@@ -1142,8 +1168,7 @@ tfl_skim %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-### Flora occurrences missing a NameID
-
+#### Missing NameID
 ```{r missing_name_id}
 tfl_occ_no_nameid <- tfl_occ %>% 
     filter(name_id == 0) %>% 
@@ -1152,18 +1177,62 @@ tfl_occ_no_nameid <- tfl_occ %>%
 tfl_occ_no_nameid %>% reactable::reactable()
 ```
 
-There are `r nrow(tfl_occ_no_nameid)` distinct scientific flora names without NameID.
+#### Missing PopID
+```{r missing_species_name}
+tfl_occ_no_popid <- tfl_occ %>% 
+    filter(pop_id == 0) %>% 
+    select(species_name) %>% 
+    unique()
+tfl_occ_no_popid %>% reactable::reactable()
+```
 
-## Missing coordinates
+There are `r nrow(tfl_occ_no_nameid)` distinct scientific flora names without NameID, and `r nrow(tfl_occ_no_popid)` distinct scientific flora names without a PopID.
+Any records listed here need to be fixed in the original Threatened Flora database.
 
+#### Default/ missing date/time
+```{r missing datetime}
+tfl_occ_no_datetime<- tfl_occ %>% 
+    filter(created_date == "")
+tfl_occ_no_datetime %>% reactable::reactable()
+```
+
+#### Missing coordinates
 ```{r missing coordinates}
 tfl_occ_no_latlng <- tfl_occ %>% 
     filter(is.na(latitude) | is.na(longitude))
-tfl_occ_no_latlng %>% head %>% reactable::reactable()
+tfl_occ_no_latlng %>% reactable::reactable()
 ```
 
 There are `r nrow(tfl_occ_no_latlng)` distinct flora records with missing latitude or longitude.
-These records need to be fixed in the original Threatened Flora database.
+
+```{r has eastnorthings}
+tfl_occ_no_latlng_w_ne <- tfl_occ %>% 
+  filter(is.na(latitude) | is.na(longitude)) %>% 
+  filter((northing != "NA") | (easting!= "NA"))
+tfl_occ_no_latlng_w_ne %>% reactable::reactable()
+```
+
+There are `r nrow(tfl_occ_no_latlng_w_ne)` distinct flora records with missing latitude or longitude, which have northings and eastings.
+
+```{r datum_tally}
+datum_tally <- tfl_occ %>%
+  dplyr::group_by(datum) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+datum_tally %>% reactable::reactable()
+```
+
+There are `r nrow(datum_tally)` different datums used across all distinct fauna records. 
+
+```{r datum_blank}
+datum_blank<- tfl_occ %>% 
+    filter(datum == "")
+```
+
+There are `r nrow(datum_blank)` distinct fauna records with missing datum.
+
+TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
 
 ## NameID mismatch
 TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
@@ -1174,18 +1243,69 @@ If this weren't the case, this analysis should exclude the non-trustworthy recor
 
 ### TFL occurances not in TSC
 
-```{r tally_occ,eval=FALSE}
+```{r tally_tfl_occ}
 tfl_tally <- tfl_occ %>%
-  dplyr::group_by(name_id, species_name) %>%
+  dplyr::group_by(name_id, species_name) %>% 
   dplyr::tally() %>%
-  dplyr::arrange(desc(n))
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+tfl_tally %>% reactable::reactable()
 
-tfl_tally %>% head(n = 20) %>% reactable::reactable()
+tfl_tally_top <- tfl_tally %>% 
+  top_n(20,n)
+
+tfl_tally_btm <- tfl_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) # There are actually 301 species with an occurance of 1
 ```
 
-There are ???? flora taxa with occurrences.
+There are `r nrow(tfl_tally)` fauna taxa with occurrences in tfl.
 
-### TSC occurences not in TFA
+TODO Once we have data out of TSC compare tally of occurances for top 20 and bottom 20 species
+
+### TSC occurences not in tfl
+
+```{r tally_tsc_occ,eval=FALSE}
+tsc_tally <- tsc_occ %>%
+  dplyr::group_by(name_id, species_name) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+tsc_tally %>% reactable::reactable()
+
+tsc_tally_top <- tsc_tally %>% 
+  top_n(20,n)
+
+tsc_tally_btm <- tsc_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) 
+```
+
+## tfl occurences not in TAE
+```{r tally_tfl_tae}
+tae_tally <- tfl_tae %>%
+  dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() %>% 
+  dplyr::rename(name_id = taxon)
+
+tae_tally_top <- tae_tally %>% 
+  top_n(20,n)
+
+tae_tally_btm <- tae_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) # There are actually 301 species with an occurance of 1
+
+missing_species <- tae_tally %>% anti_join(tfl_tally,by = "name_id")
+
+tfl_tally %>%
+  dplyr::rename(tfl = n) %>% 
+  left_join(tae_tally,by = "name_id") %>% 
+  dplyr::rename(tae = n) %>% 
+  filter(tfl != tae) %>% reactable::reactable()
+```
+There are `r nrow(missing_species)` species missing from tfa_tae when compared to tfa_occ. 
 
 ## Conservation Documents
 
