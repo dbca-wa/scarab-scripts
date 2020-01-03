@@ -395,8 +395,12 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
 
 names_tfa_occ <- (as.data.frame(names(tfa_occ)))
 
+tfa_habitat <- tfa_occ %>% 
+  select(c(id,landform_id, vegetation_type_id,VegCode,VegTypeName,vegetation_type)) %>% 
+  dplyr::rename(source_id = id) %>% distinct()
+  
 ## Put Malleefowl in separate csv file and add to data catalogue
-malleefowl_data <- tfa_raw %>% dplyr::transmute(
+malleefowl_data <- tfa_rec %>% dplyr::transmute(
   id = DBNo %>% as.integer(),
   malleefowl_MFeggsH = MFeggsH %>% as.character(),
   malleefowl_MFeggsU = MFeggsU %>% as.character(),
@@ -440,10 +444,12 @@ tfa_tae <- tfa_occ %>%
     area_type = 30,
     geolocation_capture_method='gps-point',
     accuracy = accuracy,
-    point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
+    point = glue::glue("SRID=4326;POINT({longitude} {latitude})"),
+    associated_species = glue::glue("{associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5} {associated_flora_species_6}"),
+    # observation_details = glue::glue("{observation_method} {observation_type} {secondary_signs} {observation_comments}")
   ) %>%
   dplyr::arrange(taxon)
-
+   
 names_tfa_tae <- (as.data.frame(names(tfa_tae)))
 
 occ_file <- here::here("data", "occ.Rdata")
