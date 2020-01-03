@@ -387,7 +387,7 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
   ) %>% 
   dplyr::left_join(shires, by = "lga_id") %>%
   dplyr::left_join(tenure, by = "tenure_id") %>%
-  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
+  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>% ## there are duplicates in this dataframe
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
@@ -398,7 +398,10 @@ names_tfa_occ <- (as.data.frame(names(tfa_occ)))
 tfa_habitat <- tfa_occ %>% 
   select(c(id,landform_id, vegetation_type_id,VegCode,VegTypeName,vegetation_type)) %>% 
   dplyr::rename(source_id = id) %>% distinct()
-  
+
+unique(tfa_habitat$landform_id)
+unique(tfa_habitat$vegetation_type_id)
+
 ## Put Malleefowl in separate csv file and add to data catalogue
 malleefowl_data <- tfa_rec %>% dplyr::transmute(
   id = DBNo %>% as.integer(),
