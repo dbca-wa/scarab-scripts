@@ -271,7 +271,7 @@ all_crit_map <- tfa_cons_listings %>%
 readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv"))
 ```
 
-## Occurences
+## Occurrences
 
 Occurance data is extracted and transformed. 
 
@@ -1451,6 +1451,7 @@ tfa_occ_no_nameid <- tfa_occ %>%
     unique()
 tfa_occ_no_nameid %>% reactable::reactable()
 ```
+There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names missing a NameID.
 
 #### Missing Species Code
 ```{r missing_species_code}
@@ -1460,8 +1461,7 @@ tfa_occ_no_specode <- tfa_occ %>%
     unique()
 tfa_occ_no_nameid %>% reactable::reactable()
 ```
-
-There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names without NameID, and `r nrow(tfa_occ_no_specode)` distinct scientific fauna names without a Species Code.
+There are `r nrow(tfa_occ_no_specode)` distinct scientific fauna names missing a Species Code.
 Any records listed here need to be fixed in the original Threatened Fauna database.
 
 #### Default/ missing dates
@@ -1470,6 +1470,7 @@ tfa_occ_no_date<- tfa_occ %>%
     filter(o_date == "1900-01-01")
 tfa_occ_no_date %>% reactable::reactable()
 ```
+There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing a date.
 
 #### Default/ missing times
 ```{r missing times}
@@ -1477,6 +1478,7 @@ tfa_occ_no_time<- tfa_occ %>%
     filter(o_time == "1900-01-01 00:00:00")
 tfa_occ_no_time %>% reactable::reactable()
 ```
+There are `r nrow(tfa_occ_no_time)` distinct scientific fauna names missing a time.
 
 #### Missing coordinates
 ```{r missing coordinates}
@@ -1496,6 +1498,7 @@ tfa_occ_no_latlng_w_ne %>% reactable::reactable()
 
 There are `r nrow(tfa_occ_no_latlng_w_ne)` distinct fauna records with missing latitude or longitude, which have northings and eastings.
 
+#### Datum
 ```{r datum_tally}
 datum_tally <- tfa_occ %>%
   dplyr::group_by(datum) %>%
@@ -1514,8 +1517,6 @@ datum_blank<- tfa_occ %>%
 
 There are `r nrow(datum_blank)` distinct fauna records with missing datum. These will be defaulted to WGS84.
 
-TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
-
 #### NameID mismatch
 TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
 
@@ -1524,7 +1525,6 @@ Currently, we assume that all occurrence records in the legacy databases are tru
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
 ### TFA occurances not in TSC
-
 ```{r tally_tfa_occ}
 tfa_tally <- tfa_occ %>%
   dplyr::group_by(name_id, scientific_name) %>% 
@@ -1545,7 +1545,7 @@ There are `r nrow(tfa_tally)` fauna taxa with occurrences in TFA.
 
 TODO Once we have data out of TSC compare tally of occurances for top 20 and bottom 20 species
 
-### TSC occurences not in TFA
+### TSC occurrences not in TFA
 
 ```{r tally_tsc_occ,eval=FALSE}
 tsc_tally <- tsc_occ %>%
@@ -1563,7 +1563,7 @@ tsc_tally_btm <- tsc_tally %>%
   slice(1:20) # There are actually 151 species with an occurance of 1
 ```
 
-## TFA occurences not in TAE
+## TFA occurrences not in TAE
 ```{r tally_tfa_tae}
 tae_tally <- tfa_tae %>%
   dplyr::group_by(taxon) %>% 
