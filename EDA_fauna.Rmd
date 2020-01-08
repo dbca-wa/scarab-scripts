@@ -67,7 +67,7 @@ tenure <- tfa_data$`Land Tenure` %>%
   )
 
 vegetation_types <- tfa_data$`Vegetation Types` %>%
-  dplyr::mutate(
+  dplyr::transmute(
     vegetation_type_id = VegCode %>% as.character(),
     vegetation_type = VegTypeName %>% as.character()
   )
@@ -128,6 +128,12 @@ category <- tfa_data$`Category List` %>%
     phylogenetic_category = CategoryName %>% as.character()
   )
 
+secondary_signs <- tfa_data$`Secondary Signs` %>% 
+  dplyr::transmute(
+    sign = Sign %>% as.character()
+  )
+readr::write_csv(secondary_signs, path = here::here("data", "secondary_signs_data.csv"))
+
 # TODO species notes
 species <- tfa_data$`Species List` %>%
   dplyr::transmute(
@@ -172,7 +178,7 @@ species <- tfa_data$`Species List` %>%
   ) %>%
   dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
   dplyr::left_join(species_notes, by = "species_code") %>%
-  dplyr::left_join(category, by = "category_id")
+  dplyr::left_join(category, by = "category_id") 
 # species_skim <- skimr::skim(species)
 # print(species_skim)
 # DT::datatable(species)
@@ -283,8 +289,8 @@ names_tfa_rec <- (as.data.frame(names(tfa_rec)))
 # taxon occurances
 tfa_occ <- tfa_rec %>% dplyr::transmute(
     id = DBNo %>% as.integer(),
-    # district_db = DistDB %>% as.integer(),
-    # district_db_no = DistDBNo %>% as.character(),
+    district_db = DistDB %>% as.integer(),
+    district_db_no = DistDBNo %>% as.character(),
     species_code = SpCode %>% as.character(),
     # name_id = NameId %>% as.character(), # they're all NA
     orig_date = Date,
@@ -433,12 +439,13 @@ tfa_tae <- tfa_occ %>%
     code = location_id,
     name = location_name,
     description = glue::glue(
-        "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}. ",
-        "Species ID {certainty}. ",
-        "Number seen: {number_seen}. ",
-        "Site comments: {site_comment}. ",
-        "Observation comments: {observation_comments}. ",
-        "Curator comments: {comments}"),
+        "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}.\n",
+        "Species ID {certainty}\n",
+        "Number seen: {number_seen}\n",
+        "Site comments: {site_comment}\n",
+        "Observation comments: {observation_comments}\n",
+        "Curator comments: {comments}\n",
+        "Associated species: {associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5} {associated_flora_species_6}\n"),
     source = 10,
     source_id = id,
     encounter_type = 1, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/1/change/ = opportunistic 
@@ -448,7 +455,6 @@ tfa_tae <- tfa_occ %>%
     geolocation_capture_method='gps-point',
     accuracy = accuracy,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})"),
-    associated_species = glue::glue("{associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5} {associated_flora_species_6}"),
     # observation_details = glue::glue("{observation_method} {observation_type} {secondary_signs} {observation_comments}")
   ) %>%
   dplyr::arrange(taxon)
@@ -459,6 +465,51 @@ occ_file <- here::here("data", "occ.Rdata")
 save(tfa_occ, tfa_tae, file=occ_file)
 if (file.exists(occ_file)) load(occ_file)
 
+```
+
+## Recovery Actions and Plans
+``` {r load_tfa_rec}
+tfa_act <- tfa_data$`Recovery Actions` %>%
+  dplyr::transmute(id = ID %>% as.integer(),
+                   actions = Recovery.Actions %>% as.character())
+
+tfa_pla <- tfa_data$`Recovery Plans` %>%
+  dplyr::transmute(species_code = SpCode %>% as.character(),
+                   program_no = ProgramNo %>% as.character(),
+                   recovery_plan = RecoveryPlan %>% as.character(),
+                   national_state = NationalorState %>% as.character(),
+                   year_approved = YearApproved %>% as.character(),
+                   objectives = Objectives %>% as.character(),
+                   action_types = ActionTypes %>% as.character(),
+                   research_topics = ResearchTopics %>% as.character(),
+                   recovery_team = RecoveryTeam %>% as.character(),
+                   active = Active %>% as.character(),
+                   rt_national_state = RTNationalorState %>% as.character(),
+                   lead_org = LeadOrg %>% as.character(),
+                   chair_org = ChairOrg %>% as.character(),
+                   chair_name = ChairName %>% as.character(),
+                   chair_contact = ChairContact %>% as.character(),
+                   exec_name = ExecOName %>% as.character(),
+                   exec_contact = ExecOContact %>% as.character(),
+                   membership = Membership %>% as.character(),
+                   rt_file_number = RTFileNumber %>% as.character())
+```
+
+## Research priorities and topics
+``` {r load_tfa_res}
+tfa_resp <- tfa_data$`Research Priorities` %>%
+  dplyr::transmute(species_code = SpCode %>% as.character(),
+                   research_priority = ResearchPriority %>% as.character(),
+                   undertaken = Undertaken %>% as.character(),
+                   comments = Comments %>% as.character())
+
+tfa_rest <- tfa_data$`Research Topics` %>%
+  dplyr::transmute(id = ID %>% as.integer(),
+                   research_topics = Research.Topics %>% as.character())
+
+
+readr::write_csv(tfa_resp, path = here::here("data", "research_priorities_data.csv")) # this has been added to the data catelogue already
+readr::write_csv(tfa_rest, path = here::here("data", "research_topics_data.csv"))
 ```
 
 # Extract and transform conservation criteria Data from TSC
