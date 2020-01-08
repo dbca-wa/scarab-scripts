@@ -132,7 +132,7 @@ secondary_signs <- tfa_data$`Secondary Signs` %>%
   dplyr::transmute(
     sign = Sign %>% as.character()
   )
-readr::write_csv(secondary_signs, path = here::here("data", "secondary_signs_data.csv"))
+readr::write_csv(secondary_signs, path = here::here("data", "secondary_signs_data.csv")) 
 
 # TODO species notes
 species <- tfa_data$`Species List` %>%
@@ -367,9 +367,9 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
     specimen_voucher_exists = SpVoucher %>% as.logical(),
     specimen_voucher_location = SpHeld %>% as.character(), # specimen catalogue
     specimen_voucher_catalogue_number = SpCatNum %>% as.character(),
-    occurence_not_published = UnPublished %>% as.logical(),
+    occurrence_not_published = UnPublished %>% as.logical(),
     occurrence_citation = ReportTitle %>% as.character(),
-    # occurrence_citation_author = Author %>% as.character(),
+    occurrence_citation_author = Author %>% as.character(),
     # malleefowl_MFeggsH = MFeggsH %>% as.character(),
     # malleefowl_MFeggsU = MFeggsU %>% as.character(),
     # malleefowl_MFmoundU = MFmoundU %>% as.character(),
@@ -402,7 +402,7 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
 names_tfa_occ <- (as.data.frame(names(tfa_occ)))
 
 tfa_habitat <- tfa_occ %>% 
-  select(c(id,landform_id, vegetation_type_id,VegCode,VegTypeName,vegetation_type)) %>% 
+  select(c(id,landform_id, vegetation_type_id,vegetation_type)) %>% 
   dplyr::rename(source_id = id) %>% distinct()
 
 unique(tfa_habitat$landform_id)
@@ -441,11 +441,23 @@ tfa_tae <- tfa_occ %>%
     description = glue::glue(
         "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}.\n",
         "Species ID {certainty}\n",
+        "Species ID confirmation: {species_id_confirmed_by}",
         "Number seen: {number_seen}\n",
         "Site comments: {site_comment}\n",
         "Observation comments: {observation_comments}\n",
         "Curator comments: {comments}\n",
-        "Associated species: {associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5} {associated_flora_species_6}\n"),
+        "Associated species: {associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5} {associated_flora_species_6}\n",
+        "District: {district_db} {district_db_no}\n",
+        "Shire: {shire_name} {shire_label}\n",
+        "Tenure: {tenure}\n",
+        "LGA ID: {lga_id}\n",
+        "District ID: {district_id}\n",
+        "Vegetation type: {vegetation_type}\n",
+        "Date entered: {entered_on} {entered_by}\n",
+        "Date changed: {changed_on} {changed_by}\n",
+        "Not published: {occurrence_not_published}\n",
+        "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
+        ),
     source = 10,
     source_id = id,
     encounter_type = 1, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/1/change/ = opportunistic 
@@ -1500,7 +1512,7 @@ datum_blank<- tfa_occ %>%
     filter(datum == "")
 ```
 
-There are `r nrow(datum_blank)` distinct fauna records with missing datum.
+There are `r nrow(datum_blank)` distinct fauna records with missing datum. These will be defaulted to WGS84.
 
 TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
 
