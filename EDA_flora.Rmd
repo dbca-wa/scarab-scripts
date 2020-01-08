@@ -42,6 +42,7 @@ on the DBCA data catalogue, then extracted and transformed.
 ## Taxonomy
 ```{r load_tfl, message=TRUE}
 tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
+names_tfl <- as.data.frame(names(tfl_data))
 
 snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
   ckanr::resource_show() %>%
@@ -182,6 +183,7 @@ populations <- tfl_data$DRF_POPULATION %>%
     obs_org_name = OBS.ORG.NAME %>% as.character(),
     land_mgr_notes = LAND.MGR.NOTES %>% as.character()
   )
+names_populations <- as.data.frame(names(populations))
 
 pop_forms <- tfl_data$DRF_POP_FORMS %>% #This is the paper form, not the shape of the population!
   dplyr::transmute(
@@ -199,6 +201,7 @@ pop_forms <- tfl_data$DRF_POP_FORMS %>% #This is the paper form, not the shape o
     deact_by = DEACT.BY %>% as.character()
   )
 # pop_forms[1:100, ] %>% DT::datatable(.)
+names_pop_forms <- as.data.frame(names(pop_forms))
 
 pop_threats <- tfl_data$DRF_POP_THREATS %>%
   dplyr::transmute(
@@ -222,6 +225,7 @@ pop_threats <- tfl_data$DRF_POP_THREATS %>%
     observation_date = OBSERVATION.DATE %>% as.character()
   )
 # pop_threats[1:100, ] %>% DT::datatable(.)
+names_pop_threats <- as.data.frame(names(pop_threats))
 
 pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
   dplyr::transmute(
@@ -231,6 +235,7 @@ pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
     veg_class_dom1 = VEG.CLASS.DOM1 %>% as.character(),
     veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
   )
+names_pop_vegclass <- as.data.frame(names(pop_vegclass))
 # pop_vegclass[1:100, ] %>% DT::datatable(.)
 ```
 
@@ -465,6 +470,8 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     florabus_ind = FLORABUS.IND %>% as.character(),
     licence = LICENCE %>% as.character()
   )
+
+names_tfl_occ <- as.data.frame(names(tfl_occ))
 
 # Occurrence vegetation classes
 occ_vegclass <- tfl_data$DRF_SHEET_VEG_CLASSES %>%
