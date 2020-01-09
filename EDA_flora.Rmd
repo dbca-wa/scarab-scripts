@@ -560,8 +560,16 @@ tfl_tae <- tfl_occ %>%
     code = pop_id,
     name = glue::glue("{pop_id}{subpop_code}"),
     description = glue::glue(
-        "Population {pop_id}, Subpopulation {subpop_code}. ",
-        "Location: {location}. Nearest known place: {nearplace}. "
+        "Sheet number: {sheetno}\n",
+        "Population {pop_id}, Subpopulation {subpop_code}\n",
+        "Population classification: {classification_code}\n",
+        "Habitat condition: {habitat_condition} {habitat_notes}\n",
+        "Location: {location} {distance} KM {direction} from {nearplace}\n",
+        "District: {district}\n",
+        "Land district: {landdistrict}\n",
+        "LGA code: {lga_code}\n",
+        "Record source code: {record_src_code}\n",
+        "Comments: {other_comments}\n"
         ),
     source = 11,
     source_id = sheetno,

@@ -439,9 +439,9 @@ tfa_tae <- tfa_occ %>%
     code = location_id,
     name = location_name,
     description = glue::glue(
-        "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}.\n",
+        "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}\n",
         "Species ID {certainty}\n",
-        "Species ID confirmation: {species_id_confirmed_by}",
+        "Species ID confirmation: {species_id_confirmed_by}\n",
         "Number seen: {number_seen}\n",
         "Site comments: {site_comment}\n",
         "Observation comments: {observation_comments}\n",
