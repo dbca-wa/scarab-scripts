@@ -471,7 +471,11 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     licence = LICENCE %>% as.character()
   )
 
-names_tfl_occ <- as.data.frame(names(tfl_occ))
+names(tfl_occ)
+
+tfl_habitat <- tfl_occ %>% 
+  select(c(name_id,landform, rock_type,gravel,soil_type,soil_color,drainage,aspect,associated_species)) %>% 
+  distinct()
 
 # Occurrence vegetation classes
 occ_vegclass <- tfl_data$DRF_SHEET_VEG_CLASSES %>%
