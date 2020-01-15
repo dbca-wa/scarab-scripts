@@ -473,6 +473,33 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
 
 names(tfl_occ)
 
+## Create occurance data tables for each card in TSC
+habitat_composition <- tfa_occ %>% 
+  select(c(id, landform_id))
+
+area_assessment <- tfa_occ %>% 
+  select(c())
+
+habitat_condition <- tfa_occ %>% 
+  select(c())
+
+fire_history <- tfa_occ %>% 
+  select(c())
+
+vegetation_classification <- tfa_occ %>% 
+  select(c(id, vegetation_type_id,vegetation_type))
+
+associated_species <- tfa_occ %>% 
+  select(c())
+
+animal_observation <- tfa_occ %>% 
+  select(c())
+
+physical_sample <- tfa_occ %>% 
+  select(c())
+
+
+
 tfl_habitat <- tfl_occ %>% 
   select(c(name_id,landform, rock_type,gravel,soil_type,soil_color,drainage,aspect,associated_species)) %>% 
   distinct()
