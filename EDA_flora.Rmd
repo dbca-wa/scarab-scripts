@@ -53,6 +53,8 @@ snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
 # Cached data from TSC - delete to force refresh
 datafile_tsc_flora <- here::here("data", "etl_flora_tsc.Rda")
 
+lookups <-	tfl_data$DRF_LOOKUP_DOMAINS
+
 # Look up tables
 populations <- tfl_data$DRF_POPULATION %>%
   dplyr::transmute(
@@ -471,38 +473,144 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     licence = LICENCE %>% as.character()
   )
 
-names(tfl_occ)
+occ_liasons <- tfl_data$DRF_LIAISONS %>%
+  dplyr::transmute(
+    liaisons_id = LIAISONS.ID %>% as.integer(),
+    pop_id = POP.ID %>% as.integer(),
+    notify_date = NOTIFY.DATE %>% as.character(),
+    othernames = OTHERNAMES %>% as.character(),
+    initials = INITIALS %>% as.character(),
+    surname = SURNAME %>% as.character(),
+    address = ADDRESS %>% as.character(),
+    phone_number = PHONE.NO %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    notification_type = NOTIFICATION.TYPE %>% as.character(),
+    notifier_name = NOTIFIER.NAME %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character())
+
+names(tfl_data$DRF_P2K_PRIORITY)
+
+occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
+  dplyr::transmute(
+    species = SPECIES %>% as.character(),
+    taxon_id = TAXONID %>% as.integer(),
+    change = CHANGE %>% as.character(),
+    change_date = CHANGE.DATE %>% as.character(),
+    add_date = ADD.DATE %>% as.character(),
+    delete_date = DELETE.DATE %>% as.character(),
+    informal = INFORMAL %>% as.character(),
+    authority = INFORMAL %>% as.character(),
+    pr_code = PR.CODE %>% as.character(),
+    wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
+    iucn_criteria = IUCN.CRITERIA %>% as.character(),
+    date_iucn_change = DATE.IUCN.CHANGE %>% as.character(),
+    epbc_rank = EPBC.RANK %>% as.character(),
+    calm_reg = CALM.REG %>% as.character(),
+    district = DISTRICT %>% as.character(),
+    dist = DIST %>% as.character(),
+    fl_period = FL.PERIOD %>% as.character(),
+    old_name = OLD.NAME %>% as.character(),
+    fam_num = FAM.NO %>% as.character(),
+    file_num = FILE.NO %>% as.character(),
+    man_plan = MANPLAN %>% as.character(),
+    row_num = ROW.NO %>% as.integer()
+    )
 
 ## Create occurance data tables for each card in TSC
-habitat_composition <- tfa_occ %>% 
-  select(c(id, landform_id))
+hab_comp <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    landform = landform,
+    rock_type = rock_type,
+    loose_rock = gravel,
+    soil_type = soil_type,
+    soil_colour = soil_color,
+    drainage = drainage,
+    aspect = aspect)
 
-area_assessment <- tfa_occ %>% 
-  select(c())
+area_ass <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    survey_method = svy_extent,
+    surveyed_area = svy_effort_area,
+    survey_duration = svy_effort_time)
 
-habitat_condition <- tfa_occ %>% 
-  select(c())
+hab_cond <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    occurrence_condition = habitat_condition,
+    soil_condition = soil_condition) #There is a problem with migrating this- won't match TSC card
 
-fire_history <- tfa_occ %>% 
-  select(c())
+fire_hist <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    fire_intensity = fire_intensity,
+    Date_of_last_fire = glue::glue(
+      "{fire_year}", "{fire_season}")) # modify this to fit card requirements
 
-vegetation_classification <- tfa_occ %>% 
-  select(c(id, vegetation_type_id,vegetation_type))
+plant_count <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    Number_of_quadrats_surveyed = quad_num,
+    Individual_quadrat_area = quad_size,
+    Total_quadrat_area = quad_tot_sq_m,
+    Land_manager_present = landowner_present,
+    Plant_count_method = count_mthd_code,
+    Number_alive_mature = mature_plants,
+    Number_dead_mature = mature_dead,
+    Number_alive_juvenile = juvenile_plants,
+    Number_dead_juvenile = juvenile_dead,
+    Number_alive_seedlings = seedling_plants,
+    Number_dead_seedlings = seedling_dead,
+    Counted_subject = cnt_plant_type_code,
+    Number_alive = simple_live_tot,
+    Estimates_population_area = area_occupied,
+    Area_occupied_method = area_occupied_method,
+    Clonal_reproduction_present = clonal,
+    Vegetative_state_present = vegetative,
+    Flower_buds_present = in_buds,
+    Flowers_present = in_flower,
+    Immature_fruit_present = immature_fruit,
+    Ripe_fruit_present = fruit,
+    Dehisced_fruit_present = dehisced_fruit,
+    Flowering_plants = flower_percentage,
+    Number_dead = simple_dead_tot,
+    Plant_condition = population_condition,
+    comments = population_notes)
 
-associated_species <- tfa_occ %>% 
-  select(c())
+ass_species <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    taxon = associated_species)
 
-animal_observation <- tfa_occ %>% 
-  select(c())
-
-physical_sample <- tfa_occ %>% 
-  select(c())
-
-
-
-tfl_habitat <- tfl_occ %>% 
-  select(c(name_id,landform, rock_type,gravel,soil_type,soil_color,drainage,aspect,associated_species)) %>% 
-  distinct()
+phys_sample <- tfl_occ %>% 
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    sample_type = "plant specimen",
+    sample_destination = voucher_location, # most of these are listed as WA HERB/ INT HERB/ DIS HERB, but none of these are options in the card
+    duplicate_sample_destination = dupvouch_location,
+    sample_label = barcode,
+    permit_id = licence)
 
 # Occurrence vegetation classes
 occ_vegclass <- tfl_data$DRF_SHEET_VEG_CLASSES %>%
@@ -613,6 +721,84 @@ names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
 ## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
 tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
+```
+
+## Conservation Threats and Actions
+```{r load_actions, message=TRUE}
+act_fenc <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    fencing_action = fencing_status,
+    comments = fencing_comments)
+
+act_rdmk <- tfl_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 11,
+    source_id = sheetno,
+    fencing_action = roadside_marker_status,
+    comments = rdside_mkr_comments)
+
+names(tfl_data$DRF_POP_MGMT_ACTIONS)
+
+mgmt_act <- tfl_data$DRF_POP_MGMT_ACTIONS %>%
+  dplyr::transmute(
+    action_id = ACTION.ID %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    mgmt_act_code = MGMT.ACT.CODE %>% as.character(),
+    action_notes = ACTION.NOTES %>% as.character(),
+    priority_code = PRIORITY.CODE %>% as.character(),
+    status = STATUS %>% as.character(),
+    action_date = ACTION.DATE %>% as.character(),
+    r_plan = R.PLAN %>% as.character(),
+    finalised_on = FINALISED.ON %>% as.character(),
+    active_on = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character()
+  )
+```
+
+## Fire History
+```{r load_fire_history, message=TRUE}
+fire_sum <- tfl_data$DRF_FIRE_SUMMARIES %>%
+  dplyr::transmute(
+    fire_id = FIRE.SUM.ID %>% as.integer(),
+    summary_level = SUMMARY.LEVEL %>% as.character(),
+    publish = PUBLISH %>% as.character(),
+    taxon_id = TAXONID %>% as.character(),
+    spname = SPNAME %>% as.character(),
+    pop_id = POP.ID %>% as.character(),
+    sit_id = SIT.ID %>% as.character(),
+    quadrat = QUADRAT %>% as.character(),
+    summary_date = SUMMARY.DATE %>% as.character(),
+    completed_date = COMPLETED.DATE %>% as.character(),
+    observer_name = OBSERVER.NAME %>% as.character(),
+    adult_survival = ADULT.SURVIVAL.PCT %>% as.character(),
+    seedling_survival = SEEDLING.SURVIVAL.PCT %>% as.character(),
+    recruitment = RECRUITMENT %>% as.character(),
+    fire_response_type = FIRE.RESPONSE.TYPE %>% as.character(),
+    juvenile_period_seeder = JUVENILE.PERIOD.SEEDER %>% as.character(),
+    juvenile_period_respr = JUVENILE.PERIOD.RESPR %>% as.character(),
+    peak_flowering = PEAK.FLOWERING %>% as.character(),
+    mature_age = MATURE.AGE %>% as.character(),
+    minimum_fire_interval = MINIMUM.FIRE.INTERVAL %>% as.character(), 
+    seeder_type = SEEDER.TYPE %>% as.character(),
+    germination = GERMINATION %>% as.character(),
+    resprouter.type = RESPROUTER.TYPE %>% as.character(),
+    senescence = SENESCENCE %>% as.character(),
+    longevity = LONGEVITY %>% as.character(),
+    data_source = DATA.SOURCE %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character())
 ```
 
 # Extract and transform conservation criteria Data from TSC
