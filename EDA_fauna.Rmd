@@ -407,7 +407,12 @@ hab_comp <- tfa_occ %>%
   dplyr::transmute(
     source = 10,
     source_id = id,
-    landform_id = landform_id)
+    landform = landform_id)
+
+## extract_landforms, message=FALSE}
+tsc_landforms <- "landforms" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse()
 
 fire_hist <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
