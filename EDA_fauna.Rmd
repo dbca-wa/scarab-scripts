@@ -402,7 +402,6 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
 names_tfa_occ <- (as.data.frame(names(tfa_occ)))
 
 ## Create occurance data tables for each card in TSC
-
 habitat_composition <- tfa_occ %>% 
   select(c(id, landform_id))
 
