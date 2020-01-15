@@ -402,29 +402,73 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
 names_tfa_occ <- (as.data.frame(names(tfa_occ)))
 
 ## Create occurance data tables for each card in TSC
-habitat_composition <- tfa_occ %>% 
-  select(c(id, landform_id))
+hab_comp <- tfa_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    source_id = id,
+    landform_id = landform_id)
 
-area_assessment <- tfa_occ %>% 
-  select(c())
+fire_hist <- tfa_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    source_id = id,
+    fire_history = fire_history) #There is a problem with migrating this- won't match TSC card
 
-habitat_condition <- tfa_occ %>% 
-  select(c())
+veg_class <- tfa_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    source_id = id,
+    vegetation_code = vegetation_type_id,
+    vegetation_type = vegetation_type) #There is a problem with migrating this- won't match TSC card
 
-fire_history <- tfa_occ %>% 
-  select(c())
+ass_species <- tfa_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    source_id = id,
+    associated_species_1 = associated_flora_species_1,
+    associated_species_2 = associated_flora_species_2,
+    associated_species_3 = associated_flora_species_3,
+    associated_species_4 = associated_flora_species_4,
+    associated_species_5 = associated_flora_species_5,
+    associated_species_6 = associated_flora_species_6)
+    
+anim_obs <- tfa_occ %>%
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    source_id = id,
+    species_id_confidence = glue::glue(
+        "Certainty_ID: {certainty_id};\n",
+        "Certainty: {certainty}"), ## this needs to be resolved as neither fit the card in TSC
+    observation_details = glue::glue(
+        "Number seen: {number_seen};\n",
+        "Comments: {observation_comments}"), # Can I do this, looks like free text on the card?
+    distinctive_features = animal_features,
+    number_of_adult_males = number_adult_males,
+    number_of_adult_females = number_adult_females,
+    number_of_adult_unknown = number_adult_unknown,
+    number_of_juvenile_males = number_juvenile_males,
+    number_of_juvenile_females = number_juvenile_females,
+    number_of_juvenile_unknown = number_juvenile_unknown,
+    detection_method = glue::glue(
+      "Method: {observation_method};\n",
+      "Type: {observation_type}"), # needs to be resolved and considered with secondary_signs
+    secondary_signs = secondary_signs,
+    reproductive_maturity = breeding_status)
 
-vegetation_classification <- tfa_occ %>% 
-  select(c(id, vegetation_type_id,vegetation_type))
-
-associated_species <- tfa_occ %>% 
-  select(c())
-
-animal_observation <- tfa_occ %>% 
-  select(c())
-
-physical_sample <- tfa_occ %>% 
-  select(c())
+phys_sample <- tfa_occ %>% 
+  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    source_id = id,
+    sample_type = specimen_status,
+    specimen_voucher_exists = specimen_voucher_exists, # This column is confusing- what does it mean?
+    sample_destination = specimen_voucher_location,
+    sample_label = specimen_voucher_catalogue_number)
 
 unique(tfa_habitat$landform_id)
 unique(tfa_habitat$vegetation_type_id)
@@ -460,14 +504,10 @@ tfa_tae <- tfa_occ %>%
     code = location_id,
     name = location_name,
     description = glue::glue(
-        "{observation_method} ({observation_type}) by {observer_name} ({observer_role}) {observer_address} {observer_phone}\n",
-        "Species ID {certainty}\n",
+        "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}\n",
         "Species ID confirmation: {species_id_confirmed_by}\n",
-        "Number seen: {number_seen}\n",
         "Site comments: {site_comment}\n",
-        "Observation comments: {observation_comments}\n",
         "Curator comments: {comments}\n",
-        "Associated species: {associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5} {associated_flora_species_6}\n",
         "District: {district_db} {district_db_no}\n",
         "Shire: {shire_name} {shire_label}\n",
         "Tenure: {tenure}\n",
