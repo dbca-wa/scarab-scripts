@@ -409,10 +409,15 @@ hab_comp <- tfa_occ %>%
     source_id = id,
     landform = landform_id)
 
-## extract_landforms, message=FALSE}
-tsc_landforms <- "landforms" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse()
+hab_comp %>%
+  dplyr::select(landform) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_landcrit.csv"))
+
+# ## extract_landforms, message=FALSE}
+# tsc_landforms <- "landforms" %>%
+#   wastdr::wastd_GET(api_url = prod) %>%
+#   wastdr::wastd_parse()
 
 fire_hist <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -420,6 +425,11 @@ fire_hist <- tfa_occ %>%
     source = 10,
     source_id = id,
     fire_history = fire_history) #There is a problem with migrating this- won't match TSC card
+
+fire_hist %>%
+  dplyr::select(fire_history) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_firecrit.csv"))
 
 veg_class <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -465,6 +475,21 @@ anim_obs <- tfa_occ %>%
     secondary_signs = secondary_signs,
     reproductive_maturity = breeding_status)
 
+anim_obs %>%
+  dplyr::select(reproductive_maturity) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_repmat.csv"))
+
+anim_obs %>%
+  dplyr::select(secondary_signs) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_secsign.csv"))
+
+# ## extract_anim_obs, message=FALSE}
+# tsc_anim_obs <- "observations" %>%
+#   wastdr::wastd_GET(api_url = prod) %>%
+#   wastdr::wastd_parse()
+
 phys_sample <- tfa_occ %>% 
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
@@ -475,8 +500,10 @@ phys_sample <- tfa_occ %>%
     sample_destination = specimen_voucher_location,
     sample_label = specimen_voucher_catalogue_number)
 
-unique(tfa_habitat$landform_id)
-unique(tfa_habitat$vegetation_type_id)
+phys_sample %>%
+  dplyr::select(sample_destination) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_sampdest.csv"))
 
 ## Put Malleefowl in separate csv file and add to data catalogue
 malleefowl_data <- tfa_rec %>% dplyr::transmute(
@@ -953,7 +980,7 @@ tfa_eoo %>%
 A single record (taxon area encounter), or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
 ```{r fauna_single_occ, eval=F}
-# 25755
+# 25757
 taxonpoint = rjson::fromJSON('[{"taxon": 25757, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,  "encounter_type":1,  "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT(119.732234 -32.35756)"}]')
 wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
