@@ -536,6 +536,41 @@ hab_comp <- tfl_occ %>%
     drainage = drainage,
     aspect = aspect)
 
+hab_comp %>%
+  dplyr::select(landform) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_landcrit.csv"))
+
+hab_comp %>%
+  dplyr::select(rock_type) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_rocktype.csv"))
+
+hab_comp %>%
+  dplyr::select(loose_rock) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_looserock.csv"))
+
+hab_comp %>%
+  dplyr::select(soil_type) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_soiltype.csv"))
+
+hab_comp %>%
+  dplyr::select(soil_colour) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_soilcolour.csv"))
+
+hab_comp %>%
+  dplyr::select(drainage) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_drainage.csv"))
+
+hab_comp %>%
+  dplyr::select(aspect) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_aspect.csv"))
+
 area_ass <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
@@ -545,6 +580,11 @@ area_ass <- tfl_occ %>%
     surveyed_area = svy_effort_area,
     survey_duration = svy_effort_time)
 
+area_ass %>%
+  dplyr::select(survey_method) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_survey_method.csv"))
+
 hab_cond <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
@@ -553,14 +593,31 @@ hab_cond <- tfl_occ %>%
     occurrence_condition = habitat_condition,
     soil_condition = soil_condition) #There is a problem with migrating this- won't match TSC card
 
+hab_cond %>%
+  dplyr::select(soil_condition) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_soil_condition.csv"))
+
 fire_hist <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
     source_id = sheetno,
     fire_intensity = fire_intensity,
+    fire_year = fire_year,
+    fire_season = fire_season,
     Date_of_last_fire = glue::glue(
       "{fire_year}", "{fire_season}")) # modify this to fit card requirements
+
+fire_hist %>%
+  dplyr::select(fire_intensity) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_fire_intensity.csv"))
+
+fire_hist %>%
+  dplyr::select(fire_year,fire_season) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_fire_date.csv"))
 
 plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -594,6 +651,21 @@ plant_count <- tfl_occ %>%
     Plant_condition = population_condition,
     comments = population_notes)
 
+plant_count %>%
+  dplyr::select(Plant_count_method) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_Plant_count_method.csv"))
+
+plant_count %>%
+  dplyr::select(Counted_subject) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_Counted_subject.csv"))
+
+plant_count %>%
+  dplyr::select(Plant_condition) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_Plant_condition.csv"))
+
 ass_species <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
@@ -611,6 +683,11 @@ phys_sample <- tfl_occ %>%
     duplicate_sample_destination = dupvouch_location,
     sample_label = barcode,
     permit_id = licence)
+
+phys_sample %>%
+  dplyr::select(sample_destination) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfl_sample_destination.csv"))
 
 # Occurrence vegetation classes
 occ_vegclass <- tfl_data$DRF_SHEET_VEG_CLASSES %>%
@@ -1064,8 +1141,11 @@ tfl_eoo %>%
 
 ### Upload TAEs to TSC
 ```{r flora_occ_tsc_upload, eval=F}
-tfl_tae10 = tlf_tae[95:100,]
-tfl_tae[33000:43558,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfl_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+
+tfl_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+
+tfl_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurances
 ```
 
 ## Conservation Documents
