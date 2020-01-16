@@ -534,6 +534,7 @@ tfa_tae <- tfa_occ %>%
         "Fire history: {fire_history}\n",
         "Date entered: {entered_on} {entered_by}\n",
         "Date changed: {changed_on} {changed_by}\n",
+        "Sample destination: {sample_destination}\n",
         "Not published: {occurrence_not_published}\n",
         "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
         ),
@@ -671,6 +672,11 @@ sec_signs <- "lookup-secondarysigns" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
+
+samp_dest <- "lookup-sampledestination" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
 ```
 
 # Load legacy data from TFA into TSC
