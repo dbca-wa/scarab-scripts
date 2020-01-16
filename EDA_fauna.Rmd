@@ -128,6 +128,12 @@ category <- tfa_data$`Category List` %>%
     phylogenetic_category = CategoryName %>% as.character()
   )
 
+landform <- tfa_data$`Landform` %>%
+  dplyr::transmute(
+    Landform_id = LFCode %>% as.character(),
+    Landform = Landform %>% as.character()
+  )
+
 secondary_signs <- tfa_data$`Secondary Signs` %>% 
   dplyr::transmute(
     sign = Sign %>% as.character()
@@ -399,8 +405,6 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible() 
 
-names_tfa_occ <- (as.data.frame(names(tfa_occ)))
-
 ## Create occurance data tables for each card in TSC
 hab_comp <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -414,30 +418,13 @@ hab_comp %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_landcrit.csv"))
 
-# ## extract_landforms, message=FALSE}
-# tsc_landforms <- "landforms" %>%
-#   wastdr::wastd_GET(api_url = prod) %>%
-#   wastdr::wastd_parse()
-
-fire_hist <- tfa_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
-  dplyr::transmute(
-    source = 10,
-    source_id = id,
-    fire_history = fire_history) #There is a problem with migrating this- won't match TSC card
-
-fire_hist %>%
-  dplyr::select(fire_history) %>%
-  distinct() %>% 
-  readr::write_csv(path = here::here("data", "tfa_firecrit.csv"))
-
 veg_class <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 10,
     source_id = id,
     vegetation_code = vegetation_type_id,
-    vegetation_type = vegetation_type) #There is a problem with migrating this- won't match TSC card
+    vegetation_type = vegetation_type) #parse as free text
 
 ass_species <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -449,19 +436,17 @@ ass_species <- tfa_occ %>%
     associated_species_3 = associated_flora_species_3,
     associated_species_4 = associated_flora_species_4,
     associated_species_5 = associated_flora_species_5,
-    associated_species_6 = associated_flora_species_6)
+    associated_species_6 = associated_flora_species_6) #parse as free text
     
 anim_obs <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 10,
     source_id = id,
-    species_id_confidence = glue::glue(
-        "Certainty_ID: {certainty_id};\n",
-        "Certainty: {certainty}"), ## this needs to be resolved as neither fit the card in TSC
+    species_id_confidence = certainty,
     observation_details = glue::glue(
         "Number seen: {number_seen};\n",
-        "Comments: {observation_comments}"), # Can I do this, looks like free text on the card?
+        "Comments: {observation_comments}"), # Card is free text
     distinctive_features = animal_features,
     number_of_adult_males = number_adult_males,
     number_of_adult_females = number_adult_females,
@@ -476,6 +461,11 @@ anim_obs <- tfa_occ %>%
     reproductive_maturity = breeding_status)
 
 anim_obs %>%
+  dplyr::select(species_id_confidence) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_id_conf.csv"))
+
+anim_obs %>%
   dplyr::select(reproductive_maturity) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_repmat.csv"))
@@ -484,11 +474,6 @@ anim_obs %>%
   dplyr::select(secondary_signs) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_secsign.csv"))
-
-# ## extract_anim_obs, message=FALSE}
-# tsc_anim_obs <- "observations" %>%
-#   wastdr::wastd_GET(api_url = prod) %>%
-#   wastdr::wastd_parse()
 
 phys_sample <- tfa_occ %>% 
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -526,8 +511,8 @@ malleefowl_data <- tfa_rec %>% dplyr::transmute(
   na.omit() %>% 
   dplyr::left_join(tfa_occ,by = "id")
   readr::write_csv(malleefowl_data, path = here::here("data", "malleefowl_data.csv"))
-
-# Taxon area encounter
+  
+# Create taxon area encounter
 tfa_tae <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   # dplyr::left_join(taxa, by="name_id") %>% 
@@ -546,6 +531,7 @@ tfa_tae <- tfa_occ %>%
         "LGA ID: {lga_id}\n",
         "District ID: {district_id}\n",
         "Vegetation type: {vegetation_type}\n",
+        "Fire history: {fire_history}\n",
         "Date entered: {entered_on} {entered_by}\n",
         "Date changed: {changed_on} {changed_by}\n",
         "Not published: {occurrence_not_published}\n",
@@ -663,6 +649,28 @@ tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
 
 tfa_tcl <- tfa_cons_listings %>%
   left_join(tfa_conscrit, by = c("list_code", "criteria_code")) %>% glimpse
+```
+
+# Extract and transform occurrence lookup Data from TSC
+``` {r extract_tsc_occurrence_lookup, message=FALSE}
+tsc_landforms <- "lookup-landform" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_landforms.csv"))  
+
+tsc_confidence <- "lookup-confidence" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse()
+  
+repro_mat <- "lookup-reproductivematurity" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_repro_mat.csv"))
+
+sec_signs <- "lookup-secondarysigns" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
 ```
 
 # Load legacy data from TFA into TSC
