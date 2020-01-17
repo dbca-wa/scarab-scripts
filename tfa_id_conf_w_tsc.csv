@@ -1,0 +1,7 @@
+species_id_confidence,tsc_species_id_confidence,tsc_criteria
+Certain,determined-layman,2
+Not sure,uncertain,3
+Moderately certain,determined-layman,2
+"Very Certain (photo, specimen, expert)",determined-expert,1
+NA,,
+Not defined,,

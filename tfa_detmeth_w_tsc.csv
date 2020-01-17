@@ -1,0 +1,25 @@
+detection_method,tsc_detection_method,tsc_criteria
+Night sighting,direct-encounter,7
+Dead,direct-encounter,7
+Caught or trapped,trapping,8
+Day sighting,direct-encounter,7
+Sighting,direct-encounter,7
+Released,direct-encounter,7
+Unknown,,
+,,
+Spotlighting,direct-encounter,7
+Secondary sign,secondary-sign,10
+Subfossil material,fossil,9
+Dusk sighting,direct-encounter,7
+Dawn sighting,direct-encounter,7
+Fossil,fossil,9
+Acoustic recorder,acoustic-recorder,3
+Remote sensing,remote-sensing,1
+Remote camera,remote-camera,2
+DEad,direct-encounter,7
+Historical record,historical-record,12
+Secondary Sign,secondary-sign,10
+Marine entanglement,marine entanglement,11
+Taken into care,direct-encounter,7
+Remote Camera,remote-camera,2
+Secondary signs,secondary-sign,10

@@ -1,0 +1,22 @@
+sample_type,tsc_sample_type,tsc_criteria
+No specimen,,
+Frozen carcass,frozen-carcass,4
+Fresh carcass,fresh-carcass,8
+Spirit specimen,spirit-specimen,9
+Photo,photo,17
+Live specimen,live-specimen,18
+Fur/Hair/Skin,hairscalefeather-sample,6
+Skull/bones,skullbones,5
+Unknown,unknown,19
+Partial specimen,partial-specimen,11
+Degenerated carcass,degenerated-carcass,10
+Taxidermied,taxidermied,12
+Stomach contents,stomach-contents,13
+Scats,scats,7
+DNA sample,dna-sample,14
+Eggs/Eggshell,eggeggshell,15
+Shell,shell,16
+DNA Sample,dna-sample,14
+partial specimen,partial-specimen,11
+Feathers,hairscalefeather-sample,6
+Fresh Carcass,fresh-carcass,8

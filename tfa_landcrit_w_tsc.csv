@@ -1,0 +1,45 @@
+landform_id,landform,tsc_landform_id,tsc_criteria
+FLA,flat,flat,29
+SLO,slope,slope,20
+ROC,rocky outcrop,outcrop,
+SAN,sand dune,,
+RID,ridge,ridge,9
+RIV,river,depression-river,41
+GUL,gully/gorge,depression-gully,39
+SWA,swamp,depression-swamp-open,48
+OTH,other,,
+LAK,lake,depression-lake,53
+CAV,cave,cave,60
+FOR,,,
+SHR,,,
+CRE,crest/summit,crest-summit-surface,3
+ART,artificial surface,,
+WOO,,,
+CRK,creek/tributary,depression-creek,43
+0,,,
+CLI,cliff,slope-cliff,27
+RI,,,
+SPL,sandplain,,
+Cav,cave,,
+HIL,Hill,hill,6
+SEE,Seepage/soakage,,
+woo,,,
+CLO,Closed depression,depression-closed,50
+BEA,beach/cove,,
+DRA,drainage line,drainageline,49
+WET,wetland,wetland,59
+OPE,open depression,,
+EST,estuary,depression-estuary,46
+WAT,waterfall,,
+POO,pool,,
+PLA,plain,flat-plain,30
+RUD,,,
+OCE,ocean,,
+for,,,
+dun,,,
+GAR,,,
+AQU,aquifer,,
+PAR,,,
+SPR,spring,,
+BRE,Breakaway,ridge-breakaway,10
+m,,,
