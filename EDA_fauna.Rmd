@@ -411,10 +411,10 @@ hab_comp <- tfa_occ %>%
   dplyr::transmute(
     source = 10,
     source_id = id,
-    landform = landform_id)
+    landform_id = landform_id)
 
 hab_comp %>%
-  dplyr::select(landform) %>%
+  dplyr::select(landform_id) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_landcrit.csv"))
 
@@ -446,6 +446,7 @@ anim_obs <- tfa_occ %>%
     species_id_confidence = certainty,
     observation_details = glue::glue(
         "Number seen: {number_seen};\n",
+        "Detection: {observation_method}: {observation_type};\n",
         "Comments: {observation_comments}"), # Card is free text
     distinctive_features = animal_features,
     number_of_adult_males = number_adult_males,
@@ -454,9 +455,7 @@ anim_obs <- tfa_occ %>%
     number_of_juvenile_males = number_juvenile_males,
     number_of_juvenile_females = number_juvenile_females,
     number_of_juvenile_unknown = number_juvenile_unknown,
-    detection_method = glue::glue(
-      "Method: {observation_method};\n",
-      "Type: {observation_type}"), # needs to be resolved and considered with secondary_signs
+    detection_method = observation_type,
     secondary_signs = secondary_signs,
     reproductive_maturity = breeding_status)
 
@@ -475,6 +474,16 @@ anim_obs %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_secsign.csv"))
 
+anim_obs %>%
+  dplyr::select(detection_method) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_detmeth.csv"))
+
+anim_obs %>%
+  dplyr::select(detection_type) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_dettype.csv"))
+
 phys_sample <- tfa_occ %>% 
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
@@ -483,12 +492,17 @@ phys_sample <- tfa_occ %>%
     sample_type = specimen_status,
     specimen_voucher_exists = specimen_voucher_exists, # This column is confusing- what does it mean?
     sample_destination = specimen_voucher_location,
-    sample_label = specimen_voucher_catalogue_number)
+    sample_label = glue::glue("[{specimen_voucher_location}]{specimen_voucher_catalogue_number}"))
 
 phys_sample %>%
   dplyr::select(sample_destination) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_sampdest.csv"))
+
+phys_sample %>%
+  dplyr::select(sample_type) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tfa_samptype.csv"))
 
 ## Put Malleefowl in separate csv file and add to data catalogue
 malleefowl_data <- tfa_rec %>% dplyr::transmute(
@@ -534,7 +548,6 @@ tfa_tae <- tfa_occ %>%
         "Fire history: {fire_history}\n",
         "Date entered: {entered_on} {entered_by}\n",
         "Date changed: {changed_on} {changed_by}\n",
-        "Sample destination: {sample_destination}\n",
         "Not published: {occurrence_not_published}\n",
         "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
         ),
@@ -657,26 +670,131 @@ tfa_tcl <- tfa_cons_listings %>%
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_landforms.csv"))  
+  readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
 
 tsc_confidence <- "lookup-confidence" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse()
   
-repro_mat <- "lookup-reproductivematurity" %>%
+tsc_repro_mat <- "lookup-reproductivematurity" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_repro_mat.csv"))
 
-sec_signs <- "lookup-secondarysigns" %>%
+tsc_sec_signs <- "lookup-secondarysigns" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
 
-samp_dest <- "lookup-sampledestination" %>%
+tsc_samp_dest <- "lookup-sampledestination" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
+
+tsc_samp_type <- "lookup-sampletype" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_samp_type.csv"))
+
+tsc_det_meth <- "lookup-detectionmethod" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
+
+# Load manual mapping of TFA lookup criteria from CSV file, and join to relevant table
+tfa_landcrit <- here::here("tfa_landcrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      landform_id = col_character(),
+      landform = col_character(),
+      tsc_landform_id = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfa_hab_comp <- hab_comp %>%
+  left_join(tfa_landcrit, by = c("landform_id")) %>%  
+dplyr::select(source,source_id,tsc_landform_id) %>% 
+dplyr::rename(landform = tsc_landform_id) %>% glimpse
+
+tfa_confidence <- here::here("tfa_id_conf_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      species_id_confidence = col_character(),
+      tsc_species_id_confidence = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfa_det_meth <- here::here("tfa_detmeth_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      detection_method = col_character(),
+      tsc_detection_method = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfa_sec_sign <- here::here("tfa_secsign_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      secondary_signs = col_character(),
+      tsc_secondary_signs = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfa_repmap <- here::here("tfa_repmat_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      reproductive_maturity = col_character(),
+      tsc_reproductive_maturity = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+names(anim_obs)
+
+tfa_anim_obs <- anim_obs %>%
+  left_join(tfa_confidence, by = c("species_id_confidence")) %>% 
+  left_join(tfa_det_meth, by = c("detection_method")) %>%
+  left_join(tfa_sec_sign, by = c("secondary_signs")) %>%
+  left_join(tfa_repmap, by = c("reproductive_maturity")) %>%
+dplyr::select(source,source_id,tsc_species_id_confidence,observation_details,tsc_detection_method,
+              tsc_reproductive_maturity,tsc_secondary_signs,distinctive_features,number_of_adult_males,
+              number_of_adult_females,number_of_adult_unknown,number_of_juvenile_males,number_of_juvenile_females,
+              number_of_juvenile_unknown) %>%
+  dplyr::rename(species_id_confidence = tsc_species_id_confidence) %>%
+  dplyr::rename(detection_method = tsc_detection_method) %>%
+  dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
+  dplyr::rename(secondary_signs = tsc_secondary_signs) %>% glimpse
+
+tfa_samptype <- here::here("tfa_samptype_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      sample_type = col_character(),
+      tsc_sample_type = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfa_sampdest <- here::here("tfa_sampdest_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      sample_destination = col_character(),
+      tsc_sample_destination = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+names(phys_sample)
+
+tfa_phys_sample <- phys_sample %>%
+  left_join(tfa_samptype, by = c("sample_type")) %>% 
+  left_join(tfa_sampdest, by = c("sample_destination")) %>%
+dplyr::select(source,source_id,tsc_sample_type,specimen_voucher_exists,tsc_sample_destination,sample_label) %>%
+  dplyr::rename(sample_type = tsc_sample_type) %>%
+  dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
+
+tfa_veg_class <- veg_class %>% 
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    vegetation_classification = glue::glue(
+        "{vegetation_code}; {vegetation_type}"))
 ```
 
 # Load legacy data from TFA into TSC
