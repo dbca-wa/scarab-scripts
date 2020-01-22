@@ -925,6 +925,164 @@ tfl_tcl <- tfl_cons_listing %>%
   left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% glimpse
 ```
 
+# Extract and transform occurrence lookup Data from TSC
+``` {r extract_tsc_occurrence_lookup, message=FALSE}
+tsc_landforms <- "lookup-landform" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
+
+tsc_rocktype <- "lookup-rocktype" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_rocktype.csv"))
+
+tsc_soiltype <- "lookup-soiltype" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
+
+tsc_soilcolour <- "lookup-soilcolour" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_soilcolour.csv"))
+
+tsc_drainage <- "lookup-drainage" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_drainage.csv"))
+
+tsc_soilcondition <- "lookup-soilcondition" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_soilcondition.csv"))
+
+tsc_surveymethod <- "lookup-surveymethod" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_surveymethod.csv"))
+
+tsc_countmethod <- "lookup-countmethod" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_countmethod.csv"))
+# 
+# tsc_sec_signs <- "lookup-secondarysigns" %>%
+#   wastdr::wastd_GET(api_url = prod) %>%
+#   wastdr::wastd_parse() %>%
+#   readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
+# 
+# tsc_samp_dest <- "lookup-sampledestination" %>%
+#   wastdr::wastd_GET(api_url = prod) %>%
+#   wastdr::wastd_parse() %>%
+#   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
+# 
+# tsc_samp_type <- "lookup-sampletype" %>%
+#   wastdr::wastd_GET(api_url = prod) %>%
+#   wastdr::wastd_parse() %>%
+#   readr::write_csv(path = here::here("data", "tsc_samp_type.csv"))
+# 
+# tsc_det_meth <- "lookup-detectionmethod" %>%
+#   wastdr::wastd_GET(api_url = prod) %>%
+#   wastdr::wastd_parse() %>%
+#   readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
+
+# Load manual mapping of tfl lookup criteria from CSV file, and join to relevant table
+tfl_landcrit <- here::here("tfl_landcrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      landform_id = col_character(),
+      landform = col_character(),
+      tsc_landform_id = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_hab_comp <- hab_comp %>%
+  left_join(tfl_landcrit, by = c("landform_id")) %>%  
+dplyr::select(source,source_id,tsc_landform_id) %>% 
+dplyr::rename(landform = tsc_landform_id) %>% glimpse
+
+tfl_confidence <- here::here("tfl_id_conf_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      species_id_confidence = col_character(),
+      tsc_species_id_confidence = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_det_meth <- here::here("tfl_detmeth_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      detection_method = col_character(),
+      tsc_detection_method = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_sec_sign <- here::here("tfl_secsign_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      secondary_signs = col_character(),
+      tsc_secondary_signs = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_repmap <- here::here("tfl_repmat_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      reproductive_maturity = col_character(),
+      tsc_reproductive_maturity = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+names(anim_obs)
+
+tfl_anim_obs <- anim_obs %>%
+  left_join(tfl_confidence, by = c("species_id_confidence")) %>% 
+  left_join(tfl_det_meth, by = c("detection_method")) %>%
+  left_join(tfl_sec_sign, by = c("secondary_signs")) %>%
+  left_join(tfl_repmap, by = c("reproductive_maturity")) %>%
+dplyr::select(source,source_id,tsc_species_id_confidence,observation_details,tsc_detection_method,
+              tsc_reproductive_maturity,tsc_secondary_signs,distinctive_features,number_of_adult_males,
+              number_of_adult_females,number_of_adult_unknown,number_of_juvenile_males,number_of_juvenile_females,
+              number_of_juvenile_unknown) %>%
+  dplyr::rename(species_id_confidence = tsc_species_id_confidence) %>%
+  dplyr::rename(detection_method = tsc_detection_method) %>%
+  dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
+  dplyr::rename(secondary_signs = tsc_secondary_signs) %>% glimpse
+
+tfl_samptype <- here::here("tfl_samptype_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      sample_type = col_character(),
+      tsc_sample_type = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_sampdest <- here::here("tfl_sampdest_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      sample_destination = col_character(),
+      tsc_sample_destination = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+names(phys_sample)
+
+tfl_phys_sample <- phys_sample %>%
+  left_join(tfl_samptype, by = c("sample_type")) %>% 
+  left_join(tfl_sampdest, by = c("sample_destination")) %>%
+dplyr::select(source,source_id,tsc_sample_type,specimen_voucher_exists,tsc_sample_destination,sample_label) %>%
+  dplyr::rename(sample_type = tsc_sample_type) %>%
+  dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
+
+tfl_veg_class <- veg_class %>% 
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    vegetation_classification = glue::glue(
+        "{vegetation_code}; {vegetation_type}"))
+```
+
 # Load legacy data from TFL into TSC
 In this section, the extracted and transformed data from TFL are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the 
