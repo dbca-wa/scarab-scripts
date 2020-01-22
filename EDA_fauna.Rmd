@@ -479,11 +479,6 @@ anim_obs %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_detmeth.csv"))
 
-anim_obs %>%
-  dplyr::select(detection_type) %>%
-  distinct() %>% 
-  readr::write_csv(path = here::here("data", "tfa_dettype.csv"))
-
 phys_sample <- tfa_occ %>% 
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
@@ -1637,6 +1632,27 @@ Occurrence query should show hints linking to current / legal names and their hi
 
 `zone` and `datum` are standard names expected by BioSys.
 
+#### Missing NameID
+```{r missing_name_id}
+tfa_occ_no_nameid <- tfa_occ %>% 
+    filter(name_id == 0) %>% 
+    select(scientific_name) %>% 
+    unique()
+tfa_occ_no_nameid %>% reactable::reactable()
+```
+There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names missing a NameID.
+
+#### Missing Species Code
+```{r missing_species_code}
+tfa_occ_no_specode <- tfa_occ %>% 
+    filter(species_code == 0) %>% 
+    select(scientific_name) %>% 
+    unique()
+tfa_occ_no_nameid %>% reactable::reactable()
+```
+There are `r nrow(tfa_occ_no_specode)` distinct scientific fauna names missing a Species Code.
+Any records listed here need to be fixed in the original Threatened Fauna database.
+
 #### Date/ Location caveats
 This section lists data issues which need to be fixed at the source (here, in legacy TFA).
 
@@ -1667,27 +1683,6 @@ Please review legacy data until the following numbers are all zero (or accept de
 * `r tfa_occ %>% dplyr::filter(is.na(latitude)) %>% nrow` latitudes are missing.
 * `r tfa_occ %>% dplyr::filter(is.na(longitude)) %>% nrow` longitudes are missing.
 * `r tfa_occ %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the minus sign and turn up in China.
-
-#### Missing NameID
-```{r missing_name_id}
-tfa_occ_no_nameid <- tfa_occ %>% 
-    filter(name_id == 0) %>% 
-    select(scientific_name) %>% 
-    unique()
-tfa_occ_no_nameid %>% reactable::reactable()
-```
-There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names missing a NameID.
-
-#### Missing Species Code
-```{r missing_species_code}
-tfa_occ_no_specode <- tfa_occ %>% 
-    filter(species_code == 0) %>% 
-    select(scientific_name) %>% 
-    unique()
-tfa_occ_no_nameid %>% reactable::reactable()
-```
-There are `r nrow(tfa_occ_no_specode)` distinct scientific fauna names missing a Species Code.
-Any records listed here need to be fixed in the original Threatened Fauna database.
 
 #### Default/ missing dates
 ```{r missing dates}
@@ -1741,6 +1736,11 @@ datum_blank<- tfa_occ %>%
 ```
 
 There are `r nrow(datum_blank)` distinct fauna records with missing datum. These will be defaulted to WGS84.
+
+#### 
+
+
+
 
 #### NameID mismatch
 TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
