@@ -1738,8 +1738,6 @@ datum_blank<- tfa_occ %>%
 There are `r nrow(datum_blank)` distinct fauna records with missing datum. These will be defaulted to WGS84.
 
 ### Occurrence mapping
-<<<<<<< HEAD
-=======
 
 Occurrence criteria were manually mapped for each variable, therefore they need to be checked to confirm whether the mapping is correct. 
 ```{r}
@@ -1772,8 +1770,6 @@ tfl_soiltype: Three of these criteria cound not be mapped because and we don't k
 tfl_sampdest (sample destination): This has manually mapped to a generic field for its location and the specific location added to the smaple label field as free text. We have done this because, combined with Fauna, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
 
 The above need to be corrected  before the manual mapping can be completed.
-
->>>>>>> aae150152f51985af02f38e0b482ecceb0c18bce
 
 Occurrence criteria were manually mapped for each variable, therefore they need to be checked to confirm whether the mapping is correct. 
 ```{r}
