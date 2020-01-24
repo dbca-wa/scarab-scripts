@@ -1082,11 +1082,30 @@ tfl_plant_count_method <- here::here("tfl_Plant_count_method_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_plant_count <- plant_count %>%
-  left_join(tfl_plant_count_method, by = c("plant_count_method")) %>% 
-dplyr::select(-plant_count_method) %>%
-  dplyr::rename(soil_condition = tsc_plant_count_method) %>% glimpse
+tfl_plant_count_subject <- here::here("tfl_Counted_subject_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      Counted_subject = col_character(),
+      tsc_counted_subject = col_character(),
+      tsc_criteria = col_character()
+    ))
 
+tfl_plant_condition <- here::here("tfl_Plant_condition_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      Plant_condition = col_character(),
+      tsc_Plant_condition = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_plant_count <- plant_count %>%
+  left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
+  left_join(tfl_plant_count_subject, by = c("Counted_subject")) %>%
+  left_join(tfl_plant_condition, by = c("Plant_condition")) %>%  
+  dplyr::select(-plant_count_method,-Counted_subject,-Plant_condition,-tsc_criteria.x,-tsc_criteria.y,-tsc_criteria) %>%
+  dplyr::rename(plant_count_method = tsc_plant_count_method) %>% 
+  dplyr::rename(counted_subject = tsc_counted_subject) %>%
+  dplyr::rename(plant_condition = tsc_Plant_condition) %>% glimpse
 
 ## Physical sample
 tfl_sampdest <- here::here("tfl_sample_destination_w_tsc.csv") %>%
@@ -1099,7 +1118,7 @@ tfl_sampdest <- here::here("tfl_sample_destination_w_tsc.csv") %>%
 
 tfl_phys_sample <- phys_sample %>%
   left_join(tfl_sampdest, by = c("sample_destination")) %>%
-dplyr::select(-sample_destination) %>%
+dplyr::select(-sample_destination,-tsc_criteria) %>%
   dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
 
 ```
@@ -1724,6 +1743,55 @@ datum_blank<- tfl_occ %>%
 There are `r nrow(datum_blank)` distinct fauna records with missing datum.
 
 TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
+
+### Occurrence mapping
+
+Occurrence criteria were manually mapped for each variable, 
+therefore they need to be checked to confirm whether the mapping is correct. 
+```{r}
+#landform
+tfl_landcrit %>%
+  reactable::reactable(filterable = TRUE)
+#rocktype
+tfl_rocktype %>%
+  reactable::reactable(filterable = TRUE)
+#soil_type
+tfl_soiltype %>%
+  reactable::reactable(filterable = TRUE)
+#soil_colour
+tfl_soilcolour %>%
+  reactable::reactable(filterable = TRUE)
+#drainage
+tfl_drainage %>%
+  reactable::reactable(filterable = TRUE)
+#soil_condition
+tfl_soil_condition %>%
+  reactable::reactable(filterable = TRUE)
+#survey_method
+tfl_survey_method %>%
+  reactable::reactable(filterable = TRUE)
+#plant_count_method
+tfl_plant_count_method %>%
+  reactable::reactable(filterable = TRUE)
+
+#counted_subject
+tfl_soilcolour %>%
+  reactable::reactable(filterable = TRUE)
+#plant_condition
+tfl_soilcolour %>%
+  reactable::reactable(filterable = TRUE)
+
+#sample_destination
+tfl_sampdest %>%
+  reactable::reactable(filterable = TRUE)
+
+```
+
+In addition, some conservation criteria could not be mapped as they do not exist 
+in the list/category_code. 
+These need to be corrected before the manual mapping can be updated and the 
+correct criteria assigned for all species.
+
 
 ## NameID mismatch
 TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
