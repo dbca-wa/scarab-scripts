@@ -1724,6 +1724,7 @@ tfl_occ_no_latlng_w_ne %>% reactable::reactable()
 
 There are `r nrow(tfl_occ_no_latlng_w_ne)` distinct flora records with missing latitude or longitude, which have northings and eastings.
 
+#### Datum
 ```{r datum_tally}
 datum_tally <- tfl_occ %>%
   dplyr::group_by(datum) %>%
