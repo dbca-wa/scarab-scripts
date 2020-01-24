@@ -1,0 +1,5 @@
+soil_condition,tsc_soil_condition,tsc_criteria
+DRY,dry,1
+MOIST,moist,2
+INUNDATE,inundated,4
+WTRLOGGD,waterlogged,3

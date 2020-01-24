@@ -1,0 +1,5 @@
+drainage,tsc_drainage,tsc_criteria
+WLL_DRND,well-drained,1
+SEASINUN,seasonally-inundated,2
+PERMINUN,permanently-inundated,3
+TIDAL,tidal,4

@@ -1,0 +1,5 @@
+Plant_condition,tsc_Plant_condition,tsc_criteria
+HEALTHY,healthy,1
+MODERATE,moderate,2
+POOR,poor,3
+SENSCNT,senescent,4

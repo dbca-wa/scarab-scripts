@@ -1,0 +1,4 @@
+survey_method,tsc_survey_method,tsc_criteria
+PART_SVY,partial-survey,2
+FULL_SVY,full-survey,3
+EDGE_SVY,edge-survey,1

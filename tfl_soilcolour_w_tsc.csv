@@ -1,0 +1,17 @@
+soil_colour,tsc_soil_colour,tsc_criteria
+YELLOW,yellow,3
+ORANGE,orange,8
+GREY,grey,5
+BROWN,brown,2
+YEL_BRWN,yellow_brown,9
+YEL_ORNG,yellow_orange,10
+WHITE,white,4
+RED,red,1
+CREAM,cream,11
+RED_ORNG,red_orange,12
+GRY_BLCK,grey_black,13
+PINK,pink,14
+RED_BRWN,red_brown,15
+BLACK,black,6
+RED_BLCK,red_black,16
+BRN_BLCK,brown_black,17

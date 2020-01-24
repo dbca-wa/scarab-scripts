@@ -1,0 +1,11 @@
+plant_count_method,tsc_plant_count_method,tsc_criteria
+ESTMT,estimate,8
+ACT_IND,actual-count-individuals,1
+UNKNOWN,,
+EXT_TRNS,extrapolated-count-transect-based,5
+ACT_CLMP,actual-count-clumps,2
+EXT_LOOK,extrapolated-count-look-around,7
+EXT_VIQD,extrapolated-count-quadrat-based,4
+EXT_GRQD,extrapolated-count-quadrat-based,4
+PART_CNT,partial-count-spatially-defined-subset-population,3
+EXT_TRAV,extrapolated-count-traverse,6
