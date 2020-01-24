@@ -523,7 +523,7 @@ occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
     )
 
 ## Create occurance data tables for each card in TSC
-hab_comp <- tfl_occ %>%
+tfl_hab_comp <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
@@ -605,30 +605,32 @@ fire_hist <- tfl_occ %>%
     source_id = sheetno,
     fire_intensity = fire_intensity,
     fire_year = fire_year,
-    fire_season = fire_season,
-    Date_of_last_fire = glue::glue(
-      "{fire_year}", "{fire_season}")) # modify this to fit card requirements
-
+    fire_season = fire_season) %>%
+  mutate(month = case_when(fire_season == "SPR" ~ "09",
+                                fire_season == "SUM" ~ "12",
+                                fire_season == "AUT" ~ "03",
+                                fire_season == "WIN" ~ "06")) %>% 
+  mutate(day = case_when(fire_season > "NA" ~ "01")) %>% 
+  transmute(source = source,
+    source_id = source_id,
+    fire_intensity = fire_intensity,
+    fire_date = glue::glue("{day}/{month}/{fire_year}"))
+ 
 fire_hist %>%
   dplyr::select(fire_intensity) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfl_fire_intensity.csv"))
-
-fire_hist %>%
-  dplyr::select(fire_year,fire_season) %>%
-  distinct() %>% 
-  readr::write_csv(path = here::here("data", "tfl_fire_date.csv"))
 
 plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
     source_id = sheetno,
-    Number_of_quadrats_surveyed = quad_num,
-    Individual_quadrat_area = quad_size,
-    Total_quadrat_area = quad_tot_sq_m,
-    Land_manager_present = landowner_present,
-    Plant_count_method = count_mthd_code,
+    number_of_quadrats_surveyed = quad_num,
+    individual_quadrat_area = quad_size,
+    total_quadrat_area =quad_tot_sq_m,
+    land_manager_present = landowner_present,
+    plant_count_method = count_mthd_code,
     Number_alive_mature = mature_plants,
     Number_dead_mature = mature_dead,
     Number_alive_juvenile = juvenile_plants,
@@ -681,7 +683,7 @@ phys_sample <- tfl_occ %>%
     sample_type = "plant specimen",
     sample_destination = voucher_location, # most of these are listed as WA HERB/ INT HERB/ DIS HERB, but none of these are options in the card
     duplicate_sample_destination = dupvouch_location,
-    sample_label = barcode,
+    sample_label = glue::glue("[{sample_destination}]{barcode}"),
     permit_id = licence)
 
 phys_sample %>%
@@ -966,99 +968,126 @@ tsc_countmethod <- "lookup-countmethod" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_countmethod.csv"))
-# 
-# tsc_sec_signs <- "lookup-secondarysigns" %>%
-#   wastdr::wastd_GET(api_url = prod) %>%
-#   wastdr::wastd_parse() %>%
-#   readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
-# 
-# tsc_samp_dest <- "lookup-sampledestination" %>%
-#   wastdr::wastd_GET(api_url = prod) %>%
-#   wastdr::wastd_parse() %>%
-#   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
-# 
-# tsc_samp_type <- "lookup-sampletype" %>%
-#   wastdr::wastd_GET(api_url = prod) %>%
-#   wastdr::wastd_parse() %>%
-#   readr::write_csv(path = here::here("data", "tsc_samp_type.csv"))
-# 
-# tsc_det_meth <- "lookup-detectionmethod" %>%
-#   wastdr::wastd_GET(api_url = prod) %>%
-#   wastdr::wastd_parse() %>%
-#   readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
+
+tsc_countsubject <- "lookup-countsubject" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_countsubject.csv"))
+
+tsc_plantcondition <- "lookup-plantcondition" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_plantcondition.csv"))
+
+tsc_samp_dest <- "lookup-sampledestination" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
 
 # Load manual mapping of tfl lookup criteria from CSV file, and join to relevant table
+
+## habitat composition
 tfl_landcrit <- here::here("tfl_landcrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      landform_id = col_character(),
       landform = col_character(),
-      tsc_landform_id = col_character(),
+      tsc_landform = col_character(),
       tsc_criteria = col_character()
     ))
+
+tfl_rocktype <- here::here("tfl_rocktype_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      rocktype= col_character(),
+      tsc_rocktype = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_soiltype <- here::here("tfl_soiltype_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      soil_type = col_character(),
+      tsc_soiltype = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_soilcolour <- here::here("tfl_soilcolour_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      soil_colour = col_character(),
+      tsc_soil_colour = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_drainage <- here::here("tfl_drainage_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      drainage = col_character(),
+      tsc_drainage = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+names(tfl_hab_comp)
 
 tfl_hab_comp <- hab_comp %>%
-  left_join(tfl_landcrit, by = c("landform_id")) %>%  
-dplyr::select(source,source_id,tsc_landform_id) %>% 
-dplyr::rename(landform = tsc_landform_id) %>% glimpse
+  left_join(tfl_landcrit, by = c("landform")) %>% 
+  left_join(tfl_rocktype, by = c("rock_type")) %>%
+  left_join(tfl_soiltype, by = c("soil_type")) %>%
+  left_join(tfl_soilcolour, by = c("soil_colour")) %>%
+  left_join(tfl_drainage, by = c("drainage")) %>%
+  dplyr::select(source,source_id,tsc_landforms,tsc_rock_type,loose_rock,tsc_soil_type,tsc_soil_colour,tsc_drainage) %>% 
+  dplyr::rename(landform = tsc_landforms) %>% 
+  dplyr::rename(rocktype = tsc_rock_type) %>% 
+  dplyr::rename(soiltype = tsc_soil_type) %>% 
+  dplyr::rename(soilcolour = tsc_soil_colour) %>%
+  dplyr::rename(drainage = tsc_drainage) %>% glimpse
 
-tfl_confidence <- here::here("tfl_id_conf_w_tsc.csv") %>%
+
+## Area assessment
+tfl_survey_method <- here::here("tfl_survey_method_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      species_id_confidence = col_character(),
-      tsc_species_id_confidence = col_character(),
+      survey_method = col_character(),
+      tsc_survey_method = col_character(),
       tsc_criteria = col_character()
     ))
 
-tfl_det_meth <- here::here("tfl_detmeth_w_tsc.csv") %>%
+tfl_area_ass <- area_ass %>%
+  left_join(tfl_survey_method, by = c("survey_method")) %>% 
+dplyr::select(source,source_id,tsc_survey_method,surveyed_area,survey_duration) %>%
+  dplyr::rename(survey_method = tsc_survey_method) %>% glimpse
+
+## Habitat condition
+tfl_soil_condition <- here::here("tfl_soil_condition_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      detection_method = col_character(),
-      tsc_detection_method = col_character(),
+      soil_condition = col_character(),
+      tsc_soil_condition = col_character(),
       tsc_criteria = col_character()
     ))
 
-tfl_sec_sign <- here::here("tfl_secsign_w_tsc.csv") %>%
+tfl_hab_cond <- hab_cond %>%
+  left_join(tfl_soil_condition, by = c("soil_condition")) %>% 
+dplyr::select(source,source_id,occurrence_condition,tsc_soil_condition) %>%
+  dplyr::rename(soil_condition = tsc_soil_condition) %>% glimpse
+
+## Plant count
+tfl_plant_count_method <- here::here("tfl_Plant_count_method_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      secondary_signs = col_character(),
-      tsc_secondary_signs = col_character(),
+      plant_count_method = col_character(),
+      tsc_plant_count_method = col_character(),
       tsc_criteria = col_character()
     ))
 
-tfl_repmap <- here::here("tfl_repmat_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      reproductive_maturity = col_character(),
-      tsc_reproductive_maturity = col_character(),
-      tsc_criteria = col_character()
-    ))
+tfl_plant_count <- plant_count %>%
+  left_join(tfl_plant_count_method, by = c("plant_count_method")) %>% 
+dplyr::select(-plant_count_method) %>%
+  dplyr::rename(soil_condition = tsc_plant_count_method) %>% glimpse
 
-names(anim_obs)
 
-tfl_anim_obs <- anim_obs %>%
-  left_join(tfl_confidence, by = c("species_id_confidence")) %>% 
-  left_join(tfl_det_meth, by = c("detection_method")) %>%
-  left_join(tfl_sec_sign, by = c("secondary_signs")) %>%
-  left_join(tfl_repmap, by = c("reproductive_maturity")) %>%
-dplyr::select(source,source_id,tsc_species_id_confidence,observation_details,tsc_detection_method,
-              tsc_reproductive_maturity,tsc_secondary_signs,distinctive_features,number_of_adult_males,
-              number_of_adult_females,number_of_adult_unknown,number_of_juvenile_males,number_of_juvenile_females,
-              number_of_juvenile_unknown) %>%
-  dplyr::rename(species_id_confidence = tsc_species_id_confidence) %>%
-  dplyr::rename(detection_method = tsc_detection_method) %>%
-  dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
-  dplyr::rename(secondary_signs = tsc_secondary_signs) %>% glimpse
-
-tfl_samptype <- here::here("tfl_samptype_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      sample_type = col_character(),
-      tsc_sample_type = col_character(),
-      tsc_criteria = col_character()
-    ))
-
-tfl_sampdest <- here::here("tfl_sampdest_w_tsc.csv") %>%
+## Physical sample
+tfl_sampdest <- here::here("tfl_sample_destination_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       sample_destination = col_character(),
@@ -1066,21 +1095,11 @@ tfl_sampdest <- here::here("tfl_sampdest_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-names(phys_sample)
-
 tfl_phys_sample <- phys_sample %>%
-  left_join(tfl_samptype, by = c("sample_type")) %>% 
   left_join(tfl_sampdest, by = c("sample_destination")) %>%
-dplyr::select(source,source_id,tsc_sample_type,specimen_voucher_exists,tsc_sample_destination,sample_label) %>%
-  dplyr::rename(sample_type = tsc_sample_type) %>%
+dplyr::select(-sample_destination) %>%
   dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
 
-tfl_veg_class <- veg_class %>% 
-  dplyr::transmute(
-    source = source,
-    source_id = source_id,
-    vegetation_classification = glue::glue(
-        "{vegetation_code}; {vegetation_type}"))
 ```
 
 # Load legacy data from TFL into TSC
