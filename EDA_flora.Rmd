@@ -1746,8 +1746,7 @@ TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m diffe
 
 ### Occurrence mapping
 
-Occurrence criteria were manually mapped for each variable, 
-therefore they need to be checked to confirm whether the mapping is correct. 
+Occurrence criteria were manually mapped for each variable, therefore they need to be checked to confirm whether the mapping is correct. 
 ```{r}
 #landform
 tfl_landcrit %>%
@@ -1773,25 +1772,23 @@ tfl_survey_method %>%
 #plant_count_method
 tfl_plant_count_method %>%
   reactable::reactable(filterable = TRUE)
-
 #counted_subject
-tfl_soilcolour %>%
+tfl_plant_count_subject %>%
   reactable::reactable(filterable = TRUE)
 #plant_condition
-tfl_soilcolour %>%
+tfl_plant_condition %>%
   reactable::reactable(filterable = TRUE)
-
 #sample_destination
 tfl_sampdest %>%
-  reactable::reactable(filterable = TRUE)
+  reactable::reactable(filterable = TRUE) 
 
 ```
+Some conservation criteria could not be mapped as they do not exist in the list/category_code.
 
-In addition, some conservation criteria could not be mapped as they do not exist 
-in the list/category_code. 
-These need to be corrected before the manual mapping can be updated and the 
-correct criteria assigned for all species.
+tfl_soiltype: Three of these criteria cound not be mapped because and we don't know what they are.
+tfl_sampdest (sample destination): This has manually mapped to a generic field for its location and the specific location added to the smaple label field as free text. We have done this because, combined with Fauna, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
 
+The above need to be corrected  before the manual mapping can be completed.
 
 ## NameID mismatch
 TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
