@@ -1766,7 +1766,9 @@ tfa_sampdest %>%
 Some conservation criteria could not be mapped as they do not exist in the list/category_code.
 
 tfa_landcrit: Some of these criteria cound not be mapped because they are not landform criteria.
+
 tfa_sec_sign: Some of these criteria cound not be mapped because they are not secondary sign criteria.
+
 tfl_sampdest (sample destination): This has manually mapped to a generic field for its location and the specific location added to the sample label field as free text. We have done this because, combined with Flora, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
 
 The above need to be corrected  before the manual mapping can be completed.
