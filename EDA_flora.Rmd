@@ -53,7 +53,7 @@ snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
 # Cached data from TSC - delete to force refresh
 datafile_tsc_flora <- here::here("data", "etl_flora_tsc.Rda")
 
-lookups <-	tfl_data$DRF_LOOKUP_DOMAINS
+lookups <-	tfl_data$DRF_LOOKUP_TERMS
 
 # Look up tables
 populations <- tfl_data$DRF_POPULATION %>%
@@ -598,7 +598,7 @@ hab_cond %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfl_soil_condition.csv"))
 
-fire_hist <- tfl_occ %>%
+tfl_fire_hist <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
@@ -606,20 +606,22 @@ fire_hist <- tfl_occ %>%
     fire_intensity = fire_intensity,
     fire_year = fire_year,
     fire_season = fire_season) %>%
+   mutate(fire_intensity = case_when(fire_intensity == "0" ~ "no",
+                                fire_intensity == "1" ~ "low",
+                                fire_intensity == "2" ~ "medium",
+                                fire_intensity == "3" ~ "high")) %>% 
   mutate(month = case_when(fire_season == "SPR" ~ "09",
                                 fire_season == "SUM" ~ "12",
                                 fire_season == "AUT" ~ "03",
                                 fire_season == "WIN" ~ "06")) %>% 
-  mutate(day = case_when(fire_season > "NA" ~ "01")) %>% 
+  mutate(day = case_when(month == "03" ~ "01",
+  month == "06" ~ "01",
+  month == "09" ~ "01",
+  month == "12" ~ "01")) %>% 
   transmute(source = source,
     source_id = source_id,
     fire_intensity = fire_intensity,
-    fire_date = glue::glue("{day}/{month}/{fire_year}"))
- 
-fire_hist %>%
-  dplyr::select(fire_intensity) %>%
-  distinct() %>% 
-  readr::write_csv(path = here::here("data", "tfl_fire_intensity.csv"))
+    fire_date = glue::glue("{day}/{month}/{fire_year}", .na = "NA") %>% as.character) %>% glimpse()
 
 plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
