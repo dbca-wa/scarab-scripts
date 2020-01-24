@@ -523,7 +523,7 @@ occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
     )
 
 ## Create occurance data tables for each card in TSC
-tfl_hab_comp <- tfl_occ %>%
+hab_comp <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
@@ -628,11 +628,11 @@ plant_count <- tfl_occ %>%
   dplyr::transmute(
     source = 11,
     source_id = sheetno,
-    number_of_quadrats_surveyed = quad_num,
-    individual_quadrat_area = quad_size,
-    total_quadrat_area =quad_tot_sq_m,
-    land_manager_present = landowner_present,
-    plant_count_method = count_mthd_code,
+    Number_of_quadrats_surveyed = quad_num,
+    Individual_quadrat_area = quad_size,
+    Total_quadrat_area =quad_tot_sq_m,
+    Land_manager_present = landowner_present,
+    Plant_count_method = count_mthd_code,
     Number_alive_mature = mature_plants,
     Number_dead_mature = mature_dead,
     Number_alive_juvenile = juvenile_plants,
@@ -1028,8 +1028,6 @@ tfl_drainage <- here::here("tfl_drainage_w_tsc.csv") %>%
       tsc_drainage = col_character(),
       tsc_criteria = col_character()
     ))
-
-names(tfl_hab_comp)
 
 tfl_hab_comp <- hab_comp %>%
   left_join(tfl_landcrit, by = c("landform")) %>% 
