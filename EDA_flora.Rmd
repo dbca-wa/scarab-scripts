@@ -628,47 +628,47 @@ plant_count <- tfl_occ %>%
   dplyr::transmute(
     source = 11,
     source_id = sheetno,
-    Number_of_quadrats_surveyed = quad_num,
-    Individual_quadrat_area = quad_size,
-    Total_quadrat_area =quad_tot_sq_m,
-    Land_manager_present = landowner_present,
-    Plant_count_method = count_mthd_code,
-    Number_alive_mature = mature_plants,
-    Number_dead_mature = mature_dead,
-    Number_alive_juvenile = juvenile_plants,
-    Number_dead_juvenile = juvenile_dead,
-    Number_alive_seedlings = seedling_plants,
-    Number_dead_seedlings = seedling_dead,
-    Counted_subject = cnt_plant_type_code,
-    Number_alive = simple_live_tot,
-    Estimates_population_area = area_occupied,
-    Area_occupied_method = area_occupied_method,
-    Clonal_reproduction_present = clonal,
-    Vegetative_state_present = vegetative,
-    Flower_buds_present = in_buds,
-    Flowers_present = in_flower,
-    Immature_fruit_present = immature_fruit,
-    Ripe_fruit_present = fruit,
-    Dehisced_fruit_present = dehisced_fruit,
-    Flowering_plants = flower_percentage,
-    Number_dead = simple_dead_tot,
-    Plant_condition = population_condition,
+    number_of_quadrats_surveyed = quad_num,
+    individual_quadrat_area = quad_size,
+    yotal_quadrat_area =quad_tot_sq_m,
+    land_manager_present = landowner_present,
+    plant_count_method = count_mthd_code,
+    number_alive_mature = mature_plants,
+    number_dead_mature = mature_dead,
+    number_alive_juvenile = juvenile_plants,
+    number_dead_juvenile = juvenile_dead,
+    number_alive_seedlings = seedling_plants,
+    number_dead_seedlings = seedling_dead,
+    counted_subject = cnt_plant_type_code,
+    number_alive = simple_live_tot,
+    estimates_population_area = area_occupied,
+    area_occupied_method = area_occupied_method,
+    clonal_reproduction_present = clonal,
+    vegetative_state_present = vegetative,
+    flower_buds_present = in_buds,
+    flowers_present = in_flower,
+    immature_fruit_present = immature_fruit,
+    ripe_fruit_present = fruit,
+    dehisced_fruit_present = dehisced_fruit,
+    flowering_plants = flower_percentage,
+    number_dead = simple_dead_tot,
+    plant_condition = population_condition,
     comments = population_notes)
 
 plant_count %>%
-  dplyr::select(Plant_count_method) %>%
+  dplyr::select(plant_count_method) %>%
   distinct() %>% 
-  readr::write_csv(path = here::here("data", "tfl_Plant_count_method.csv"))
+  readr::write_csv(path = here::here("data", "tfl_plant_count_method.csv"))
 
 plant_count %>%
-  dplyr::select(Counted_subject) %>%
+  dplyr::select(counted_subject) %>%
   distinct() %>% 
-  readr::write_csv(path = here::here("data", "tfl_Counted_subject.csv"))
+  readr::write_csv(path = here::here("data", "tfl_counted_subject.csv"))
 
 plant_count %>%
-  dplyr::select(Plant_condition) %>%
+  dplyr::select(plant_condition) %>%
   distinct() %>% 
-  readr::write_csv(path = here::here("data", "tfl_Plant_condition.csv"))
+  readr::write_csv(path = here::here("data", "tfl_plant_condition.csv"))
 
 ass_species <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -1072,7 +1072,7 @@ dplyr::select(source,source_id,occurrence_condition,tsc_soil_condition) %>%
   dplyr::rename(soil_condition = tsc_soil_condition) %>% glimpse
 
 ## Plant count
-tfl_plant_count_method <- here::here("tfl_Plant_count_method_w_tsc.csv") %>%
+tfl_plant_count_method <- here::here("tfl_plant_count_method_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       plant_count_method = col_character(),
@@ -1080,27 +1080,34 @@ tfl_plant_count_method <- here::here("tfl_Plant_count_method_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_plant_count_subject <- here::here("tfl_Counted_subject_w_tsc.csv") %>%
+tfl_plant_count_subject <- here::here("tfl_counted_subject_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      Counted_subject = col_character(),
+      counted_subject = col_character(),
       tsc_counted_subject = col_character(),
       tsc_criteria = col_character()
     ))
 
-tfl_plant_condition <- here::here("tfl_Plant_condition_w_tsc.csv") %>%
+tfl_plant_condition <- here::here("tfl_plant_condition_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      Plant_condition = col_character(),
+      plant_condition = col_character(),
       tsc_Plant_condition = col_character(),
       tsc_criteria = col_character()
     ))
 
 tfl_plant_count <- plant_count %>%
   left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
-  left_join(tfl_plant_count_subject, by = c("Counted_subject")) %>%
-  left_join(tfl_plant_condition, by = c("Plant_condition")) %>%  
-  dplyr::select(-plant_count_method,-Counted_subject,-Plant_condition,-tsc_criteria.x,-tsc_criteria.y,-tsc_criteria) %>%
+  left_join(tfl_plant_count_subject, by = c("counted_subject")) %>%
+  left_join(tfl_plant_condition, by = c("plant_condition")) %>%  
+  dplyr::select(
+    -plant_count_method,
+    -counted_subject,
+    -plant_condition,
+    -tsc_criteria.x,
+    -tsc_criteria.y,
+    -tsc_criteria
+  ) %>%
   dplyr::rename(plant_count_method = tsc_plant_count_method) %>% 
   dplyr::rename(counted_subject = tsc_counted_subject) %>%
   dplyr::rename(plant_condition = tsc_Plant_condition) %>% glimpse
@@ -1118,7 +1125,6 @@ tfl_phys_sample <- phys_sample %>%
   left_join(tfl_sampdest, by = c("sample_destination")) %>%
 dplyr::select(-sample_destination,-tsc_criteria) %>%
   dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
-
 ```
 
 # Load legacy data from TFL into TSC
