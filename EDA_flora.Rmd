@@ -473,54 +473,54 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     licence = LICENCE %>% as.character()
   )
 
-occ_liasons <- tfl_data$DRF_LIAISONS %>%
-  dplyr::transmute(
-    liaisons_id = LIAISONS.ID %>% as.integer(),
-    pop_id = POP.ID %>% as.integer(),
-    notify_date = NOTIFY.DATE %>% as.character(),
-    othernames = OTHERNAMES %>% as.character(),
-    initials = INITIALS %>% as.character(),
-    surname = SURNAME %>% as.character(),
-    address = ADDRESS %>% as.character(),
-    phone_number = PHONE.NO %>% as.character(),
-    comments = COMMENTS %>% as.character(),
-    notification_type = NOTIFICATION.TYPE %>% as.character(),
-    notifier_name = NOTIFIER.NAME %>% as.character(),
-    active_ind = ACTIVE.IND %>% as.character(),
-    deactivated_date = DEACTIVATED.DATE %>% as.character(),
-    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
-    created_by = CREATED.BY %>% as.character(),
-    created_date = CREATED.DATE %>% as.character(),
-    modified_by = MODIFIED.BY %>% as.character(),
-    modified_date = MODIFIED.DATE %>% as.character())
+# occ_liasons <- tfl_data$DRF_LIAISONS %>%
+#   dplyr::transmute(
+#     liaisons_id = LIAISONS.ID %>% as.integer(),
+#     pop_id = POP.ID %>% as.integer(),
+#     notify_date = NOTIFY.DATE %>% as.character(),
+#     othernames = OTHERNAMES %>% as.character(),
+#     initials = INITIALS %>% as.character(),
+#     surname = SURNAME %>% as.character(),
+#     address = ADDRESS %>% as.character(),
+#     phone_number = PHONE.NO %>% as.character(),
+#     comments = COMMENTS %>% as.character(),
+#     notification_type = NOTIFICATION.TYPE %>% as.character(),
+#     notifier_name = NOTIFIER.NAME %>% as.character(),
+#     active_ind = ACTIVE.IND %>% as.character(),
+#     deactivated_date = DEACTIVATED.DATE %>% as.character(),
+#     reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+#     created_by = CREATED.BY %>% as.character(),
+#     created_date = CREATED.DATE %>% as.character(),
+#     modified_by = MODIFIED.BY %>% as.character(),
+#     modified_date = MODIFIED.DATE %>% as.character())
 
 names(tfl_data$DRF_P2K_PRIORITY)
 
-occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
-  dplyr::transmute(
-    species = SPECIES %>% as.character(),
-    taxon_id = TAXONID %>% as.integer(),
-    change = CHANGE %>% as.character(),
-    change_date = CHANGE.DATE %>% as.character(),
-    add_date = ADD.DATE %>% as.character(),
-    delete_date = DELETE.DATE %>% as.character(),
-    informal = INFORMAL %>% as.character(),
-    authority = INFORMAL %>% as.character(),
-    pr_code = PR.CODE %>% as.character(),
-    wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
-    iucn_criteria = IUCN.CRITERIA %>% as.character(),
-    date_iucn_change = DATE.IUCN.CHANGE %>% as.character(),
-    epbc_rank = EPBC.RANK %>% as.character(),
-    calm_reg = CALM.REG %>% as.character(),
-    district = DISTRICT %>% as.character(),
-    dist = DIST %>% as.character(),
-    fl_period = FL.PERIOD %>% as.character(),
-    old_name = OLD.NAME %>% as.character(),
-    fam_num = FAM.NO %>% as.character(),
-    file_num = FILE.NO %>% as.character(),
-    man_plan = MANPLAN %>% as.character(),
-    row_num = ROW.NO %>% as.integer()
-    )
+# occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
+#   dplyr::transmute(
+#     species = SPECIES %>% as.character(),
+#     taxon_id = TAXONID %>% as.integer(),
+#     change = CHANGE %>% as.character(),
+#     change_date = CHANGE.DATE %>% as.character(),
+#     add_date = ADD.DATE %>% as.character(),
+#     delete_date = DELETE.DATE %>% as.character(),
+#     informal = INFORMAL %>% as.character(),
+#     authority = INFORMAL %>% as.character(),
+#     pr_code = PR.CODE %>% as.character(),
+#     wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
+#     iucn_criteria = IUCN.CRITERIA %>% as.character(),
+#     date_iucn_change = DATE.IUCN.CHANGE %>% as.character(),
+#     epbc_rank = EPBC.RANK %>% as.character(),
+#     calm_reg = CALM.REG %>% as.character(),
+#     district = DISTRICT %>% as.character(),
+#     dist = DIST %>% as.character(),
+#     fl_period = FL.PERIOD %>% as.character(),
+#     old_name = OLD.NAME %>% as.character(),
+#     fam_num = FAM.NO %>% as.character(),
+#     file_num = FILE.NO %>% as.character(),
+#     man_plan = MANPLAN %>% as.character(),
+#     row_num = ROW.NO %>% as.integer()
+#     )
 
 ## Create occurance data tables for each card in TSC
 hab_comp <- tfl_occ %>%
