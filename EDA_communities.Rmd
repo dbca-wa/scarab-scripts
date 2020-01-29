@@ -170,7 +170,7 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
 
 ```
 
-## occurences
+## Occurences
 ```{r tec_occ}
 reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability_id = BR.CODE %>% as.character(),
@@ -236,8 +236,6 @@ tec_occ <- tec$OCCURRENCES %>%
   # dplyr::left_join(confidentiality, by = "confidential_id") %>%
   dplyr::left_join(reliability, by = "reliability_id") %>%
   dplyr::select(-confidential_id, reliability_id)
-
-tec_occ %>% skimr::skim() %>% reactable::reactable(filterable = TRUE)
 ```
 
 # Extract and transform conservation criteria Data from TSC
@@ -318,6 +316,204 @@ tec_ccl <- tec_cons_listing %>%
   left_join(tec_conscrit, by = c("category_code","criterion_code")) 
 ```
 
+# Extract and transform occurrence lookup Data from TSC
+``` {r extract_tsc_occurrence_lookup, message=FALSE}
+tsc_landforms <- "lookup-landform" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
+
+tsc_rocktype <- "lookup-rocktype" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_rocktype.csv"))
+
+tsc_soiltype <- "lookup-soiltype" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
+
+tsc_soilcolour <- "lookup-soilcolour" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_soilcolour.csv"))
+
+tsc_drainage <- "lookup-drainage" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_drainage.csv"))
+
+tsc_soilcondition <- "lookup-soilcondition" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_soilcondition.csv"))
+
+tsc_surveymethod <- "lookup-surveymethod" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_surveymethod.csv"))
+
+tsc_countmethod <- "lookup-countmethod" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_countmethod.csv"))
+
+tsc_countsubject <- "lookup-countsubject" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_countsubject.csv"))
+
+tsc_plantcondition <- "lookup-plantcondition" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_plantcondition.csv"))
+
+tsc_samp_dest <- "lookup-sampledestination" %>%
+  wastdr::wastd_GET(api_url = prod) %>%
+  wastdr::wastd_parse() %>%
+  readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
+
+# Load manual mapping of tfl lookup criteria from CSV file, and join to relevant table
+
+## habitat composition
+tfl_landcrit <- here::here("tfl_landcrit_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      landform = col_character(),
+      tsc_landform = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_rocktype <- here::here("tfl_rocktype_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      rocktype= col_character(),
+      tsc_rocktype = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_soiltype <- here::here("tfl_soiltype_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      soil_type = col_character(),
+      tsc_soiltype = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_soilcolour <- here::here("tfl_soilcolour_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      soil_colour = col_character(),
+      tsc_soil_colour = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_drainage <- here::here("tfl_drainage_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      drainage = col_character(),
+      tsc_drainage = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_hab_comp <- hab_comp %>%
+  left_join(tfl_landcrit, by = c("landform")) %>% 
+  left_join(tfl_rocktype, by = c("rock_type")) %>%
+  left_join(tfl_soiltype, by = c("soil_type")) %>%
+  left_join(tfl_soilcolour, by = c("soil_colour")) %>%
+  left_join(tfl_drainage, by = c("drainage")) %>%
+  dplyr::select(source,source_id,tsc_landforms,tsc_rock_type,loose_rock,tsc_soil_type,tsc_soil_colour,tsc_drainage) %>% 
+  dplyr::rename(landform = tsc_landforms) %>% 
+  dplyr::rename(rocktype = tsc_rock_type) %>% 
+  dplyr::rename(soiltype = tsc_soil_type) %>% 
+  dplyr::rename(soilcolour = tsc_soil_colour) %>%
+  dplyr::rename(drainage = tsc_drainage) %>% glimpse
+
+
+## Area assessment
+tfl_survey_method <- here::here("tfl_survey_method_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      survey_method = col_character(),
+      tsc_survey_method = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_area_ass <- area_ass %>%
+  left_join(tfl_survey_method, by = c("survey_method")) %>% 
+dplyr::select(source,source_id,tsc_survey_method,surveyed_area,survey_duration) %>%
+  dplyr::rename(survey_method = tsc_survey_method) %>% glimpse
+
+## Habitat condition
+tfl_soil_condition <- here::here("tfl_soil_condition_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      soil_condition = col_character(),
+      tsc_soil_condition = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_hab_cond <- hab_cond %>%
+  left_join(tfl_soil_condition, by = c("soil_condition")) %>% 
+dplyr::select(source,source_id,occurrence_condition,tsc_soil_condition) %>%
+  dplyr::rename(soil_condition = tsc_soil_condition) %>% glimpse
+
+## Plant count
+tfl_plant_count_method <- here::here("tfl_plant_count_method_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      plant_count_method = col_character(),
+      tsc_plant_count_method = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_plant_count_subject <- here::here("tfl_counted_subject_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      counted_subject = col_character(),
+      tsc_counted_subject = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_plant_condition <- here::here("tfl_plant_condition_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      plant_condition = col_character(),
+      tsc_Plant_condition = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_plant_count <- plant_count %>%
+  left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
+  left_join(tfl_plant_count_subject, by = c("counted_subject")) %>%
+  left_join(tfl_plant_condition, by = c("plant_condition")) %>%  
+  dplyr::select(
+    -plant_count_method,
+    -counted_subject,
+    -plant_condition,
+    -tsc_criteria.x,
+    -tsc_criteria.y,
+    -tsc_criteria
+  ) %>%
+  dplyr::rename(plant_count_method = tsc_plant_count_method) %>% 
+  dplyr::rename(counted_subject = tsc_counted_subject) %>%
+  dplyr::rename(plant_condition = tsc_Plant_condition) %>% glimpse
+
+## Physical sample
+tfl_sampdest <- here::here("tfl_sample_destination_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      sample_destination = col_character(),
+      tsc_sample_destination = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tfl_phys_sample <- phys_sample %>%
+  left_join(tfl_sampdest, by = c("sample_destination")) %>%
+dplyr::select(-sample_destination,-tsc_criteria) %>%
+  dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
+```
+
 # Load legacy data from TEC into TSC
 In this section, the extracted and transformed data from TEC are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the 
@@ -376,6 +572,143 @@ tec_cl_tsc %>%
 ```
 
 ## Occurrences
+TEC refers to a single AOO as "occurrence". Occurrences may be geo-referenced as boundaries and/or
+buffered boundaries (buffers) and/or through point sites within.
+
+## Boundaries
+Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
+
+```{r tec_bdy}
+tec_bdy_cae <- tibble::tibble(
+    community = tec_bdy$COM_ID,
+    code=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
+    name=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
+    description = ifelse(
+        is.na(tec_bdy$FIRST_S_ID),
+        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
+                   "{tec_bdy$BDY_ID} for lack of sites within."),
+        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
+                   "{tec_bdy$FIRST_S_ID} after first site observed within.")
+    ),
+    area_type = 10, # 10 bound, 11 buffer, 12 site point
+    source = 13, # TEC bdy
+    source_id = tec_bdy$OCC_UNIQUE,
+    encountered_on=default_date,
+    encountered_by=1,
+    geom = tec_bdy$geometry %>% 
+        sf::st_convex_hull(.) %>% 
+        sf::st_buffer(., 0.00001) %>% 
+        geojsonsf::sfc_geojson(.) 
+    )
+```
+
+Some boundaries were digitised from a polygonised raster remote sensing product. This results in
+a spray of numerous polygons, most of which were never visited in person.
+
+Name and shame: 
+
+```{r tec_cae_large}
+numerous_communities <- tec_bdy_cae %>% 
+  dplyr::group_by(community) %>% 
+  dplyr::tally() %>% 
+  dplyr::arrange(-n) %>% 
+  filter(n>400) 
+
+numerous_communities
+
+fat_filter <- numerous_communities %>% 
+  extract2("community") %>% 
+  paste0(collapse = "|")
+```
+
+Import excluding the heavyweight communities with more than 400 features:
+```{r tec_bdy_tsc, eval=F}
+tec_bdy_cae %>% 
+    filter(!grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+```
+
+### Buffers
+
+```{r tec_buf}
+tec_buf_cae <- tibble::tibble(
+    community = tec_buf$COM_ID,
+    code=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
+    name=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
+    description = ifelse(
+        is.na(tec_buf$FIRST_S_ID),
+        glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
+                   " {tec_buf$BDY_ID} for lack of sites within."),
+        glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
+                   " {tec_buf$FIRST_S_ID} after first site observed within.")
+    ),
+    area_type = 11, # 10 bound, 11 buffer, 12 site point
+    source = 14, # TEC buf
+    source_id = tec_buf$OCC_UNIQUE,
+    encountered_on=default_date,
+    encountered_by=1,
+    geom = tec_buf$geometry %>% 
+        sf::st_convex_hull(.) %>% 
+        sf::st_buffer(., 0.00001) %>% 
+        geojsonsf::sfc_geojson(.) 
+    )
+```
+
+Import all but the numerous ones:
+
+```{r tec_buf_tsc, eval=F}
+tec_buf_cae %>% 
+    dplyr::filter(!grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+```
+
+### Sites
+
+```{r tec_sit}
+tec_sit_cae <- tibble::tibble(
+    community = tec_sit$COM_ID,
+    code=tec_sit$S_ID,
+    name=tec_sit$S_ID,
+    description = glue::glue("Site ID {tec_sit$S_ID} inside TEC Boundary {tec_sit$BDY_ID}"),
+    area_type = 12, # 10 bound, 11 buffer, 12 site point
+    source = 15, # TEC sit
+    source_id = tec_sit$S_ID,
+    encountered_on=default_date,
+    encountered_by=1,
+    point = tec_sit$geometry %>% geojsonsf::sfc_geojson(.) 
+    )
+```
+
+
+```{r tec_sit_tsc, eval=F}
+# 7008 sites
+tec_sit_cae %>% 
+    dplyr::filter(!grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+
+# 17954 sites
+tec_sit_cae %>% 
+  dplyr::filter(community == "Banksia Woodlands of the Swan Coastal Plain") %>% 
+  chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+```
+
+
+### Long running data import
+This will run for about a day.
+```{r tec_import_long, eval=F}
+tec_sit_cae %>%
+    dplyr::filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+
+tec_buf_cae %>% 
+    dplyr::filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+
+# 116538 polys from three big one
+tec_bdy_cae %>% 
+    filter(grepl(fat_filter, community)) %>%
+    chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+```
 
 ## Conservation Documents
 
