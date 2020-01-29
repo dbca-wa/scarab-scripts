@@ -1739,36 +1739,46 @@ There are `r nrow(datum_blank)` distinct fauna records with missing datum. These
 
 ### Occurrence mapping
 Occurrence criteria were manually mapped for each variable, therefore they need to be checked to confirm whether the mapping is correct. 
+
+Some conservation criteria could not be mapped as they do not exist in the list/category_code.
 ```{r}
 #species id confidence
 tfa_confidence %>%
   reactable::reactable(filterable = TRUE)
+
 #habitat composition
 tfa_landcrit %>%
   reactable::reactable(filterable = TRUE)
+```
+Landform terms were mapped to 'umbrella' terms which generally follow the morphological types listed in McDonald et al. (1998, p13). However, some of the terms could not be mapped as they are vegetation types (e.g. FOR = Forest) and not landform types. 
+
+McDonald, R.C., Isbell, R.F., Speight, J.G., Walker, J., and Hopkins, M.S. (1998) Australian Soil and Land Survey - Field Handbook, Second Addition. CSIRO, Canberra, Australia.
+
+```{r}
 #detection method
 tfa_det_meth%>%
   reactable::reactable(filterable = TRUE)
+
 #secondary signs
 tfa_sec_sign%>%
   reactable::reactable(filterable = TRUE)
+```
+'Definite signs' was not mapped
+```{r}
 #reproductive maturity
 tfa_repmap %>%
   reactable::reactable(filterable = TRUE)
+
 #sample type
 tfa_samptype %>%
   reactable::reactable(filterable = TRUE)
+
 #sample_destination
 tfa_sampdest %>%
   reactable::reactable(filterable = TRUE)
 ```
-Some conservation criteria could not be mapped as they do not exist in the list/category_code.
 
-tfa_landcrit: Some of these criteria cound not be mapped because they are not landform criteria.
-
-tfa_sec_sign: Some of these criteria cound not be mapped because they are not secondary sign criteria.
-
-tfl_sampdest (sample destination): This has manually mapped to a generic field for its location and the specific location added to the sample label field as free text. We have done this because, combined with Flora, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
+Sample destination was manually mapped to a generic field for its location and the specific location added to the sample label field as free text. We have done this because, combined with Flora, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
 
 The above need to be corrected  before the manual mapping can be completed.
 
