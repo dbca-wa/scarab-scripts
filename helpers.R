@@ -1,22 +1,30 @@
-# System packages:
+# System packages provided by https://rstudio.dbca.wa.gov.au/
 # sudo apt install libcairo2-dev libgdal-dev libudunits2-dev libjq-dev libv8-dev libprotobuf-dev protobuf-compiler
 
+# Other system packages
+# sudo apt install mdbtools
+
+# R packages provided by https://rstudio.dbca.wa.gov.au/
 # remotes::install_github("ropenscilabs/skimr")
 # remotes::install_github("tidyverse/readr")
-# remotes::install_github("brianb/mdbtools")
 # remotes::install_github("ropensci/ckanr")
 # remotes::install_github('thomasp85/gganimate')
-# remotes::install_github("ropensci/rredlist")
 # remotes::install_github("ropensci/jqr")
-# remotes::install_github("dbca-wa/wastdr")
-# remotes::install_github("ropensci/ckanr")
 # install.packages("knitr")
 # install.packages("sf")
 # install.packages("styler")
 # install.packages("jsonlite")
 # devtools::install_github("glin/reactable")
 
+
+# R packages to install
+# remotes::install_github("r-lib/lifecycle")
+# remotes::install_github("ropensci/rredlist")
+# remotes::install_github("dbca-wa/wastdr")
+
+
 library(tidyverse)
+
 library(devtools)
 library(usethis)
 library(lubridate)
@@ -55,7 +63,7 @@ ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"
 # Date conventions
 orders <- c("mdyHMS")
 tz <- "Australia/Perth"
-default_date <-
+default_date <- "1900-01-01 00:00:00"
 parse_as_datetime <- function(x){
     if (is.null(x)) {
         return(
