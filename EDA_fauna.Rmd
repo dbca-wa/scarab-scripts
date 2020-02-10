@@ -281,7 +281,7 @@ readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv")
 
 occurence data is extracted and transformed. 
 
-Mallee Fowl data is extracted seperatly and exported, to be stored as a csv file on the data catalogue 
+Mallee Fowl data is extracted separately and exported, to be stored as a csv file on the data catalogue 
 
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
 
@@ -1157,7 +1157,7 @@ if (file.exists(datafile_tsc_fauna)) {
   # TSC contains taxonomic names from WACensus
   tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
-                      query = list(paraphyletic_groups__icontains = 20)) %>%
+                      query = list(paraphyletic_groups = 20)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(name_id = name_id %>% as.character())
   
@@ -1170,6 +1170,7 @@ if (file.exists(datafile_tsc_fauna)) {
   
   save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc_fauna)
 }
+
 ```
 
 # Compare legacy from TFA to migrated data from TSC
