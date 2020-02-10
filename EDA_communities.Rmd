@@ -42,6 +42,12 @@ on the DBCA data catalogue, then extracted and transformed.
 ## Communities
 ```{r load_tec, message=FALSE}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+names_tec <- as.data.frame(names(tec))
+
+# tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
+tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
+tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
+tec_sit <- geojsonsf::geojson_sf("data/tec_sites.geojson")
 
 snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
   ckanr::resource_show() %>%
@@ -102,6 +108,120 @@ communities <- tec$COMMUNITIES %>%
   dplyr::select(-former_range_code, -range_decline_id, -occ_decline_id)
 
 com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
+```
+
+### Community Recommendations
+
+```{r com_recommendations}
+recommendations <- tec$RECOMMENDATIONS %>%
+  dplyr::transmute(
+    recommendation_code = REC.CODE %>% as.character(),
+    recommendation = REC.DESC %>% as.character()
+  )
+
+com_recommendations <- tec$COMMUNITY_RECOMMENDATIONS %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    recommendation_id = CREC.NO %>% as.integer(),
+    recommended_on = CREC.DATE %>% as.character(),
+    recommendation_code = CREC.REC.CODE %>% as.character(),
+    com_recommendation = CREC.DESC %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(recommendations, by = "recommendation_code")
+
+com_recommendations %>% DT::datatable(.)
+```
+
+### Community Publications
+
+```{r com_publications}
+publications <- tec$PUBLICATIONS %>%
+  dplyr::transmute(
+    publication_id = PUB.NO %>% as.integer(),
+    title = PUB.TITLE %>% as.character(),
+    author = PUB.AUTHOR %>% as.character()
+    # empty:
+    # published_on = PUB.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    # published_with = PUB.PLACE %>% as.character()
+  )
+
+com_publications <- tec$COMMUNITY_PUBLICATIONS %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    publication_id = CP.PUB.NO %>% as.integer(),
+  ) %>%
+  dplyr::left_join(publications, by = "publication_id") %>%
+  dplyr::left_join(com_short, by = "com_id")
+
+com_publications %>% DT::datatable(.)
+```
+
+### Community Reviews
+
+```{r com_reviews}
+reviews <- tec$REVIEWS %>%
+  dplyr::transmute(
+    review_id = REV.NO %>% as.integer(),
+    review_date = REV.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    review_panel = REV.PANEL %>% as.character()
+  )
+
+com_reviews <- tec$COMMUNITY_REVIEWS %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    review_id = CR.REV.NO %>% as.integer()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(reviews, by = "review_id")
+
+com_reviews %>% DT::datatable(.)
+```
+
+### Community Actions
+
+```{r com_actions}
+actions <- tec$ACTIONS %>%
+  dplyr::transmute(
+    action_id = ACTION.CODE %>% as.character(),
+    description = ACTION.DESC %>% as.character()
+  )
+
+com_actions <- tec$COMMUNITY_ACTIONS %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    com_action_id = CACT.NO %>% as.integer(),
+    com_action_date = CACT.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    action_id = CACT.ACTION.CODE %>% as.character(),
+    com_action_description = CACT.DESC %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(actions, by = "action_id")
+
+com_actions %>% DT::datatable(.)
+```
+
+### Community History, Area Decline
+
+```{r com_history}
+area_decline <- tec$AREA_DECLINE %>%
+  dplyr::transmute(
+    area_decline_id = AD.CODE %>% as.integer(),
+    area_decline = AD.DESC %>% as.character()
+  )
+
+com_history <- tec$HISTORY %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    history_id = HIST.NO %>% as.character(),
+    history_date = HIST.DATE %>% as.character(),
+    area_decline_id = HIST.AD.CODE %>% as.integer(),
+    comment = HIST.COMMENT %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id") %>%
+  dplyr::left_join(area_decline, by = "area_decline_id")
+
+com_history %>% DT::datatable(.)
 ```
 
 ## Conservation listings
@@ -170,7 +290,7 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tec_conscrit.csv"))
 
 ```
 
-## Occurences
+## Occurrences
 ```{r tec_occ}
 reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability_id = BR.CODE %>% as.character(),
@@ -236,6 +356,439 @@ tec_occ <- tec$OCCURRENCES %>%
   # dplyr::left_join(confidentiality, by = "confidential_id") %>%
   dplyr::left_join(reliability, by = "reliability_id") %>%
   dplyr::select(-confidential_id, reliability_id)
+
+occ_short <- tec_occ %>%
+  dplyr::select(occ_id, boundary_id, boundary_desc, com_id, com_label, com_name)
+```
+
+### Occurrence Actions
+
+```{r occ_actions}
+occ_actions <- tec$OCCURRENCE_ACTIONS %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    occ_action_id = OACT.NO %>% as.integer(),
+    occ_action_date = OACT.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    occ_action_description = OACT.DESC %>% as.character(),
+    username = USERNAME %>% as.character(),
+    action_id = OACT.ACTION.CODE %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(actions, by = "action_id")
+
+occ_actions %>% DT::datatable(.)
+```
+
+### Occcurrence Recommendations
+
+```{r occ_recommendations}
+occ_recommendations <- tec$OCCURRENCE_RECOMMENDATIONS %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    rank = OREC.RANK %>% as.character(),
+    recommended_on = OREC.DATE %>% as.character(),
+    recommendation_code = OREC.REC.CODE %>% as.character(),
+    recommendation = OREC.DESC %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(recommendations, by = "recommendation_code")
+
+occ_recommendations %>% DT::datatable(.)
+```
+
+### Occurrence Extent
+
+```{r occ_extent}
+sources <- tec$SOURCES %>%
+  dplyr::transmute(
+    source_code = SOURCE.CODE %>% as.character(),
+    source = SOURCE.DESC %>% as.character()
+  )
+
+occ_extent <- tec$EXTENTS %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    EXT.NO = EXT.NO %>% as.character(),
+    EXT.DATE = EXT.DATE %>% as.character(),
+    source_code = EXT.SOURCE.CODE %>% as.character(),
+    EXT.AREA = EXT.AREA %>% as.character(),
+    EXT.AREA.ACC = EXT.AREA.ACC %>% as.character(),
+    area_decline_id = EXT.AD.CODE %>% as.integer(),
+    EXT.COMMENT = EXT.COMMENT %>% as.character(),
+    USERNAME = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(sources, by = "source_code") %>%
+  dplyr::left_join(area_decline, by = "area_decline_id")
+
+occ_extent %>% DT::datatable(.)
+```
+
+### Additional Data
+
+```{r occ_additional_data}
+items <- tec$ITEMS %>%
+  dplyr::transmute(
+    item_code = ITEM.CODE %>% as.character(),
+    item = ITEM.DESC %>% as.character()
+  )
+
+occ_additional_data <- tec$ADDITIONAL_DATA %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    additional_data_id = ADD.NO %>% as.integer(),
+    item_code = ADD.ITEM.CODE %>% as.character(),
+    description = ADD.DESC %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(items, by = "item_code")
+
+occ_additional_data %>% DT::datatable(.)
+```
+
+### Occcurrence Maps
+Names of physical maps describing one or multiple occurrences.
+
+```{r occ_maps}
+maps <- tec$MAPS
+occ_maps <- tec$OCCURRENCE_MAPS
+```
+
+### Biological Processes
+```{r occ_biol_process}
+occ_biol_process <- tec$BIOL_PROCESSES %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    biol_process_id = BIOL.NO %>% as.integer(),
+    biol_process = BIOL.PROCESS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
+
+occ_biol_process %>% DT::datatable(.)
+```
+
+### Non-biological Processes
+```{r occ_nonbiol_process}
+occ_nonbiol_process <- tec$NON_BIOL_PROCESSES %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    nonbiol_process_id = NBIO.NO %>% as.integer(),
+    nonbiol_process = NBIO.PROCESS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
+
+occ_nonbiol_process %>% DT::datatable(.)
+```
+
+## Fire History
+
+```{r occ_fire_history}
+fire_history <- tec$FIRE_HISTORY %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    fire_history_id = FIRE.NO %>% as.integer(),
+    fire_history_date = FIRE.DATE %>% as.character(),
+    fire_history_comment = FIRE.COMMENT %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
+
+fire_history %>% DT::datatable(.)
+```
+
+## Fauna Occurrences
+There is another separate group of occurrences:
+
+* Occurrence Species
+* Occurrence Species INI (contains an external db config)
+* Occurrence Fauna
+* Species Roles
+* Fauna Taxa
+* Fauna Groups
+* Fauna Conservation Codes
+
+What is the overlap to the Threatened Fauna DB in terms of meaning and data flow?
+
+```{r}
+# lookups
+fauna_conservation_codes <- tec$FAUNA_CONSERVATION_CODES %>%
+  dplyr::transmute(
+    conservation_code = CONSV.CODE %>% as.character(),
+    conservation_code_description = CONSV.DESC %>% as.character()
+  )
+
+fauna_groups <- tec$FAUNA_GROUPS # paraphyletic groups
+
+species_roles <- tec$SPECIES_ROLES %>%
+  dplyr::transmute(
+    species_role_code = SP.ROLE.CODE %>% as.character(),
+    species_role = SP.ROLE.DESC %>% as.character()
+  )
+
+fauna_taxa <- tec$FAUNA_TAXA # taxon_id
+
+# primary
+occ_fauna <- tec$OCCURRENCE_FAUNA %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    taxon_id = OF.TAXON.ID %>% as.character(),
+    species_code = OF.SPCODE %>% as.character(),
+    species_role_code = OF.SP.ROLE.CODE %>% as.character(),
+    comments = OF.VOUCHER.NO %>% as.character(),
+    username = USERNAME %>% as.character(),
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(species_roles, by = "species_role_code")
+
+occ_fauna %>% DT::datatable(.)
+
+occ_species <- tec$OCCURRENCE_SPECIES %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    taxon_id = SPEC.TAXON.ID %>% as.character(),
+    species_code = SPEC.SPCODE %>% as.character(),
+    species_role_code = SPEC.SP.ROLE.CODE %>% as.character(),
+    comments = SPEC.VOUCHER.NO %>% as.character(),
+    username = USERNAME %>% as.character(),
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(species_roles, by = "species_role_code")
+
+# occ_species %>% DT::datatable(.)
+```
+
+# Surveys
+`Surveys` are full site visits with a complete set of measurements.
+`Site visits` are quick site visits with a partial set of measurements.
+Both relate to Occurrences.
+
+A separate group related to surveys has the tables:
+
+* Threat Impacts
+* Threats
+* Surveys
+* Conditions
+* Survey Conditions
+* Survey Threats
+
+```{r surveys}
+# lookups
+impacts <- tec$THREAT_IMPACTS %>%
+  dplyr::transmute(
+    impact_code = IMP.CODE %>% as.character(),
+    impact = IMP.DESC %>% as.character()
+  )
+
+threats <- tec$THREATS %>%
+  dplyr::transmute(
+    threat_code = THREAT.CODE %>% as.character(),
+    threat = THREAT.DESC %>% as.character()
+  )
+
+conditions <- tec$CONDITIONS %>%
+  dplyr::transmute(
+    condition_code = COND.CODE %>% as.character(),
+    condition = COND.DESC %>% as.character()
+  )
+
+# primary
+com_threats <- tec$COMMUNITY_THREATS %>%
+  dplyr::transmute(
+    com_id = COM.NO %>% as.integer(),
+    id = CTHR.NO %>% as.character(),
+    date = CTHR.DATE %>% as.character(),
+    threat_code = CTHR.THREAT.CODE %>% as.character(),
+    description = CTHR.DESC %>% as.character()
+  ) %>%
+  dplyr::left_join(threats, by = "threat_code")
+
+surveys <- tec$SURVEYS %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    survey_id = SUR.NO %>% as.integer(),
+    surveyed_on = SUR.DATE %>% as.character(),
+    surveyed_by = SUR.SURVEYOR %>% as.character(),
+    survey_comments = SUR.COMMENTS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id")
+
+survey_threats <- tec$SURVEY_THREATS %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    survey_id = SUR.NO %>% as.integer(),
+    threat_rank = THR.RANK %>% as.integer(),
+    threat_code = THR.THREAT.CODE %>% as.character(),
+    threat_percent = THR.PERCENT %>% as.double(),
+    historic_impact_code = THR.HIST.IMP.CODE %>% as.character(),
+    potential_impact_code = THR.POT.IMP.CODE %>% as.character(),
+    modification = THR.MODIFICATION %>% as.character(),
+    comments = THR.COMMENTS %>% as.character(),
+    username = USERNAME %>% as.character(),
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(threats, by = "threat_code") %>%
+  dplyr::left_join(impacts, by = c("historic_impact_code" = "impact_code")) %>%
+  dplyr::rename(historic_impact = impact) %>%
+  dplyr::left_join(impacts, by = c("potential_impact_code" = "impact_code")) %>%
+  dplyr::rename(potential_impact = impact)
+
+survey_conditions <- tec$SURVEY_CONDITIONS %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    survey_id = SUR.NO %>% as.integer(),
+    condition_code = SCON.COND.CODE %>% as.character(),
+    condition_percent = SCON.PERCENT %>% as.double(),
+    comments = SCON.COMMENTS %>% as.character(),
+    username = USERNAME %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(conditions, by = "condition_code")
+```
+
+Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct `survey_id`s.
+With `length(unique(surveys$surveyed_on))`, this means that a `survey_id` does not denote an individual
+visit of a TEC boundary.
+
+However, there are exactly as many unique combinations of `survey_id` and `occ_id` 
+(`r surveys %>% group_by(occ_id, survey_id) %>% tally() %>% nrow`) as records in the table `surveys`.
+
+How do `r nrow(survey_conditions)` `survey_conditions` reference `r nrow(surveys)` `surveys`? Likely by `occ_id` and `survey_id`.
+
+# Site Visits
+* Sites: Point-referenced sites, mostly 10x10m or 6x6m quadrats, within boundaries.
+* Datum: coordinate datum
+* Site Visits: CommunityAreaEncounters of Sites (lat/lon point) at date (site_visit$site_visit_date).
+* Site Species: Species encountered during a site_visit.
+
+```{r sites}
+datum <- tec$DATUM %>%
+  dplyr::transmute(
+    datum_code = DATUM.CODE %>% as.character(),
+    datum = DATUM.DESC %>% as.character(),
+    semi_major_axis = SEMI.MAJOR.AXIS %>% as.double(),
+    inverse_flattening = INVERSE.FLATTENING %>% as.double()
+  )
+
+sites <- tec$SITES %>%
+  dplyr::transmute(
+    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    site_code = S.ID %>% as.character(),
+    # datum_code = S.DATUM.CODE %>% as.character(),
+    latitude = LATITUDE %>% as.double(),
+    longitude = LONGITUDE %>% as.double(),
+    comments = COMMENTS %>% as.character(),
+    # S.LATITUDE.PREF = S.LATITUDE.PREF  %>% as.character, # wtf?
+    # S.LONGITUDE.PREF = S.LONGITUDE.PREF  %>% as.character, # wut?
+    created_by = USERNAME %>% as.character(),
+    changed_on = S.DATE.EDITED %>% parse_date_time(., orders = orders, tz = tz),
+    permanently_marked = S.PERMANENTLY.MARKED %>% as.character(), # "", "Y"
+    location = S.LOCATION %>% as.character(),
+    habitat = S.HABITAT %>% as.character(),
+    soil = S.SOIL %>% as.character(),
+    # rock_type = S.ROCK.TYPE %>% as.character(), # empty
+    # parent_material = S.PARENT.MATERIAL %>% as.character(), # empty
+    vegetation = S.VEGETATION %>% as.character(),
+    # rock_pile_notes = S.ROCK.PILE.NOTES %>% as.character(), # empty
+    site_notes = S.SITE.NOTES %>% as.character()
+  ) %>%
+  dplyr::left_join(occ_short, by = "occ_id") %>%
+  dplyr::left_join(datum, by = "datum_code")
+
+# sites[15000:15250,] %>% skim # CKAN datapusher chokes on this chunk
+
+site_visit <- tec$SITE_VISITS %>%
+  dplyr::transmute(
+    site_visit_id = SITE.VISIT.ID %>% as.integer(),
+    site_code = S.ID %>% as.character(),
+    site_visit_date = SV.VISIT.DATE %>% as.character(),
+    project_code = SV.PROJ.CODE %>% as.character(),
+    site_visit_described_by = SV.DESCRIBED.BY %>% as.character(),
+    site_visit_described_by_notes = SV.DESCRIBED.BY.NOTES %>% as.character(),
+    seasonal_conditions = SV.SEASONAL.CONDITIONS %>% as.character(),
+    observation_type = SV.OBSERVATION.TYPE %>% as.character(),
+    observation_quality = SV.OBSERVATION.QUALITY %>% as.character(),
+    plant_id_quality = SV.PLANT.ID.QUALITY %>% as.character(),
+    site_dimensions = SV.SITE.DIMENSIONS %>% as.character(),
+    site_uniformity = SV.SITE.UNIFORMITY %>% as.character(),
+    site_status = SV.SITE.STATUS %>% as.character(),
+    photo_numbers = SV.PHOTO %>% as.character(),
+    vegetation_condition = SV.VEGETATION.CONDITION %>% as.character(),
+    fire_age = SV.FIRE.AGE %>% as.character(),
+    fire_notes = SV.FIRE.NOTES %>% as.character(),
+    observation_notes = SV.OBSERVATION.NOTES %>% as.character()
+  ) %>% 
+  dplyr::left_join(sites, by = "site_code")
+
+# coll code and number indicates voucher specimens
+voucher_specimens <- tec$SITE_SPECIES %>%
+  dplyr::transmute(
+    site_species_id = SITE.SPECIES.ID %>% as.character(),
+    site_visit_id = SITE.VISIT.ID %>% as.integer(),
+    name_id = SSP.NAME.ID %>% as.character(),
+    species_code = SSP.SPCODE %>% as.character(),
+    height = SSP.HEIGHT %>% as.character(),
+    collector_code = SSP.COLLECTOR.CODE %>% as.character(),
+    collection_number = SSP.COLLECTION.NUMBER %>% as.character(),
+    notes = SSP.NOTES %>% as.character()
+  ) %>%
+  dplyr::left_join(site_visit, by = "site_visit_id")
+```
+
+There are `r nrow(sites)` point locations known as TEC sites.
+
+```{r sites_map, fig.height=5, fig.width=7}
+leaflet(width = 800, height = 600) %>%
+  addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  clearBounds() %>%
+  addAwesomeMarkers(
+    data = sites,
+    lng = ~ longitude, lat = ~ latitude,
+    icon = leaflet::makeAwesomeIcon(icon = "leaf"),
+    label = ~ paste(site_code),
+    popup = ~ paste(
+      "<h3>Site", site_code, "</h3>",
+      "<strong>Community</strong>", com_label, "<br/>",
+      "<strong>Created by</strong>", created_by, "on", changed_on, "<br/>",
+      "<strong>Comments</strong>", comments, "<br/>",
+      "<strong>Permanent</strong>", permanently_marked, "<br/>",
+      "<strong>Location</strong>", location, "<br/>",
+      "<strong>Habitat</strong>", habitat, "<br/>",
+      "<strong>Soil</strong>", soil, "<br/>",
+      "<strong>Vegetation</strong>", vegetation, "<br/>",
+      "<strong>Site notes</strong>", site_notes, "<br/>"
+    ),
+    group = "Site points",
+    clusterOptions = markerClusterOptions()
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    overlayGroups = c("Site points"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+# Recovery Plans
+
+```{r recovery_plans}
+recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
+  dplyr::transmute(
+    recovery_plan_id = IRP.NO %>% as.character(),
+    com_id = COM.NO %>% as.integer(),
+    endorsed_on = IRP.DATE.ENDORSED %>% parse_date_time(., orders = orders, tz = tz),
+    ends_on = IRP.END.DATE %>% parse_date_time(., orders = orders, tz = tz),
+    author = IRP.AUTHOR %>% as.character(),
+    reviewed_on = IRP.DATE.REVIEWED %>% parse_date_time(., orders = orders, tz = tz),
+    comments = IRP.COMMENTS %>% as.character()
+  ) %>%
+  dplyr::left_join(com_short, by = "com_id")
+# make_coldef(recovery_plans)
+recovery_plans %>% skim()
 ```
 
 # Extract and transform conservation criteria Data from TSC
@@ -972,4 +1525,62 @@ upload_file_to_ckan("7942b979-f768-4365-8303-f1b1e00b3a61", "EDA_communities.htm
 #   resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f"
 # )
 # same for other TFA legacy data, copy over from data_etl_fauna.Rmd
+# Data upload
 ```
+
+Create resource once-off to get a resource ID.
+Also upload the compiled workbook.
+Note, this process lags one compilation of this workbook, as the HTML output
+is generated after the R code is run - knit a workbook twice to update the data catalogue.
+
+```{r tec_upload}
+d <- ckanr::package_show("threatened-ecological-communities-database")
+# ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
+upload_to_ckan(communities, "Threatened Ecological Communities (TEC)", 
+               d$id, resource_id = "9782cc52-7be8-494a-a7da-51845c119a21")
+upload_to_ckan(tec_occ, "TEC Occurrences", 
+               d$id, resource_id = "65f43392-a8c5-41e2-a31e-cc4135e9274e")
+upload_to_ckan(sites, "TEC Site Points", 
+               d$id, resource_id = "bf4c2973-e549-408b-a583-013052072d6c")
+upload_to_ckan(com_recommendations, "TEC Recommendations", 
+               d$id, resource_id = "fd96a053-523c-401d-8755-9116c55f5744")
+upload_to_ckan(com_publications, "TEC Publications", 
+               d$id, resource_id = "fa51cd96-864a-4c43-a0e1-fc24621bb628")
+upload_to_ckan(com_reviews, "TEC Reviews", 
+               d$id, resource_id = "7c39b584-bc4b-4234-aff7-ddf4808692ed")
+upload_to_ckan(com_actions, "TEC Actions", 
+               d$id, resource_id = "17d3c4e2-df98-4ff6-9d4d-99ba54808bb4")
+upload_to_ckan(com_history, "TEC History", 
+               d$id, resource_id = "479d7358-d42d-4c4b-93ee-1bac39d21024")
+upload_to_ckan(occ_actions, "TEC Occurrence Actions", 
+               d$id, resource_id = "25894a68-11de-4a58-b521-6a9abd06ee40")
+upload_to_ckan(occ_recommendations, "TEC Occurrence Recommendations", 
+               d$id, resource_id = "747464e4-2434-459a-b654-52861b37095c")
+upload_to_ckan(occ_extent, "TEC occurrence extent", 
+               d$id, resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed")
+upload_to_ckan(occ_additional_data, "TEC occurrence additional data", 
+               d$id, resource_id = "8dd3454c-1bf0-4575-adcb-154b700c4283")
+upload_to_ckan(occ_biol_process, "TEC biological process", 
+               d$id, resource_id = "5805a671-576a-4077-b595-35ca96d7ca96")
+upload_to_ckan(occ_nonbiol_process, "TEC nonbiological process", 
+               d$id, resource_id = "a5341117-2735-4694-8cd4-e806f4c06668")
+upload_to_ckan(fire_history, "TEC fire history", 
+               d$id, resource_id = "e062f57e-f6aa-4403-a682-875dab2f77f6")
+upload_to_ckan(occ_fauna, "TEC occurence fauna", 
+               d$id, resource_id = "a0eddc66-5fef-4252-b49f-691422a88f28")
+upload_to_ckan(occ_species, "TEC occurence species", 
+               d$id, resource_id = "e94f1e35-30da-4982-b851-ceb888eb41b3")
+upload_to_ckan(com_threats, "TEC community threats", 
+               d$id, resource_id = "5426c45b-1dee-4547-a6e3-bec81585e52e")
+upload_to_ckan(survey_threats, "TEC survey threats", 
+               d$id, resource_id = "5b795656-a240-402e-92b8-edbe54b3fee8")
+upload_to_ckan(site_visit, "TEC site visit", 
+               d$id, resource_id = "85cef94b-d12e-4aff-bd24-446d1c0757db")
+upload_to_ckan(voucher_specimens, "TEC voucher specimens", 
+               d$id, resource_id = "6b8fe493-8183-4fe8-a91a-67a569bf9c46")
+upload_to_ckan(tec_cons_listing_categories, "TEC Conservation Listing Categories", 
+               d$id, resource_id = "f0085651-8c38-496e-a6bd-1adc7ae2f06a")
+upload_to_ckan(tec_cons_listing_criteria, "TEC Conservation Listing Criteria", 
+               d$id, resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a")
+```
+
