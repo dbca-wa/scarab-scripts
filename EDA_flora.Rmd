@@ -41,12 +41,8 @@ on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
 ```{r load_tfl, message=TRUE}
-# tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
-# names_tfl <- as.data.frame(names(tfl_data))
-
-utils::download.file("https://data.dpaw.wa.gov.au/dataset/8075e9ba-1133-446a-8018-4e9b42697746/resource/77062fa0-f409-4fe7-ae28-de8c933a59bd/download/flora.zip", here::here("data/flora.zip"))
-
-tfl_data <- mdb.get("data/flora.mdb") %>% as.list
+tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
+names_tfl <- as.data.frame(names(tfl_data))
 
 snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
   ckanr::resource_show() %>%
