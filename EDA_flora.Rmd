@@ -1363,6 +1363,8 @@ format.
 
 Expand the code block below to view the process.
 
+## Conservation listings
+
 ```{r load_tsc, message=FALSE}
 # Taxonomic names and taxon conservation listings for fauna from TSC
 if (file.exists(datafile_tsc_flora)) {
@@ -1373,17 +1375,73 @@ if (file.exists(datafile_tsc_flora)) {
     wastdr::wastd_GET(api_url = prod,
                       query = list(paraphyletic_groups__icontains = 21)) %>%
     wastdr::wastd_parse() %>%
-    dplyr::mutate(name_id = name_id %>% as.character())
+    dplyr::mutate(taxon = name_id %>% as.character())
   
   # Taxon conservation listings for flora
   tsc_tcl_flora <-
     wastdr::wastd_GET("taxon-conservationlisting") %>%
     wastdr::parse_taxon_conservationlisting() %>%
-    dplyr::mutate(name_id = taxon %>% as.character()) %>%
-    dplyr::inner_join(tsc_taxa_flora, by = "name_id")
+    dplyr::mutate(taxon = taxon %>% as.character()) %>%
+    dplyr::inner_join(tsc_taxa_flora, by = "taxon")
   
   save(tsc_taxa_flora, tsc_tcl_flora, file = datafile_tsc_flora)
 }
+```
+
+## Occurrences
+
+We get Taxon ocurrences with their point representations from TSC through the 
+API endpoint [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
+
+Currently, all Fauna and Flora occurrences are georeferenced only with point 
+coordinates, not polygons.
+
+We then get TSC Areas and split them into DBCA Regions and Districts.
+Caveat: Regions and Districts to not comprehensively cover WA.
+
+Lastly, we get a list of taxonomic names from TSC to resolve taxon IDs from
+taxon occurrences to names.
+
+Occurences are presented as `occ` with DBCA Region and District names (where
+applicable), plus taxonomic names.
+```{r extract_tsc_occurrences, message=FALSE}
+datafile <- here::here("data/tae.RData")
+tsc_tae <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+
+tsc_taxa <- wastdr::wastd_GET("taxon") %>%
+    wastdr::wastd_parse() %>%
+    dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk)
+
+tsc_areas <- wastdr::wastd_GET("area") %>%
+      magrittr::extract2("features") %>%
+      geojsonio::as.json() %>%
+      geojsonsf::geojson_sf()
+
+save(tsc_tae, tsc_taxa, tsc_areas, file=datafile, compress="xz")
+```
+
+```{r munge}
+if (fs::file_exists(datafile)) load(datafile)
+
+regions <- tsc_areas %>%
+  dplyr::filter(area_type == "Region") %>%
+  dplyr::transmute(region_id = pk, region_name = name)
+
+districts <- tsc_areas %>%
+  dplyr::filter(area_type == "District") %>%
+  dplyr::transmute(district_id = pk, district_name = name)
+
+tsc_occ_flora <- tsc_tae %>%
+  magrittr::extract2("features") %>%
+  geojsonio::as.json() %>%
+  geojsonsf::geojson_sf() %>% 
+  sf::st_join(regions) %>% 
+  sf::st_join(districts) %>% 
+  dplyr::mutate(taxon = taxon %>% as.character()) %>% 
+  dplyr::right_join(tsc_taxa_flora, by="taxon")
+
+# save(occ, file=here::here("data/occ.RData"), compress="xz")
+# load(here::here("data/occ.RData"))
 ```
 
 # Compare legacy from TFL to migrated data from TSC
@@ -1440,7 +1498,6 @@ tsc_tcl_flora %>%
   dplyr::anti_join(tfl_tcl, by = "source_id") %>%
   reactable::reactable(filterable = TRUE)
 ```
-
 
 ### TFL cons listed phrase names
 Some TFL cons listings have a name_id of 0. 
@@ -1797,14 +1854,50 @@ Sample destination was manually mapped to a generic field for its location and t
 
 The above need to be corrected  before the manual mapping can be completed.
 
-## NameID mismatch
-TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
-
-## Trust level of occurrence records
+### Trust level of occurrence records
 Currently, we assume that all occurrence records in the legacy databases are trustworthy.
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
-### TFL occurances not in TSC
+### TFL occurences not in TAE
+```{r tally_tfl_tae}
+tfl_occ_tally <- tfl_occ %>%
+  dplyr::group_by(name_id) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+
+tfl_occ_tally_top <- tfl_occ_tally %>% 
+  top_n(20,n)
+
+tfl_occ_tally_btm <- tfl_occ_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) 
+
+tae_tally <- tfl_tae %>%
+  dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() %>% 
+  dplyr::rename(name_id = taxon)
+
+tae_tally_top <- tae_tally %>% 
+  top_n(20,n)
+
+tae_tally_btm <- tae_tally %>% 
+  top_n(20,-n) %>% 
+  slice(1:20) # There are actually 301 species with an occurance of 1
+
+missing_species <- tae_tally %>% anti_join(tfl_occ_tally,by = "name_id")
+
+tfl_occ_tally %>%
+  dplyr::rename(tfl = n) %>% 
+  left_join(tae_tally,by = "name_id") %>% 
+  dplyr::rename(tae = n) %>% 
+  filter(tfl != tae) %>% reactable::reactable()
+```
+There are `r nrow(missing_species)` species missing from tfl_tae when compared to tfl_occ. 
+
+### TFL occurrences not in TSC- start here
 
 ```{r tally_tfl_occ}
 tfl_tally <- tfl_occ %>%
@@ -1843,32 +1936,6 @@ tsc_tally_btm <- tsc_tally %>%
   top_n(20,-n) %>% 
   slice(1:20) 
 ```
-
-## tfl occurences not in TAE
-```{r tally_tfl_tae}
-tae_tally <- tfl_tae %>%
-  dplyr::group_by(taxon) %>% 
-  dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>% 
-  ungroup() %>% 
-  dplyr::rename(name_id = taxon)
-
-tae_tally_top <- tae_tally %>% 
-  top_n(20,n)
-
-tae_tally_btm <- tae_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) # There are actually 301 species with an occurance of 1
-
-missing_species <- tae_tally %>% anti_join(tfl_tally,by = "name_id")
-
-tfl_tally %>%
-  dplyr::rename(tfl = n) %>% 
-  left_join(tae_tally,by = "name_id") %>% 
-  dplyr::rename(tae = n) %>% 
-  filter(tfl != tae) %>% reactable::reactable()
-```
-There are `r nrow(missing_species)` species missing from tfa_tae when compared to tfa_occ. 
 
 ## Conservation Documents
 
