@@ -1847,7 +1847,7 @@ TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id h
 Currently, we assume that all occurrence records in the legacy databases are trustworthy.
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
-## TFA occurrences not in TAE
+## TFA occurrences not in TAE vv
 ```{r tally_tfa_tae}
 
 tfa_occ_tally <- tfa_occ %>%
@@ -1901,7 +1901,7 @@ tfa_possum %>%
 The two occurences above do not appear in tfa_tae because there is no lat or long data, 
 which is a requirement for valid taxon area encounters.
 
-### TFA occurences not in TSC
+### TFA occurences not in TSC vv
 ```{r tally_tfa_occ}
 tfa_tae_tally <- tfa_tae %>%
   dplyr::group_by(taxon) %>% 
@@ -1933,6 +1933,8 @@ tsc_tally_btm <- tsc_tally %>%
   top_n(20,-n) %>% 
   slice(1:20) # There are actually 151 species with an occurence of 1
 
+missing_species <- tfa_tae_tally %>% anti_join(tsc_tally,by = "taxon") # no missing species
+
 tfa_tae_tsc_top_diff <- tfa_tae_tally_top %>%
   dplyr::rename(tfa_tae = n) %>% 
   left_join(tsc_tally_top,by = "taxon") %>% 
@@ -1946,37 +1948,25 @@ tfa_tae_tsc_btm_diff <- tfa_tae_tally_btm %>%
   filter(tfa_tae != tsc)
 
 ## all differences
-tfa_tae_tsc_diff <- tfa_tae_tally %>%
+missing_occurrences <- tfa_tae_tally %>%
   dplyr::rename(tfa_tae = n) %>% 
   left_join(tsc_tally,by = "taxon") %>% 
   dplyr::rename(tsc = n) %>% 
   filter(tfa_tae != tsc) %>% glimpse()
 
-tfa_tae_tsc_diff_one <- tfa_tae_tsc_diff %>% 
+missing_occurrences_many <- missing_occurrences %>% 
   dplyr::filter(tsc == 1)
+
+missing_occurrences_one <- missing_occurrences %>% 
+  dplyr::filter(tsc != 1)
+
+# tfa_tae_tsc_diff_one <- tfa_tae_tsc_diff %>% 
+#   dplyr::filter.sf(geometry == NA) ## How do you filter a geometry column???
 ```
 
-There are `r nrow(tfa_tally)` fauna taxa with occurrences in TFA.
+Where there is no geometry data the occurrences of that species have not been carried across. 
 
-TODO Once we have data out of TSC compare tally of occurences for top 20 and bottom 20 species
-
-### TSC occurrences not in TFA
-
-```{r tally_tsc_occ,eval=FALSE}
-tsc_tally <- tsc_occ %>%
-  dplyr::group_by(name_id, scientific_name) %>% 
-  dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>% 
-  ungroup()
-tsc_tally %>% reactable::reactable()
-
-tsc_tally_top <- tsc_tally %>% 
-  top_n(20,n)
-
-tsc_tally_btm <- tsc_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) # There are actually 151 species with an occurence of 1
-```
+Where differences between tfa_tae and tsc are greater than 1, something bigger is going on ad a thorough review is required.
 
 ## Conservation Documents
 
