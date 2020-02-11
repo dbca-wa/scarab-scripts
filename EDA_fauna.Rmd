@@ -1840,14 +1840,11 @@ Sample destination was manually mapped to a generic field for its location and t
 
 The above need to be corrected  before the manual mapping can be completed.
 
-#### NameID mismatch
-TODO diagnose. Lookup scientific names in TSC, get name_id, compare to name_id here.
-
 #### Trust level of occurrence records
 Currently, we assume that all occurrence records in the legacy databases are trustworthy.
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
-## TFA occurrences not in TAE vv
+### TFA occurrences not in TAE vv
 ```{r tally_tfa_tae}
 
 tfa_occ_tally <- tfa_occ %>%
