@@ -33,3 +33,4 @@ logs
 attachments
 rsconnect
 *.png
+*.geojson
