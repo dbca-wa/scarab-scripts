@@ -1918,7 +1918,7 @@ tsc_occ_tally_btm <- tsc_occ_tally %>%
   top_n(20,-n) %>% 
   slice(1:20) 
 
-missing_species <- tsc_occ_tally %>% anti_join(tfl_occ_tally,by = "taxon")
+missing_species_tae_tsc <- tsc_occ_tally %>% anti_join(tae_tally,by = "taxon")
 
 missing_occurrences <- tae_tally %>%
   dplyr::rename(tae = n) %>% 
@@ -1932,6 +1932,11 @@ missing_occurrences_many <- missing_occurrences %>%
 missing_occurrences_one <- missing_occurrences %>% 
   dplyr::filter(tsc != 1)
 ```
+There are `r nrow(missing_species_tae_tsc)` species missing from tfl_tae when compared to tsc_occ. 
+
+Where there is no geometry data the occurrences of that species have not been carried across. 
+
+Where differences between tfa_tae and tsc are greater than 1, something bigger is going on ad a thorough review is required.
 
 ## Conservation Documents
 
