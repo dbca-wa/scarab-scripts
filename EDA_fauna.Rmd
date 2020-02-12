@@ -1898,9 +1898,9 @@ tfa_possum %>%
 The two occurences above do not appear in tfa_tae because there is no lat or long data, 
 which is a requirement for valid taxon area encounters.
 
-### TFA occurences not in TSC vv
+### TAE occurences not in TSC vv
 ```{r tally_tfa_occ}
-tfa_tae_tally <- tfa_tae %>%
+tae_tally <- tfa_tae %>%
   dplyr::group_by(taxon) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
@@ -1908,10 +1908,10 @@ tfa_tae_tally <- tfa_tae %>%
   dplyr::select("taxon","n") %>% 
   as.tibble()
 
-tfa_tae_tally_top <- tfa_tae_tally %>% 
+tae_tally_top <- tae_tally %>% 
   top_n(20,n)
 
-tfa_tae_tally_btm <- tfa_tae_tally %>% 
+tae_tally_btm <- tae_tally %>% 
   top_n(20,-n) %>% 
   slice(1:20) # There are actually 151 species with an occurence of 1
 
@@ -1931,18 +1931,6 @@ tsc_tally_btm <- tsc_tally %>%
   slice(1:20) # There are actually 151 species with an occurence of 1
 
 missing_species <- tfa_tae_tally %>% anti_join(tsc_tally,by = "taxon") # no missing species
-
-tfa_tae_tsc_top_diff <- tfa_tae_tally_top %>%
-  dplyr::rename(tfa_tae = n) %>% 
-  left_join(tsc_tally_top,by = "taxon") %>% 
-  dplyr::rename(tsc = n) %>% 
-  filter(tfa_tae != tsc)
-
-tfa_tae_tsc_btm_diff <- tfa_tae_tally_btm %>%
-  dplyr::rename(tfa_tae = n) %>% 
-  left_join(tsc_tally_btm,by = "taxon") %>% 
-  dplyr::rename(tsc = n) %>% 
-  filter(tfa_tae != tsc)
 
 ## all differences
 missing_occurrences <- tfa_tae_tally %>%
