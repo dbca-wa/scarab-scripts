@@ -304,7 +304,7 @@ all_crit_map <- tfl_cons_listing %>%
 readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 ```
 
-## Occurences
+## occurrences
 ```{r load_tfa_occ, message=TRUE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
@@ -522,7 +522,7 @@ names(tfl_data$DRF_P2K_PRIORITY)
 #     row_num = ROW.NO %>% as.integer()
 #     )
 
-## Create occurance data tables for each card in TSC
+## Create occurrence data tables for each card in TSC
 hab_comp <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
@@ -786,6 +786,7 @@ tfl_tae <- tfl_occ %>%
         "Population {pop_id}, Subpopulation {subpop_code}\n",
         "Population classification: {classification_code}\n",
         "Habitat condition: {habitat_condition} {habitat_notes}\n",
+        "Associated species: {associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5}\n",
         "Location: {location} {distance} KM {direction} from {nearplace}\n",
         "District: {district}\n",
         "Land district: {landdistrict}\n",
@@ -1311,7 +1312,7 @@ tfl_listing_cat_iucn2001 %>%
 ```
 
 ## Occurrences
-The EOO (Extent of occurance) is calculated as the convex hull around all recorded fauna occurances, including fossil records.
+The EOO (Extent of occurrence) is calculated as the convex hull around all recorded fauna occurrences, including fossil records.
 For further details on the methodology behind the movement of EOO data, please follow the link to the workbook.
 
 ### TSC upload example for EOOs
@@ -1353,7 +1354,7 @@ tfl_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api
 
 tfl_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 
-tfl_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurances
+tfl_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurrences
 ```
 
 ## Conservation Documents
@@ -1408,7 +1409,7 @@ Caveat: Regions and Districts to not comprehensively cover WA.
 Lastly, we get a list of taxonomic names from TSC to resolve taxon IDs from
 taxon occurrences to names.
 
-Occurences are presented as `occ` with DBCA Region and District names (where
+occurrences are presented as `occ` with DBCA Region and District names (where
 applicable), plus taxonomic names.
 ```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
 datafile <- here::here("data/tae.RData")
@@ -1868,7 +1869,7 @@ The above need to be corrected  before the manual mapping can be completed.
 Currently, we assume that all occurrence records in the legacy databases are trustworthy.
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
-### TFL occurences not in TAE
+### TFL occurrences not in TAE
 ```{r tally_tfl_tae}
 tfl_occ_tally <- tfl_occ %>%
   dplyr::group_by(name_id) %>% 
@@ -1895,7 +1896,7 @@ tae_tally_top <- tae_tally %>%
 
 tae_tally_btm <- tae_tally %>% 
   top_n(20,-n) %>% 
-  slice(1:20) # There are actually 301 species with an occurance of 1
+  slice(1:20) # There are actually 301 species with an occurrence of 1
 
 missing_species <- tae_tally %>% anti_join(tfl_occ_tally,by = "taxon")
 
