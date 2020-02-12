@@ -49,6 +49,8 @@ tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
 tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
 tec_sit <- geojsonsf::geojson_sf("data/tec_sites.geojson")
 
+
+
 snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
   ckanr::resource_show() %>%
   magrittr::extract2("last_modified") %>%
@@ -297,7 +299,7 @@ reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability = BR.DESC %>% as.character()
 )
   
-tec_occ <- tec$OCCURRENCES %>%
+tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
   tibble::as_tibble() %>%
   dplyr::transmute(
     # IDs
@@ -548,7 +550,7 @@ occ_fauna %>% DT::datatable(.)
 
 occ_species <- tec$OCCURRENCE_SPECIES %>%
   dplyr::transmute(
-    occ_id = OCC.UNIQUE.ID %>% as.integer(),
+    occ_id = OCC.UNIQUE.ID %>% as.integer(), ## Occ_id links to boundary id
     taxon_id = SPEC.TAXON.ID %>% as.character(),
     species_code = SPEC.SPCODE %>% as.character(),
     species_role_code = SPEC.SP.ROLE.CODE %>% as.character(),
@@ -1128,7 +1130,7 @@ tec_cl_tsc %>%
 TEC refers to a single AOO as "occurrence". Occurrences may be geo-referenced as boundaries and/or
 buffered boundaries (buffers) and/or through point sites within.
 
-## Boundaries
+### Boundaries
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
 ```{r tec_bdy}
@@ -1232,6 +1234,14 @@ tec_sit_cae <- tibble::tibble(
     )
 ```
 
+### TEC EOO
+
+```{r}
+# tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
+# tibble::tibble(code = tec$COM_ID, eoo = geojsonsf::sfc_geojson(tec$geometry)) %>% 
+#     wastdr::wastd_POST("community", verbose=T, api_url = prod)
+    
+```
 
 ```{r tec_sit_tsc, eval=F}
 # 7008 sites
