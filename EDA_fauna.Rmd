@@ -532,6 +532,7 @@ tfa_tae <- tfa_occ %>%
     description = glue::glue(
         "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}\n",
         "Species ID confirmation: {species_id_confirmed_by}\n",
+        "Specimen voucher exists: {specimen_voucher_exists}\n",
         "Site comments: {site_comment}\n",
         "Curator comments: {comments}\n",
         "District: {district_db} {district_db_no}\n",
@@ -1066,7 +1067,7 @@ if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
 
 ## Occurrences
 
-The EOO (Extent of occurence) is calculated as the convex hull around all recorded fauna occurences, including fossil records.
+The EOO (Extent of occurrence) is calculated as the convex hull around all recorded fauna occurrences, including fossil records.
 For further details on the methodology behind the movement of EOO data, please follow the link to the workbook.
 
 ### TSC upload example for EOOs
@@ -1189,8 +1190,9 @@ Caveat: Regions and Districts to not comprehensively cover WA.
 Lastly, we get a list of taxonomic names from TSC to resolve taxon IDs from
 taxon occurrences to names.
 
-Occurences are presented as `occ` with DBCA Region and District names (where
+Occurrences are presented as `occ` with DBCA Region and District names (where
 applicable), plus taxonomic names.
+
 ```{r extract_tsc_occurrences, message=FALSE}
 datafile <- here::here("data/tae.RData")
 tsc_tae <- wastdr::wastd_GET("occ-taxon-points") # 137k records
@@ -1930,7 +1932,7 @@ tsc_tally_btm <- tsc_tally %>%
   top_n(20,-n) %>% 
   slice(1:20) # There are actually 151 species with an occurence of 1
 
-missing_species <- tfa_tae_tally %>% anti_join(tsc_tally,by = "taxon") # no missing species
+missing_species_tae_tsc <- tae_tally %>% anti_join(tsc_tally,by = "taxon") # no missing species
 
 ## all differences
 missing_occurrences <- tfa_tae_tally %>%
@@ -1948,6 +1950,7 @@ missing_occurrences_one <- missing_occurrences %>%
 # tfa_tae_tsc_diff_one <- tfa_tae_tsc_diff %>% 
 #   dplyr::filter.sf(geometry == NA) ## How do you filter a geometry column???
 ```
+There are `r nrow(missing_species_tae_tsc)` species missing from tfl_tae when compared to tsc_occ. 
 
 Where there is no geometry data the occurrences of that species have not been carried across. 
 
