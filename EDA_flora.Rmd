@@ -606,6 +606,8 @@ tfl_fire_hist <- tfl_occ %>%
     fire_intensity = fire_intensity,
     fire_year = fire_year,
     fire_season = fire_season) %>%
+   mutate(fire_year = case_when(is.na(fire_year) ~ "1900",
+  TRUE ~ as.character(fire_year)))%>%
    mutate(fire_intensity = case_when(fire_intensity == "0" ~ "no",
                                 fire_intensity == "1" ~ "low",
                                 fire_intensity == "2" ~ "medium",
@@ -613,15 +615,19 @@ tfl_fire_hist <- tfl_occ %>%
   mutate(month = case_when(fire_season == "SPR" ~ "09",
                                 fire_season == "SUM" ~ "12",
                                 fire_season == "AUT" ~ "03",
-                                fire_season == "WIN" ~ "06")) %>% 
+                                fire_season == "WIN" ~ "06",
+                           fire_season =="" ~ "01")) %>% 
   mutate(day = case_when(month == "03" ~ "01",
   month == "06" ~ "01",
   month == "09" ~ "01",
-  month == "12" ~ "01")) %>% 
+  month == "12" ~ "01",
+  month == "01" ~ "01")) %>% 
   transmute(source = source,
     source_id = source_id,
     fire_intensity = fire_intensity,
-    fire_date = glue::glue("{day}/{month}/{fire_year}", .na = "NA") %>% as.character) %>% glimpse()
+    fire_date = glue::glue("{day}/{month}/{fire_year}", .na = "NA") %>% as.character) %>% 
+  mutate(fire_date = case_when(is.na(fire_intensity) ~ "NA",
+  TRUE ~ as.character(fire_date))) %>% glimpse()
 
 plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
