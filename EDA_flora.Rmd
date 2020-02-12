@@ -1920,12 +1920,17 @@ tsc_occ_tally_btm <- tsc_occ_tally %>%
 
 missing_species <- tsc_occ_tally %>% anti_join(tfl_occ_tally,by = "taxon")
 
-tae_tally %>%
+missing_occurrences <- tae_tally %>%
   dplyr::rename(tae = n) %>% 
   left_join(tsc_occ_tally,by = "taxon") %>% 
-  dplyr::rename(tsc = n) 
-# %>% 
-  # filter(tfl != tsc) %>% reactable::reactable()
+  dplyr::rename(tsc = n) %>% 
+  filter(tae != tsc) #%>% reactable::reactable()
+
+missing_occurrences_many <- missing_occurrences %>% 
+  dplyr::filter(tsc == 1)
+
+missing_occurrences_one <- missing_occurrences %>% 
+  dplyr::filter(tsc != 1)
 ```
 
 ## Conservation Documents
