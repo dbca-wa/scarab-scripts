@@ -786,7 +786,6 @@ tfl_tae <- tfl_occ %>%
         "Population {pop_id}, Subpopulation {subpop_code}\n",
         "Population classification: {classification_code}\n",
         "Habitat condition: {habitat_condition} {habitat_notes}\n",
-        "Associated species: {associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5}\n",
         "Location: {location} {distance} KM {direction} from {nearplace}\n",
         "District: {district}\n",
         "Land district: {landdistrict}\n",
