@@ -304,7 +304,7 @@ all_crit_map <- tfl_cons_listing %>%
 readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 ```
 
-## occurrences
+## Occurrences
 ```{r load_tfa_occ, message=TRUE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
@@ -625,9 +625,10 @@ tfl_fire_hist <- tfl_occ %>%
   transmute(source = source,
     source_id = source_id,
     fire_intensity = fire_intensity,
-    fire_date = glue::glue("{day}/{month}/{fire_year}", .na = "NA") %>% as.character) %>% 
-  mutate(fire_date = case_when(is.na(fire_intensity) ~ "NA",
-  TRUE ~ as.character(fire_date))) %>% glimpse()
+    fire_date = glue::glue("{day}/{month}/{fire_year}", .na = "NA") %>% as.Date()) %>%  
+   mutate(fire_date = fire_date  %>% 
+            lubridate::as_datetime(.) %>%
+            lubridate::with_tz("Australia/Perth")) %>% glimpse()
 
 plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
