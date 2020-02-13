@@ -46,10 +46,8 @@ names_tec <- as.data.frame(names(tec))
 
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
-tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
+# tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
 tec_sit <- geojsonsf::geojson_sf("data/tec_sites.geojson")
-
-
 
 snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
   ckanr::resource_show() %>%
@@ -348,9 +346,9 @@ tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
 
     # audit
     created_by = USERNAME %>% as.character(),
-    created_on = OCC.DATE.ENTERED %>%
+    date_encountered_on = OCC.DATE.ENTERED %>%
       lubridate::parse_date_time(., orders = orders, tz = tz),
-    changed_on = OCC.DATE.EDITED %>%
+    date_changed_on = OCC.DATE.EDITED %>%
       as.character() %>%
       lubridate::parse_date_time(., orders = orders, tz = tz)
   ) %>%
@@ -563,7 +561,7 @@ occ_species <- tec$OCCURRENCE_SPECIES %>%
 # occ_species %>% DT::datatable(.)
 ```
 
-# Surveys
+## Surveys
 `Surveys` are full site visits with a complete set of measurements.
 `Site visits` are quick site visits with a partial set of measurements.
 Both relate to Occurrences.
@@ -661,7 +659,7 @@ However, there are exactly as many unique combinations of `survey_id` and `occ_i
 
 How do `r nrow(survey_conditions)` `survey_conditions` reference `r nrow(surveys)` `surveys`? Likely by `occ_id` and `survey_id`.
 
-# Site Visits
+## Site Visits
 * Sites: Point-referenced sites, mostly 10x10m or 6x6m quadrats, within boundaries.
 * Datum: coordinate datum
 * Site Visits: CommunityAreaEncounters of Sites (lat/lon point) at date (site_visit$site_visit_date).
@@ -680,10 +678,10 @@ sites <- tec$SITES %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     site_code = S.ID %>% as.character(),
-    # datum_code = S.DATUM.CODE %>% as.character(),
-    latitude = LATITUDE %>% as.double(),
-    longitude = LONGITUDE %>% as.double(),
-    comments = COMMENTS %>% as.character(),
+    datum_code = S.DATUM.CODE %>% as.character(),
+    latitude = S.LATITUDE %>% as.double(),
+    longitude = S.LONGITUDE %>% as.double(),
+    comments = S.COMMENTS %>% as.character(),
     # S.LATITUDE.PREF = S.LATITUDE.PREF  %>% as.character, # wtf?
     # S.LONGITUDE.PREF = S.LONGITUDE.PREF  %>% as.character, # wut?
     created_by = USERNAME %>% as.character(),
@@ -701,13 +699,15 @@ sites <- tec$SITES %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(datum, by = "datum_code")
 
-# sites[15000:15250,] %>% skim # CKAN datapusher chokes on this chunk
+sites$site_code %>% head(n=100)
+site_visit$site_code %>% head(n=100)
 
 site_visit <- tec$SITE_VISITS %>%
   dplyr::transmute(
     site_visit_id = SITE.VISIT.ID %>% as.integer(),
     site_code = S.ID %>% as.character(),
-    site_visit_date = SV.VISIT.DATE %>% as.character(),
+    site_visit_date = SV.VISIT.DATE %>%
+      lubridate::parse_date_time(., orders = orders, tz = tz),
     project_code = SV.PROJ.CODE %>% as.character(),
     site_visit_described_by = SV.DESCRIBED.BY %>% as.character(),
     site_visit_described_by_notes = SV.DESCRIBED.BY.NOTES %>% as.character(),
@@ -722,9 +722,28 @@ site_visit <- tec$SITE_VISITS %>%
     vegetation_condition = SV.VEGETATION.CONDITION %>% as.character(),
     fire_age = SV.FIRE.AGE %>% as.character(),
     fire_notes = SV.FIRE.NOTES %>% as.character(),
-    observation_notes = SV.OBSERVATION.NOTES %>% as.character()
-  ) %>% 
-  dplyr::left_join(sites, by = "site_code")
+    observation_notes = SV.OBSERVATION.NOTES %>% as.character())
+
+## Sites and site_visit data exploration
+nrow(site_visit) #172 site visits
+unique(site_visit$site_code) #136 unique site_codes, so some sites have been visited multiple times
+nrow(sites) #204 sites
+unique(sites$site_code) #204 unique site_codes
+intersect(sites$site_code,site_visit$site_code) # no common site_codes between sites and site_visit. 
+# Don't use sites further, use the tec_sit shapefile to identify sites for site_visit
+## Check for similarities with site_visits
+intersect(site_visit$site_code,tec_sit$S_ID) # 131 similar
+
+bdy_w_one_site <- tec_bdy %>% 
+  filter(S_ID_COUNT == 1) %>% magrittr::extract2("BDY_ID") #121578 with a site ID = 1, which measn they are duplicates 
+
+sites_keep <- tec_sit %>% 
+  dplyr::filter(!(BDY_ID %in% bdy_w_one_site)) ## These are the sites we want to keep as they are not just boundary duplicates
+nrow(sites_keep)#3981 unique rows
+unique(sites_keep$BDY_ID) #956 unique boundary IDs
+
+intersect(site_visit$site_code,sites_keep$S_ID) #105 site_visit match site_code in sites_keep
+intersect(sites$site_code,sites_keep$S_ID) # 59 sites match site_code in sites_keep
 
 # coll code and number indicates voucher specimens
 voucher_specimens <- tec$SITE_SPECIES %>%
@@ -775,7 +794,7 @@ leaflet(width = 800, height = 600) %>%
   )
 ```
 
-# Recovery Plans
+## Recovery Plans
 
 ```{r recovery_plans}
 recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
@@ -792,6 +811,120 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
 # make_coldef(recovery_plans)
 recovery_plans %>% skim()
 ```
+
+## Occurence Boundaries
+Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
+
+```{r tec_bdy}
+tec_bdy_cae <- tibble::tibble(
+    occ_id = tec_bdy$OCC_UNIQUE,
+    community = tec_bdy$COM_ID,
+    code=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
+    name=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
+    description = ifelse(
+        is.na(tec_bdy$FIRST_S_ID),
+        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
+                   "{tec_bdy$BDY_ID} for lack of sites within."),
+        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
+                   "{tec_bdy$FIRST_S_ID} after first site observed within.")
+    ),
+    area_type = 10, # 10 bound, 11 buffer, 12 site point
+    source = 13, # TEC bdy
+    source_id = tec_bdy$OCC_UNIQUE,
+    encountered_on=default_date,
+    encountered_by=1,
+    geom = tec_bdy$geometry %>% 
+        sf::st_convex_hull(.) %>% 
+        sf::st_buffer(., 0.00001) %>% 
+        geojsonsf::sfc_geojson(.) 
+    )
+```
+
+Some boundaries were digitised from a polygonised raster remote sensing product. This results in
+a spray of numerous polygons, most of which were never visited in person.
+
+Name and shame: 
+
+```{r tec_cae_large}
+numerous_communities <- tec_bdy_cae %>% 
+  dplyr::group_by(community) %>% 
+  dplyr::tally() %>% 
+  dplyr::arrange(-n) %>% 
+  filter(n>400) 
+
+numerous_communities
+
+fat_filter <- numerous_communities %>% 
+  extract2("community") %>% 
+  paste0(collapse = "|")
+```
+
+## Occurence Buffers
+
+```{r tec_buf}
+# tec_buf_cae <- tibble::tibble(
+#     community = tec_buf$COM_ID,
+#     code=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
+#     name=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
+#     description = ifelse(
+#         is.na(tec_buf$FIRST_S_ID),
+#         glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
+#                    " {tec_buf$BDY_ID} for lack of sites within."),
+#         glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
+#                    " {tec_buf$FIRST_S_ID} after first site observed within.")
+#     ),
+#     area_type = 11, # 10 bound, 11 buffer, 12 site point
+#     source = 14, # TEC buf
+#     source_id = tec_buf$OCC_UNIQUE,
+#     encountered_on=default_date,
+#     encountered_by=1,
+#     geom = tec_buf$geometry %>% 
+#         sf::st_convex_hull(.) %>% 
+#         sf::st_buffer(., 0.00001) %>% 
+#         geojsonsf::sfc_geojson(.) 
+# )
+```
+
+## Occurence Sites
+
+```{r tec_sit}
+
+tec_sit %>% filter(BDY_ID == 0) %>% nrow() #1666
+
+site_visit_cae <- site_visit %>% 
+  left_join(tec_sit, by = c("site_code" = "S_ID")) %>% 
+  left_join(tec_occ, by = c("OCC_UNIQUE" = "occ_id"))%>%  
+  left_join(communities, by = c("com_id","com_label","com_name"))
+
+tec_sit_cae <- site_visit_cae %>% 
+  dplyr::transmute(
+    #occ_id = OCC_UNIQUE,
+    community = COM_ID,
+    code=site_code,
+    name=site_code,
+    description = glue::glue("Site ID {site_code} inside TEC Boundary {BDY_ID}"),
+    area_type = 12, # 10 bound, 11 buffer, 12 site point
+    source = 15, # TEC sit
+    source_id = site_visit_id,
+    encounter_type = 2, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/2/change/ = survey
+    encountered_on=site_visit_date,
+    encountered_by=1,
+    point = geometry %>% geojsonsf::sfc_geojson(.) 
+    ) 
+
+## The following communities contain no com_id and therefore cannot be parsed
+no_com_id <- tec_sit_cae %>% 
+  dplyr::filter(is.na(community))
+
+## Filter out the NA's
+tec_sit_cae <- tec_sit_cae %>% 
+  dplyr::filter(community != "NA")
+
+no_com_id %>% reactable::reactable()
+```
+
+The two communities above do not comtain a community ID so they cannot be parsed to TSC
+
 
 # Extract and transform conservation criteria Data from TSC
 Conservation criteria from TSC are downloaded from the TSC API 
@@ -871,8 +1004,10 @@ tec_ccl <- tec_cons_listing %>%
   left_join(tec_conscrit, by = c("category_code","criterion_code")) 
 ```
 
-# Extract and transform occurrence lookup Data from TSC
+# Extract and transform occurrence lookup Data from TSC and create final data frames
 ``` {r extract_tsc_occurrence_lookup, message=FALSE}
+
+# extract look ups  
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
@@ -1131,50 +1266,6 @@ TEC refers to a single AOO as "occurrence". Occurrences may be geo-referenced as
 buffered boundaries (buffers) and/or through point sites within.
 
 ### Boundaries
-Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
-
-```{r tec_bdy}
-tec_bdy_cae <- tibble::tibble(
-    community = tec_bdy$COM_ID,
-    code=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
-    name=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
-    description = ifelse(
-        is.na(tec_bdy$FIRST_S_ID),
-        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
-                   "{tec_bdy$BDY_ID} for lack of sites within."),
-        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
-                   "{tec_bdy$FIRST_S_ID} after first site observed within.")
-    ),
-    area_type = 10, # 10 bound, 11 buffer, 12 site point
-    source = 13, # TEC bdy
-    source_id = tec_bdy$OCC_UNIQUE,
-    encountered_on=default_date,
-    encountered_by=1,
-    geom = tec_bdy$geometry %>% 
-        sf::st_convex_hull(.) %>% 
-        sf::st_buffer(., 0.00001) %>% 
-        geojsonsf::sfc_geojson(.) 
-    )
-```
-
-Some boundaries were digitised from a polygonised raster remote sensing product. This results in
-a spray of numerous polygons, most of which were never visited in person.
-
-Name and shame: 
-
-```{r tec_cae_large}
-numerous_communities <- tec_bdy_cae %>% 
-  dplyr::group_by(community) %>% 
-  dplyr::tally() %>% 
-  dplyr::arrange(-n) %>% 
-  filter(n>400) 
-
-numerous_communities
-
-fat_filter <- numerous_communities %>% 
-  extract2("community") %>% 
-  paste0(collapse = "|")
-```
 
 Import excluding the heavyweight communities with more than 400 features:
 ```{r tec_bdy_tsc, eval=F}
@@ -1185,30 +1276,6 @@ tec_bdy_cae %>%
 
 ### Buffers
 
-```{r tec_buf}
-tec_buf_cae <- tibble::tibble(
-    community = tec_buf$COM_ID,
-    code=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
-    name=tec_buf$FIRST_S_ID %||% tec_buf$BDY_ID,
-    description = ifelse(
-        is.na(tec_buf$FIRST_S_ID),
-        glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
-                   " {tec_buf$BDY_ID} for lack of sites within."),
-        glue::glue("Buffered Boundary ID {tec_buf$BDY_ID} named",
-                   " {tec_buf$FIRST_S_ID} after first site observed within.")
-    ),
-    area_type = 11, # 10 bound, 11 buffer, 12 site point
-    source = 14, # TEC buf
-    source_id = tec_buf$OCC_UNIQUE,
-    encountered_on=default_date,
-    encountered_by=1,
-    geom = tec_buf$geometry %>% 
-        sf::st_convex_hull(.) %>% 
-        sf::st_buffer(., 0.00001) %>% 
-        geojsonsf::sfc_geojson(.) 
-    )
-```
-
 Import all but the numerous ones:
 
 ```{r tec_buf_tsc, eval=F}
@@ -1217,24 +1284,7 @@ tec_buf_cae %>%
     chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
 
-### Sites
-
-```{r tec_sit}
-tec_sit_cae <- tibble::tibble(
-    community = tec_sit$COM_ID,
-    code=tec_sit$S_ID,
-    name=tec_sit$S_ID,
-    description = glue::glue("Site ID {tec_sit$S_ID} inside TEC Boundary {tec_sit$BDY_ID}"),
-    area_type = 12, # 10 bound, 11 buffer, 12 site point
-    source = 15, # TEC sit
-    source_id = tec_sit$S_ID,
-    encountered_on=default_date,
-    encountered_by=1,
-    point = tec_sit$geometry %>% geojsonsf::sfc_geojson(.) 
-    )
-```
-
-### TEC EOO
+### Sites/ TEC EOO
 
 ```{r}
 # tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
@@ -1246,15 +1296,13 @@ tec_sit_cae <- tibble::tibble(
 ```{r tec_sit_tsc, eval=F}
 # 7008 sites
 tec_sit_cae %>% 
-    dplyr::filter(!grepl(fat_filter, community)) %>%
-    chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
+     chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
 # 17954 sites
 tec_sit_cae %>% 
   dplyr::filter(community == "Banksia Woodlands of the Swan Coastal Plain") %>% 
   chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 ```
-
 
 ### Long running data import
 This will run for about a day.
