@@ -625,10 +625,9 @@ tfl_fire_hist <- tfl_occ %>%
   transmute(source = source,
     source_id = source_id,
     fire_intensity = fire_intensity,
-    fire_date = glue::glue("{day}/{month}/{fire_year}", .na = "NA") %>% as.Date()) %>%  
-   mutate(fire_date = fire_date  %>% 
-            lubridate::as_datetime(.) %>%
-            lubridate::with_tz("Australia/Perth")) %>% glimpse()
+    fire_date = glue::glue("{fire_year}-{month}-{day}", .na = "NA") %>% as.character()) %>% 
+  mutate(fire_date = case_when(is.na(fire_intensity) ~ "NA",
+                               TRUE ~ as.character(fire_date))) %>% glimpse()
 
 plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -770,7 +769,7 @@ occ_fire <- tfl_data$DRF_FIRE_DETAILS %>%
     created_by = CREATED.BY %>% as.character(),
     modified_date = MODIFIED.DATE %>% as.character(),
     modified_by = MODIFIED.BY %>% as.character()
-  )
+  ) 
 
 ## Taxon area encounter
 tfl_tae <- tfl_occ %>%
@@ -797,13 +796,13 @@ tfl_tae <- tfl_occ %>%
     source = 11,
     source_id = sheetno,
     encounter_type = 3, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
-    encountered_on = glue::glue("{observation_date}+08:00"),
+    encountered_on = observation_date %>% as.character(),
     encountered_by = 1,
     area_type = 20, # pop:20, subpop: 21
     geolocation_capture_method='gps-point',
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
-  )
+  ) %>% glimpse()
 
 names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
