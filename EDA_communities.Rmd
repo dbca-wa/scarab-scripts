@@ -615,7 +615,15 @@ surveys <- tec$SURVEYS %>%
     survey_comments = SUR.COMMENTS %>% as.character(),
     username = USERNAME %>% as.character()
   ) %>%
-  dplyr::left_join(occ_short, by = "occ_id")
+  dplyr::left_join(occ_short, by = "occ_id") %>% 
+  dplyr::mutate(source_id = glue::glue("{boundary_id}{survey_id}"))
+
+## surveys data exploration
+nrow(surveys) #4492 surveys 
+x <- unique(surveys$source_id) #4088 unique source_id (boundary_id + survey_id), so some boundaries have been surveyed multiple times
+
+## Check for similarities between surveys and boundaries
+x <- intersect(surveys$boundary_id,tec_bdy$BDY_ID) # 2247 similar
 
 survey_threats <- tec$SURVEY_THREATS %>%
   dplyr::transmute(
@@ -700,7 +708,6 @@ sites <- tec$SITES %>%
   dplyr::left_join(datum, by = "datum_code")
 
 sites$site_code %>% head(n=100)
-site_visit$site_code %>% head(n=100)
 
 site_visit <- tec$SITE_VISITS %>%
   dplyr::transmute(
@@ -723,6 +730,9 @@ site_visit <- tec$SITE_VISITS %>%
     fire_age = SV.FIRE.AGE %>% as.character(),
     fire_notes = SV.FIRE.NOTES %>% as.character(),
     observation_notes = SV.OBSERVATION.NOTES %>% as.character())
+
+
+site_visit$site_code %>% head(n=100)
 
 ## Sites and site_visit data exploration
 nrow(site_visit) #172 site visits
@@ -816,6 +826,29 @@ recovery_plans %>% skim()
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
 ```{r tec_bdy}
+tec_bdy %>% filter(BDY_ID == 0) %>% nrow() # Six boundaries have no boundary id
+
+names(tec_bdy)
+names(surveys)
+names(tec_occ)
+names(communities)
+
+## Check for similarities between surveys and boundaries
+x <- intersect(tec_occ$boundary_id,tec_bdy$BDY_ID) # 122049 similar
+setdiff(tec_bdy$BDY_ID,tec_occ$boundary_id) # There are 0 boundarys in tec_bdy that are not in tec_occ
+setdiff(tec_occ$boundary_id,tec_bdy$BDY_ID) # There are 566 boundaries in tec_occ that are not in tec_bdy
+setdiff(tec_bdy$BDY_ID,surveys$boundary_id) # There are 118803 boundaries that have never been surveyed
+setdiff(surveys$boundary_id,tec_bdy$BDY_ID) # There are 129 surveyed boundaries which don't have a matching boundary ID in tec_bdy
+
+survey_cae <- surveys %>% 
+  left_join(tec_bdy, by = c("boundary_id" = "BDY_ID")) %>% 
+  left_join(tec_occ, by = c("OCC_UNIQUE" = "occ_id")) %>%  
+  left_join(communities, by = "com_id")
+
+
+c("com_id","com_label","com_name")
+names(survey_cae)
+
 tec_bdy_cae <- tibble::tibble(
     occ_id = tec_bdy$OCC_UNIQUE,
     community = tec_bdy$COM_ID,
@@ -855,8 +888,9 @@ numerous_communities <- tec_bdy_cae %>%
 numerous_communities
 
 fat_filter <- numerous_communities %>% 
-  extract2("community") %>% 
+  magrittr::extract2("community") %>% 
   paste0(collapse = "|")
+
 ```
 
 ## Occurence Buffers
@@ -923,7 +957,7 @@ tec_sit_cae <- tec_sit_cae %>%
 no_com_id %>% reactable::reactable()
 ```
 
-The two communities above do not comtain a community ID so they cannot be parsed to TSC
+The two communities above do not contain a community ID so they cannot be parsed to TSC
 
 
 # Extract and transform conservation criteria Data from TSC
