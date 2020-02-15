@@ -840,37 +840,46 @@ setdiff(tec_occ$boundary_id,tec_bdy$BDY_ID) # There are 566 boundaries in tec_oc
 setdiff(tec_bdy$BDY_ID,surveys$boundary_id) # There are 118803 boundaries that have never been surveyed
 setdiff(surveys$boundary_id,tec_bdy$BDY_ID) # There are 129 surveyed boundaries which don't have a matching boundary ID in tec_bdy
 
+setdiff(survey_cae$com_id,communities$com_id) # There are 145 communities not in surveys
+unique(surveys$com_id)
+
+names(surveys)
+names(tec_occ)
+
+glimpse(surveys)
+glimpse(communities)
+
 survey_cae <- surveys %>% 
   left_join(tec_bdy, by = c("boundary_id" = "BDY_ID")) %>% 
-  left_join(tec_occ, by = c("OCC_UNIQUE" = "occ_id")) %>%  
-  left_join(communities, by = "com_id")
+  left_join(tec_occ, by = c("occ_id","com_id","com_label","com_name","boundary_id","boundary_desc")) %>%  
+  left_join(communities, by = c("com_id","com_label","com_name"))
 
-
-c("com_id","com_label","com_name")
 names(survey_cae)
 
-tec_bdy_cae <- tibble::tibble(
-    occ_id = tec_bdy$OCC_UNIQUE,
-    community = tec_bdy$COM_ID,
-    code=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
-    name=tec_bdy$FIRST_S_ID %||% tec_bdy$BDY_ID,
+tec_bdy_cae <- survey_cae %>% 
+  dplyr::transmute(
+    #occ_id = occ_id,
+    community = com_id,
+    code = boundary_id,
+    name = com_name,
     description = ifelse(
-        is.na(tec_bdy$FIRST_S_ID),
-        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
-                   "{tec_bdy$BDY_ID} for lack of sites within."),
-        glue::glue("Boundary ID {tec_bdy$BDY_ID} named ",
-                   "{tec_bdy$FIRST_S_ID} after first site observed within.")
+        is.na(FIRST_S_ID),
+        glue::glue("Boundary ID {boundary_id} named ",
+                   "{boundary_id} for lack of sites within."),
+        glue::glue("Boundary ID {boundary_id} named ",
+                   "{FIRST_S_ID} after first site observed within.")
     ),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
-    source_id = tec_bdy$OCC_UNIQUE,
+    source_id = source_id,
     encountered_on=default_date,
     encountered_by=1,
-    geom = tec_bdy$geometry %>% 
+    geom = geometry %>% 
         sf::st_convex_hull(.) %>% 
         sf::st_buffer(., 0.00001) %>% 
         geojsonsf::sfc_geojson(.) 
     )
+
 ```
 
 Some boundaries were digitised from a polygonised raster remote sensing product. This results in
@@ -1304,7 +1313,6 @@ buffered boundaries (buffers) and/or through point sites within.
 Import excluding the heavyweight communities with more than 400 features:
 ```{r tec_bdy_tsc, eval=F}
 tec_bdy_cae %>% 
-    filter(!grepl(fat_filter, community)) %>%
     chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
 
