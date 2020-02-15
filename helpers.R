@@ -47,6 +47,7 @@ library(mapview)
 library(maps)
 library(mapproj)
 library(stringr)
+library(magrittr)
 
 library(gganimate)
 library(ggthemes)
