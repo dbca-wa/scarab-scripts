@@ -609,19 +609,12 @@ surveys <- tec$SURVEYS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     survey_id = SUR.NO %>% as.integer(),
-    surveyed_on = purrr::map(fix_incomplete_date(SUR.DATE)),
+    surveyed_on = SUR.DATE %>% as.character(),
     surveyed_by = SUR.SURVEYOR %>% as.character(),
     survey_comments = SUR.COMMENTS %>% as.character(),
     username = USERNAME %>% as.character()
   ) %>%
-  dplyr::mutate(surveyed_on = case_when(
-    is.na(surveyed_on) ~ default_date_notime,
-    TRUE ~ as.character(surveyed_on)
-  )) 
-
-%>%
-  dplyr::mutate(surveyed_time = "12:00:00") %>%
-  dplyr::mutate(surveyed_on = glue::glue("{surveyed_on}-{surveyed_time}", .na = "NA")) %>%
+purrr::map(., fix_incomplete_date("surveyed_on")) #%>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::mutate(source_id = glue::glue("{boundary_id}{survey_id}"))
 
