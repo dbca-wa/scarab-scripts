@@ -62,9 +62,10 @@ library(reactable)
 ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
 
 # Date conventions
-orders <- c("mdyHMS")
+orders <- c("mdyHMS","dmy")
 tz <- "Australia/Perth"
 default_date <- "1900-01-01 00:00:00"
+default_date_notime <- "1900-01-01"
 parse_as_datetime <- function(x){
     if (is.null(x)) {
         return(
@@ -334,3 +335,42 @@ anim_fauna <- function(data, title, nid){
     # anim_save(glue::glue("data/occ_{nid}.gif"))
 }
 
+#' Fix an incomplete date string and return a valid date
+#'
+#' @details If given an empty string, the default date string is returned.
+#' If given an incomplete date string, missing days and months are backfilled
+#' with "01", missing years are filled with "1900".
+#' If given a valid date string, it is returned as is.
+#' If given a date string in any format other than "dmY", XXX happens.
+#' @param date_string <chr> A string of format "dd/mm/yyyy" possibly with
+#'   missing day, month, or year
+#' @param default_date_notime <chr> A string "01/01/1900"
+#' @return A valid date as string
+#' @examples
+#' \dontrun{
+#' testthat::expect_equal(fix_incomplete_date("02/03/2015"),
+#'                       lubridate::parse_date_time("02/03/2015 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))
+#'testthat::expect_equal(fix_incomplete_date(" /03/2015"),
+#'                       lubridate::parse_date_time("01/03/2015 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))
+#'testthat::expect_equal(fix_incomplete_date(" / /2015"),
+#'                       lubridate::parse_date_time("01/01/2015 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))
+#'testthat::expect_equal(fix_incomplete_date(""),
+#'                       lubridate::parse_date_time("01/01/1900 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))
+#' }
+fix_incomplete_date <- function(
+    date_string,
+    default_date_notime =
+        (lubridate::parse_date_time("01/01/1900 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))) {
+    if (date_string == "") {
+        return(default_date_notime)
+    }
+
+    date_parts <- stringr::str_split(date_string, "/")
+    day_int <- as.integer(date_parts[[1]][[1]])
+    day <- ifelse(is.na(day_int), 1, day_int)
+    month_int <- as.integer(date_parts[[1]][[2]])
+    month <- ifelse(is.na(month_int), 1, month_int)
+    year_int <- as.integer(date_parts[[1]][[3]])
+    year <- ifelse(is.na(year_int), 1900, year_int)
+    lubridate::make_datetime(year, month, day, 12, tz = tz)
+}
