@@ -1200,7 +1200,7 @@ tsc_tae <- wastdr::wastd_GET("occ-taxon-points") # 137k records
 
 tsc_taxa <- wastdr::wastd_GET("taxon") %>%
     wastdr::wastd_parse() %>%
-    dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk)
+    dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk %>% as.character())
 
 tsc_areas <- wastdr::wastd_GET("area") %>%
       magrittr::extract2("features") %>%
@@ -1222,6 +1222,14 @@ districts <- tsc_areas %>%
   dplyr::filter(area_type == "District") %>%
   dplyr::transmute(district_id = pk, district_name = name)
 
+glimpse(tsc_taxa_fauna)
+
+unique(tfa_tae$taxon) #892
+unique(tsc_taxa_fauna$taxon) #3655
+intersect(tsc_taxa_fauna$taxon,tfa_tae$taxon) # 892 similar
+setdiff(tsc_taxa_fauna$taxon,tfa_tae$taxon) # 2758 taxon in tsc that are not in tfa
+setdiff(tfa_tae$taxon,tsc_taxa_fauna$taxon) # 0 taxon in tfa that are not in tsc
+
 tsc_occ_fauna <- tsc_tae %>%
   magrittr::extract2("features") %>%
   geojsonio::as.json() %>%
@@ -1229,7 +1237,12 @@ tsc_occ_fauna <- tsc_tae %>%
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
   dplyr::mutate(taxon = taxon %>% as.character()) %>% 
-  dplyr::right_join(tsc_taxa_fauna, by="taxon")
+  dplyr::left_join(tsc_taxa, by="taxon")
+
+unique(tsc_occ_fauna$taxon) #3655
+intersect(tsc_occ_fauna$taxon,tfa_tae$taxon) # 892 similar
+setdiff(tsc_occ_fauna$taxon,tfa_tae$taxon) # 2758 taxon in tsc that are not in tfa
+
 
 # save(occ, file=here::here("data/occ.RData"), compress="xz")
 # load(here::here("data/occ.RData"))
@@ -1907,7 +1920,7 @@ tae_tally <- tfa_tae %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup() %>% 
   dplyr::select("taxon","n") %>% 
-  as.tibble()
+  as_tibble()
 
 tae_tally_top <- tae_tally %>% 
   top_n(20,n)
@@ -1922,7 +1935,7 @@ tsc_tally <- tsc_occ_fauna %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup() %>% 
   dplyr::select("taxon","n") %>% 
-  as.tibble()
+  as_tibble()
 
 tsc_tally_top <- tsc_tally %>% 
   top_n(20,n)
