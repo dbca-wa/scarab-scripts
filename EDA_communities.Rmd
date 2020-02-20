@@ -356,6 +356,8 @@ tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
   dplyr::left_join(reliability, by = "reliability_id") %>%
   dplyr::select(-confidential_id, reliability_id)
 
+tec_names <- tibble::tibble(names(tec_occ))
+
 occ_short <- tec_occ %>%
   dplyr::select(occ_id, boundary_id, boundary_desc, com_id, com_label, com_name)
 ```
@@ -378,7 +380,7 @@ occ_actions <- tec$OCCURRENCE_ACTIONS %>%
 occ_actions %>% DT::datatable(.)
 ```
 
-### Occcurrence Recommendations
+### Occurrence Recommendations
 
 ```{r occ_recommendations}
 occ_recommendations <- tec$OCCURRENCE_RECOMMENDATIONS %>%
@@ -447,7 +449,7 @@ occ_additional_data <- tec$ADDITIONAL_DATA %>%
 occ_additional_data %>% DT::datatable(.)
 ```
 
-### Occcurrence Maps
+### Occurrence Maps
 Names of physical maps describing one or multiple occurrences.
 
 ```{r occ_maps}
@@ -614,7 +616,6 @@ surveys <- tec$SURVEYS %>%
     survey_comments = SUR.COMMENTS %>% as.character(),
     username = USERNAME %>% as.character()
   ) %>%
-purrr::map(., fix_incomplete_date("surveyed_on")) #%>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::mutate(source_id = glue::glue("{boundary_id}{survey_id}"))
 
@@ -824,7 +825,7 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
 recovery_plans %>% skim()
 ```
 
-## Occurence Boundaries
+## Occurrence Boundaries
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
 ```{r tec_bdy}
@@ -875,7 +876,8 @@ tec_bdy_cae <- survey_cae %>%
       ),
       glue::glue(
         "Boundary ID {boundary_id} named ",
-        "{FIRST_S_ID} after first site observed within."
+        "{FIRST_S_ID} after first site observed within. ",
+        "Survey comments: {survey_comments}"
       )
     ),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
@@ -940,7 +942,6 @@ fat_filter <- numerous_communities %>%
 ## Occurence Sites
 
 ```{r tec_sit}
-
 tec_sit %>%
   filter(BDY_ID == 0) %>%
   nrow() # 1666
@@ -1639,7 +1640,63 @@ tec_ccl %>%
   reactable::reactable(filterable = TRUE) # 76
 ```
 
-## Occurences
+## Occurrences
+
+### Date/ Location caveats
+This section lists data issues which need to be fixed at the source (here, in legacy TEC).
+
+The date column for surveys `surveyed_on` and site_visits `site_visit_date` is required.
+
+Where a time is missing, we'll default to midday (12:00:00).
+Where a date is missing, we'll default to 1900-01-01.
+
+While this modifies the original data, the consequences will not have a dramatic effect on analyses for
+conservation management purposes:
+
+* A safe default of the observation time (midday) is an appropriate approximate time for surveys, which are carried out during daylight hours.
+* A safe default for missing dates (1900-01-01) will both exclude those observations from any recent
+  observations (past 10-50 years), but still make the data available to identify the records for the
+  purpose of backfilling a credible date.
+
+Please review legacy data until the following numbers are all zero (or accept default handling):
+
+* `r surveys %>% dplyr::filter(surveyed_on == "") %>% nrow()` date_encountered_on couldn't be restored and require a valid date (and ideally time) to be set at the source.
+* `r site_visit %>% dplyr::filter(is.na(site_visit_date)) %>% nrow()` date_encountered_on couldn't be restored and require a valid date (and ideally time) to be set at the source.
+
+### Surveys: default/ missing dates
+```{r missing dates}
+surveys_no_date <- surveys %>% 
+    filter(surveyed_on == "")
+#surveys_no_date %>% reactable::reactable()
+```
+There are `r nrow(surveys_no_date)` distinct scientific fauna names missing a date.
+
+### Sites: default/ missing times
+```{r missing times}
+site_visit_no_date <- site_visit %>% 
+    filter(is.na(site_visit_date))
+site_visit_no_date %>% reactable::reactable()
+```
+There are `r nrow(site_visit_no_date)` distinct scientific fauna names missing a time.
+
+### Missing boundary ID
+```{r missing boundary ID}
+tec_bdy_missing_boundary_ID <- tec_bdy %>% 
+    dplyr::filter(BDY_ID == 0)
+#tec_bdy_missing_boundary_ID %>% reactable::reactable()
+```
+
+There are `r nrow(tec_bdy_missing_boundary_ID)` distinct boundary records with a missing boundary ID.
+
+### Missing site visit ID
+```{r missing site visit ID}
+names(tec_sit)
+tec_occ_no_sit <- tec_sit %>% 
+    dplyr::filter(S_ID == 0)
+#tec_occ_no_sit %>% reactable::reactable()
+```
+
+There are `r nrow(tec_occ_no_sit)` distinct site records with a missing site ID.
 
 # Upload to data catalogue
 ```{r upload_data_catalogue}
@@ -1759,6 +1816,78 @@ upload_to_ckan(tec_cons_listing_categories, "TEC Conservation Listing Categories
 upload_to_ckan(tec_cons_listing_criteria, "TEC Conservation Listing Criteria",
   d$id,
   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+)
+# upload_to_ckan(impacts, "TEC Impacts",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(threats, "TEC Threats",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(sources, "TEC Sources",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(species_roles, "TEC Species roles",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(status, "TEC Status",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(survey_conditions, "TEC Survey conditions",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(surveys, "TEC Surveys",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(survey_conditions, "TEC Survey conditions",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(recovery_plans, "TEC Recovery plans",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(items, "TEC Items",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(maps, "TEC Maps",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(occ_maps, "TEC Occurrence maps",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(publications, "TEC Publications",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(recommendations, "TEC Recommendations",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(reviews, "TEC Reviews",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(endorsement, "TEC Endorsement",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(conditions, "TEC Conditions",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
+# )
+# upload_to_ckan(datum, "TEC Datum",
+#   d$id,
+#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
 )
 ```
 
