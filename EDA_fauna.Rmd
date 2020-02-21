@@ -1196,11 +1196,23 @@ applicable), plus taxonomic names.
 
 ```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
 datafile <- here::here("data/tae.RData")
-tsc_tae <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
 
-tsc_taxa <- wastdr::wastd_GET("taxon") %>%
+tsc_tae <- tsc_tae_data %>% 
+  magrittr::extract2("features") %>%
+  geojsonio::as.json() %>%
+  geojsonsf::geojson_sf() %>% 
+  dplyr::mutate(taxon = taxon %>% as.character())
+  
+names(tsc_tae)
+  
+tsc_taxa_fauna <- "taxon" %>%
+    wastdr::wastd_GET(api_url = prod,
+                      query = list(paraphyletic_groups = 20)) %>%
     wastdr::wastd_parse() %>%
-    dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk %>% as.character())
+    dplyr::mutate(taxon = name_id %>% as.character())
+
+    #dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk %>% as.character())
 
 tsc_areas <- wastdr::wastd_GET("area") %>%
       magrittr::extract2("features") %>%
@@ -1230,19 +1242,16 @@ intersect(tsc_taxa_fauna$taxon,tfa_tae$taxon) # 892 similar
 setdiff(tsc_taxa_fauna$taxon,tfa_tae$taxon) # 2758 taxon in tsc that are not in tfa
 setdiff(tfa_tae$taxon,tsc_taxa_fauna$taxon) # 0 taxon in tfa that are not in tsc
 
-tsc_occ_fauna <- tsc_tae %>%
-  magrittr::extract2("features") %>%
-  geojsonio::as.json() %>%
-  geojsonsf::geojson_sf() %>% 
+tsc_occ_fauna <- tsc_tae%>% 
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
-  dplyr::mutate(taxon = taxon %>% as.character()) %>% 
-  dplyr::left_join(tsc_taxa, by="taxon")
+  dplyr::right_join(tsc_taxa_fauna, by="taxon") %>% na.omit()
 
-unique(tsc_occ_fauna$taxon) #3655
-intersect(tsc_occ_fauna$taxon,tfa_tae$taxon) # 892 similar
-setdiff(tsc_occ_fauna$taxon,tfa_tae$taxon) # 2758 taxon in tsc that are not in tfa
-
+unique(tfa_tae$taxon) #892
+unique(tsc_occ_fauna$taxon) #738
+intersect(tsc_occ_fauna$taxon,tfa_tae$taxon) # 738 similar
+setdiff(tsc_occ_fauna$taxon,tfa_tae$taxon) # 0 taxon in tsc that are not in tfa
+setdiff(tfa_tae$taxon,tsc_occ_fauna$taxon) # 144 taxon in tfa that are not in tsc
 
 # save(occ, file=here::here("data/occ.RData"), compress="xz")
 # load(here::here("data/occ.RData"))
