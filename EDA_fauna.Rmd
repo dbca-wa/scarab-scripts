@@ -294,7 +294,7 @@ names_tfa_rec <- (as.data.frame(names(tfa_rec)))
 
 # taxon occurences
 tfa_occ <- tfa_rec %>% dplyr::transmute(
-    id = DBNo %>% as.integer(),
+    id = DBNo %>% as.character(),
     district_db = DistDB %>% as.integer(),
     district_db_no = DistDBNo %>% as.character(),
     species_code = SpCode %>% as.character(),
@@ -549,7 +549,7 @@ tfa_tae <- tfa_occ %>%
         "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
         ),
     source = 10,
-    source_id = id,
+    source_id = id %>% as.character(),
     encounter_type = 1, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/1/change/ = opportunistic 
     encountered_on = glue::glue("{datetime}+08:00"),
     encountered_by = 1,
@@ -1219,7 +1219,7 @@ tsc_areas <- wastdr::wastd_GET("area") %>%
       geojsonio::as.json() %>%
       geojsonsf::geojson_sf()
 
-save(tsc_tae, tsc_taxa, tsc_areas, file=datafile, compress="xz")
+save(tsc_tae, tsc_taxa_fauna, tsc_areas, file=datafile, compress="xz")
 ```
 
 ```{r munge}
@@ -1245,13 +1245,19 @@ setdiff(tfa_tae$taxon,tsc_taxa_fauna$taxon) # 0 taxon in tfa that are not in tsc
 tsc_occ_fauna <- tsc_tae%>% 
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
-  dplyr::right_join(tsc_taxa_fauna, by="taxon") %>% na.omit()
+  dplyr::right_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id")
 
-unique(tfa_tae$taxon) #892
 unique(tsc_occ_fauna$taxon) #738
 intersect(tsc_occ_fauna$taxon,tfa_tae$taxon) # 738 similar
 setdiff(tsc_occ_fauna$taxon,tfa_tae$taxon) # 0 taxon in tsc that are not in tfa
 setdiff(tfa_tae$taxon,tsc_occ_fauna$taxon) # 144 taxon in tfa that are not in tsc
+
+names(tsc_occ_fauna)
+unique(tsc_occ_fauna$source_id) #55744
+unique(tfa_tae$source_id) #94814
+intersect(tsc_occ_fauna$source_id,tfa_tae$source_id) #55744
+setdiff(tsc_occ_fauna$source_id,tfa_tae$source_id) # 0 source_id's in tsc that are not in tfa
+setdiff(tfa_tae$source_id,tsc_occ_fauna$source_id) # 39070 source_id's in tfa that are not in tsc
 
 # save(occ, file=here::here("data/occ.RData"), compress="xz")
 # load(here::here("data/occ.RData"))
@@ -1870,7 +1876,24 @@ The above need to be corrected  before the manual mapping can be completed.
 Currently, we assume that all occurrence records in the legacy databases are trustworthy.
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
-### TFA occurrences not in TAE vv
+### TFA occurrences not in TAE
+
+Any records in the following table indicate occurrences in TFA that
+were not migrated into TSC.
+
+```{r missing_occurrences}
+missing_occ_tae <- tfa_occ %>%
+  dplyr::anti_join(tfa_tae, by = c("id" = "source_id")) 
+
+missing_occ_tae %>% reactable::reactable(filterable = TRUE)
+
+names(tfa_occ)
+```
+
+There are `r nrow(missing_occurrences)` occurrences missing from tfa_tae when compared to tfa_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
+
+The table below is a tally of mismatching occurrences and confirms the two missing occurrences identified above.
+
 ```{r tally_tfa_tae}
 
 tfa_occ_tally <- tfa_occ %>%
@@ -1879,28 +1902,12 @@ tfa_occ_tally <- tfa_occ %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup()
 
-tfa_occ_tally_top <- tfa_occ_tally %>% 
-  top_n(20,n)
-
-tfa_occ_tally_btm <- tfa_occ_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) 
-
 tae_tally <- tfa_tae %>%
   dplyr::group_by(taxon) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup() %>% 
   dplyr::rename(name_id = taxon)
-
-tae_tally_top <- tae_tally %>% 
-  top_n(20,n)
-
-tae_tally_btm <- tae_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) # There are actually 151 species with an occurence of 1
-
-missing_species <- tae_tally %>% anti_join(tfa_occ_tally,by = "name_id")
 
 tfa_occ_tally %>%
   dplyr::rename(tfa = n) %>% 
@@ -1909,64 +1916,57 @@ tfa_occ_tally %>%
   filter(tfa != tae) %>% reactable::reactable()
 ```
 
-There are `r nrow(missing_species)` species missing from tfa_tae when compared to tfa_occ. 
-One species has different numbers of occurrences between tfa_occ and tfa_tae.
+### TAE occurences not in TSC
 
-```{r tally_tfa_possum}
-tfa_possum <- tfa_occ %>% filter(name_id == 24166) 
-tae_possum <- tfa_tae %>% filter(taxon == 24166)
-tfa_possum %>% 
-  anti_join(tae_possum,by = c("id"="source_id")) %>% reactable::reactable()
+Any records in the following table indicate occurrences in TFA that
+were not migrated into TSC.
+
+```{r missing_occurrences}
+missing_occ_tsc <- tfa_tae %>%
+  dplyr::anti_join(tsc_occ_fauna, by = "source_id")  
+
+missing_occ_tsc %>% reactable::reactable(filterable = TRUE)
 ```
-The two occurences above do not appear in tfa_tae because there is no lat or long data, 
-which is a requirement for valid taxon area encounters.
 
-### TAE occurences not in TSC vv
-```{r tally_tfa_occ}
+There are `r nrow(missing_occurrences)` occurrences missing from tsc when compared to tfa_tae The occurrences listed were likely not migrated because ????????
+
+The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
+
+```{r tally_tfa_tae}
 tae_tally <- tfa_tae %>%
-  dplyr::group_by(taxon) %>% 
+  dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
-  ungroup() %>% 
-  dplyr::select("taxon","n") %>% 
-  as_tibble()
+  ungroup() 
 
-tae_tally_top <- tae_tally %>% 
-  top_n(20,n)
-
-tae_tally_btm <- tae_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) # There are actually 151 species with an occurence of 1
-
-tsc_tally <- tsc_occ_fauna %>%
-  dplyr::group_by(taxon) %>% 
+tsc_occ_tally <- tsc_occ_fauna %>%
+  dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
-  ungroup() %>% 
-  dplyr::select("taxon","n") %>% 
-  as_tibble()
+  ungroup() 
 
-tsc_tally_top <- tsc_tally %>% 
-  top_n(20,n)
+tae_tally %>%
+  dplyr::rename(tae = n) %>% 
+  left_join(tsc_occ_tally,by = "source_id") %>% 
+  dplyr::rename(tsc = n) %>% 
+  filter(tae != tsc) # this isn't correct
+```
 
-tsc_tally_btm <- tsc_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) # There are actually 151 species with an occurence of 1
+START HERE
 
-missing_species_tae_tsc <- tae_tally %>% anti_join(tsc_tally,by = "taxon") # no missing species
-
+```{r} 
 ## all differences
 missing_occurrences <- tae_tally %>%
   dplyr::rename(tfa_tae = n) %>% 
   left_join(tsc_tally,by = "taxon") %>% 
   dplyr::rename(tsc = n) %>% 
-  filter(tfa_tae != tsc) %>% glimpse()
+  filter(tfa_tae != tsc) %>% glimpse() # 229
 
 missing_occurrences_many <- missing_occurrences %>% 
-  dplyr::filter(tsc == 1)
+  dplyr::filter(tsc == 1) # 18 taxon missing which have multiple occurrences
 
 missing_occurrences_one <- missing_occurrences %>% 
-  dplyr::filter(tsc != 1)
+  dplyr::filter(tsc != 1) # 211 taxon missing which have only one occurrence
 
 # tfa_tae_tsc_diff_one <- tfa_tae_tsc_diff %>% 
 #   dplyr::filter.sf(geometry == NA) ## How do you filter a geometry column???
