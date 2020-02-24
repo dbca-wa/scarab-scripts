@@ -745,7 +745,7 @@ tfa_repmap <- here::here("tfa_repmat_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-names(anim_obs)
+# names(anim_obs)
 
 tfa_anim_obs <- anim_obs %>%
   left_join(tfa_confidence, by = c("species_id_confidence")) %>% 
@@ -777,7 +777,7 @@ tfa_sampdest <- here::here("tfa_sampdest_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-names(phys_sample)
+# names(phys_sample)
 
 tfa_phys_sample <- phys_sample %>%
   left_join(tfa_samptype, by = c("sample_type")) %>% 
