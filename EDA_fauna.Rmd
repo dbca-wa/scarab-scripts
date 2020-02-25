@@ -501,7 +501,7 @@ phys_sample %>%
 
 ## Put Malleefowl in separate csv file and add to data catalogue
 malleefowl_data <- tfa_rec %>% dplyr::transmute(
-  id = DBNo %>% as.integer(),
+  id = DBNo %>% as.character(),
   malleefowl_MFeggsH = MFeggsH %>% as.character(),
   malleefowl_MFeggsU = MFeggsU %>% as.character(),
   malleefowl_MFmoundU = MFmoundU %>% as.character(),
@@ -541,7 +541,9 @@ tfa_tae <- tfa_occ %>%
         "LGA ID: {lga_id}\n",
         "District ID: {district_id}\n",
         "Vegetation type: {vegetation_type}\n",
-        "Associated species: {associated_flora_species_1} {associated_flora_species_2} {associated_flora_species_3} {associated_flora_species_4} {associated_flora_species_5}\n",
+        "Associated species: {associated_flora_species_1} ",
+        "{associated_flora_species_2} {associated_flora_species_3} ",
+        "{associated_flora_species_4} {associated_flora_species_5}\n",
         "Fire history: {fire_history}\n",
         "Date entered: {entered_on} {entered_by}\n",
         "Date changed: {changed_on} {changed_by}\n",
@@ -566,7 +568,6 @@ names_tfa_tae <- (as.data.frame(names(tfa_tae)))
 occ_file <- here::here("data", "occ.Rdata")
 save(tfa_occ, tfa_tae, file=occ_file)
 if (file.exists(occ_file)) load(occ_file)
-
 ```
 
 ## Recovery Actions and Plans
@@ -780,11 +781,21 @@ tfa_sampdest <- here::here("tfa_sampdest_w_tsc.csv") %>%
 # names(phys_sample)
 
 tfa_phys_sample <- phys_sample %>%
-  left_join(tfa_samptype, by = c("sample_type")) %>% 
+  left_join(tfa_samptype, by = c("sample_type")) %>%
   left_join(tfa_sampdest, by = c("sample_destination")) %>%
-dplyr::select(source,source_id,tsc_sample_type,specimen_voucher_exists,tsc_sample_destination,sample_label) %>%
+  dplyr::select(
+    source,
+    source_id,
+    tsc_sample_type,
+    # specimen_voucher_exists,
+    tsc_sample_destination,
+    sample_label
+  ) %>%
   dplyr::rename(sample_type = tsc_sample_type) %>%
-  dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
+  dplyr::rename(sample_destination = tsc_sample_destination) %>%
+  dplyr::mutate(obstype = "PhysicalSample") %>%
+  # glimpse %>%
+  invisible()
 
 tfa_veg_class <- veg_class %>% 
   dplyr::transmute(
@@ -792,6 +803,9 @@ tfa_veg_class <- veg_class %>%
     source_id = source_id,
     vegetation_classification = glue::glue(
         "{vegetation_code}; {vegetation_type}"))
+
+# This works in DEV - coming soon to PROD TSCs in your area!
+# tfa_phys_sample[1,] %>% as.list() %>% wastdr::wastd_POST("occ-observation", api_url = dev)
 ```
 
 # Load legacy data from TFA into TSC
@@ -1121,6 +1135,15 @@ tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, ap
 
 tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurences
 ```
+
+
+### Upload ObservationGroups
+
+TODO upload obsgroups here.
+
+
+area
+
 ## Conservation Documents
 
 ## Fire History
