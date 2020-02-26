@@ -487,7 +487,13 @@ phys_sample <- tfa_occ %>%
     sample_type = specimen_status,
     specimen_voucher_exists = specimen_voucher_exists, # This column is confusing- what does it mean?
     sample_destination = specimen_voucher_location,
-    sample_label = glue::glue("[{specimen_voucher_location}]{specimen_voucher_catalogue_number}"))
+    sample_label = glue::glue("[{specimen_voucher_location}]{specimen_voucher_catalogue_number}")) %>% 
+  dplyr::filter(specimen_voucher_exists != "FALSE" | sample_destination != "") %>% 
+  dplyr::filter(specimen_voucher_exists != "FALSE" | sample_destination != "Not retained") %>% 
+  dplyr::filter(sample_type != "No specimen" | sample_destination != "Not retained")%>% 
+  dplyr::filter(sample_type != "Unknown" | sample_destination != "Unknown")%>% 
+  dplyr::filter(sample_type != "Unknown" | sample_destination != "Unknown location")
+
 
 phys_sample %>%
   dplyr::select(sample_destination) %>%
@@ -1380,7 +1386,7 @@ Any records in the following table require review.
 ```{r species_mismatches}
 # names_in_tfa_not_in_tsc
 species_names %>%
-  anti_join(tsc_taxa_fauna, by = "name_id") %>%
+  anti_join(tsc_taxa_fauna, by = c("name_id" = "taxon")) %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -1394,7 +1400,7 @@ completeness.
 ```{r}
 # names_in_tsc_not_in_tfa
 tsc_taxa_fauna %>%
-  anti_join(species_names, by = "name_id") %>%
+  anti_join(species_names, by = c("taxon" = "name_id")) %>%
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -1946,12 +1952,18 @@ were not migrated into TSC.
 
 ```{r missing_occurrences}
 missing_occ_tsc <- tfa_tae %>%
-  dplyr::anti_join(tsc_occ_fauna, by = "source_id")  
+  dplyr::anti_join(tsc_occ_fauna, by = "source_id") 
+
+missing_taxon_tsc_occ <- missing_occ_tsc %>% 
+  dplyr::select(taxon) %>% distinct() %>% 
+  left_join(species_names, by = c("taxon"  = "name_id"))
 
 missing_occ_tsc %>% reactable::reactable(filterable = TRUE)
 ```
 
-There are `r nrow(missing_occurrences)` occurrences missing from tsc when compared to tfa_tae The occurrences listed were likely not migrated because ????????
+There are `r nrow(missing_occ_tsc)` occurrences missing from tsc when compared to tfa_tae. These missing occurrences come from `r nrow(missing_taxon_tsc_occ)` 381 unique species
+
+The occurrences listed were likely not migrated because ????????
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
@@ -1968,12 +1980,14 @@ tsc_occ_tally <- tsc_occ_fauna %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup() 
 
-tae_tally %>%
+tae_tsc_tally <- tae_tally %>%
   dplyr::rename(tae = n) %>% 
   left_join(tsc_occ_tally,by = "source_id") %>% 
   dplyr::rename(tsc = n) %>% 
   filter(tae != tsc) # this isn't correct
 ```
+
+There are  `r nrow(tae_tsc_tally)` mismatching occurrences between tfa_tae and tsc.
 
 START HERE
 
@@ -1981,7 +1995,7 @@ START HERE
 ## all differences
 missing_occurrences <- tae_tally %>%
   dplyr::rename(tfa_tae = n) %>% 
-  left_join(tsc_tally,by = "taxon") %>% 
+  left_join(tsc_occ_tally,by = "taxon") %>% 
   dplyr::rename(tsc = n) %>% 
   filter(tfa_tae != tsc) %>% glimpse() # 229
 
