@@ -317,7 +317,7 @@ tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
     commonwealth_desc = OCC.COMMONWEALTH.DESC %>% as.character(),
     confidential_id = OCC.CONFIDENTIAL %>% as.integer(),
     reliability_id = OCC.BR.CODE %>% as.character(),
-    desc = OCC.DESC %>% as.character(),
+    occ_desc = OCC.DESC %>% as.character(),
     status_code = OCC.STATUS.CODE %>% as.logical(),
     ctrc_sys = OCC.CTRC.SYS %>% as.integer(), # FK CTRC_SYSTEMS
     ctrc_recommendation = OCC.CTRC.RECOMMENDATION %>% as.character(),
@@ -332,6 +332,7 @@ tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
     com_structure = OCC.COM.STRUCTURE %>% as.character(),
     classification = OCC.CLASSIFICATION %>% as.character(),
     other_attr = OCC.OTHER.ATTR %>% as.character(),
+    
 
     # spatial lookups
     beard_dist_code = OCC.BEARD.DIST.CODE %>% as.character(),
@@ -357,8 +358,14 @@ tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
 
 tec_names <- tibble::tibble(names(tec_occ))
 
-occ_short <- tec_occ %>%
-  dplyr::select(occ_id, boundary_id, boundary_desc, com_id, com_label, com_name)
+occ_short <- tec_occ %>% 
+   dplyr::transmute(
+     occ_id = occ_id,
+     boundary_id = boundary_id,
+     boundary_desc = boundary_desc,
+     com_id = com_id,
+     com_label = com_label,
+     com_name = com_name)
 ```
 
 ### Occurrence Actions
@@ -820,8 +827,6 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
     comments = IRP.COMMENTS %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id")
-# make_coldef(recovery_plans)
-recovery_plans %>% skim()
 ```
 
 ## Occurrence Boundaries
@@ -859,6 +864,7 @@ survey_cae <- surveys %>%
   left_join(communities, by = c("com_id", "com_label", "com_name")) %>% 
   clean_names()
 
+names(survey_cae)
 setdiff(survey_cae$com_id, communities$com_id) # There are 145 communities that have not been surveyed
 
 tec_bdy_cae <- survey_cae %>%
@@ -868,16 +874,22 @@ tec_bdy_cae <- survey_cae %>%
     code = boundary_id,
     name = com_name,
     description = ifelse(
-      is.na(FIRST_S_ID),
+      is.na(first_s_id),
       glue::glue(
         "Boundary ID {boundary_id} named ",
         "{boundary_id} for lack of sites within."
       ),
       glue::glue(
         "Boundary ID {boundary_id} named ",
-        "{FIRST_S_ID} after first site observed within. ",
+        "{first_s_id} after first site observed within. ",
         "Survey comments: {survey_comments}"
-      )
+      )),
+     description2 = glue::glue(
+        "Revised on: {date_changed_on};\n",
+        "Site description: {occ_desc} {species_desc} {reliability_id};\n",
+        "Commonwealth:  {commonwealth_desc} {cwealth_listing};\n",
+        "Area assessment: {data} {other};\n",
+        "Habitat composition: {soil} {surf_geology} {land_element} {water} {drainage} {com_structure} {classification} {other_attr} {reliability}."
     ),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
@@ -890,7 +902,6 @@ tec_bdy_cae <- survey_cae %>%
       geojsonsf::sfc_geojson(.)
   )
 
-glimpse(tec_bdy_cae)
 ```
 
 Some boundaries were digitised from a polygonised raster remote sensing product. This results in
@@ -954,10 +965,16 @@ site_visit_cae <- site_visit %>%
 tec_site_cae <- site_visit_cae %>%
   dplyr::transmute(
     # occ_id = OCC_UNIQUE,
-    community = COM_ID,
+    community = com_id,
     code = site_code,
     name = site_code,
-    description = glue::glue("Site ID {site_code} inside TEC Boundary {BDY_ID}"),
+    description = glue::glue( "Revised on: {date_changed_on};\n",
+       "Site ID {site_code} inside TEC Boundary {bdy_id};\n",
+        "Site description: {occ_desc} {species_desc} {reliability_id};\n",
+        "Commonwealth:  {commonwealth_desc} {cwealth_listing};\n",
+        "Area assessment: {data} {other};\n",
+        "Habitat composition: {soil} {surf_geology} {land_element} {water} {drainage} {com_structure} {classification} {other_attr} {reliability}."
+    ),
     area_type = 12, # 10 bound, 11 buffer, 12 site point
     source = 15, # TEC sit
     source_id = site_visit_id,
