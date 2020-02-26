@@ -42,7 +42,6 @@ on the DBCA data catalogue, then extracted and transformed.
 ## Communities
 ```{r load_tec, message=FALSE}
 tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
-names_tec <- as.data.frame(names(tec))
 
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
@@ -857,9 +856,9 @@ glimpse(communities)
 survey_cae <- surveys %>%
   left_join(tec_bdy, by = c("boundary_id" = "BDY_ID")) %>%
   left_join(tec_occ, by = c("occ_id", "com_id", "com_label", "com_name", "boundary_id", "boundary_desc")) %>%
-  left_join(communities, by = c("com_id", "com_label", "com_name"))
+  left_join(communities, by = c("com_id", "com_label", "com_name")) %>% 
+  clean_names()
 
-names(survey_cae)
 setdiff(survey_cae$com_id, communities$com_id) # There are 145 communities that have not been surveyed
 
 tec_bdy_cae <- survey_cae %>%
@@ -913,7 +912,7 @@ fat_filter <- numerous_communities %>%
   paste0(collapse = "|")
 ```
 
-## Occurence Buffers
+## Occurrence Buffers
 
 ```{r tec_buf}
 # tec_buf_cae <- tibble::tibble(
@@ -939,7 +938,7 @@ fat_filter <- numerous_communities %>%
 # )
 ```
 
-## Occurence Sites
+## Occurrence Sites
 
 ```{r tec_sit}
 tec_sit %>%
@@ -949,9 +948,10 @@ tec_sit %>%
 site_visit_cae <- site_visit %>%
   left_join(tec_sit, by = c("site_code" = "S_ID")) %>%
   left_join(tec_occ, by = c("OCC_UNIQUE" = "occ_id")) %>%
-  left_join(communities, by = c("com_id", "com_label", "com_name"))
+  left_join(communities, by = c("com_id", "com_label", "com_name")) %>% 
+  clean_names()
 
-tec_sit_cae <- site_visit_cae %>%
+tec_site_cae <- site_visit_cae %>%
   dplyr::transmute(
     # occ_id = OCC_UNIQUE,
     community = COM_ID,
@@ -968,11 +968,11 @@ tec_sit_cae <- site_visit_cae %>%
   )
 
 ## The following communities contain no com_id and therefore cannot be parsed
-no_com_id <- tec_sit_cae %>%
+no_com_id <- tec_site_cae %>%
   dplyr::filter(is.na(community))
 
 ## Filter out the NA's
-tec_sit_cae <- tec_sit_cae %>%
+tec_site_cae <- tec_site_cae %>%
   dplyr::filter(community != "NA")
 
 no_com_id %>% reactable::reactable()
