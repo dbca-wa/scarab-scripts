@@ -494,7 +494,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
 #     modified_by = MODIFIED.BY %>% as.character(),
 #     modified_date = MODIFIED.DATE %>% as.character())
 
-names(tfl_data$DRF_P2K_PRIORITY)
+# names(tfl_data$DRF_P2K_PRIORITY)
 
 # occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
 #   dplyr::transmute(
@@ -534,7 +534,8 @@ hab_comp <- tfl_occ %>%
     soil_type = soil_type,
     soil_colour = soil_color,
     drainage = drainage,
-    aspect = aspect)
+    aspect = aspect) %>%
+  filter(landform != "" | rock_type != "" | loose_rock != "" | soil_type != "" | soil_colour != "" | drainage != "" |  aspect != "")
 
 hab_comp %>%
   dplyr::select(landform) %>%
@@ -578,7 +579,8 @@ area_ass <- tfl_occ %>%
     source_id = sheetno,
     survey_method = svy_extent,
     surveyed_area = svy_effort_area,
-    survey_duration = svy_effort_time)
+    survey_duration = svy_effort_time) %>% 
+  dplyr::filter(survey_method != "" | surveyed_area != "NA" | survey_duration!= "NA")
 
 area_ass %>%
   dplyr::select(survey_method) %>%
@@ -591,7 +593,8 @@ hab_cond <- tfl_occ %>%
     source = 11,
     source_id = sheetno,
     occurrence_condition = habitat_condition,
-    soil_condition = soil_condition) #There is a problem with migrating this- won't match TSC card
+    soil_condition = soil_condition) %>%  #There is a problem with migrating this- won't match TSC card
+  dplyr::filter(occurrence_condition != "" | soil_condition != "")
 
 hab_cond %>%
   dplyr::select(soil_condition) %>%
@@ -627,7 +630,8 @@ tfl_fire_hist <- tfl_occ %>%
     fire_intensity = fire_intensity,
     fire_date = glue::glue("{fire_year}-{month}-{day}", .na = "NA") %>% as.character()) %>% 
   mutate(fire_date = case_when(is.na(fire_intensity) ~ "NA",
-                               TRUE ~ as.character(fire_date))) %>% glimpse()
+                               TRUE ~ as.character(fire_date))) %>% 
+  dplyr::filter(fire_intensity != "NA" | fire_date != "NA")
 
 plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -659,7 +663,8 @@ plant_count <- tfl_occ %>%
     flowering_plants = flower_percentage,
     number_dead = simple_dead_tot,
     plant_condition = population_condition,
-    comments = population_notes)
+    comments = population_notes) %>% 
+  dplyr::filter(plant_count_method != "" | counted_subject != "" | plant_condition != "" | comments != "")
 
 plant_count %>%
   dplyr::select(plant_count_method) %>%
@@ -681,7 +686,8 @@ ass_species <- tfl_occ %>%
   dplyr::transmute(
     source = 11,
     source_id = sheetno,
-    taxon = associated_species)
+    taxon = associated_species) %>% 
+  dplyr::filter(taxon != "")
 
 phys_sample <- tfl_occ %>% 
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -692,7 +698,9 @@ phys_sample <- tfl_occ %>%
     sample_destination = voucher_location, # most of these are listed as WA HERB/ INT HERB/ DIS HERB, but none of these are options in the card
     duplicate_sample_destination = dupvouch_location,
     sample_label = glue::glue("[{sample_destination}]{barcode}"),
-    permit_id = licence)
+    permit_id = licence) %>% 
+  dplyr::filter(sample_destination != "") 
+
 
 phys_sample %>%
   dplyr::select(sample_destination) %>%
@@ -804,7 +812,7 @@ tfl_tae <- tfl_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   ) %>% glimpse()
 
-names_tfl_occ <- (as.data.frame(names(tfl_occ)))
+# names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
 ## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
 tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
@@ -1396,7 +1404,7 @@ if (file.exists(datafile_tsc_flora)) {
 
 ## Occurrences
 
-We get Taxon ocurrences with their point representations from TSC through the 
+We get Taxon occurrences with their point representations from TSC through the 
 API endpoint [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
 
 Currently, all Fauna and Flora occurrences are georeferenced only with point 
