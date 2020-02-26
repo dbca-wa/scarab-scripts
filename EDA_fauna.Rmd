@@ -411,7 +411,8 @@ hab_comp <- tfa_occ %>%
   dplyr::transmute(
     source = 10,
     source_id = id,
-    landform_id = landform_id)
+    landform_id = landform_id) %>% 
+  filter(landform_id != "")
 
 hab_comp %>%
   dplyr::select(landform_id) %>%
@@ -424,7 +425,8 @@ veg_class <- tfa_occ %>%
     source = 10,
     source_id = id,
     vegetation_code = vegetation_type_id,
-    vegetation_type = vegetation_type) #parse as free text
+    vegetation_type = vegetation_type) %>%  #parse as free text
+    filter(vegetation_code != "")
 
 ass_species <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -436,7 +438,8 @@ ass_species <- tfa_occ %>%
     associated_species_3 = associated_flora_species_3,
     associated_species_4 = associated_flora_species_4,
     associated_species_5 = associated_flora_species_5,
-    associated_species_6 = associated_flora_species_6) #parse as free text
+    associated_species_6 = associated_flora_species_6) %>%  #parse as free text
+  dplyr::filter(associated_species_1 != "" | associated_species_2 != "" | associated_species_3 != "" | associated_species_4 != "" | associated_species_5 != "")
     
 anim_obs <- tfa_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
@@ -457,7 +460,8 @@ anim_obs <- tfa_occ %>%
     number_of_juvenile_unknown = number_juvenile_unknown,
     detection_method = observation_type,
     secondary_signs = secondary_signs,
-    reproductive_maturity = breeding_status)
+    reproductive_maturity = breeding_status) %>% 
+  dplyr::filter(!is.na(species_id_confidence))
 
 anim_obs %>%
   dplyr::select(species_id_confidence) %>%
