@@ -1207,7 +1207,6 @@ if (file.exists(datafile_tsc_fauna)) {
   
   save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc_fauna)
 }
-
 ```
 
 ## Occurrences
@@ -1237,15 +1236,13 @@ tsc_tae <- tsc_tae_data %>%
   geojsonsf::geojson_sf() %>% 
   dplyr::mutate(taxon = taxon %>% as.character())
   
-names(tsc_tae)
-  
 tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
                       query = list(paraphyletic_groups = 20)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
 
-    #dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk %>% as.character())
+#dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk %>% as.character())
 
 tsc_areas <- wastdr::wastd_GET("area") %>%
       magrittr::extract2("features") %>%
@@ -1267,33 +1264,11 @@ districts <- tsc_areas %>%
   dplyr::filter(area_type == "District") %>%
   dplyr::transmute(district_id = pk, district_name = name)
 
-glimpse(tsc_taxa_fauna)
-
-unique(tfa_tae$taxon) #892
-unique(tsc_taxa_fauna$taxon) #3655
-intersect(tsc_taxa_fauna$taxon,tfa_tae$taxon) # 892 similar
-setdiff(tsc_taxa_fauna$taxon,tfa_tae$taxon) # 2758 taxon in tsc that are not in tfa
-setdiff(tfa_tae$taxon,tsc_taxa_fauna$taxon) # 0 taxon in tfa that are not in tsc
-
 tsc_occ_fauna <- tsc_tae%>% 
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
   dplyr::right_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id")
 
-unique(tsc_occ_fauna$taxon) #738
-intersect(tsc_occ_fauna$taxon,tfa_tae$taxon) # 738 similar
-setdiff(tsc_occ_fauna$taxon,tfa_tae$taxon) # 0 taxon in tsc that are not in tfa
-setdiff(tfa_tae$taxon,tsc_occ_fauna$taxon) # 144 taxon in tfa that are not in tsc
-
-names(tsc_occ_fauna)
-unique(tsc_occ_fauna$source_id) #55744
-unique(tfa_tae$source_id) #94814
-intersect(tsc_occ_fauna$source_id,tfa_tae$source_id) #55744
-setdiff(tsc_occ_fauna$source_id,tfa_tae$source_id) # 0 source_id's in tsc that are not in tfa
-setdiff(tfa_tae$source_id,tsc_occ_fauna$source_id) # 39070 source_id's in tfa that are not in tsc
-
-# save(occ, file=here::here("data/occ.RData"), compress="xz")
-# load(here::here("data/occ.RData"))
 ```
 # Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
@@ -1920,7 +1895,6 @@ missing_occ_tae <- tfa_occ %>%
 
 missing_occ_tae %>% reactable::reactable(filterable = TRUE)
 
-names(tfa_occ)
 ```
 
 There are `r nrow(missing_occurrences)` occurrences missing from tfa_tae when compared to tfa_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
@@ -1928,7 +1902,6 @@ There are `r nrow(missing_occurrences)` occurrences missing from tfa_tae when co
 The table below is a tally of mismatching occurrences and confirms the two missing occurrences identified above.
 
 ```{r tally_tfa_tae}
-
 tfa_occ_tally <- tfa_occ %>%
   dplyr::group_by(name_id) %>% 
   dplyr::tally() %>%
@@ -1949,23 +1922,60 @@ tfa_occ_tally %>%
   filter(tfa != tae) %>% reactable::reactable()
 ```
 
-### TAE occurences not in TSC
+### TAE occurrences not in TSC
 
-Any records in the following table indicate occurrences in TFA that
-were not migrated into TSC.
+Any records in the following table indicate occurrences in TFA that were not migrated into TSC.
+
+#### Name mismatches 
+```{r}
+missing_taxa_tsc_tae <- tfa_tae %>% 
+  select(taxon) %>% 
+  left_join(tsc_tae, by = "taxon")
+  
+  setdiff(tfa_tae$taxon,tsc_tae$taxon) %>% as.data.frame() %>% 
+  rename(. = taxon)
+
+missing_taxa_tsc <- mutate(taxon == setdiff(tfa_tae$taxon,tsc_occ_fauna$taxon) %>% as.data.frame())
+
+
+```
+
 
 ```{r missing_occurrences}
+unique(tfa_tae$taxon) #892
+unique(tsc_tae$taxon) #871
+unique(tsc_occ_fauna$taxon) #745
+
+intersect(tfa_tae$taxon,tsc_tae$taxon) #871
+setdiff(tsc_tae$taxon,tfa_tae$taxon) # 0 taxon in tsc that are not in tfa
+setdiff(tfa_tae$taxon,tsc_tae$taxon) # 26 taxon in tfa that are not in tsc
+
+intersect(tsc_occ_fauna$taxon,tfa_tae$taxon) # 745 similar
+setdiff(tsc_occ_fauna$taxon,tfa_tae$taxon) # 0 taxon in tsc that are not in tfa
+setdiff(tfa_tae$taxon,tsc_occ_fauna$taxon) # 152 taxon in tfa that are not in tsc
+
+unique(tsc_occ_fauna$source_id) #55744
+unique(tfa_tae$source_id) #94814
+
+intersect(tsc_occ_fauna$source_id,tfa_tae$source_id) #55744
+setdiff(tsc_occ_fauna$source_id,tfa_tae$source_id) # 0 source_id's in tsc that are not in tfa
+setdiff(tfa_tae$source_id,tsc_occ_fauna$source_id) # 39070 source_id's in tfa that are not in tsc
+
+
+
+
 missing_occ_tsc <- tfa_tae %>%
   dplyr::anti_join(tsc_occ_fauna, by = "source_id") 
 
+
 missing_taxon_tsc_occ <- missing_occ_tsc %>% 
   dplyr::select(taxon) %>% distinct() %>% 
-  left_join(species_names, by = c("taxon"  = "name_id"))
+  left_join(tfa_tae, by = c("taxon"  = "name_id"))
 
 missing_occ_tsc %>% reactable::reactable(filterable = TRUE)
 ```
 
-There are `r nrow(missing_occ_tsc)` occurrences missing from tsc when compared to tfa_tae. These missing occurrences come from `r nrow(missing_taxon_tsc_occ)` 381 unique species
+There are `r nrow(missing_occ_tsc)` occurrences missing from tsc when compared to tfa_tae. These missing occurrences come from `r nrow(missing_taxon_tsc_occ)` 385 unique species
 
 The occurrences listed were likely not migrated because ????????
 
