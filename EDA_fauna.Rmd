@@ -759,18 +759,30 @@ tfa_repmap <- here::here("tfa_repmat_w_tsc.csv") %>%
 # names(anim_obs)
 
 tfa_anim_obs <- anim_obs %>%
-  left_join(tfa_confidence, by = c("species_id_confidence")) %>% 
+  left_join(tfa_confidence, by = c("species_id_confidence")) %>%
   left_join(tfa_det_meth, by = c("detection_method")) %>%
   left_join(tfa_sec_sign, by = c("secondary_signs")) %>%
   left_join(tfa_repmap, by = c("reproductive_maturity")) %>%
-dplyr::select(source,source_id,tsc_species_id_confidence,observation_details,tsc_detection_method,
-              tsc_reproductive_maturity,tsc_secondary_signs,distinctive_features,number_of_adult_males,
-              number_of_adult_females,number_of_adult_unknown,number_of_juvenile_males,number_of_juvenile_females,
-              number_of_juvenile_unknown) %>%
+  dplyr::select(
+    source,
+    source_id,
+    tsc_species_id_confidence,
+    observation_details,
+    tsc_detection_method,
+    tsc_reproductive_maturity,
+    tsc_secondary_signs,
+    distinctive_features,
+    number_of_adult_males,
+    number_of_adult_females,
+    number_of_adult_unknown,
+    number_of_juvenile_males,
+    number_of_juvenile_females,
+    number_of_juvenile_unknown
+  ) %>%
   dplyr::rename(species_id_confidence = tsc_species_id_confidence) %>%
   dplyr::rename(detection_method = tsc_detection_method) %>%
   dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
-  dplyr::rename(secondary_signs = tsc_secondary_signs) %>% glimpse
+  dplyr::rename(secondary_signs = tsc_secondary_signs)
 
 tfa_samptype <- here::here("tfa_samptype_w_tsc.csv") %>%
   readr::read_csv(
