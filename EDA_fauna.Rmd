@@ -40,8 +40,18 @@ on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
 ```{r load_tfa, message=FALSE}
-tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-names_tfa <- as.data.frame(names(tfa_data))
+# tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+# tfa_file <- here::here("data", "tfa.Rdata")
+# save(tfa_data, file=tfa_file)
+# if (file.exists(tfa_file)) load(tfa_file)
+tfa_file <- here::here("data", "tfa.Rdata")
+if (file.exists(tfa_file)) {
+  load(tfa_file)
+} else {
+  tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
+tfa_file <- here::here("data", "tfa.Rdata")
+save(tfa_data, file=tfa_file)
+}
 
 snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
   ckanr::resource_show() %>%
