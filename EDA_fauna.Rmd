@@ -2034,7 +2034,7 @@ missing_occ_tfa_occ_fauna_unique <- missing_occ_tfa_occ_fauna %>%
 
 ```
 
-There are `r nrow(missing_occ_tfa_occ_fauna)` unique occurrences missing from tsc_occ_fauna when compared to tfa_tae. These missing occurrences come from `r nrow(missing_occ_tfa_occ_fauna_unique)` 381 unique species.
+There are `r nrow(missing_occ_tfa_occ_fauna)` unique occurrences missing from tsc_occ_fauna when compared to tfa_tae. These missing occurrences come from `r nrow(missing_occ_tfa_occ_fauna_unique)` unique species.
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
