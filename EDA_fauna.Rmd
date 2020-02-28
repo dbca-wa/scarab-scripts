@@ -1945,7 +1945,7 @@ tfa_occ_tally %>%
 Any records in the following table indicate taxon in TFA that were not migrated into TSC.
 
 #### Name mismatches tfa_tae to tsc_tae
-```{r name mismatches}
+```{r name mismatches tfa_tae to tsc_tae}
 missing_taxa_tsc <- tfa_tae %>% 
     dplyr::anti_join(tsc_tae, by = "taxon") 
 
@@ -1961,7 +1961,7 @@ missing_taxa_tsc_unique %>% reactable::reactable()
 There are `r nrow(missing_taxa_tsc)` taxon records missing from tsc_tae when compared to tfa_tae. These records are attributed to `r nrow(missing_taxa_tsc_unique)` unique species.  
 
 #### Name mismatches tfa_tae to tsc_occ_fauna
-```{r name mismatches}
+```{r name mismatches tfa_tae to tsc_occ_fauna}
 missing_taxa_occ_fauna <- tfa_tae %>% 
     dplyr::anti_join(tsc_occ_fauna, by = "taxon") 
 
