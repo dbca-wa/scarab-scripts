@@ -292,7 +292,7 @@ Mallee Fowl data is extracted separately and exported, to be stored as a csv fil
 
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
 
-```{r load_tfa_occ, message=FALSE}
+```{r load_tfa_occ, message=FALSE, warning=FALSE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
                                            orders = "ymd HMS",
                                            tz = tz)
@@ -1268,7 +1268,7 @@ tsc_areas <- wastdr::wastd_GET("area") %>%
 save(tsc_tae, tsc_taxa_fauna, tsc_areas, file=datafile, compress="xz")
 ```
 
-```{r munge}
+```{r munge, message = FALSE, warning=FALSE}
 datafile <- here::here("data/tae.RData")
 if (fs::file_exists(datafile)) load(datafile)
 
@@ -1940,7 +1940,7 @@ tfa_occ_tally %>%
   filter(tfa != tae) %>% reactable::reactable()
 ```
 
-### TFA_TAE occurrences not in TSC_TAE
+### TFA_TAE occurrences not in TSC
 
 Any records in the following table indicate taxon in TFA that were not migrated into TSC.
 
