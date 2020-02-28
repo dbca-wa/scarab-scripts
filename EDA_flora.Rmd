@@ -41,8 +41,15 @@ on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
 ```{r load_tfl, message=TRUE}
-tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
-names_tfl <- as.data.frame(names(tfl_data))
+
+tfl_file <- here::here("data", "tfl.Rdata")
+if (file.exists(tfl_file)) {
+  load(tfl_file)
+} else {
+  tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
+  tfl_file <- here::here("data", "tfl.Rdata")
+save(tfl_data, file=tfl_file)
+}
 
 snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
   ckanr::resource_show() %>%
@@ -242,7 +249,7 @@ names_pop_vegclass <- as.data.frame(names(pop_vegclass))
 ```
 
 ## Conservation listings
-```{r load_tfa_cons, message=TRUE}
+```{r load_tfl_cons, message=TRUE}
 tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
@@ -305,7 +312,7 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 ```
 
 ## Occurrences
-```{r load_tfa_occ, message=TRUE}
+```{r load_tfl_occ, message=TRUE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
@@ -898,7 +905,7 @@ fire_sum <- tfl_data$DRF_FIRE_SUMMARIES %>%
 
 # Extract and transform conservation criteria Data from TSC
 Conservation criteria Data from TSC is extracted through the TSC API and transformed into a useable
-format for manual mapping to TFA.
+format for manual mapping to tfl.
 
 ``` {r extract_tsc_cons_criteria, message = FALSE}
 tsc_cons_list <- "conservationlist" %>% 
@@ -921,7 +928,7 @@ tsc_cons_crit %>%
   dplyr::select(-"conservationcategory_set", -"conservationcriterion_set") %>%
   readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
 
-# Load manual mapping of TFA cons criteria from CSV file,  join to tfa_cons_crit
+# Load manual mapping of tfl cons criteria from CSV file,  join to tfl_cons_crit
 tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
@@ -1177,7 +1184,7 @@ tfl_listing_cat_priority <- tfl_tcl %>%
     dplyr::filter(tsc_conscat_sp, conservation_list == 6), 
     by="category_code") %>% 
   dplyr::transmute(
-        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
         scope = 0, # state 0, cwth 1, intl 2, ap 3
         status = ifelse(is.na(date_delisted), 80, 90),
@@ -1208,7 +1215,7 @@ tfl_listing_cat_epbc <- tfl_tcl %>%
     dplyr::filter(tsc_conscat_sp, conservation_list == 7), 
     by="category_code") %>% 
   dplyr::transmute(
-        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
         scope = 1, # state 0, cwth 1, intl 2, ap 3
         status = ifelse(is.na(date_delisted), 80, 90),
@@ -1232,7 +1239,7 @@ tfl_listing_cat_iucn1994 <- tfl_tcl %>%
     dplyr::filter(tsc_conscat_sp, conservation_list == 5), 
     by="category_code") %>% 
   dplyr::transmute(
-        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
         scope = 0, # state 0, cwth 1, intl 2, ap 3
         status = ifelse(is.na(date_delisted), 80, 90),
@@ -1255,7 +1262,7 @@ tfl_listing_cat_iucn2001 <- tfl_tcl %>%
     dplyr::filter(tsc_conscat_sp, conservation_list == 4), 
     by="category_code") %>% 
   dplyr::transmute(
-        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
         scope = 0, # state 0, cwth 1, intl 2, ap 3
         status = ifelse(is.na(date_delisted), 80, 90),
@@ -1278,7 +1285,7 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
     dplyr::filter(tsc_conscat_sp, conservation_list == 3), 
     by="category_code") %>% 
   dplyr::transmute(
-        source = 2, # TaxonGaz.source TFA 1, TFL 2, TEC 3
+        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
         source_id = source_id %>% as.character(),
         scope = 0, # state 0, cwth 1, intl 2, ap 3
         status = ifelse(is.na(date_delisted), 80, 90),
@@ -1319,7 +1326,7 @@ tfl_listing_cat_iucn2001 %>%
 ```
 
 ## Occurrences
-The EOO (Extent of occurrence) is calculated as the convex hull around all recorded fauna occurrences, including fossil records.
+The EOO (Extent of occurrence) is calculated as the convex hull around all recorded flora occurrences, including fossil records.
 For further details on the methodology behind the movement of EOO data, please follow the link to the workbook.
 
 ### TSC upload example for EOOs
@@ -1346,7 +1353,7 @@ fna_eoo_all <- eoo_polygon(tfl_eoo)
 tfl_eoo <- fna %>% make_eoo()
 
 # map_eoo
-# mapview::mapview(head(fauna_eoo$eoo_sfc))
+# mapview::mapview(head(flora_eoo$eoo_sfc))
 ```
 
 ```{r upload_eoo, eval=F}
@@ -1380,7 +1387,7 @@ Expand the code block below to view the process.
 ## Conservation listings
 
 ```{r load_tsc, message=FALSE}
-# Taxonomic names and taxon conservation listings for fauna from TSC
+# Taxonomic names and taxon conservation listings for flora from TSC
 if (file.exists(datafile_tsc_flora)) {
   load(datafile_tsc_flora)
 } else {
@@ -1407,7 +1414,7 @@ if (file.exists(datafile_tsc_flora)) {
 We get Taxon occurrences with their point representations from TSC through the 
 API endpoint [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
 
-Currently, all Fauna and Flora occurrences are georeferenced only with point 
+Currently, all flora and Flora occurrences are georeferenced only with point 
 coordinates, not polygons.
 
 We then get TSC Areas and split them into DBCA Regions and Districts.
@@ -1426,12 +1433,18 @@ if (file.exists(datafile)) {
 } else {
 tsc_tae <- wastdr::wastd_GET("occ-taxon-points") # 137k records
 
+tsc_taxa_flora <- "taxon" %>%
+    wastdr::wastd_GET(api_url = prod,
+                      query = list(paraphyletic_groups = 21)) %>%
+    wastdr::wastd_parse() %>%
+    dplyr::mutate(taxon = name_id %>% as.character())
+
 tsc_areas <- wastdr::wastd_GET("area") %>%
       magrittr::extract2("features") %>%
       geojsonio::as.json() %>%
       geojsonsf::geojson_sf()
 
-save(tsc_tae, tsc_taxa, tsc_areas, file=datafile, compress="xz")
+save(tsc_tae, tsc_taxa_flora, tsc_areas, file=datafile, compress="xz")
 }
 ```
 
@@ -1507,7 +1520,7 @@ tfl_tcl %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-### TSC conservation listings not in TFA
+### TSC conservation listings not in tfl
 
 The following table shows any conservation listings in TSC which are not in TFL.
 
@@ -1544,9 +1557,9 @@ correct criteria assigned for all species.
 ### Conservation listing dates
 
 Below are the dates of the most recent conservation criteria changes made in the
-snapshot of the TFA.
+snapshot of the tfl.
 
-Excluded are TFA cons listings of unmigrated lists (AP, RL, BCA).
+Excluded are tfl cons listings of unmigrated lists (AP, RL, BCA).
 
 ``` {r effective_dates}
 tsc_corner_dates <- tsc_tcl_flora %>%
@@ -1686,7 +1699,7 @@ tfl_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = c("source_id","effe
   reactable::reactable(filterable = T)
 ```
 
-The following tables show any conservation listings in TSC which are not in TFA, for each conservation list.
+The following tables show any conservation listings in TSC which are not in tfl, for each conservation list.
 
 IUCN 2012
 ```{r }
@@ -1813,14 +1826,14 @@ datum_tally <- tfl_occ %>%
 datum_tally %>% reactable::reactable()
 ```
 
-There are `r nrow(datum_tally)` different datums used across all distinct fauna records. 
+There are `r nrow(datum_tally)` different datums used across all distinct flora records. 
 
 ```{r datum_blank}
 datum_blank<- tfl_occ %>% 
     filter(datum == "")
 ```
 
-There are `r nrow(datum_blank)` distinct fauna records with missing datum.
+There are `r nrow(datum_blank)` distinct flora records with missing datum.
 
 TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
 
@@ -1868,7 +1881,7 @@ tfl_sampdest %>%
   reactable::reactable(filterable = TRUE) 
 
 ```
-Sample destination was manually mapped to a generic field for its location and the specific location added to the smaple label field as free text. We have done this because, combined with Fauna, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
+Sample destination was manually mapped to a generic field for its location and the specific location added to the smaple label field as free text. We have done this because, combined with flora, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
 
 The above need to be corrected  before the manual mapping can be completed.
 
@@ -1876,81 +1889,166 @@ The above need to be corrected  before the manual mapping can be completed.
 Currently, we assume that all occurrence records in the legacy databases are trustworthy.
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
-### TFL occurrences not in TAE
+### TFL_OCC occurrences not in TFL_TAE
+
+Any records in the following table indicate occurrences in tfl that
+were not migrated into TSC.
+
+```{r missing_occurrences}
+missing_occ_tfl_tae <- tfl_occ %>%
+  dplyr::anti_join(tfl_tae, by = c("id" = "source_id")) 
+
+missing_occ_tfl_tae %>% reactable::reactable(filterable = TRUE)
+
+```
+
+There are `r nrow(missing_occ_tfl_tae)` occurrences missing from tfl_tae when compared to tfl_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
+
+The table below is a tally of mismatching occurrences and confirms the two missing occurrences identified above.
+
 ```{r tally_tfl_tae}
 tfl_occ_tally <- tfl_occ %>%
   dplyr::group_by(name_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
-  ungroup() %>% 
-  dplyr::rename(taxon = name_id)
+  ungroup()
 
-tfl_occ_tally_top <- tfl_occ_tally %>% 
-  top_n(20,n)
-
-tfl_occ_tally_btm <- tfl_occ_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) 
-
-tae_tally <- tfl_tae %>%
+tfl_tae_tally <- tfl_tae %>%
   dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() %>% 
+  dplyr::rename(name_id = taxon)
+
+tfl_occ_tally %>%
+  dplyr::rename(tfl = n) %>% 
+  left_join(tfl_tae_tally,by = "name_id") %>% 
+  dplyr::rename(tae = n) %>% 
+  filter(tfl != tae) %>% reactable::reactable()
+```
+
+### TFL_TAE occurrences not in TSC_TAE
+
+Any records in the following table indicate taxon in TFL that were not migrated into TSC.
+
+#### Name mismatches tfl_tae to tsc_tae
+```{r name mismatches}
+missing_taxa_tsc <- tfl_tae %>% 
+    dplyr::anti_join(tsc_tae, by = "taxon") 
+
+missing_taxa_tsc_unique <- missing_taxa_tsc %>% 
+    dplyr::select(taxon) %>% 
+    distinct() %>% 
+  dplyr::left_join(tsc_taxa_flora,by = "taxon")#26
+
+missing_taxa_tsc_unique %>% reactable::reactable()
+
+```
+
+There are `r nrow(missing_taxa_tsc)` taxon records missing from tsc_tae when compared to taf_tae. These records are attributed to `r nrow(missing_taxa_tsc_unique)` unique species.  
+
+#### Name mismatches tfl_tae to tsc_occ_flora
+```{r name mismatches}
+missing_taxa_occ_flora <- tfl_tae %>% 
+    dplyr::anti_join(tsc_occ_flora, by = "taxon") 
+
+missing_taxa_occ_flora_unique <- missing_taxa_occ_flora %>% 
+    dplyr::select(taxon) %>% 
+    distinct() %>% 
+  dplyr::left_join(tsc_taxa_flora,by = "taxon")#152
+
+missing_taxa_occ_flora_unique %>% reactable::reactable()
+
+```
+
+There are `r nrow(missing_taxa_occ_flora)` taxon records missing from tsc_occ_flora when compared to tfl_tae. These records are attributed to `r nrow(missing_taxa_occ_flora_unique)` unique species.  
+
+#### Occurrence mismatches tfl_tae to tsc_tae
+```{r missing_occurrences}
+
+missing_occ_tae_tsc <- tfl_tae %>%
+  dplyr::anti_join(tsc_tae, by = "source_id") 
+
+missing_occ_tae_tsc %>% reactable::reactable()
+# missing_occ_tae_tsc <- tsc_tae %>%
+#   dplyr::anti_join(tsc_occ_flora, by = "source_id") 
+
+missing_occ_tae_tsc_unique <- missing_occ_tae_tsc %>% 
+    dplyr::select(taxon) %>% 
+    distinct() %>% 
+  dplyr::left_join(tsc_taxa_flora,by = "taxon") #27
+
+```
+
+There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from tsc_tae when compared to tfl_tae. These missing occurrences come from `r nrow(missing_occ_tae_tsc_unique)` unique species.
+
+The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
+
+```{r tally_tfl_tae}
+tfl_tae_tally <- tfl_tae %>%
+  dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup() 
 
-tae_tally_top <- tae_tally %>% 
-  top_n(20,n)
-
-tae_tally_btm <- tae_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) # There are actually 301 species with an occurrence of 1
-
-missing_species <- tae_tally %>% anti_join(tfl_occ_tally,by = "taxon")
-
-tfl_occ_tally %>%
-  dplyr::rename(tfl = n) %>% 
-  left_join(tae_tally,by = "taxon") %>% 
-  dplyr::rename(tae = n) %>% 
-  filter(tfl != tae) %>% reactable::reactable()
-```
-There are `r nrow(missing_species)` species missing from tfl_tae when compared to tfl_occ. 
-
-### TAE occurrences not in TSC
-
-```{r tally_tsc_occ,eval=FALSE}
-tsc_occ_tally <- tsc_occ_flora %>%
-  dplyr::group_by(taxon) %>% 
+tsc_tae_tally <- tsc_tae %>%
+  dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
-  ungroup()
-# tsc_occ_tally %>% reactable::reactable()
+  ungroup() 
 
-tsc_occ_tally_top <- tsc_occ_tally %>% 
-  top_n(20,n)
-
-tsc_occ_tally_btm <- tsc_occ_tally %>% 
-  top_n(20,-n) %>% 
-  slice(1:20) 
-
-missing_species_tae_tsc <- tsc_occ_tally %>% anti_join(tae_tally,by = "taxon")
-
-missing_occurrences <- tae_tally %>%
-  dplyr::rename(tae = n) %>% 
-  left_join(tsc_occ_tally,by = "taxon") %>% 
+tfl_tsc_tae_tally <- tfl_tae_tally %>%
+  dplyr::rename(tfl = n) %>% 
+  left_join(tsc_tae_tally,by = "source_id") %>% 
   dplyr::rename(tsc = n) %>% 
-  filter(tae != tsc) #%>% reactable::reactable()
+  filter(tfl != tsc)
 
-missing_occurrences_many <- missing_occurrences %>% 
-  dplyr::filter(tsc == 1)
-
-missing_occurrences_one <- missing_occurrences %>% 
-  dplyr::filter(tsc != 1)
+tfl_tsc_tae_tally %>% reactable::reactable()
 ```
-There are `r nrow(missing_species_tae_tsc)` species missing from tfl_tae when compared to tsc_occ. 
 
-Where there is no geometry data the occurrences of that species have not been carried across. 
+#### Occurrence mismatches tfl_tae to tsc_occ_flora
+```{r missing_occurrences}
 
-Where differences between tfa_tae and tsc are greater than 1, something bigger is going on ad a thorough review is required.
+missing_occ_tfl_occ_flora <- tfl_tae %>%
+  dplyr::anti_join(tsc_occ_flora, by = "source_id") #39073
+
+missing_occ_tfl_occ_flora %>% reactable::reactable(filterable = T)
+# missing_occ_tae_tsc <- tsc_tae %>%
+#   dplyr::anti_join(tsc_occ_flora, by = "source_id") 
+
+missing_occ_tfl_occ_flora_unique <- missing_occ_tfl_occ_flora %>% 
+    dplyr::select(taxon) %>% 
+    distinct() %>%  
+   dplyr::left_join(tsc_taxa_flora,by = "taxon") #381
+
+```
+
+There are `r nrow(missing_occ_tfl_occ_flora)` unique occurrences missing from tsc_occ_flora when compared to tfl_tae. These missing occurrences come from `r nrow(missing_occ_tfl_occ_flora_unique)` 381 unique species.
+
+The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
+
+```{r tally_tfl_tae}
+tfl_tae_tally <- tfl_tae %>%
+  dplyr::group_by(source_id) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() 
+
+tsc_occ_flora_tally <- tsc_occ_flora %>%
+  dplyr::group_by(source_id) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() 
+
+tfl_tae_tsc_occ_tally <- tfl_tae_tally %>%
+  dplyr::rename(tfl = n) %>% 
+  left_join(tsc_occ_flora_tally,by = "source_id") %>% 
+  dplyr::rename(tsc = n) %>% 
+  filter(tfl != tsc) %>% sf_as_tbl()
+
+tfl_tae_tsc_occ_tally %>% reactable::reactable()
+
+```
 
 ## Conservation Documents
 
@@ -1973,12 +2071,12 @@ upload_file_to_ckan("1b5e6401-82fe-4728-83be-f3f8ea4b5876", "EDA_flora.html")
 # Manual mapping of conservation criteria
 # upload_file_to_ckan("", here::here("tfl_conscrit_w_tsc.csv"))
 
-# Legacy TFA data
+# Legacy tfl data
 d <- ckanr::package_show("threatened-and-priority-flora-database")
 # upload_to_ckan(
-#   tfa_cons_listings, "Threatened Flora Conservation Status Gazettal", d$id,
+#   tfl_cons_listings, "Threatened Flora Conservation Status Gazettal", d$id,
 #   resource_id = ""
 # )
-# same for other TFA legacy data, copy over from data_etl_fauna.Rmd
+# same for other tfl legacy data, copy over from data_etl_flora.Rmd
 ```
 

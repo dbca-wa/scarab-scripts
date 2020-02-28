@@ -40,10 +40,6 @@ on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
 ```{r load_tfa, message=FALSE}
-# tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-# tfa_file <- here::here("data", "tfa.Rdata")
-# save(tfa_data, file=tfa_file)
-# if (file.exists(tfa_file)) load(tfa_file)
 
 tfa_file <- here::here("data", "tfa.Rdata")
 if (file.exists(tfa_file)) {
@@ -296,7 +292,7 @@ Mallee Fowl data is extracted separately and exported, to be stored as a csv fil
 
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
 
-```{r load_tfa_occ, message=FALSE}
+```{r load_tfa_occ, message=FALSE, warning=FALSE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
                                            orders = "ymd HMS",
                                            tz = tz)
@@ -1159,13 +1155,14 @@ tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api
 
 tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 
-tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurences
+tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
 
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
+
 # This chunk explains the development steps for wastd_bulk_post
 
 # Naive: do first record only
@@ -1217,12 +1214,12 @@ wastd_bulk_post <- function(data, serializer, api_url){
 # TODO error handling, return the HTTP status, report summary "x created, y failed"
 tfa_phys_sample %>% wastd_bulk_post("occ-observation", api_url = dev)
 ```
+
 ## Conservation Documents
 
 ## Fire History
 
 ## Conservation Threats and Actions
-
 
 # Extract and transform migrated Data from TSC
 Data from TSC is extracted through the TSC API and transformed into a usable
@@ -1298,7 +1295,7 @@ tsc_tae <- tsc_tae_data %>%
   magrittr::extract2("features") %>%
   geojsonio::as.json() %>%
   geojsonsf::geojson_sf() %>% 
-  dplyr::mutate(taxon = taxon %>% as.character())
+  dplyr::mutate(taxon = taxon %>% as.character()) sf_as_tbl()
   
 tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
@@ -1316,7 +1313,7 @@ tsc_areas <- wastdr::wastd_GET("area") %>%
 save(tsc_tae, tsc_taxa_fauna, tsc_areas, file=datafile, compress="xz")
 ```
 
-```{r munge}
+```{r munge, message = FALSE, warning=FALSE}
 datafile <- here::here("data/tae.RData")
 if (fs::file_exists(datafile)) load(datafile)
 
@@ -1331,9 +1328,14 @@ districts <- tsc_areas %>%
 tsc_occ_fauna <- tsc_tae%>% 
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
-  dplyr::right_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id")
+  dplyr::right_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id") %>% sf_as_tbl()
+
+
+## prior to right_join there are 93977 obs
 
 ```
+
+
 # Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
 and TFA data as uploaded into TSC. 
@@ -1467,7 +1469,7 @@ tsc_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
 
 TFA has `r nrow(tfa_tcl_edit)` conservation listings of `r tfa_tcl_unique_taxa`.
 TSC has `r nrow(tsc_tcl_fauna)` fauna conservation listings of 
-`r tsc_tcl_unique_taxa`, including animals but excluding plants *sensu latu*.
+`r tsc_tcl_unique_taxa`, including animals but excluding plants.
 
 ### TFA conservation listings not in TSC
 
@@ -1486,7 +1488,6 @@ tfa_tcl_edit %>%
 ### TSC conservation listings not in TFA
 
 The following table shows any conservation listings in TSC which are not in TFA.
-
 
 ```{r}
 tsc_tcl_fauna %>%
@@ -1948,31 +1949,31 @@ The above need to be corrected  before the manual mapping can be completed.
 Currently, we assume that all occurrence records in the legacy databases are trustworthy.
 If this weren't the case, this analysis should exclude the non-trustworthy records.
 
-### TFA occurrences not in TAE
+### TFA_OCC occurrences not in TFA_TAE
 
 Any records in the following table indicate occurrences in TFA that
 were not migrated into TSC.
 
 ```{r missing_occurrences}
-missing_occ_tae <- tfa_occ %>%
+missing_occ_tfa_tae <- tfa_occ %>%
   dplyr::anti_join(tfa_tae, by = c("id" = "source_id")) 
 
-missing_occ_tae %>% reactable::reactable(filterable = TRUE)
+missing_occ_tfa_tae %>% reactable::reactable(filterable = TRUE)
 
 ```
 
-There are `r nrow(missing_occurrences)` occurrences missing from tfa_tae when compared to tfa_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
+There are `r nrow(missing_occ_tfa_tae)` occurrences missing from tfa_tae when compared to tfa_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
 
 The table below is a tally of mismatching occurrences and confirms the two missing occurrences identified above.
 
-```{r tally_tfa_tae}
+```{r tally_tfa_occ_tae}
 tfa_occ_tally <- tfa_occ %>%
   dplyr::group_by(name_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup()
 
-tae_tally <- tfa_tae %>%
+tfa_tae_tally <- tfa_tae %>%
   dplyr::group_by(taxon) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
@@ -1981,55 +1982,70 @@ tae_tally <- tfa_tae %>%
 
 tfa_occ_tally %>%
   dplyr::rename(tfa = n) %>% 
-  left_join(tae_tally,by = "name_id") %>% 
+  left_join(tfa_tae_tally,by = "name_id") %>% 
   dplyr::rename(tae = n) %>% 
   filter(tfa != tae) %>% reactable::reactable()
 ```
 
-### TAE occurrences not in TSC
+### TFA_TAE occurrences not in TSC
 
-Any records in the following table indicate occurrences in TFA that were not migrated into TSC.
+Any records in the following table indicate taxon in TFA that were not migrated into TSC.
 
-#### Name mismatches 
-```{r}
+#### Name mismatches tfa_tae to tsc_tae
+```{r name mismatches tfa_tae to tsc_tae}
 missing_taxa_tsc <- tfa_tae %>% 
     dplyr::anti_join(tsc_tae, by = "taxon") 
 
 missing_taxa_tsc_unique <- missing_taxa_tsc %>% 
     dplyr::select(taxon) %>% 
-    distinct() #26
+    distinct() %>% 
+  dplyr::left_join(tsc_taxa_fauna,by = "taxon")#26
 
-setdiff(tfa_tae$taxon,tsc_occ_fauna$taxon) # 152 taxon in tfa that are not in tsc
-  
-# missing_taxa_occ <- tfa_tae %>% 
-#     dplyr::anti_join(tsc_occ_fauna, by = "taxon") - this wont work because of geometry
+missing_taxa_tsc_unique %>% reactable::reactable()
 
 ```
 
-#### Occurrence mismatches
-```{r missing_occurrences}
+There are `r nrow(missing_taxa_tsc)` taxon records missing from tsc_tae when compared to tfa_tae. These records are attributed to `r nrow(missing_taxa_tsc_unique)` unique species.  
 
-missing_tae_tsc <- tfa_tae %>%
+#### Name mismatches tfa_tae to tsc_occ_fauna
+```{r name mismatches tfa_tae to tsc_occ_fauna}
+missing_taxa_occ_fauna <- tfa_tae %>% 
+    dplyr::anti_join(tsc_occ_fauna, by = "taxon") 
+
+missing_taxa_occ_fauna_unique <- missing_taxa_occ_fauna %>% 
+    dplyr::select(taxon) %>% 
+    distinct() %>% 
+  dplyr::left_join(tsc_taxa_fauna,by = "taxon")#152
+
+missing_taxa_occ_fauna_unique %>% reactable::reactable()
+
+```
+
+There are `r nrow(missing_taxa_occ_fauna)` taxon records missing from tsc_occ_fauna when compared to taf_tae. These records are attributed to `r nrow(missing_taxa_occ_fauna_unique)` unique species.  
+
+#### Occurrence mismatches tfa_tae to tsc_tae
+```{r missing_occurrences tfa_tae to tsc_tae}
+
+missing_occ_tae_tsc <- tfa_tae %>%
   dplyr::anti_join(tsc_tae, by = "source_id") 
 
+missing_occ_tae_tsc %>% reactable::reactable()
 # missing_occ_tae_tsc <- tsc_tae %>%
 #   dplyr::anti_join(tsc_occ_fauna, by = "source_id") 
 
-unique(tsc_occ_fauna$source_id) #55744
-unique(tfa_tae$source_id) #94814
-unique(tsc_tae$source_id) #93972
-setdiff(tfa_tae$source_id,tsc_occ_fauna$source_id) # 39070 source_id's in tfa that are not in tsc
+missing_occ_tae_tsc_unique <- missing_occ_tae_tsc %>% 
+    dplyr::select(taxon) %>% 
+    distinct() %>% 
+  dplyr::left_join(tsc_taxa_fauna,by = "taxon") #27
 
 ```
 
-There are `r nrow(missing_tae_tsc)` occurrences missing from tsc_tae when compared to tfa_tae. These missing occurrences come from `r nrow(missing_taxa_tsc_unique)` 26 unique species.
-
-The occurrences listed were likely not migrated because ????????
+There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from tsc_tae when compared to tfa_tae. These missing occurrences come from `r nrow(missing_occ_tae_tsc_unique)` unique species.
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
-```{r tally_tfa_tae}
-tae_tally <- tfa_tae %>%
+```{r tally_tfa_tsc_tae}
+tfa_tae_tally <- tfa_tae %>%
   dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
@@ -2041,39 +2057,54 @@ tsc_tae_tally <- tsc_tae %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup() 
 
-tae_tsc_tally <- tae_tally %>%
+tfa_tsc_tae_tally <- tfa_tae_tally %>%
   dplyr::rename(tfa = n) %>% 
   left_join(tsc_tae_tally,by = "source_id") %>% 
   dplyr::rename(tsc = n) %>% 
-  filter(tae != tsc) # this isn't correct
+  filter(tfa != tsc)
 ```
 
-There are  `r nrow(tae_tsc_tally)` mismatching occurrences between tfa_tae and tsc.
+#### Occurrence mismatches tfa_tae to tsc_occ_fauna
+```{r missing_occurrences tfa_tae to tsc_occ_fauna}
 
-START HERE
+missing_occ_tfa_occ_fauna <- tfa_tae %>%
+  dplyr::anti_join(tsc_occ_fauna, by = "source_id") #39073
 
-```{r} 
-## all differences
-missing_occurrences <- tae_tally %>%
-  dplyr::rename(tfa_tae = n) %>% 
-  left_join(tsc_occ_tally,by = "taxon") %>% 
+missing_occ_tfa_occ_fauna %>% reactable::reactable(filterable = T)
+# missing_occ_tae_tsc <- tsc_tae %>%
+#   dplyr::anti_join(tsc_occ_fauna, by = "source_id") 
+
+missing_occ_tfa_occ_fauna_unique <- missing_occ_tfa_occ_fauna %>% 
+    dplyr::select(taxon) %>% 
+    distinct() %>%  
+   dplyr::left_join(tsc_taxa_fauna,by = "taxon") #381
+
+```
+
+There are `r nrow(missing_occ_tfa_occ_fauna)` unique occurrences missing from tsc_occ_fauna when compared to tfa_tae. These missing occurrences come from `r nrow(missing_occ_tfa_occ_fauna_unique)` unique species.
+
+The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
+
+```{r tally_tfa_tae_occ_fauna}
+tfa_tae_tally <- tfa_tae %>%
+  dplyr::group_by(source_id) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() 
+
+tsc_occ_fauna_tally <- tsc_occ_fauna %>%
+  dplyr::group_by(source_id) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() 
+
+tfa_tae_tsc_occ_tally <- tfa_tae_tally %>%
+  dplyr::rename(tfa = n) %>% 
+  left_join(tsc_occ_fauna_tally,by = "source_id") %>% 
   dplyr::rename(tsc = n) %>% 
-  filter(tfa_tae != tsc) %>% glimpse() # 229
+  filter(tfa != tsc)
 
-missing_occurrences_many <- missing_occurrences %>% 
-  dplyr::filter(tsc == 1) # 18 taxon missing which have multiple occurrences
-
-missing_occurrences_one <- missing_occurrences %>% 
-  dplyr::filter(tsc != 1) # 211 taxon missing which have only one occurrence
-
-# tfa_tae_tsc_diff_one <- tfa_tae_tsc_diff %>% 
-#   dplyr::filter.sf(geometry == NA) ## How do you filter a geometry column???
 ```
-There are `r nrow(missing_occurrences)` occurrences missing from tsc when compared to tae_occ. 
-
-Where there is no geometry data the occurrences of that species have not been carried across. 
-
-Where differences between tfa_tae and tsc are greater than 1, something bigger is going on ad a thorough review is required.
 
 ## Conservation Documents
 
