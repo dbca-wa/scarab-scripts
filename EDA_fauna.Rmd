@@ -1924,7 +1924,7 @@ missing_occ_tfa_tae %>% reactable::reactable(filterable = TRUE)
 
 ```
 
-There are `r nrow(missing_occurrences)` occurrences missing from tfa_tae when compared to tfa_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
+There are `r nrow(missing_occ_tfa_tae)` occurrences missing from tfa_tae when compared to tfa_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
 
 The table below is a tally of mismatching occurrences and confirms the two missing occurrences identified above.
 
@@ -1954,7 +1954,7 @@ tfa_occ_tally %>%
 Any records in the following table indicate taxon in TFA that were not migrated into TSC.
 
 #### Name mismatches tfa_tae to tsc_tae
-```{r}
+```{r name mismatches}
 missing_taxa_tsc <- tfa_tae %>% 
     dplyr::anti_join(tsc_tae, by = "taxon") 
 
@@ -1967,10 +1967,10 @@ missing_taxa_tsc_unique %>% reactable::reactable()
 
 ```
 
-There are `r nrow(missing_taxa_tsc)` taxon records missing from tsc_tae when compared to taf_tae. These records are attributed to `r nrow(missing_taxa_tsc_unique)` unique species.  
+There are `r nrow(missing_taxa_tsc)` taxon records missing from tsc_tae when compared to tfa_tae. These records are attributed to `r nrow(missing_taxa_tsc_unique)` unique species.  
 
 #### Name mismatches tfa_tae to tsc_occ_fauna
-```{r}
+```{r name mismatches}
 missing_taxa_occ_fauna <- tfa_tae %>% 
     dplyr::anti_join(tsc_occ_fauna, by = "taxon") 
 
@@ -2002,7 +2002,7 @@ missing_occ_tae_tsc_unique <- missing_occ_tae_tsc %>%
 
 ```
 
-There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from tsc_tae when compared to tfa_tae. These missing occurrences come from `r nrow(missing_occ_tae_tsc_unique)` 27 unique species.
+There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from tsc_tae when compared to tfa_tae. These missing occurrences come from `r nrow(missing_occ_tae_tsc_unique)` unique species.
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
