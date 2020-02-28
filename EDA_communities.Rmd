@@ -41,7 +41,15 @@ on the DBCA data catalogue, then extracted and transformed.
 
 ## Communities
 ```{r load_tec, message=FALSE}
-tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+
+tec_file <- here::here("data", "tec.Rdata")
+if (file.exists(tec_file)) {
+  load(tec_file)
+} else {
+  tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+  tec_file <- here::here("data", "tec.Rdata")
+save(tec, file=tec_file)
+}
 
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
@@ -832,40 +840,16 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
 ## Occurrence Boundaries
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
-```{r tec_bdy}
+```{r tec_bdy, message = FALSE}
 tec_bdy %>%
   filter(BDY_ID == 0) %>%
   nrow() # Six boundaries have no boundary id
-
-names(tec_bdy)
-names(surveys)
-names(tec_occ)
-names(communities)
-
-## Check for similarities between surveys and boundaries
-x <- intersect(tec_occ$boundary_id, tec_bdy$BDY_ID) # 122049 similar
-setdiff(tec_bdy$BDY_ID, tec_occ$boundary_id) # There are 0 boundarys in tec_bdy that are not in tec_occ
-setdiff(tec_occ$boundary_id, tec_bdy$BDY_ID) # There are 566 boundaries in tec_occ that are not in tec_bdy
-setdiff(tec_bdy$BDY_ID, surveys$boundary_id) # There are 118803 boundaries that have never been surveyed
-setdiff(surveys$boundary_id, tec_bdy$BDY_ID) # There are 129 surveyed boundaries which don't have a matching boundary ID in tec_bdy
-
-unique(surveys$com_id)
-
-names(surveys)
-names(tec_occ)
-names(communities)
-
-glimpse(surveys)
-glimpse(communities)
 
 survey_cae <- surveys %>%
   left_join(tec_bdy, by = c("boundary_id" = "BDY_ID")) %>%
   left_join(tec_occ, by = c("occ_id", "com_id", "com_label", "com_name", "boundary_id", "boundary_desc")) %>%
   left_join(communities, by = c("com_id", "com_label", "com_name")) %>% 
   clean_names()
-
-names(survey_cae)
-setdiff(survey_cae$com_id, communities$com_id) # There are 145 communities that have not been surveyed
 
 tec_bdy_cae <- survey_cae %>%
   dplyr::transmute(
@@ -997,7 +981,6 @@ no_com_id %>% reactable::reactable()
 
 The two communities above do not contain a community ID so they cannot be parsed to TSC
 
-
 # Extract and transform conservation criteria Data from TSC
 Conservation criteria from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TEC.
@@ -1080,218 +1063,21 @@ tec_ccl <- tec_cons_listing %>%
 
 # Extract and transform occurrence lookup Data from TSC and create final data frames
 ``` {r extract_tsc_occurrence_lookup, message=FALSE}
-
-# extract look ups
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
-
-tsc_rocktype <- "lookup-rocktype" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_rocktype.csv"))
-
-tsc_soiltype <- "lookup-soiltype" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
-
-tsc_soilcolour <- "lookup-soilcolour" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_soilcolour.csv"))
 
 tsc_drainage <- "lookup-drainage" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_drainage.csv"))
 
-tsc_soilcondition <- "lookup-soilcondition" %>%
+tsc_soiltype <- "lookup-soiltype" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_soilcondition.csv"))
+  readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
 
-tsc_surveymethod <- "lookup-surveymethod" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_surveymethod.csv"))
-
-tsc_countmethod <- "lookup-countmethod" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_countmethod.csv"))
-
-tsc_countsubject <- "lookup-countsubject" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_countsubject.csv"))
-
-tsc_plantcondition <- "lookup-plantcondition" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_plantcondition.csv"))
-
-tsc_samp_dest <- "lookup-sampledestination" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
-
-# Load manual mapping of tfl lookup criteria from CSV file, and join to relevant table
-
-## habitat composition
-tfl_landcrit <- here::here("tfl_landcrit_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      landform = col_character(),
-      tsc_landform = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_rocktype <- here::here("tfl_rocktype_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      rocktype = col_character(),
-      tsc_rocktype = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_soiltype <- here::here("tfl_soiltype_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      soil_type = col_character(),
-      tsc_soiltype = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_soilcolour <- here::here("tfl_soilcolour_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      soil_colour = col_character(),
-      tsc_soil_colour = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_drainage <- here::here("tfl_drainage_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      drainage = col_character(),
-      tsc_drainage = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_hab_comp <- hab_comp %>%
-  left_join(tfl_landcrit, by = c("landform")) %>%
-  left_join(tfl_rocktype, by = c("rock_type")) %>%
-  left_join(tfl_soiltype, by = c("soil_type")) %>%
-  left_join(tfl_soilcolour, by = c("soil_colour")) %>%
-  left_join(tfl_drainage, by = c("drainage")) %>%
-  dplyr::select(source, source_id, tsc_landforms, tsc_rock_type, loose_rock, tsc_soil_type, tsc_soil_colour, tsc_drainage) %>%
-  dplyr::rename(landform = tsc_landforms) %>%
-  dplyr::rename(rocktype = tsc_rock_type) %>%
-  dplyr::rename(soiltype = tsc_soil_type) %>%
-  dplyr::rename(soilcolour = tsc_soil_colour) %>%
-  dplyr::rename(drainage = tsc_drainage) %>%
-  glimpse()
-
-
-## Area assessment
-tfl_survey_method <- here::here("tfl_survey_method_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      survey_method = col_character(),
-      tsc_survey_method = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_area_ass <- area_ass %>%
-  left_join(tfl_survey_method, by = c("survey_method")) %>%
-  dplyr::select(source, source_id, tsc_survey_method, surveyed_area, survey_duration) %>%
-  dplyr::rename(survey_method = tsc_survey_method) %>%
-  glimpse()
-
-## Habitat condition
-tfl_soil_condition <- here::here("tfl_soil_condition_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      soil_condition = col_character(),
-      tsc_soil_condition = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_hab_cond <- hab_cond %>%
-  left_join(tfl_soil_condition, by = c("soil_condition")) %>%
-  dplyr::select(source, source_id, occurrence_condition, tsc_soil_condition) %>%
-  dplyr::rename(soil_condition = tsc_soil_condition) %>%
-  glimpse()
-
-## Plant count
-tfl_plant_count_method <- here::here("tfl_plant_count_method_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      plant_count_method = col_character(),
-      tsc_plant_count_method = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_plant_count_subject <- here::here("tfl_counted_subject_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      counted_subject = col_character(),
-      tsc_counted_subject = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_plant_condition <- here::here("tfl_plant_condition_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      plant_condition = col_character(),
-      tsc_Plant_condition = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_plant_count <- plant_count %>%
-  left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
-  left_join(tfl_plant_count_subject, by = c("counted_subject")) %>%
-  left_join(tfl_plant_condition, by = c("plant_condition")) %>%
-  dplyr::select(
-    -plant_count_method,
-    -counted_subject,
-    -plant_condition,
-    -tsc_criteria.x,
-    -tsc_criteria.y,
-    -tsc_criteria
-  ) %>%
-  dplyr::rename(plant_count_method = tsc_plant_count_method) %>%
-  dplyr::rename(counted_subject = tsc_counted_subject) %>%
-  dplyr::rename(plant_condition = tsc_Plant_condition) %>%
-  glimpse()
-
-## Physical sample
-tfl_sampdest <- here::here("tfl_sample_destination_w_tsc.csv") %>%
-  readr::read_csv(
-    col_types = cols(
-      sample_destination = col_character(),
-      tsc_sample_destination = col_character(),
-      tsc_criteria = col_character()
-    )
-  )
-
-tfl_phys_sample <- phys_sample %>%
-  left_join(tfl_sampdest, by = c("sample_destination")) %>%
-  dplyr::select(-sample_destination, -tsc_criteria) %>%
-  dplyr::rename(sample_destination = tsc_sample_destination) %>%
-  glimpse()
 ```
 
 # Load legacy data from TEC into TSC
@@ -1368,9 +1154,9 @@ tec_bdy_cae %>%
 Import all but the numerous ones:
 
 ```{r tec_buf_tsc, eval=F}
-tec_buf_cae %>%
-  dplyr::filter(!grepl(fat_filter, community)) %>%
-  chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+#tec_buf_cae %>%
+#  dplyr::filter(!grepl(fat_filter, community)) %>%
+#  chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
 
 ### Sites/ TEC EOO
@@ -1450,7 +1236,6 @@ if (file.exists(datafile)) {
 }
 ```
 
-
 # Compare legacy from TEC to migrated data from TSC
 This section provides an automated comparison between original data from TEC 
 and TEC data as uploaded into TSC. 
@@ -1480,7 +1265,6 @@ tsc_ccl_unique_comm <- tsc_ccl$com_label %>%
 TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique_comm` communities.
 TSC has `r nrow(tsc_ccl)` conservation listings of `r tsc_ccl_unique_comm` communities.
 
-
 ### TEC conservation listings not in TSC
 
 Any records in the following table indicate community conservation listings in TEC that
@@ -1501,7 +1285,6 @@ tsc_ccl %>%
   dplyr::anti_join(tec_ccl, by = "com_label") %>%
   reactable::reactable(filterable = TRUE)
 ```
-
 
 ### Conservation criteria mapping
 
@@ -1551,7 +1334,6 @@ cl_corner_dates <- rbind(tec_corner_dates, tsc_corner_dates) %>%
 
 cl_corner_dates %>% reactable::reactable()
 ```
-
 
 ### Conservation listing differences
 
@@ -1714,6 +1496,39 @@ tec_occ_no_sit <- tec_sit %>%
 ```
 
 There are `r nrow(tec_occ_no_sit)` distinct site records with a missing site ID.
+
+### Occurrence mismatches
+```{r }
+
+names(tec_bdy)
+names(surveys)
+names(tec_occ)
+names(communities)
+
+## Check for similarities between surveys and boundaries
+x <- intersect(tec_occ$boundary_id, tec_bdy$BDY_ID) # 122049 similar
+setdiff(tec_bdy$BDY_ID, tec_occ$boundary_id) # There are 0 boundarys in tec_bdy that are not in tec_occ
+setdiff(tec_occ$boundary_id, tec_bdy$BDY_ID) # There are 566 boundaries in tec_occ that are not in tec_bdy
+setdiff(tec_bdy$BDY_ID, surveys$boundary_id) # There are 118803 boundaries that have never been surveyed
+setdiff(surveys$boundary_id, tec_bdy$BDY_ID) # There are 129 surveyed boundaries which don't have a matching boundary ID in tec_bdy
+
+unique(surveys$com_id)
+
+names(surveys)
+names(tec_occ)
+names(communities)
+
+glimpse(surveys)
+glimpse(communities)
+
+
+names(survey_cae)
+setdiff(survey_cae$com_id, communities$com_id) # There are 145 communities that have not been surveyed
+
+
+```
+
+
 
 # Upload to data catalogue
 ```{r upload_data_catalogue}
