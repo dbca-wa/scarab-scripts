@@ -807,34 +807,27 @@ tfa_sampdest <- here::here("tfa_sampdest_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-# names(phys_sample)
-
 tfa_phys_sample <- phys_sample %>%
   left_join(tfa_samptype, by = c("sample_type")) %>%
   left_join(tfa_sampdest, by = c("sample_destination")) %>%
-  dplyr::select(
-    source,
-    source_id,
-    tsc_sample_type,
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    sample_type = tsc_sample_type,
     # specimen_voucher_exists,
-    tsc_sample_destination,
-    sample_label
-  ) %>%
-  dplyr::rename(sample_type = tsc_sample_type) %>%
-  dplyr::rename(sample_destination = tsc_sample_destination) %>%
-  dplyr::mutate(obstype = "PhysicalSample") %>%
-  # glimpse %>%
-  invisible()
+    sample_destination = tsc_sample_destination,
+    sample_label = sample_label,
+    permit_type = NA,
+    obstype = "PhysicalSample"
+  )
 
 tfa_veg_class <- veg_class %>% 
   dplyr::transmute(
     source = source,
     source_id = source_id,
     vegetation_classification = glue::glue(
-        "{vegetation_code}; {vegetation_type}"))
-
-# This works in DEV - coming soon to PROD TSCs in your area!
-# tfa_phys_sample[1,] %>% as.list() %>% wastdr::wastd_POST("occ-observation", api_url = dev)
+      "{vegetation_code}; {vegetation_type}")
+    )
 ```
 
 # Load legacy data from TFA into TSC
@@ -1162,13 +1155,65 @@ tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api
 
 tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 
-tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurences
+tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
 ```
 
 
 ### Upload ObservationGroups
 
-TODO upload obsgroups here.
+```{r, eval=FALSE}
+
+# This chunk explains the development steps for wastd_bulk_post
+
+# Naive: do first record only
+# API expects a key-value dict = R list of exactly one record
+# API might get a bulk_create which then accepts a list of dicts (R data.frame)
+tfa_phys_sample[1,] %>% as.list() %>% wastdr::wastd_POST("occ-observation", api_url = dev)
+
+# Helper: factor out all params except for data
+post_one <- . %>% as.list() %>% wastdr::wastd_POST("occ-observation", api_url = dev)
+tfa_phys_sample[1,] %>% post_one
+
+# Base R: do several (subset or all)
+# apply with margin 1 (rows) does what tidyverse refuses to do
+apply(tfa_phys_sample[1:10,], 1, post_one)
+
+# Generalise helper
+# Let all params be user defined
+wastd_post_one <- function(data_row, serializer, api_url = dev){
+  data_row %>% 
+    as.list() %>% 
+    wastdr::wastd_POST(
+      serializer = serializer, 
+      api_url = api_url
+    )
+}
+
+# Naive application example: First ten records
+# Still some repetitive code - how to use apply
+apply(
+  tfa_phys_sample[1:10,], 
+  1, 
+  wastd_post_one, 
+  serializer = "occ-observation", 
+  api_url = dev
+)
+
+# Generalize applying the helper
+# Top level ingredients: what (data), how (serializer), where (server)
+wastd_bulk_post <- function(data, serializer, api_url){
+  apply(data,
+        1,
+        wastd_post_one,
+        serializer = serializer,
+        api_url = api_url)
+}
+
+# Apply wastd_bulk_post
+# This should be applicable to all other occ-observation models
+# TODO error handling, return the HTTP status, report summary "x created, y failed"
+tfa_phys_sample %>% wastd_bulk_post("occ-observation", api_url = dev)
+```
 
 ## Conservation Documents
 
@@ -1289,6 +1334,8 @@ tsc_occ_fauna <- tsc_tae%>%
 ## prior to right_join there are 93977 obs
 
 ```
+
+
 # Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
 and TFA data as uploaded into TSC. 
