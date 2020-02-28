@@ -1919,7 +1919,7 @@ There are `r nrow(missing_occ_tfa_tae)` occurrences missing from tfa_tae when co
 
 The table below is a tally of mismatching occurrences and confirms the two missing occurrences identified above.
 
-```{r tally_tfa_tae}
+```{r tally_tfa_occ_tae}
 tfa_occ_tally <- tfa_occ %>%
   dplyr::group_by(name_id) %>% 
   dplyr::tally() %>%
@@ -1997,7 +1997,7 @@ There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from tsc_tae 
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
-```{r tally_tfa_tae}
+```{r tally_tfa_tsc_tae}
 tfa_tae_tally <- tfa_tae %>%
   dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
@@ -2038,7 +2038,7 @@ There are `r nrow(missing_occ_tfa_occ_fauna)` unique occurrences missing from ts
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
-```{r tally_tfa_tae}
+```{r tally_tfa_tae_occ_fauna}
 tfa_tae_tally <- tfa_tae %>%
   dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
