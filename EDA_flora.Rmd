@@ -817,7 +817,7 @@ tfl_tae <- tfl_occ %>%
     geolocation_capture_method='gps-point',
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
-  ) %>% glimpse()
+  ) #%>% glimpse()
 
 # names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
@@ -929,7 +929,7 @@ tsc_cons_crit %>%
   readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
 
 # Load manual mapping of tfl cons criteria from CSV file,  join to tfl_cons_crit
-tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
+tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       list_code_wa = col_character(),
@@ -947,7 +947,9 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
 # glimpse(tfl_conscrit)
 
 tfl_tcl <- tfl_cons_listing %>% 
-  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% glimpse
+  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>%  
+  # dplyr::glimpse() %>% 
+  invisible()
 ```
 
 # Extract and transform occurrence lookup Data from TSC
@@ -1010,7 +1012,7 @@ tsc_samp_dest <- "lookup-sampledestination" %>%
 # Load manual mapping of tfl lookup criteria from CSV file, and join to relevant table
 
 ## habitat composition
-tfl_landcrit <- here::here("tfl_landcrit_w_tsc.csv") %>%
+tfl_landcrit <- here::here("csv/tfl_landcrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       landform = col_character(),
@@ -1018,7 +1020,7 @@ tfl_landcrit <- here::here("tfl_landcrit_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_rocktype <- here::here("tfl_rocktype_w_tsc.csv") %>%
+tfl_rocktype <- here::here("csv/tfl_rocktype_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       rocktype= col_character(),
@@ -1026,7 +1028,7 @@ tfl_rocktype <- here::here("tfl_rocktype_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_soiltype <- here::here("tfl_soiltype_w_tsc.csv") %>%
+tfl_soiltype <- here::here("csv/tfl_soiltype_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       soil_type = col_character(),
@@ -1034,7 +1036,7 @@ tfl_soiltype <- here::here("tfl_soiltype_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_soilcolour <- here::here("tfl_soilcolour_w_tsc.csv") %>%
+tfl_soilcolour <- here::here("csv/tfl_soilcolour_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       soil_colour = col_character(),
@@ -1042,7 +1044,7 @@ tfl_soilcolour <- here::here("tfl_soilcolour_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_drainage <- here::here("tfl_drainage_w_tsc.csv") %>%
+tfl_drainage <- here::here("csv/tfl_drainage_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       drainage = col_character(),
@@ -1061,11 +1063,11 @@ tfl_hab_comp <- hab_comp %>%
   dplyr::rename(rocktype = tsc_rock_type) %>% 
   dplyr::rename(soiltype = tsc_soil_type) %>% 
   dplyr::rename(soilcolour = tsc_soil_colour) %>%
-  dplyr::rename(drainage = tsc_drainage) %>% glimpse
+  dplyr::rename(drainage = tsc_drainage)
 
 
 ## Area assessment
-tfl_survey_method <- here::here("tfl_survey_method_w_tsc.csv") %>%
+tfl_survey_method <- here::here("csv/tfl_survey_method_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       survey_method = col_character(),
@@ -1076,10 +1078,10 @@ tfl_survey_method <- here::here("tfl_survey_method_w_tsc.csv") %>%
 tfl_area_ass <- area_ass %>%
   left_join(tfl_survey_method, by = c("survey_method")) %>% 
 dplyr::select(source,source_id,tsc_survey_method,surveyed_area,survey_duration) %>%
-  dplyr::rename(survey_method = tsc_survey_method) %>% glimpse
+  dplyr::rename(survey_method = tsc_survey_method) 
 
 ## Habitat condition
-tfl_soil_condition <- here::here("tfl_soil_condition_w_tsc.csv") %>%
+tfl_soil_condition <- here::here("csv/tfl_soil_condition_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       soil_condition = col_character(),
@@ -1090,10 +1092,10 @@ tfl_soil_condition <- here::here("tfl_soil_condition_w_tsc.csv") %>%
 tfl_hab_cond <- hab_cond %>%
   left_join(tfl_soil_condition, by = c("soil_condition")) %>% 
 dplyr::select(source,source_id,occurrence_condition,tsc_soil_condition) %>%
-  dplyr::rename(soil_condition = tsc_soil_condition) %>% glimpse
+  dplyr::rename(soil_condition = tsc_soil_condition) 
 
 ## Plant count
-tfl_plant_count_method <- here::here("tfl_plant_count_method_w_tsc.csv") %>%
+tfl_plant_count_method <- here::here("csv/tfl_plant_count_method_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       plant_count_method = col_character(),
@@ -1101,7 +1103,7 @@ tfl_plant_count_method <- here::here("tfl_plant_count_method_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_plant_count_subject <- here::here("tfl_counted_subject_w_tsc.csv") %>%
+tfl_plant_count_subject <- here::here("csv/tfl_counted_subject_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       counted_subject = col_character(),
@@ -1109,7 +1111,7 @@ tfl_plant_count_subject <- here::here("tfl_counted_subject_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfl_plant_condition <- here::here("tfl_plant_condition_w_tsc.csv") %>%
+tfl_plant_condition <- here::here("csv/tfl_plant_condition_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       plant_condition = col_character(),
@@ -1131,10 +1133,10 @@ tfl_plant_count <- plant_count %>%
   ) %>%
   dplyr::rename(plant_count_method = tsc_plant_count_method) %>% 
   dplyr::rename(counted_subject = tsc_counted_subject) %>%
-  dplyr::rename(plant_condition = tsc_Plant_condition) %>% glimpse
+  dplyr::rename(plant_condition = tsc_Plant_condition)
 
 ## Physical sample
-tfl_sampdest <- here::here("tfl_sample_destination_w_tsc.csv") %>%
+tfl_sampdest <- here::here("csv/tfl_sample_destination_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       sample_destination = col_character(),
@@ -1145,7 +1147,7 @@ tfl_sampdest <- here::here("tfl_sample_destination_w_tsc.csv") %>%
 tfl_phys_sample <- phys_sample %>%
   left_join(tfl_sampdest, by = c("sample_destination")) %>%
 dplyr::select(-sample_destination,-tsc_criteria) %>%
-  dplyr::rename(sample_destination = tsc_sample_destination) %>% glimpse
+  dplyr::rename(sample_destination = tsc_sample_destination)
 ```
 
 # Load legacy data from TFL into TSC
