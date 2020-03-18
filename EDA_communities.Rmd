@@ -391,6 +391,49 @@ occ_short <- tec_occ %>%
      com_id = com_id,
      com_label = com_label,
      com_name = com_name)
+
+names(tec_occ)
+
+
+## Export data for manual mapping
+soil <- tec_occ %>%
+  dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    occ_id = occ_id,
+    soil = soil) %>% 
+  filter(soil != "")
+
+soil %>%
+  dplyr::select(soil) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tec_soil.csv"))
+
+land_element <- tec_occ %>%
+  dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    occ_id = occ_id,
+    land_element = land_element) %>% 
+  filter(land_element != "")
+
+land_element %>%
+  dplyr::select(land_element) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tec_land_element.csv"))
+
+drainage <- tec_occ %>%
+  dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
+  dplyr::transmute(
+    source = 10,
+    occ_id = occ_id,
+    drainage = drainage) %>% 
+  filter(drainage != "")
+
+drainage %>%
+  dplyr::select(drainage) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tec_drainage.csv"))
 ```
 
 ### Occurrence Actions
