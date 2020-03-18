@@ -1688,77 +1688,93 @@ upload_to_ckan(tec_cons_listing_criteria, "TEC Conservation Listing Criteria",
   d$id,
   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
 )
-# upload_to_ckan(impacts, "TEC Impacts",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(threats, "TEC Threats",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(sources, "TEC Sources",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(species_roles, "TEC Species roles",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(status, "TEC Status",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(survey_conditions, "TEC Survey conditions",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(surveys, "TEC Surveys",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(survey_conditions, "TEC Survey conditions",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(recovery_plans, "TEC Recovery plans",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(items, "TEC Items",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(maps, "TEC Maps",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(occ_maps, "TEC Occurrence maps",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(publications, "TEC Publications",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(recommendations, "TEC Recommendations",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(reviews, "TEC Reviews",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(endorsement, "TEC Endorsement",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(conditions, "TEC Conditions",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
-# upload_to_ckan(datum, "TEC Datum",
-#   d$id,
-#   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-# )
+upload_to_ckan(communities, "TEC Communities",
+  d$id,
+  resource_id = "3171d777-ef1a-4b1b-ac48-7807fa033ed5"
+)
+upload_to_ckan(com_actions, "TEC Community actions",
+  d$id,
+  resource_id = "1cad3694-c57f-401a-bb77-0ce0cf95f539"
+)
+upload_to_ckan(com_reviews, "TEC Community reviews",
+  d$id,
+  resource_id = "803e797b-4b49-4fc7-89cd-95a7fb895c39"
+)
+upload_to_ckan(conditions, "TEC Conditions",
+  d$id,
+  resource_id = "a8dd7571-8ee3-407d-b77e-234646a2e4fa"
+)
+upload_to_ckan(datum, "TEC Datum",
+  d$id,
+  resource_id = "35683a41-30dd-40d2-b62e-fd644c899206"
+)
+upload_to_ckan(endorsement, "TEC Endorsement",
+  d$id,
+  resource_id = "b39962c9-3fca-4024-a809-e1009f12ad44"
+)
+upload_to_ckan(former_range, "TEC Former range",
+  d$id,
+  resource_id = "af5cc256-c21b-4dc3-a795-eac07a3b8f8d"
+)
+upload_to_ckan(recovery_plans, "TEC Recovery plans",
+  d$id,
+  resource_id = "6a915a4c-fd6f-4cff-bc2a-e33e95fe9790"
+)
+upload_to_ckan(items, "TEC Items",
+  d$id,
+  resource_id = "e3aaef74-eaae-4dd4-8ddb-107d7e404272"
+)
+upload_to_ckan(maps, "TEC Maps",
+  d$id,
+  resource_id = "74c93fda-328b-40bf-a743-6be184b9226a"
+)
+upload_to_ckan(occ_maps, "TEC Occurrence maps",
+  d$id,
+  resource_id = "3350e442-cf20-4b65-a0d7-fd5ef3c4c9f9"
+)
+upload_to_ckan(occ_decline, "TEC Occurrence decline",
+  d$id,
+  resource_id = "6b470e46-7e51-4b9d-878f-c4b4d00e2a7c"
+)
+upload_to_ckan(range_decline, "TEC Range decline",
+  d$id,
+  resource_id = "79cd3f81-4d18-4644-864f-bec26ad63f43"
+)
+upload_to_ckan(reliability, "TEC Reliability",
+  d$id,
+  resource_id = "8f5f3c0c-98ef-4a04-a073-6a868967e4ea"
+)
+upload_to_ckan(sites, "TEC Sites",
+  d$id,
+  resource_id = "22a16d64-f733-4b2d-8612-f5fc61f18f73"
+)
+upload_to_ckan(sources, "TEC Sources",
+  d$id,
+  resource_id = "d194358b-582a-4ad7-8796-f26bca0e2325"
+)
+upload_to_ckan(species_roles, "TEC Species roles",
+  d$id,
+  resource_id = "9e7db52a-b6ef-492e-828a-ca99a03cabdf"
+)
+upload_to_ckan(status, "TEC Status",
+  d$id,
+  resource_id = "7ce3611e-e519-4070-aa1c-cd682e5dad64"
+)
+upload_to_ckan(survey_conditions, "TEC Survey conditions",
+  d$id,
+  resource_id = "964a2c44-9872-4ab6-8371-95d32a83a3f3"
+)
+upload_to_ckan(surveys, "TEC Surveys",
+  d$id,
+  resource_id = "e425d0b9-b4bf-4ec7-b3b9-9341dfc2aa23"
+)
+upload_to_ckan(impacts, "TEC Impacts",
+  d$id,
+  resource_id = "5762b744-0891-402a-a885-61607bf22aa6"
+)
+upload_to_ckan(threats, "TEC Threats",
+  d$id,
+  resource_id = "7e45dabf-a7ad-465e-9150-d096fdf45891"
+)
 ```
 
