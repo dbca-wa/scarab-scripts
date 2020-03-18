@@ -403,7 +403,7 @@ occ_recommendations <- tec$OCCURRENCE_RECOMMENDATIONS %>%
     rank = OREC.RANK %>% as.character(),
     recommended_on = OREC.DATE %>% as.character(),
     recommendation_code = OREC.REC.CODE %>% as.character(),
-    recommendation = OREC.DESC %>% as.character(),
+    occ_recommendation = OREC.DESC %>% as.character(),
     username = USERNAME %>% as.character()
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
@@ -1043,7 +1043,7 @@ tsc_cons_crit <-
   dplyr::left_join(tsc_conslists_com, by = "list_id")
 
 # Load manual mapping of TEC cons criteria from CSV file, join to tec_cons_crit
-tec_conscrit <- here::here("tec_conscrit_w_tsc.csv") %>%
+tec_conscrit <- here::here("csv/tec_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       category_code = col_character(),
