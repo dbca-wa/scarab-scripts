@@ -935,9 +935,8 @@ tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
       list_code_wa = col_character(),
       tsc_criteria = col_character(),
       criteria_code_wa = col_character(),
-      assigned_as_in_tsc = col_character(),
-      comments_MP = col_character(),
-      actions_required = col_character()
+      assigned_as = col_character(),
+      comments = col_character()
     )
   )  %>%
   dplyr::mutate(
@@ -1016,15 +1015,15 @@ tfl_landcrit <- here::here("csv/tfl_landcrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       landform = col_character(),
-      tsc_landform = col_character(),
+      tsc_landforms = col_character(),
       tsc_criteria = col_character()
     ))
 
 tfl_rocktype <- here::here("csv/tfl_rocktype_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
-      rocktype= col_character(),
-      tsc_rocktype = col_character(),
+      rock_type= col_character(),
+      tsc_rock_type = col_character(),
       tsc_criteria = col_character()
     ))
 
@@ -1032,7 +1031,7 @@ tfl_soiltype <- here::here("csv/tfl_soiltype_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       soil_type = col_character(),
-      tsc_soiltype = col_character(),
+      tsc_soil_type = col_character(),
       tsc_criteria = col_character()
     ))
 

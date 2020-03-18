@@ -661,7 +661,7 @@ tsc_cons_crit %>%
   readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
 
 # Load manual mapping of TFA cons criteria from CSV file, join to tfa_cons_crit
-tfa_conscrit <- here::here("tfa_conscrit_w_tsc.csv") %>%
+tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       list_code = col_character(),
@@ -717,7 +717,7 @@ tsc_det_meth <- "lookup-detectionmethod" %>%
   readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
 
 # Load manual mapping of TFA lookup criteria from CSV file, and join to relevant table
-tfa_landcrit <- here::here("tfa_landcrit_w_tsc.csv") %>%
+tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       landform_id = col_character(),
@@ -731,7 +731,7 @@ tfa_hab_comp <- hab_comp %>%
 dplyr::select(source,source_id,tsc_landform_id) %>% 
 dplyr::rename(landform = tsc_landform_id) %>% glimpse
 
-tfa_confidence <- here::here("tfa_id_conf_w_tsc.csv") %>%
+tfa_confidence <- here::here("csv/tfa_id_conf_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       species_id_confidence = col_character(),
@@ -739,7 +739,7 @@ tfa_confidence <- here::here("tfa_id_conf_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfa_det_meth <- here::here("tfa_detmeth_w_tsc.csv") %>%
+tfa_det_meth <- here::here("csv/tfa_detmeth_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       detection_method = col_character(),
@@ -747,7 +747,7 @@ tfa_det_meth <- here::here("tfa_detmeth_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfa_sec_sign <- here::here("tfa_secsign_w_tsc.csv") %>%
+tfa_sec_sign <- here::here("csv/tfa_secsign_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       secondary_signs = col_character(),
@@ -755,7 +755,7 @@ tfa_sec_sign <- here::here("tfa_secsign_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfa_repmap <- here::here("tfa_repmat_w_tsc.csv") %>%
+tfa_repmap <- here::here("csv/tfa_repmat_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       reproductive_maturity = col_character(),
@@ -791,7 +791,7 @@ tfa_anim_obs <- anim_obs %>%
   dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
   dplyr::rename(secondary_signs = tsc_secondary_signs)
 
-tfa_samptype <- here::here("tfa_samptype_w_tsc.csv") %>%
+tfa_samptype <- here::here("csv/tfa_samptype_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       sample_type = col_character(),
@@ -799,7 +799,7 @@ tfa_samptype <- here::here("tfa_samptype_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfa_sampdest <- here::here("tfa_sampdest_w_tsc.csv") %>%
+tfa_sampdest <- here::here("csv/tfa_sampdest_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       sample_destination = col_character(),
