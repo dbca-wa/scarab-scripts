@@ -1366,11 +1366,18 @@ tfl_eoo %>%
 
 ### Upload TAEs to TSC
 ```{r flora_occ_tsc_upload, eval=F}
-tfl_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+# Test upload one, some, many to local or PROD:
+x <- tfl_tae[1,] %>% as.list() %>% 
+  # Or use any of:
+  # tfl_tae[1:100,] %>% 
+  # tfl_tae[1:1000,] %>% 
+  wastd_POST(serializer = "occ-taxon-points", 
+             # comment in to test against local TSC:
+             # api_url = dev, api_token = Sys.getenv("WASTDR_API_TOKEN_DEV"), 
+             verbose = T)
 
-tfl_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
-
-tfl_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod) # upload for all occurrences
+# Upload all occurrences to TSC PROD
+tfl_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T)
 ```
 
 ## Conservation Documents
