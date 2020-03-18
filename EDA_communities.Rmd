@@ -71,6 +71,7 @@ former_range <- tec$FORMER_RANGES %>%
     former_range = FORMER.RANGE.DESC %>% as.character()
   )
 # make_coldef(former_range)
+readr::write_csv(former_range, path = here::here("data", "tec_former_range.csv"))
 
 range_decline <- tec$RANGE_DECLINE %>%
   dplyr::transmute(
@@ -78,6 +79,7 @@ range_decline <- tec$RANGE_DECLINE %>%
     range_decline = RANGE.DECLINE.DESC %>% as.character()
   )
 # make_coldef(range_decline)
+readr::write_csv(range_decline, path = here::here("data", "tec_range_decline.csv"))
 
 occ_decline <- tec$OCCURRENCES_DECLINE %>%
   dplyr::transmute(
@@ -85,6 +87,7 @@ occ_decline <- tec$OCCURRENCES_DECLINE %>%
     occ_decline = OCC.DECLINE.DESC %>% as.character()
   )
 # make_coldef(occ_decline)
+readr::write_csv(occ_decline, path = here::here("data", "tec_occ_decline.csv"))
 
 status <- tec$STATUS %>%
   dplyr::transmute(
@@ -93,6 +96,7 @@ status <- tec$STATUS %>%
   )
 # status %>% make_coldef()
 # unique(status$status_code) # "BELIEVED"   "IDENTIFIED" - where used?
+readr::write_csv(status, path = here::here("data", "tec_status.csv"))
 
 communities <- tec$COMMUNITIES %>%
   tibble::as_tibble() %>%
@@ -113,6 +117,8 @@ communities <- tec$COMMUNITIES %>%
   dplyr::left_join(range_decline, by = "range_decline_id") %>%
   dplyr::left_join(occ_decline, by = "occ_decline_id") %>%
   dplyr::select(-former_range_code, -range_decline_id, -occ_decline_id)
+
+readr::write_csv(communities, path = here::here("data", "tec_communities.csv"))
 
 com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
 ```
@@ -136,6 +142,8 @@ com_recommendations <- tec$COMMUNITY_RECOMMENDATIONS %>%
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(recommendations, by = "recommendation_code")
+
+readr::write_csv(com_recommendations, path = here::here("data", "tec_com_recommendations.csv"))
 
 com_recommendations %>% DT::datatable(.)
 ```
@@ -161,6 +169,8 @@ com_publications <- tec$COMMUNITY_PUBLICATIONS %>%
   dplyr::left_join(publications, by = "publication_id") %>%
   dplyr::left_join(com_short, by = "com_id")
 
+readr::write_csv(com_publications, path = here::here("data", "tec_com_publications.csv"))
+
 com_publications %>% DT::datatable(.)
 ```
 
@@ -181,6 +191,8 @@ com_reviews <- tec$COMMUNITY_REVIEWS %>%
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(reviews, by = "review_id")
+
+readr::write_csv(com_reviews, path = here::here("data", "tec_com_reviews.csv"))
 
 com_reviews %>% DT::datatable(.)
 ```
@@ -204,6 +216,8 @@ com_actions <- tec$COMMUNITY_ACTIONS %>%
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(actions, by = "action_id")
+
+readr::write_csv(com_actions, path = here::here("data", "tec_com_actions.csv"))
 
 com_actions %>% DT::datatable(.)
 ```
@@ -250,6 +264,7 @@ readr::write_csv(tec_cons_crit, path = here::here("data", "tec_cons_crit.csv"))
 # Using a built-in function to turn uppercase into lowercase? Nah. Hold my beer.
 authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities.
 endorsement <- tec$ENDORSED_BY # another lookup for lower case.
+readr::write_csv(endorsement, path = here::here("data", "tec_endorsement.csv"))
 
 # primary
 tec_cons_listing_categories <- tec$CATEGORIES %>%
@@ -302,6 +317,8 @@ reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability_id = BR.CODE %>% as.character(),
   reliability = BR.DESC %>% as.character()
 )
+
+readr::write_csv(reliability, path = here::here("data", "tec_reliability.csv"))
 
 tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
   tibble::as_tibble() %>%
@@ -421,6 +438,8 @@ sources <- tec$SOURCES %>%
     source = SOURCE.DESC %>% as.character()
   )
 
+readr::write_csv(sources, path = here::here("data", "tec_sources.csv"))
+
 occ_extent <- tec$EXTENTS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
@@ -449,6 +468,8 @@ items <- tec$ITEMS %>%
     item = ITEM.DESC %>% as.character()
   )
 
+readr::write_csv(items, path = here::here("data", "tec_items.csv"))
+
 occ_additional_data <- tec$ADDITIONAL_DATA %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
@@ -468,7 +489,11 @@ Names of physical maps describing one or multiple occurrences.
 
 ```{r occ_maps}
 maps <- tec$MAPS
+readr::write_csv(maps, path = here::here("data", "tec_maps.csv"))
+
 occ_maps <- tec$OCCURRENCE_MAPS
+readr::write_csv(occ_maps, path = here::here("data", "tec_occ_maps.csv"))
+
 ```
 
 ### Biological Processes
@@ -543,6 +568,7 @@ species_roles <- tec$SPECIES_ROLES %>%
     species_role_code = SP.ROLE.CODE %>% as.character(),
     species_role = SP.ROLE.DESC %>% as.character()
   )
+readr::write_csv(species_roles, path = here::here("data", "tec_species_roles.csv"))
 
 fauna_taxa <- tec$FAUNA_TAXA # taxon_id
 
@@ -597,18 +623,21 @@ impacts <- tec$THREAT_IMPACTS %>%
     impact_code = IMP.CODE %>% as.character(),
     impact = IMP.DESC %>% as.character()
   )
+readr::write_csv(impacts, path = here::here("data", "tec_impacts.csv"))
 
 threats <- tec$THREATS %>%
   dplyr::transmute(
     threat_code = THREAT.CODE %>% as.character(),
     threat = THREAT.DESC %>% as.character()
   )
+readr::write_csv(threats, path = here::here("data", "tec_threats.csv"))
 
 conditions <- tec$CONDITIONS %>%
   dplyr::transmute(
     condition_code = COND.CODE %>% as.character(),
     condition = COND.DESC %>% as.character()
   )
+readr::write_csv(conditions, path = here::here("data", "tec_conditions.csv"))
 
 # primary
 com_threats <- tec$COMMUNITY_THREATS %>%
@@ -632,6 +661,8 @@ surveys <- tec$SURVEYS %>%
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::mutate(source_id = glue::glue("{boundary_id}{survey_id}"))
+
+readr::write_csv(surveys, path = here::here("data", "tec_surveys.csv"))
 
 ## surveys data exploration
 nrow(surveys) # 4492 surveys
@@ -671,6 +702,9 @@ survey_conditions <- tec$SURVEY_CONDITIONS %>%
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(conditions, by = "condition_code")
+
+readr::write_csv(survey_conditions, path = here::here("data", "tec_survey_conditions.csv"))
+
 ```
 
 Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct `survey_id`s.
@@ -696,6 +730,7 @@ datum <- tec$DATUM %>%
     semi_major_axis = SEMI.MAJOR.AXIS %>% as.double(),
     inverse_flattening = INVERSE.FLATTENING %>% as.double()
   )
+readr::write_csv(datum, path = here::here("data", "tec_datum.csv"))
 
 sites <- tec$SITES %>%
   dplyr::transmute(
@@ -722,6 +757,8 @@ sites <- tec$SITES %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(datum, by = "datum_code")
 
+readr::write_csv(sites, path = here::here("data", "tec_sites.csv"))
+
 sites$site_code %>% head(n = 100)
 
 site_visit <- tec$SITE_VISITS %>%
@@ -746,7 +783,6 @@ site_visit <- tec$SITE_VISITS %>%
     fire_notes = SV.FIRE.NOTES %>% as.character(),
     observation_notes = SV.OBSERVATION.NOTES %>% as.character()
   )
-
 
 site_visit$site_code %>% head(n = 100)
 
@@ -835,6 +871,9 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
     comments = IRP.COMMENTS %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id")
+
+readr::write_csv(recovery_plans, path = here::here("data", "tec_recovery_plans.csv"))
+
 ```
 
 ## Occurrence Boundaries
@@ -1597,47 +1636,47 @@ upload_to_ckan(occ_recommendations, "TEC Occurrence Recommendations",
   d$id,
   resource_id = "747464e4-2434-459a-b654-52861b37095c"
 )
-upload_to_ckan(occ_extent, "TEC occurrence extent",
+upload_to_ckan(occ_extent, "TEC Occurrence extent",
   d$id,
   resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed"
 )
-upload_to_ckan(occ_additional_data, "TEC occurrence additional data",
+upload_to_ckan(occ_additional_data, "TEC Occurrence additional data",
   d$id,
   resource_id = "8dd3454c-1bf0-4575-adcb-154b700c4283"
 )
-upload_to_ckan(occ_biol_process, "TEC biological process",
+upload_to_ckan(occ_biol_process, "TEC Biological process",
   d$id,
   resource_id = "5805a671-576a-4077-b595-35ca96d7ca96"
 )
-upload_to_ckan(occ_nonbiol_process, "TEC nonbiological process",
+upload_to_ckan(occ_nonbiol_process, "TEC Nonbiological process",
   d$id,
   resource_id = "a5341117-2735-4694-8cd4-e806f4c06668"
 )
-upload_to_ckan(fire_history, "TEC fire history",
+upload_to_ckan(fire_history, "TEC Fire history",
   d$id,
   resource_id = "e062f57e-f6aa-4403-a682-875dab2f77f6"
 )
-upload_to_ckan(occ_fauna, "TEC occurence fauna",
+upload_to_ckan(occ_fauna, "TEC Occurrence fauna",
   d$id,
   resource_id = "a0eddc66-5fef-4252-b49f-691422a88f28"
 )
-upload_to_ckan(occ_species, "TEC occurence species",
+upload_to_ckan(occ_species, "TEC Occurrence species",
   d$id,
   resource_id = "e94f1e35-30da-4982-b851-ceb888eb41b3"
 )
-upload_to_ckan(com_threats, "TEC community threats",
+upload_to_ckan(com_threats, "TEC Community threats",
   d$id,
   resource_id = "5426c45b-1dee-4547-a6e3-bec81585e52e"
 )
-upload_to_ckan(survey_threats, "TEC survey threats",
+upload_to_ckan(survey_threats, "TEC Survey threats",
   d$id,
   resource_id = "5b795656-a240-402e-92b8-edbe54b3fee8"
 )
-upload_to_ckan(site_visit, "TEC site visit",
+upload_to_ckan(site_visit, "TEC Site visit",
   d$id,
   resource_id = "85cef94b-d12e-4aff-bd24-446d1c0757db"
 )
-upload_to_ckan(voucher_specimens, "TEC voucher specimens",
+upload_to_ckan(voucher_specimens, "TEC Voucher specimens",
   d$id,
   resource_id = "6b8fe493-8183-4fe8-a91a-67a569bf9c46"
 )
@@ -1720,6 +1759,6 @@ upload_to_ckan(tec_cons_listing_criteria, "TEC Conservation Listing Criteria",
 # upload_to_ckan(datum, "TEC Datum",
 #   d$id,
 #   resource_id = "9483f333-97fd-4975-a799-d44bf8bd252a"
-)
+# )
 ```
 
