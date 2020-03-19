@@ -729,7 +729,8 @@ tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
 tfa_hab_comp <- hab_comp %>%
   left_join(tfa_landcrit, by = c("landform_id")) %>%  
 dplyr::select(source,source_id,tsc_landform_id) %>% 
-dplyr::rename(landform = tsc_landform_id) %>% glimpse
+dplyr::rename(landform = tsc_landform_id) %>% 
+dplyr::mutate(obstype = "HabitatComposition")
 
 tfa_confidence <- here::here("csv/tfa_id_conf_w_tsc.csv") %>%
   readr::read_csv(
@@ -789,7 +790,11 @@ tfa_anim_obs <- anim_obs %>%
   dplyr::rename(species_id_confidence = tsc_species_id_confidence) %>%
   dplyr::rename(detection_method = tsc_detection_method) %>%
   dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
-  dplyr::rename(secondary_signs = tsc_secondary_signs)
+  dplyr::rename(secondary_signs = tsc_secondary_signs) %>% 
+  dplyr::mutate(obstype = "AnimalObservation")
+
+tfa_ass_species <- ass_species %>% 
+  dplyr::mutate(obstype = "AssociatedSpecies")
 
 tfa_samptype <- here::here("csv/tfa_samptype_w_tsc.csv") %>%
   readr::read_csv(
@@ -820,13 +825,14 @@ tfa_phys_sample <- phys_sample %>%
     permit_type = NA,
     obstype = "PhysicalSample"
   )
-
+  
 tfa_veg_class <- veg_class %>% 
   dplyr::transmute(
     source = source,
     source_id = source_id,
     vegetation_classification = glue::glue(
-      "{vegetation_code}; {vegetation_type}")
+      "{vegetation_code}; {vegetation_type}"),
+    obstype = "VegetationClassification"
     )
 ```
 
@@ -1162,8 +1168,17 @@ tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = p
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
+tfa_phys_sample[1,] %>% wastd_bulk_post("occ-observation", verbose = TRUE)
+
 tfa_phys_sample %>% wastd_bulk_post("occ-observation")
 
+tfa_anim_obs %>% wastd_bulk_post("occ-observation")
+
+tfa_ass_species %>% wastd_bulk_post("occ-observation")
+
+tfa_veg_class %>% wastd_bulk_post("occ-observation")
+
+tfa_hab_comp %>% wastd_bulk_post("occ-observation")
 ```
 
 ## Conservation Documents
