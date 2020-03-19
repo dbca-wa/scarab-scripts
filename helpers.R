@@ -391,9 +391,9 @@ fix_incomplete_date <- function(
 #     wastdr::wastd_POST("occ-observation", api_url = dev, api_token = devtoken, verbose = TRUE)
 #
 # # Helper: factor out all params except for data
-# post_one <- . %>%
-#     as.list() %>%
-#     wastdr::wastd_POST("occ-observation", api_url = dev, api_token = devtoken)
+post_one <- . %>%
+    as.list() %>%
+    wastdr::wastd_POST("occ-observation", verbose=T)
 #
 # tfa_phys_sample[1,] %>% post_one
 #
