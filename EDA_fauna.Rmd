@@ -222,8 +222,7 @@ tfa_cons_lists <- tfa_data$`Listing Names` %>%
     list_name = ListName %>% as.character(),
     list_order = ListOrder %>% as.integer()
   ) %>%
-  dplyr::arrange(list_order) %>%
-  dplyr::glimpse()
+  dplyr::arrange(list_order)
 
 dec_tfa_cons_lists <- tfa_data$`DEC List Names` %>%
   dplyr::transmute(
@@ -286,10 +285,7 @@ readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv")
 
 ## Occurrences
 
-occurence data is extracted and transformed. 
-
 Mallee Fowl data is extracted separately and exported, to be stored as a csv file on the data catalogue 
-
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
 
 ```{r load_tfa_occ, message=FALSE, warning=FALSE}
@@ -632,13 +628,15 @@ readr::write_csv(tfa_resp, path = here::here("data", "research_priorities_data.c
 readr::write_csv(tfa_rest, path = here::here("data", "research_topics_data.csv"))
 ```
 
-# Extract and transform conservation criteria Data from TSC
+# Extract and transform criteria Data from TSC
+
+## Conservation criteria
+
 Conservation criteria from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TFA.
 
 A manual step annotated legacy conservation criteria exported from TFA to 
 conservation criteria IDs in TSC in a spreadsheet.
-
 ``` {r extract_tsc_cons_criteria, message=FALSE}
 tsc_cons_list <- "conservationlist" %>%
   wastdr::wastd_GET()%>%
@@ -677,10 +675,16 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) %>% glimpse
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code"))
 ```
 
-# Extract and transform occurrence lookup Data from TSC
+## Occurrence lookup criteria
+
+Occurrence lookup data from TSC are downloaded from the TSC API 
+and transformed into a usable format for manual mapping to TFA.
+
+A manual step annotated lookup criteria exported from TSC to 
+occurrence data in TFA in a spreadsheet.
 ``` {r extract_tsc_occurrence_lookup, message=FALSE}
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
@@ -882,7 +886,7 @@ ETL decisions for Fauna cons listings:
 * Fauna ActionPlan was decided to be discarded.
 * Fauna has three empty listings (no list, no cat, no crit) - discard.
 
-```{r tfa_cons_listing_subsetting}
+```{r tfa_cons_listing_subsetting, message=FALSE}
 # tsc_conscat$id is the TSC ID for the cons category
 # tsc_conscat$label = tec_cons_listing_categories$category_code
 tsc_conscat_sp <- "conservationcategory" %>%
@@ -1261,7 +1265,7 @@ tsc_tae <- tsc_tae_data %>%
   magrittr::extract2("features") %>%
   geojsonio::as.json() %>%
   geojsonsf::geojson_sf() %>% 
-  dplyr::mutate(taxon = taxon %>% as.character()) sf_as_tbl()
+  dplyr::mutate(taxon = taxon %>% as.character()) #%>%  sf_as_tbl()
   
 tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
@@ -1294,7 +1298,7 @@ districts <- tsc_areas %>%
 tsc_occ_fauna <- tsc_tae%>% 
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
-  dplyr::right_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id") %>% sf_as_tbl()
+  dplyr::right_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id") # %>% sf_as_tbl()
 
 
 ## prior to right_join there are 93977 obs
@@ -2027,7 +2031,7 @@ tfa_tsc_tae_tally <- tfa_tae_tally %>%
   dplyr::rename(tfa = n) %>% 
   left_join(tsc_tae_tally,by = "source_id") %>% 
   dplyr::rename(tsc = n) %>% 
-  filter(tfa != tsc)
+  filter(tfa != tsc) ## Can't make this into a reactable without a way of changing as sfc feature to a tbl- Florian?
 ```
 
 #### Occurrence mismatches tfa_tae to tsc_occ_fauna
@@ -2068,7 +2072,7 @@ tfa_tae_tsc_occ_tally <- tfa_tae_tally %>%
   dplyr::rename(tfa = n) %>% 
   left_join(tsc_occ_fauna_tally,by = "source_id") %>% 
   dplyr::rename(tsc = n) %>% 
-  filter(tfa != tsc)
+  filter(tfa != tsc) ## Can't make this into a reactable without a way of changing as sfc feature to a tbl- Florian?
 
 ```
 
@@ -2080,13 +2084,13 @@ tfa_tae_tsc_occ_tally <- tfa_tae_tally %>%
 
 # Upload to data catalogue
 The [compiled version of this workbook](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/2b136da7-35cf-44a5-b29e-9f568176b7ad/download/eda_fauna.html) is uploaded to the 
-[Threatened Fauna Dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database/) 
+[Threatened Fauna Dataset](https://data.dbca.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the DBCA data catalogue.
 
 The manual mapping of conservation criteria, plus all legacy data is also
 uploaded as CSV snapshots.
 
-```{r upload_data_catalogue}
+```{r upload_data_catalogue, message=FALSE}
 # This workbook
 upload_file_to_ckan("2b136da7-35cf-44a5-b29e-9f568176b7ad", "EDA_fauna.html")
 
