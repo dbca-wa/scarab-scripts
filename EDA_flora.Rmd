@@ -903,9 +903,14 @@ fire_sum <- tfl_data$DRF_FIRE_SUMMARIES %>%
     modified_date = MODIFIED.DATE %>% as.character())
 ```
 
-# Extract and transform conservation criteria Data from TSC
-Conservation criteria Data from TSC is extracted through the TSC API and transformed into a useable
-format for manual mapping to tfl.
+# Extract and transform criteria Data from TSC
+
+## Conservation criteria
+
+Conservation criteria Data from TSC is extracted through the TSC API and transformed into a useable format for manual mapping to tfl.
+
+A manual step annotated legacy conservation criteria exported from TFL to 
+conservation criteria IDs in TSC in a spreadsheet.
 
 ``` {r extract_tsc_cons_criteria, message = FALSE}
 tsc_cons_list <- "conservationlist" %>% 
@@ -951,7 +956,13 @@ tfl_tcl <- tfl_cons_listing %>%
   invisible()
 ```
 
-# Extract and transform occurrence lookup Data from TSC
+## Occurrence lookup criteria
+
+Occurrence lookup data from TSC are downloaded from the TSC API 
+and transformed into a usable format for manual mapping to TFL.
+
+A manual step annotated lookup criteria exported from TSC to 
+occurrence data in TFL in a spreadsheet.
 ``` {r extract_tsc_occurrence_lookup, message=FALSE}
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
@@ -1062,8 +1073,8 @@ tfl_hab_comp <- hab_comp %>%
   dplyr::rename(rocktype = tsc_rock_type) %>% 
   dplyr::rename(soiltype = tsc_soil_type) %>% 
   dplyr::rename(soilcolour = tsc_soil_colour) %>%
-  dplyr::rename(drainage = tsc_drainage)
-
+  dplyr::rename(drainage = tsc_drainage) %>% 
+  dplyr::mutate(obstype = "HabitatComposition")
 
 ## Area assessment
 tfl_survey_method <- here::here("csv/tfl_survey_method_w_tsc.csv") %>%
@@ -1077,7 +1088,8 @@ tfl_survey_method <- here::here("csv/tfl_survey_method_w_tsc.csv") %>%
 tfl_area_ass <- area_ass %>%
   left_join(tfl_survey_method, by = c("survey_method")) %>% 
 dplyr::select(source,source_id,tsc_survey_method,surveyed_area,survey_duration) %>%
-  dplyr::rename(survey_method = tsc_survey_method) 
+  dplyr::rename(survey_method = tsc_survey_method) %>% 
+dplyr::mutate(obstype = "AreaAssessment")
 
 ## Habitat condition
 tfl_soil_condition <- here::here("csv/tfl_soil_condition_w_tsc.csv") %>%
@@ -1091,7 +1103,8 @@ tfl_soil_condition <- here::here("csv/tfl_soil_condition_w_tsc.csv") %>%
 tfl_hab_cond <- hab_cond %>%
   left_join(tfl_soil_condition, by = c("soil_condition")) %>% 
 dplyr::select(source,source_id,occurrence_condition,tsc_soil_condition) %>%
-  dplyr::rename(soil_condition = tsc_soil_condition) 
+  dplyr::rename(soil_condition = tsc_soil_condition) %>% 
+dplyr::mutate(obstype = "HabitatCondition")
 
 ## Plant count
 tfl_plant_count_method <- here::here("csv/tfl_plant_count_method_w_tsc.csv") %>%
@@ -1132,7 +1145,8 @@ tfl_plant_count <- plant_count %>%
   ) %>%
   dplyr::rename(plant_count_method = tsc_plant_count_method) %>% 
   dplyr::rename(counted_subject = tsc_counted_subject) %>%
-  dplyr::rename(plant_condition = tsc_Plant_condition)
+  dplyr::rename(plant_condition = tsc_Plant_condition) %>% 
+dplyr::mutate(obstype = "PlantCount")
 
 ## Physical sample
 tfl_sampdest <- here::here("csv/tfl_sample_destination_w_tsc.csv") %>%
@@ -1146,7 +1160,8 @@ tfl_sampdest <- here::here("csv/tfl_sample_destination_w_tsc.csv") %>%
 tfl_phys_sample <- phys_sample %>%
   left_join(tfl_sampdest, by = c("sample_destination")) %>%
 dplyr::select(-sample_destination,-tsc_criteria) %>%
-  dplyr::rename(sample_destination = tsc_sample_destination)
+  dplyr::rename(sample_destination = tsc_sample_destination) %>% 
+dplyr::mutate(obstype = "PhysicalSample")
 ```
 
 # Load legacy data from TFL into TSC
