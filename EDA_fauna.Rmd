@@ -1258,9 +1258,8 @@ Occurrences are presented as `occ` with DBCA Region and District names (where
 applicable), plus taxonomic names.
 
 ```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
-datafile <- here::here("data/tae.RData")
+datafile <- here::here("data/fauna_tae.RData")
 tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
-
 tsc_tae <- tsc_tae_data %>% 
   magrittr::extract2("features") %>%
   geojsonio::as.json() %>%
@@ -1284,7 +1283,7 @@ save(tsc_tae, tsc_taxa_fauna, tsc_areas, file=datafile, compress="xz")
 ```
 
 ```{r munge, message = FALSE, warning=FALSE}
-datafile <- here::here("data/tae.RData")
+datafile <- here::here("data/fauna_tae.RData")
 if (fs::file_exists(datafile)) load(datafile)
 
 regions <- tsc_areas %>%
