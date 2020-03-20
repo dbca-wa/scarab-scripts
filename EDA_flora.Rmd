@@ -318,7 +318,7 @@ default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd 
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
-    sheetno = SHEETNO %>% as.integer(),
+    source_id = SHEETNO %>% as.integer(),
     name_id = TAXONID %>% as.character(),
     species_name = SPNAME %>% as.character(),
     new_pop_ind = NEW.POP.IND %>% as.character(), # Y N
@@ -478,7 +478,8 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     classification_code = CLASSIFICATION.CODE %>% as.character(),
     florabus_ind = FLORABUS.IND %>% as.character(),
     licence = LICENCE %>% as.character()
-  )
+  ) %>%
+  invisible() 
 
 # occ_liasons <- tfl_data$DRF_LIAISONS %>%
 #   dplyr::transmute(
@@ -534,7 +535,7 @@ hab_comp <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     landform = landform,
     rock_type = rock_type,
     loose_rock = gravel,
@@ -583,7 +584,7 @@ area_ass <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     survey_method = svy_extent,
     surveyed_area = svy_effort_area,
     survey_duration = svy_effort_time) %>% 
@@ -598,7 +599,7 @@ hab_cond <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     occurrence_condition = habitat_condition,
     soil_condition = soil_condition) %>%  #There is a problem with migrating this- won't match TSC card
   dplyr::filter(occurrence_condition != "" | soil_condition != "")
@@ -612,7 +613,7 @@ tfl_fire_hist <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     fire_intensity = fire_intensity,
     fire_year = fire_year,
     fire_season = fire_season) %>%
@@ -644,7 +645,7 @@ plant_count <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     number_of_quadrats_surveyed = quad_num,
     individual_quadrat_area = quad_size,
     yotal_quadrat_area =quad_tot_sq_m,
@@ -692,7 +693,7 @@ ass_species <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     taxon = associated_species) %>% 
   dplyr::filter(taxon != "")
 
@@ -700,7 +701,7 @@ phys_sample <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     sample_type = "plant specimen",
     sample_destination = voucher_location, # most of these are listed as WA HERB/ INT HERB/ DIS HERB, but none of these are options in the card
     duplicate_sample_destination = dupvouch_location,
@@ -728,7 +729,7 @@ occ_vegclass <- tfl_data$DRF_SHEET_VEG_CLASSES %>%
 occ_threats <- tfl_data$DRF_SHEET_THREATS %>%
   dplyr::transmute(
     sheet_threat_id = SHEET.THREAT.ID %>% as.character(),
-    sheetno = SHEETNO %>% as.character(),
+    source_id = SHEETNO %>% as.character(),
     threat_code = THREAT.CODE %>% as.character(),
     cur_impact = CUR.IMPACT %>% as.character(),
     pot_impact = POT.IMPACT %>% as.character(),
@@ -749,7 +750,7 @@ occ_threats <- tfl_data$DRF_SHEET_THREATS %>%
 occ_fire <- tfl_data$DRF_FIRE_DETAILS %>%
   dplyr::transmute(
     fire_det_id = FIRE.DET.ID %>% as.character(),
-    sheet_no = SHEET.NO %>% as.character(),
+    source_id = SHEET.NO %>% as.character(),
     sit_id = SIT.ID %>% as.character(),
     quadrat_name = QUADRAT.NAME %>% as.character(),
     fire_date = FIRE.DATE %>% as.character(),
@@ -797,7 +798,7 @@ tfl_tae <- tfl_occ %>%
     code = pop_id,
     name = glue::glue("{pop_id}{subpop_code}"),
     description = glue::glue(
-        "Sheet number: {sheetno}\n",
+        "Source ID: {source_id}\n",
         "Population {pop_id}, Subpopulation {subpop_code}\n",
         "Population classification: {classification_code}\n",
         "Habitat condition: {habitat_condition} {habitat_notes}\n",
@@ -809,7 +810,7 @@ tfl_tae <- tfl_occ %>%
         "Comments: {other_comments}\n"
         ),
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     encounter_type = 3, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
     encountered_on = observation_date %>% as.character(),
     encountered_by = 1,
@@ -831,7 +832,7 @@ act_fenc <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     fencing_action = fencing_status,
     comments = fencing_comments)
 
@@ -839,7 +840,7 @@ act_rdmk <- tfl_occ %>%
   dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
   dplyr::transmute(
     source = 11,
-    source_id = sheetno,
+    source_id = source_id,
     fencing_action = roadside_marker_status,
     comments = rdside_mkr_comments)
 
@@ -1173,7 +1174,7 @@ process.
 The QA part of this workbook will compare TFL names to TSC names.
 
 ## Conservation listings
-```{r tfl_cons_listing_subsetting}
+```{r tfl_cons_listing_subsetting, message=FALSE}
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
   magrittr::extract2("features") %>% 
@@ -1318,7 +1319,7 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 ```
 
 
-```{r tfl_cons_listing_upload, eval=F}
+```{r tfl_cons_listing_upload, eval=F, message=FALSE}
 
 tfl_listing_cat_priority %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
@@ -1357,12 +1358,12 @@ wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
 
 ### Upload EOOs to TSC
 
-```{r prepare eoo, eval=F}
+```{r prepare eoo, eval=F, warning=FALSE, message=FALSE}
 # extract all eoo
 fna <- tfl_occ %>% 
   dplyr::filter(!is.na(latitude)) %>% 
   dplyr::filter(!is.na(longitude))
-fna_eoo_all <- eoo_polygon(tfl_eoo)
+fna_eoo_all <- eoo_polygon(fna)
 # mapview::mapview(fna_eoo_all)
 
 # Calculate_eoo
@@ -1409,7 +1410,7 @@ Expand the code block below to view the process.
 
 ## Conservation listings
 
-```{r load_tsc, message=FALSE}
+```{r load_tsc, message=FALSE, warning=FALSE}
 # Taxonomic names and taxon conservation listings for flora from TSC
 if (file.exists(datafile_tsc_flora)) {
   load(datafile_tsc_flora)
@@ -1449,12 +1450,14 @@ taxon occurrences to names.
 occurrences are presented as `occ` with DBCA Region and District names (where
 applicable), plus taxonomic names.
 ```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
-datafile <- here::here("data/tae.RData")
+datafile <- here::here("data/flora_tae.RData")
+tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
 
-if (file.exists(datafile)) {
-  load(datafile)
-} else {
-tsc_tae <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+tsc_tae <- tsc_tae_data %>% 
+  magrittr::extract2("features") %>%
+  geojsonio::as.json() %>%
+  geojsonsf::geojson_sf() %>% 
+  dplyr::mutate(taxon = taxon %>% as.character())
 
 tsc_taxa_flora <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
@@ -1471,12 +1474,10 @@ save(tsc_tae, tsc_taxa_flora, tsc_areas, file=datafile, compress="xz")
 }
 ```
 
-```{r munge}
-datafile_tsc_occ <- here::here("data/tsc_occ.RData")
+```{r munge, message = FALSE, warning=FALSE}
+datafile <- here::here("data/tae.RData")
+if (fs::file_exists(datafile)) load(datafile)
 
-if (file.exists(datafile_tsc_occ)) {
-  load(datafile_tsc_occ)
-} else {
 regions <- tsc_areas %>%
   dplyr::filter(area_type == "Region") %>%
   dplyr::transmute(region_id = pk, region_name = name)
@@ -1493,10 +1494,7 @@ tsc_occ_flora <- tsc_tae %>%
   sf::st_join(districts) %>% 
   dplyr::mutate(taxon = taxon %>% as.character()) %>% 
   dplyr::right_join(tsc_taxa_flora, by="taxon")
-}
 
-# save(occ, file=here::here("data/occ.RData"), compress="xz")
-# load(here::here("data/occ.RData"))
 ```
 
 # Compare legacy from TFL to migrated data from TSC
@@ -1611,7 +1609,6 @@ cl_corner_dates <- rbind(tfl_corner_dates, tsc_corner_dates) %>%
 
 cl_corner_dates %>% reactable::reactable()
 ```
-
 
 ### Conservation listing differences
 
@@ -1918,8 +1915,9 @@ Any records in the following table indicate occurrences in tfl that
 were not migrated into TSC.
 
 ```{r missing_occurrences}
+names(tfl_occ)
 missing_occ_tfl_tae <- tfl_occ %>%
-  dplyr::anti_join(tfl_tae, by = c("id" = "source_id")) 
+  dplyr::anti_join(tfl_tae, by = c("sheetno" = "source_id")) 
 
 missing_occ_tfl_tae %>% reactable::reactable(filterable = TRUE)
 
@@ -1931,21 +1929,20 @@ The table below is a tally of mismatching occurrences and confirms the two missi
 
 ```{r tally_tfl_tae}
 tfl_occ_tally <- tfl_occ %>%
-  dplyr::group_by(name_id) %>% 
+  dplyr::group_by(sheetno) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup()
 
 tfl_tae_tally <- tfl_tae %>%
-  dplyr::group_by(taxon) %>% 
+  dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
-  ungroup() %>% 
-  dplyr::rename(name_id = taxon)
+  ungroup() 
 
 tfl_occ_tally %>%
   dplyr::rename(tfl = n) %>% 
-  left_join(tfl_tae_tally,by = "name_id") %>% 
+  left_join(tfl_tae_tally,by = c("sheetno" = "source_id")) %>% 
   dplyr::rename(tae = n) %>% 
   filter(tfl != tae) %>% reactable::reactable()
 ```
@@ -1978,7 +1975,7 @@ missing_taxa_occ_flora <- tfl_tae %>%
 missing_taxa_occ_flora_unique <- missing_taxa_occ_flora %>% 
     dplyr::select(taxon) %>% 
     distinct() %>% 
-  dplyr::left_join(tsc_taxa_flora,by = "taxon")#152
+  dplyr::left_join(tsc_taxa_flora,by = "taxon")
 
 missing_taxa_occ_flora_unique %>% reactable::reactable()
 
