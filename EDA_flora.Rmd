@@ -1395,6 +1395,22 @@ x <- tfl_tae[1,] %>% as.list() %>%
 tfl_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T)
 ```
 
+### Upload ObservationGroups
+
+```{r, eval=FALSE}
+tfl_phys_sample[1,] %>% wastd_bulk_post("occ-observation", verbose = TRUE)
+
+tfl_phys_sample %>% wastd_bulk_post("occ-observation")
+
+tfl_hab_cond %>% wastd_bulk_post("occ-observation")
+
+tfl_area_ass %>% wastd_bulk_post("occ-observation")
+
+tfl_plant_count %>% wastd_bulk_post("occ-observation")
+
+tfl_hab_comp %>% wastd_bulk_post("occ-observation")
+```
+
 ## Conservation Documents
 
 ## Fire History
@@ -1453,6 +1469,9 @@ applicable), plus taxonomic names.
 datafile.flora <- here::here("data/flora_tae.RData")
 tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
 
+if (file.exists(datafile.flora)) {
+  load(datafile.flora)
+} else {
 tsc_tae <- tsc_tae_data %>% 
   magrittr::extract2("features") %>%
   geojsonio::as.json() %>%
