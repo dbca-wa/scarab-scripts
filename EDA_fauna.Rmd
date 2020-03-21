@@ -1302,7 +1302,7 @@ districts <- tsc_areas %>%
 tsc_occ_fauna <- tsc_tae%>% 
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
-  dplyr::right_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id") # %>% sf_as_tbl()
+  dplyr::inner_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id") # %>% sf_as_tbl()
 
 
 ## prior to right_join there are 93977 obs
