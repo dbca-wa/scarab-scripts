@@ -1218,6 +1218,8 @@ tfa_species_name <- species %>%
   dplyr::left_join(wace_names, by = c("scientific_name" = "wace_name"))
 
 # Taxonomic names and taxon conservation listings for fauna from TSC
+datafile.tsc.fauna <- here::here("data/fauna_tsc.RData")
+
 if (file.exists(datafile_tsc_fauna)) {
   load(datafile_tsc_fauna)
 } else {
@@ -1236,7 +1238,7 @@ if (file.exists(datafile_tsc_fauna)) {
     dplyr::mutate(name_id = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
   
-  save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc_fauna)
+  save(tsc_taxa_fauna, tsc_tcl_fauna, file = datafile_tsc_fauna, compress="xz")
 }
 ```
 
@@ -1259,6 +1261,10 @@ applicable), plus taxonomic names.
 
 ```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
 datafile.fauna <- here::here("data/fauna_tae.RData")
+
+if (file.exists(datafile.fauna)) {
+  load(datafile.fauna)
+} else {
 tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
 tsc_tae <- tsc_tae_data %>% 
   magrittr::extract2("features") %>%
@@ -1272,18 +1278,17 @@ tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
 
-#dplyr::mutate(name_id = name_id %>% as.character(), taxon = pk %>% as.character())
-
 tsc_areas <- wastdr::wastd_GET("area") %>%
       magrittr::extract2("features") %>%
       geojsonio::as.json() %>%
       geojsonsf::geojson_sf()
 
 save(tsc_tae, tsc_taxa_fauna, tsc_areas, file=datafile.fauna, compress="xz")
+}
 ```
 
 ```{r munge, message = FALSE, warning=FALSE}
-datafile <- here::here("data/fauna_tae.RData")
+datafile.fauna <- here::here("data/fauna_tae.RData")
 if (fs::file_exists(datafile.fauna)) load(datafile.fauna)
 
 regions <- tsc_areas %>%
