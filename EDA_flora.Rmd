@@ -312,13 +312,13 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 ```
 
 ## Occurrences
-```{r load_tfl_occ, message=TRUE}
+```{r load_tfl_occ, message=FALSE, warning=FALSE}
 default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
 
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
-    source_id = SHEETNO %>% as.integer(),
+    source_id = SHEETNO %>% as.character(),
     name_id = TAXONID %>% as.character(),
     species_name = SPNAME %>% as.character(),
     new_pop_ind = NEW.POP.IND %>% as.character(), # Y N
@@ -810,7 +810,7 @@ tfl_tae <- tfl_occ %>%
         "Comments: {other_comments}\n"
         ),
     source = 11,
-    source_id = source_id,
+    source_id = source_id %>% as.character(),
     encounter_type = 3, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
     encountered_on = observation_date %>% as.character(),
     encountered_by = 1,
@@ -823,7 +823,7 @@ tfl_tae <- tfl_occ %>%
 # names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
 ## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
-tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
+# tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
 ```
 
 ## Conservation Threats and Actions
@@ -843,8 +843,6 @@ act_rdmk <- tfl_occ %>%
     source_id = source_id,
     fencing_action = roadside_marker_status,
     comments = rdside_mkr_comments)
-
-names(tfl_data$DRF_POP_MGMT_ACTIONS)
 
 mgmt_act <- tfl_data$DRF_POP_MGMT_ACTIONS %>%
   dplyr::transmute(
@@ -1186,11 +1184,6 @@ tsc_conscat_sp <- "conservationcategory" %>%
   )} %>% 
   dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
 
-unique(tfl_tcl$list_code)
-# "Priority"  "EPBC"      "WCA_1991"  "FIDMS"     "FLORABASE"
-unique(tfl_tcl$list_code_wa)
-# ""          "IUCN_1994" "IUCN_2001"
-
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
 tfl_listing_cat_priority <- tfl_tcl %>% 
@@ -1443,10 +1436,11 @@ if (file.exists(datafile_tsc_flora)) {
     wastdr::wastd_GET("taxon-conservationlisting") %>%
     wastdr::parse_taxon_conservationlisting() %>%
     dplyr::mutate(taxon = taxon %>% as.character()) %>%
-    dplyr::inner_join(tsc_taxa_flora, by = "taxon")
+    dplyr::right_join(tsc_taxa_flora, by = "taxon")
   
   save(tsc_taxa_flora, tsc_tcl_flora, file = datafile_tsc_flora)
 }
+
 ```
 
 ## Occurrences
@@ -1506,13 +1500,10 @@ districts <- tsc_areas %>%
   dplyr::transmute(district_id = pk, district_name = name)
 
 tsc_occ_flora <- tsc_tae %>%
-  magrittr::extract2("features") %>%
-  geojsonio::as.json() %>%
-  geojsonsf::geojson_sf() %>% 
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
   dplyr::mutate(taxon = taxon %>% as.character()) %>% 
-  dplyr::right_join(tsc_taxa_flora, by="taxon")
+  dplyr::inner_join(tsc_taxa_flora, by="taxon") 
 
 ```
 
@@ -1560,13 +1551,14 @@ tfl_tcl %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-### TSC conservation listings not in tfl
+### TSC conservation listings not in TFL
 
-The following table shows any conservation listings in TSC which are not in TFL.
+The following table shows any conservation listings in TSC which are not in TFL. Becasue there are more taxa in TSC than TFL taxa with no source_id have also been removed.
 
 ```{r}
 tsc_tcl_flora %>%
   dplyr::anti_join(tfl_tcl, by = "source_id") %>%
+  dplyr::filter(source_id != "") %>% 
   reactable::reactable(filterable = TRUE)
 ```
 
@@ -1934,9 +1926,8 @@ Any records in the following table indicate occurrences in tfl that
 were not migrated into TSC.
 
 ```{r missing_occurrences}
-names(tfl_occ)
 missing_occ_tfl_tae <- tfl_occ %>%
-  dplyr::anti_join(tfl_tae, by = c("sheetno" = "source_id")) 
+  dplyr::anti_join(tfl_tae, by = "source_id") 
 
 missing_occ_tfl_tae %>% reactable::reactable(filterable = TRUE)
 
@@ -1946,9 +1937,9 @@ There are `r nrow(missing_occ_tfl_tae)` occurrences missing from tfl_tae when co
 
 The table below is a tally of mismatching occurrences and confirms the two missing occurrences identified above.
 
-```{r tally_tfl_tae}
+```{r tally_tfl_occ_tfl_tae}
 tfl_occ_tally <- tfl_occ %>%
-  dplyr::group_by(sheetno) %>% 
+  dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup()
@@ -1961,7 +1952,7 @@ tfl_tae_tally <- tfl_tae %>%
 
 tfl_occ_tally %>%
   dplyr::rename(tfl = n) %>% 
-  left_join(tfl_tae_tally,by = c("sheetno" = "source_id")) %>% 
+  left_join(tfl_tae_tally,by = "source_id") %>% 
   dplyr::rename(tae = n) %>% 
   filter(tfl != tae) %>% reactable::reactable()
 ```
@@ -1971,7 +1962,7 @@ tfl_occ_tally %>%
 Any records in the following table indicate taxon in TFL that were not migrated into TSC.
 
 #### Name mismatches tfl_tae to tsc_tae
-```{r name mismatches}
+```{r name mismatches tfl_tae to tsc_tae}
 missing_taxa_tsc <- tfl_tae %>% 
     dplyr::anti_join(tsc_tae, by = "taxon") 
 
@@ -1987,7 +1978,7 @@ missing_taxa_tsc_unique %>% reactable::reactable()
 There are `r nrow(missing_taxa_tsc)` taxon records missing from tsc_tae when compared to taf_tae. These records are attributed to `r nrow(missing_taxa_tsc_unique)` unique species.  
 
 #### Name mismatches tfl_tae to tsc_occ_flora
-```{r name mismatches}
+```{r name mismatches tfl_tae to tsc_occ_flora}
 missing_taxa_occ_flora <- tfl_tae %>% 
     dplyr::anti_join(tsc_occ_flora, by = "taxon") 
 
@@ -2003,7 +1994,7 @@ missing_taxa_occ_flora_unique %>% reactable::reactable()
 There are `r nrow(missing_taxa_occ_flora)` taxon records missing from tsc_occ_flora when compared to tfl_tae. These records are attributed to `r nrow(missing_taxa_occ_flora_unique)` unique species.  
 
 #### Occurrence mismatches tfl_tae to tsc_tae
-```{r missing_occurrences}
+```{r missing_occurrences tfl_tae to tsc_tae}
 
 missing_occ_tae_tsc <- tfl_tae %>%
   dplyr::anti_join(tsc_tae, by = "source_id") 
@@ -2015,7 +2006,7 @@ missing_occ_tae_tsc %>% reactable::reactable()
 missing_occ_tae_tsc_unique <- missing_occ_tae_tsc %>% 
     dplyr::select(taxon) %>% 
     distinct() %>% 
-  dplyr::left_join(tsc_taxa_flora,by = "taxon") #27
+  dplyr::left_join(tsc_taxa_flora,by = "taxon") #705
 
 ```
 
@@ -2023,7 +2014,7 @@ There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from tsc_tae 
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
-```{r tally_tfl_tae}
+```{r tally_tfl_tsc_tae}
 tfl_tae_tally <- tfl_tae %>%
   dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
@@ -2042,11 +2033,12 @@ tfl_tsc_tae_tally <- tfl_tae_tally %>%
   dplyr::rename(tsc = n) %>% 
   filter(tfl != tsc)
 
-tfl_tsc_tae_tally %>% reactable::reactable()
+# tfl_tsc_tae_tally %>% reactable::reactable()
+# ## Can't make this into a reactable without a way of changing as sfc feature to a tbl- Florian?
 ```
 
 #### Occurrence mismatches tfl_tae to tsc_occ_flora
-```{r missing_occurrences}
+```{r missing_occurrences tfl_tae to tsc_occ_flora}
 
 missing_occ_tfl_occ_flora <- tfl_tae %>%
   dplyr::anti_join(tsc_occ_flora, by = "source_id") #39073
@@ -2066,7 +2058,7 @@ There are `r nrow(missing_occ_tfl_occ_flora)` unique occurrences missing from ts
 
 The table below is a tally of mismatching occurrences and confirms the missing occurrences identified above.
 
-```{r tally_tfl_tae}
+```{r tally_tfl_tae_occ_flora}
 tfl_tae_tally <- tfl_tae %>%
   dplyr::group_by(source_id) %>% 
   dplyr::tally() %>%
@@ -2083,9 +2075,9 @@ tfl_tae_tsc_occ_tally <- tfl_tae_tally %>%
   dplyr::rename(tfl = n) %>% 
   left_join(tsc_occ_flora_tally,by = "source_id") %>% 
   dplyr::rename(tsc = n) %>% 
-  filter(tfl != tsc) %>% sf_as_tbl()
+  filter(tfl != tsc)
 
-tfl_tae_tsc_occ_tally %>% reactable::reactable()
+# tfl_tae_tsc_occ_tally %>% reactable::reactable() ## Can't make this into a reactable without a way of changing as sfc feature to a tbl- Florian?
 
 ```
 
