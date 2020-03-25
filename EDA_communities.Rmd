@@ -1275,20 +1275,9 @@ save(tsc_ccl_communities, file = datafile_tsc_community, compress="xz")
 
 ## Occurrences
 
-We get community occurrences with their point representations from TSC through the 
-API endpoint [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
-
-Currently, all Fauna and Flora occurrences are georeferenced only with point 
-coordinates, not polygons.
-
-We then get TSC Areas and split them into DBCA Regions and Districts.
-Caveat: Regions and Districts to not comprehensively cover WA.
-
-Lastly, we get a list of taxonomic names from TSC to resolve taxon IDs from
-taxon occurrences to names.
-
-Occurrences are presented as `occ` with DBCA Region and District names (where
-applicable), plus taxonomic names.
+We get community occurrences with their point and boundary representations from TSC through the 
+API endpoint [occ-community-points] (https://tsc.dbca.wa.gov.au/api/1/occ-community-points)
+[occ-community-areas] (https://tsc.dbca.wa.gov.au/api/1/occ-community-areas/).
 
 ```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
 datafile.community <- here::here("data/community_cae.RData")
@@ -1297,6 +1286,7 @@ if (file.exists(datafile.community)) {
   load(datafile.community)
 } else {
 tsc_cae_data <- wastdr::wastd_GET("occ-area-points") # k records
+tsc_cae_data <- wastdr::wastd_GET("occ-area-points", max_records = 10)
 
 tsc_community_sites <- tsc_cae_data %>%
   dplyr::filter(area_type == 12) %>% 
