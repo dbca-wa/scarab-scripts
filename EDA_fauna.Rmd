@@ -1117,16 +1117,6 @@ if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
 The EOO (Extent of occurrence) is calculated as the convex hull around all recorded fauna occurrences, including fossil records.
 For further details on the methodology behind the movement of EOO data, please follow the link to the workbook.
 
-### TSC upload example for EOOs
-
-```{r ex_upload_one_eoo, eval=F}
-one_taxon_eoo <- tibble::tibble(
-  name_id = 24162,
-  eoo = eoo_polygon(tfa_occ, nid = 24162) %>% sfc_geojson() 
-)
-wastdr::wastd_POST(one_taxon_eoo, "taxon", verbose = T)
-```
-
 ### Upload EOOs
 
 ```{r prepare eoo, eval=F, warning=FALSE, message=FALSE}
