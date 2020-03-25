@@ -1208,7 +1208,7 @@ tfa_species_name <- species %>%
   dplyr::left_join(wace_names, by = c("scientific_name" = "wace_name"))
 
 # Taxonomic names and taxon conservation listings for fauna from TSC
-datafile.tsc.fauna <- here::here("data/fauna_tsc.RData")
+datafile_tsc_fauna <- here::here("data/fauna_tsc.RData")
 
 if (file.exists(datafile_tsc_fauna)) {
   load(datafile_tsc_fauna)
