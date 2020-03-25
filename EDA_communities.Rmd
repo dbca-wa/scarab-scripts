@@ -615,17 +615,6 @@ occ_species <- tec$OCCURRENCE_SPECIES %>%
 
 ## Surveys
 `Surveys` are full site visits with a complete set of measurements.
-`Site visits` are quick site visits with a partial set of measurements.
-Both relate to Occurrences.
-
-A separate group related to surveys has the tables:
-
-* Threat Impacts
-* Threats
-* Surveys
-* Conditions
-* Survey Conditions
-* Survey Threats
 
 ```{r surveys}
 # lookups
@@ -711,20 +700,12 @@ readr::write_csv(survey_conditions, path = here::here("data", "tec_survey_condit
 
 ```
 
-Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct `survey_id`s.
-With `length(unique(surveys$surveyed_on))`, this means that a `survey_id` does not denote an individual
+Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct survey_id's.
+With `r length(unique(surveys$surveyed_on))`, this means that a survey_id does not denote an individual
 visit of a TEC boundary.
 
-However, there are exactly as many unique combinations of `survey_id` and `occ_id` 
-(`r surveys %>% group_by(occ_id, survey_id) %>% tally() %>% nrow`) as records in the table `surveys`.
-
-How do `r nrow(survey_conditions)` `survey_conditions` reference `r nrow(surveys)` `surveys`? Likely by `occ_id` and `survey_id`.
-
 ## Site Visits
-* Sites: Point-referenced sites, mostly 10x10m or 6x6m quadrats, within boundaries.
-* Datum: coordinate datum
-* Site Visits: CommunityAreaEncounters of Sites (lat/lon point) at date (site_visit$site_visit_date).
-* Site Species: Species encountered during a site_visit.
+`Site visits` are quick site visits with a partial set of measurements.
 
 ```{r sites}
 datum <- tec$DATUM %>%
@@ -1271,36 +1252,65 @@ tec_hab_comp %>% wastd_bulk_post("occ-observation")
 
 
 # Extract and transform migrated Data from TSC
-Data from TSC is extracted through the TSC API and transformed into a useable
+Data from TSC is extracted through the TSC API and transformed into a usable
 format.
 
 Expand the code block below to view the process.
 
+## Conservation listings
+
 ```{r load_tsc, message=FALSE,warning=FALSE}
-# TSC communities
-# tsc_comm <- "community" %>%
-#   wastdr::wastd_GET(
-#     api_url = prod
-#   ) %>%
-#   wastdr::wastd_parse()
-
-tsc_ccl <- wastdr::wastd_GET("community-conservationlisting") %>%
-  wastdr::parse_community_conservationlisting()
-
-
-# tsc_ccl_comm <- tsc_ccl %>%
-#   dplyr::inner_join(tsc_comm, by = "count")
+datafile_tsc_community <- here::here("data/community_tsc.RData")
+if (file.exists(datafile_tsc_community)) {
+  load(datafile_tsc_community)
+} else {
+# Taxon conservation listings for communities
+  tsc_ccl_communities <- wastdr::wastd_GET("community-conservationlisting") %>%
+  wastdr::parse_community_conservationlisting() %>% 
+    dplyr::mutate(com_label = community)
+   
+save(tsc_ccl_communities, file = datafile_tsc_community, compress="xz")
+}
 ```
 
-```{r save_point, message=FALSE}
-datafile <- here::here("data", "community.Rda")
-if (file.exists(datafile)) {
-  load(datafile)
+## Occurrences
+
+We get community occurrences with their point representations from TSC through the 
+API endpoint [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
+
+Currently, all Fauna and Flora occurrences are georeferenced only with point 
+coordinates, not polygons.
+
+We then get TSC Areas and split them into DBCA Regions and Districts.
+Caveat: Regions and Districts to not comprehensively cover WA.
+
+Lastly, we get a list of taxonomic names from TSC to resolve taxon IDs from
+taxon occurrences to names.
+
+Occurrences are presented as `occ` with DBCA Region and District names (where
+applicable), plus taxonomic names.
+
+```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
+datafile.community <- here::here("data/community_cae.RData")
+
+if (file.exists(datafile.community)) {
+  load(datafile.community)
 } else {
-  save(
-    tsc_ccl, # TSC taxon conservation listings
-    file = datafile
-  )
+tsc_cae_data <- wastdr::wastd_GET("occ-area-points") # k records
+
+tsc_community_sites <- tsc_cae_data %>%
+  dplyr::filter(area_type == 12) %>% 
+  magrittr::extract2("features") %>%
+  geojsonio::as.json() %>%
+  geojsonsf::geojson_sf() 
+
+tsc_community_boundaries <- tsc_cae_data %>%
+  dplyr::filter(area_type == 10) %>% 
+  magrittr::extract2("features") %>%
+  geojsonio::as.json() %>%
+  geojsonsf::geojson_sf()
+
+save(tsc_cae_data, tsc_community_sites, tsc_community_boundaries, file=datafile.community, compress="xz")
 }
 ```
 
@@ -1319,7 +1329,7 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tec_data
 #
-tsc_ccl <- tsc_ccl %>% dplyr::mutate(com_label = community)
+tsc_ccl_communities <- tsc_ccl_communities %>% dplyr::mutate(com_label = community)
 tec_ccl_unique_comm <- tec_ccl$com_label %>%
   unique() %>%
   length() # 476
