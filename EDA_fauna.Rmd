@@ -406,7 +406,8 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
-  invisible() 
+  invisible() %>% distinct()
+
 
 ## Create occurence data tables for each card in TSC
 hab_comp <- tfa_occ %>%
@@ -574,10 +575,8 @@ tfa_tae <- tfa_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})"),
     # observation_details = glue::glue("{observation_method} {observation_type} {secondary_signs} {observation_comments}")
   ) %>%
-  dplyr::arrange(taxon)
+  dplyr::arrange(taxon) %>% distinct()
    
-names_tfa_tae <- (as.data.frame(names(tfa_tae)))
-
 occ_file <- here::here("data", "occ.Rdata")
 save(tfa_occ, tfa_tae, file=occ_file)
 if (file.exists(occ_file)) load(occ_file)
@@ -721,6 +720,7 @@ tsc_det_meth <- "lookup-detectionmethod" %>%
   readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
 
 # Load manual mapping of TFA lookup criteria from CSV file, and join to relevant table
+# Habitat composition
 tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
@@ -736,6 +736,7 @@ dplyr::select(source,source_id,tsc_landform_id) %>%
 dplyr::rename(landform = tsc_landform_id) %>% 
 dplyr::mutate(obstype = "HabitatComposition")
 
+# Animal observations
 tfa_confidence <- here::here("csv/tfa_id_conf_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
@@ -768,8 +769,6 @@ tfa_repmap <- here::here("csv/tfa_repmat_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-# names(anim_obs)
-
 tfa_anim_obs <- anim_obs %>%
   left_join(tfa_confidence, by = c("species_id_confidence")) %>%
   left_join(tfa_det_meth, by = c("detection_method")) %>%
@@ -797,9 +796,11 @@ tfa_anim_obs <- anim_obs %>%
   dplyr::rename(secondary_signs = tsc_secondary_signs) %>% 
   dplyr::mutate(obstype = "AnimalObservation")
 
+# Associated species
 tfa_ass_species <- ass_species %>% 
   dplyr::mutate(obstype = "AssociatedSpecies")
 
+# Physical sample
 tfa_samptype <- here::here("csv/tfa_samptype_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
@@ -829,7 +830,8 @@ tfa_phys_sample <- phys_sample %>%
     permit_type = NA,
     obstype = "PhysicalSample"
   )
-  
+
+# Vegetation classification 
 tfa_veg_class <- veg_class %>% 
   dplyr::transmute(
     source = source,
@@ -917,7 +919,7 @@ tfa_listing_cat_iucn2012 <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    #category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1162,8 +1164,6 @@ tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = p
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
-tfa_phys_sample[1,] %>% wastd_bulk_post("occ-observation", verbose = TRUE)
-
 tfa_phys_sample %>% wastd_bulk_post("occ-observation")
 
 tfa_anim_obs %>% wastd_bulk_post("occ-observation")
