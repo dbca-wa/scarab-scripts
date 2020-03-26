@@ -868,7 +868,7 @@ tfl_listing_cat_priority <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_priority %>% 
-  chunk_post(serializer = "taxon-conservationlisting", chunksize = 100)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 # Active Priority listings:
 # tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
@@ -901,7 +901,7 @@ tfl_listing_cat_epbc <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_epbc %>% 
-  chunk_post(serializer = "taxon-conservationlisting", chunksize = 100)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 
 # List codes: "WCA_1991" = IUCN 1994/2001/2012
@@ -928,7 +928,7 @@ tfl_listing_cat_iucn1994 <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_iucn1994 %>% 
-  chunk_post(serializer = "taxon-conservationlisting", chunksize = 100)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 # IUCN 2001
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
@@ -953,7 +953,7 @@ tfl_listing_cat_iucn2001 <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_iucn2001 %>% 
-  chunk_post(serializer = "taxon-conservationlisting", chunksize = 100)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 
 # IUCN 2012
@@ -989,8 +989,9 @@ tfl_listing_cat_iucn2012 <- flora_cons_listing_w_tsc %>%
 # TSC will export TO FloraBase, not the other way around
 ```
 
-There are `r tfl_cl_priority %>% dplyr::filter(status==80) %>% nrow` active Priority listings in WA and
-`r tfl_cl_priority %>% dplyr::filter(status==90) %>% nrow`
+There are `r tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow` 
+active Priority listings in WA and
+`r tfl_listing_cat_priority %>% dplyr::filter(status==90) %>% nrow`
 delisted Priority listings in WA.
 
 
@@ -1023,7 +1024,7 @@ cons_prio <- flora_data$DRF_P2K_PRIORITY %>%
     manplan = MANPLAN %>% as.character(),
     row_no = ROW.NO %>% as.character()
   ) %>% dplyr::arrange(taxon_id)
-cons_prio[1:100, ] %>% DT::datatable(.)
+cons_prio %>% rt
 ```
 
 ## Flora data upload
@@ -1034,8 +1035,8 @@ is generated after the R code is run.
 
 ```{r flora_upload}
 d <- ckanr::package_show("threatened-and-priority-flora-database")
-ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb",
-"data_etl_flora.html")
+if (fs::file_exists("data_etl_flora.html")) ckanr::resource_update(
+    "d1fccebb-02e2-4a40-aba4-c4d6ad012edb", "data_etl_flora.html")
 upload_to_ckan(flora_occ, "TPFL Species Occurrence", 
                d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
 upload_to_ckan(populations, "TPFL Populations", 
