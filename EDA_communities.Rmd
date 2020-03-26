@@ -1286,21 +1286,22 @@ if (file.exists(datafile.community)) {
   load(datafile.community)
 } else {
 tsc_cae_data <- wastdr::wastd_GET("occ-community-points") # k records
-tsc_cae_data <- wastdr::wastd_GET("occ-community-points", max_records = 10)
 
 tsc_community_sites <- tsc_cae_data %>%
-  dplyr::filter(area_type == 12) %>% 
-  magrittr::extract2("features") %>%
+  magrittr::extract2("data") %>% 
   geojsonio::as.json() %>%
-  geojsonsf::geojson_sf() 
+  geojsonsf::geojson_sf() %>% 
+  dplyr::mutate(area_type = area_type %>% as.character()) %>%
+  dplyr::filter(area_type == 12) 
 
 tsc_community_boundaries <- tsc_cae_data %>%
-  dplyr::filter(area_type == 10) %>% 
   magrittr::extract2("features") %>%
   geojsonio::as.json() %>%
-  geojsonsf::geojson_sf()
+  geojsonsf::geojson_sf() %>% 
+  dplyr::mutate(area_type = area_type %>% as.character()) %>% 
+  dplyr::filter(area_type == 10) 
 
-save(tsc_cae_data, tsc_community_sites, tsc_community_boundaries, file=datafile.community, compress="xz")
+save(tsc_cae_data, file=datafile.community, compress="xz")#tsc_community_sites, tsc_community_boundaries,
 }
 ```
 
