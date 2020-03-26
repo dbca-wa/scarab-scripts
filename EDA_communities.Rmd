@@ -385,7 +385,7 @@ occ_short <- tec_occ %>%
      com_label = com_label,
      com_name = com_name)
 
-## Create occurence data tables for each card in TSC
+## Create occurrence data tables for each card in TSC
 
 hab_comp <- tec_occ %>%
   dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
@@ -654,7 +654,8 @@ surveys <- tec$SURVEYS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     survey_id = SUR.NO %>% as.integer(),
-    surveyed_on = SUR.DATE %>% as.character(),
+    surveyed_on = SUR.DATE %>%
+      lubridate::parse_date_time(., orders = orders, tz = tz),
     surveyed_by = SUR.SURVEYOR %>% as.character(),
     survey_comments = SUR.COMMENTS %>% as.character(),
     username = USERNAME %>% as.character()
@@ -856,13 +857,8 @@ survey_cae <- surveys %>%
   left_join(communities, by = c("com_id", "com_label", "com_name")) %>% 
   clean_names()
 
-tec_bdy_cae <- survey_cae %>%
-  dplyr::transmute(
-    # occ_id = occ_id,
-    community = com_id,
-    code = boundary_id,
-    name = com_name,
-    description = ifelse(
+tec_bdy_cae_build <- survey_cae %>%
+  dplyr::mutate(description1 = ifelse(
       is.na(first_s_id),
       glue::glue(
         "Boundary ID {boundary_id} named ",
@@ -872,13 +868,22 @@ tec_bdy_cae <- survey_cae %>%
         "Boundary ID {boundary_id} named ",
         "{first_s_id} after first site observed within. ",
         "Survey comments: {survey_comments}"
-      )),
-     description2 = glue::glue(
+      ))) %>% 
+  dplyr::mutate(description2 = glue::glue(
         "Revised on: {date_changed_on};\n",
         "Site description: {occ_desc} {species_desc} {reliability_id};\n",
         "Commonwealth:  {commonwealth_desc} {cwealth_listing};\n",
         "Area assessment: {data} {other};\n",
         "Habitat composition: {soil} {surf_geology} {land_element} {water} {drainage} {com_structure} {classification} {other_attr} {reliability}."
+    )) %>% 
+  dplyr::transmute(
+    # occ_id = occ_id,
+    community = com_id,
+    code = boundary_id,
+    name = com_name,
+    description = glue::glue(
+        "{description1};\n",
+        "{description2}."
     ),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
@@ -891,6 +896,11 @@ tec_bdy_cae <- survey_cae %>%
       geojsonsf::sfc_geojson(.)
   )
 
+## Filter out the NA's
+tec_bdy_cae <- tec_bdy_cae_build %>%
+  dplyr::filter(community != "NA")%>%
+  dplyr::filter(!is.na(encountered_on))%>%
+  dplyr::filter(geom != "null")
 ```
 
 Some boundaries were digitised from a polygonised raster remote sensing product. This results in
@@ -1185,8 +1195,8 @@ buffered boundaries (buffers) and/or through point sites within.
 
 Import excluding the heavyweight communities with more than 400 features:
 ```{r tec_bdy_tsc, eval=F}
-tec_bdy_cae %>%
-  chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+tec_bdy_cae [1,] %>% jsonlite::toJSON() %>% 
+  chunk_post(serializer = "occ-community-areas")
 ```
 
 ### Upload buffers
@@ -1209,11 +1219,11 @@ Import all but the numerous ones:
 
 ```{r tec_sit_tsc, eval=F}
 # 7008 sites
-tec_sit_cae %>%
+tec_site_cae %>%
   chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
 # 17954 sites
-tec_sit_cae %>%
+tec_site_cae %>%
   dplyr::filter(community == "Banksia Woodlands of the Swan Coastal Plain") %>%
   chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 ```
