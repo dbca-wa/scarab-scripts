@@ -479,7 +479,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     florabus_ind = FLORABUS.IND %>% as.character(),
     licence = LICENCE %>% as.character()
   ) %>%
-  invisible() 
+  invisible()
 
 # occ_liasons <- tfl_data$DRF_LIAISONS %>%
 #   dplyr::transmute(
