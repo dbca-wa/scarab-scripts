@@ -1,9 +1,16 @@
+# -----------------------------------------------------------------------------#
+# RStudio Server
+#
 # System packages provided by https://rstudio.dbca.wa.gov.au/
-# sudo apt install libcairo2-dev libgdal-dev libudunits2-dev libjq-dev libv8-dev libprotobuf-dev protobuf-compiler
+# sudo apt install libcairo2-dev libgdal-dev libudunits2-dev libjq-dev libv8-dev \
+# libprotobuf-dev protobuf-compiler libavfilter-dev libfontconfig1-dev
 
-# Other system packages
-# sudo apt install mdbtools
+# !!! Install system packages on Rstudio Server !!!
+# sudo apt install mdbtools cargo libavfilter-dev libfontconfig1-dev
 
+# -----------------------------------------------------------------------------#
+# Package installation
+#
 # R packages provided by https://rstudio.dbca.wa.gov.au/
 # remotes::install_github("ropenscilabs/skimr")
 # remotes::install_github("tidyverse/readr")
@@ -15,14 +22,14 @@
 # install.packages("styler")
 # install.packages("jsonlite")
 # devtools::install_github("glin/reactable")
-
-
-# R packages to install
 # remotes::install_github("r-lib/lifecycle")
 # remotes::install_github("ropensci/rredlist")
 # remotes::install_github("dbca-wa/wastdr")
 # remotes::install_github("dbca-wa/wastdr",lib = "/home/milly/R/library" )
 
+# -----------------------------------------------------------------------------#
+# Load packages
+#
 library(tidyverse)
 
 library(devtools)
@@ -48,41 +55,31 @@ library(maps)
 library(mapproj)
 library(stringr)
 library(magrittr)
-
 library(gganimate)
+library(gifski)
+library(av)
 library(ggthemes)
 library(grDevices)
-
 library(reactable)
 
-# library(gapminder)
-
-# Configure ckanr to data.dpaw.wa.gov.au
-# usethis::edit_r_environ()
-ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
-
-# Date conventions
-orders <- c("mdyHMS","dmy")
-tz <- "Australia/Perth"
-default_date <- "1900-01-01 00:00:00"
-default_date_notime <- "1900-01-01"
-parse_as_datetime <- function(x){
-    if (is.null(x)) {
-        return(
-            lubridate::parse_date_time(
-                "1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
-        )
-        }
-    x %>%
-        lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>%
-        lubridate::as_datetime(.) %>%
-        lubridate::with_tz(tzone = tz)
-}
-
+# -----------------------------------------------------------------------------#
+# Server shortcuts
 dev <- "http://localhost:8220/api/1/"
 uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
 prod <- "https://tsc.dbca.wa.gov.au/api/1/"
 
+
+# -----------------------------------------------------------------------------#
+# Setup packages
+#
+# Configure ckanr to data.dpaw.wa.gov.au
+# usethis::edit_r_environ()
+ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"))
+
+
+# -----------------------------------------------------------------------------#
+# Web helpers
+#
 #' Download, extract and open a zipped Access database from a CKAN dataset.
 #'
 #' The extracted file will be kept in `destdir`.
@@ -98,10 +95,10 @@ prod <- "https://tsc.dbca.wa.gov.au/api/1/"
 #' @param as.is The parameter `as.is` for `Hmisc::mdb.get()`, default: TRUE.
 #' @returns The `Hmisc::mdb.get` connection.
 dl_mdbzip <- function(resource_id,
-                      destdir=here::here("data"),
+                      destdir = here::here("data"),
                       dateformat = "%m-%d-%Y",
                       as.is = TRUE,
-                      verbose=TRUE) {
+                      verbose = wastdr::get_wastdr_verbose()) {
     if (!fs::dir_exists(destdir)) {fs::dir_create(destdir)}
 
     r <- ckanr::resource_show(resource_id)
@@ -110,43 +107,28 @@ dl_mdbzip <- function(resource_id,
     res_file <- fs::path(fs::path(destdir, res_fn))
 
     if (!fs::file_exists(res_file)){
-        if (verbose==TRUE) {
-            message(
-                glue::glue("Downloading {r$name} from CKAN to {res_file}..."))
-            }
+        if (verbose==TRUE)
+            wastdr::wastdr_msg_info(
+                glue::glue("Downloading {r$name} from CKAN to {res_file}...")
+            )
         utils::download.file(res_url, res_file)
     } else {
-        if (verbose==TRUE) {
-        message(glue::glue("Keeping already downloaded file {res_fn}.\n",
-                           "Delete {res_fn} to force fresh download."))
-        }
+        if (verbose==TRUE)
+            wastdr::wastdr_msg_noop(
+                glue::glue("Keeping already downloaded file {res_fn}. ",
+                           "Delete {res_fn} to force fresh download.")
+            )
+
     }
 
-    if (verbose==TRUE) {message(glue::glue("Extracting {res_file}..."))}
+    if (verbose==TRUE)
+        wastdr::wastdr_msg_info(glue::glue("Extracting {res_file}..."))
     dbfile <- utils::unzip(res_file, exdir = destdir)
     con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = as.is)
-    if (verbose==TRUE) {message("Done, returning open db connection.")}
+    if (verbose==TRUE)
+        wastdr::wastdr_msg_success("Done, returning open db connection.")
     con
 }
-
-# Make column def (mkd)
-add_dettol <- . %>% stringr::str_to_lower(.) %>% stringr::str_replace_all(., "\\.", "_")
-as_def <- . %>% paste(add_dettol(.), "=", ., " %>% as.character, \n")
-mkd <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat(.)
-
-#' Normalise corporate filenumber into <agency>-<year>-<number> or ""
-as_filenumber <- function(body, prefix="DBCA", sep="-") {
-    if (is.null(body) || body == "") return("")
-    urlized_body <- stringr::str_replace_all(body, "F|/", "-")
-    paste0(prefix, sep, urlized_body)
-}
-
-#' Parse a string into a list of integer numbers
-str_to_int_array <- . %>% strsplit(., ",")[[1]] %>% as.list
-
-
-
-
 
 #' Create or update a CKAN resource.
 #'
@@ -211,28 +193,96 @@ upload_file_to_ckan <- function(rid, fn){
 
 
 #' Load a CSV from a CKAN resource ID, requires ckanr_setup
-load_ckan_csv <- .  %>% resource_show() %>% magrittr::extract2("url") %>% read_csv()
+load_ckan_csv <- .  %>%
+    resource_show() %>%
+    magrittr::extract2("url") %>%
+    read_csv()
 
 
 
-chunk_post <- function(data, serializer = "names", api_url = wastdr::get_wastdr_api_url(),
-          api_token = wastdr::get_wastdr_api_token(), api_un = wastdr::get_wastdr_api_un(),
-          api_pw = wastdr::get_wastdr_api_pw(), chunksize = 1000, verbose = FALSE) {
+chunk_post <- function(data,
+                       serializer = "names",
+                       api_url = wastdr::get_wastdr_api_url(),
+                       api_token = wastdr::get_wastdr_api_token(),
+                       api_un = wastdr::get_wastdr_api_un(),
+                       api_pw = wastdr::get_wastdr_api_pw(),
+                       chunksize = 1000,
+                       verbose = wastdr::get_wastdr_verbose()) {
     . <- NULL
-    if (verbose) message("[chunk_post] Updating ", api_url, serializer, "...")
+    if (verbose)
+        wastdr::wastdr_msg_info(
+            glue::glue("[chunk_post] Updating {api_url}{serializer}..."))
     len <- nrow(data)
     for (i in 0:((len/chunksize)-1)) {
         start <- (i * chunksize) + 1
         end <- min((start + chunksize) - 1, len)
-        message("[chunk_post] Processing feature ", start, " to ", end)
+        wastdr::wastdr_msg_info(
+            glue::glue("[chunk_post] Processing feature {start} to {end}"))
         data[start:end,] %>%
-            wastdr::wastd_POST(., serializer = serializer, api_url = api_url,
-                       api_token = api_token, api_un = api_un, api_pw = api_pw,
-                       verbose = verbose)
+            wastdr::wastd_POST(.,
+                               serializer = serializer,
+                               api_url = api_url,
+                               api_token = api_token,
+                               api_un = api_un,
+                               api_pw = api_pw,
+                               verbose = verbose)
     }
-    message("[chunk_post] Finished, ", len, " records created/updated.")
+    wastdr::wastdr_msg_success(
+        glue::glue("[chunk_post] Finished, {len} records created/updated."))
 }
 
+# -----------------------------------------------------------------------------#
+# Convenience helpers
+#
+# Make column def (mkd)
+add_dettol <- . %>% stringr::str_to_lower(.) %>% stringr::str_replace_all(., "\\.", "_")
+as_def <- . %>% paste(add_dettol(.), "=", ., " %>% as.character, \n")
+mkd <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat(.)
+
+#' Normalise corporate filenumber into <agency>-<year>-<number> or ""
+as_filenumber <- function(body, prefix="DBCA", sep="-") {
+    if (is.null(body) || body == "") return("")
+    urlized_body <- stringr::str_replace_all(body, "F|/", "-")
+    paste0(prefix, sep, urlized_body)
+}
+
+#' Parse a string into a list of integer numbers
+str_to_int_array <- . %>% strsplit(., ",")[[1]] %>% as.list
+
+chr2int <- . %>%
+    stringr::str_split(",") %>%
+    purrr::map(as.integer)
+
+# Date conventions
+orders <- c("mdyHMS","dmy")
+tz <- "Australia/Perth"
+default_date <- "1900-01-01 00:00:00"
+default_date_notime <- "1900-01-01"
+parse_as_datetime <- function(
+    x,
+    default_datetime = lubridate::parse_date_time(
+        "1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)){
+    if (is.null(x)) return(default_datetime)
+
+    x %>%
+        lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>%
+        lubridate::as_datetime(.) %>%
+        lubridate::with_tz(tzone = tz)
+}
+
+
+# Present tabular data as reactable
+rt <- . %>%
+    reactable::reactable(
+        sortable = TRUE,
+        filterable = TRUE,
+        style = "color:black;"
+    )
+
+
+# -----------------------------------------------------------------------------#
+# Spatial helpers
+#
 #' Return the convex hull plus minimal buffer around all given points.
 #'
 #' A minimal buffer is included to turn single point observations
@@ -378,83 +428,84 @@ fix_incomplete_date <- function(
 }
 
 
-### Upload ObservationGroups
-# devtoken <- Sys.getenv("WASTDR_API_TOKEN_DEV")
-#
-# # This chunk explains the development steps for wastd_bulk_post
-#
-# # Naive: do first record only
-# # API expects a key-value dict = R list of exactly one record
-# # API might get a bulk_create which then accepts a list of dicts (R data.frame)
-# x <- tfa_phys_sample[1,] %>%
+# Moved to wastdr
+# ### Upload ObservationGroups
+# # devtoken <- Sys.getenv("WASTDR_API_TOKEN_DEV")
+# #
+# # # This chunk explains the development steps for wastd_bulk_post
+# #
+# # # Naive: do first record only
+# # # API expects a key-value dict = R list of exactly one record
+# # # API might get a bulk_create which then accepts a list of dicts (R data.frame)
+# # x <- tfa_phys_sample[1,] %>%
+# #     as.list() %>%
+# #     wastdr::wastd_POST("occ-observation", api_url = dev, api_token = devtoken, verbose = TRUE)
+# #
+# # # Helper: factor out all params except for data
+# post_one <- . %>%
 #     as.list() %>%
-#     wastdr::wastd_POST("occ-observation", api_url = dev, api_token = devtoken, verbose = TRUE)
+#     wastdr::wastd_POST("occ-observation", verbose=T)
+# #
+# # tfa_phys_sample[1,] %>% post_one
+# #
+# # # Base R: do several (subset or all)
+# # # apply with margin 1 (rows) does what tidyverse refuses to do
+# # res <- apply(tfa_phys_sample[1:10,], 1, post_one)
+# # res[[1]]
+# # testthat::expect_equal(
+# #     res[[1]]$data$encounter$properties$source_id,
+# #     tfa_phys_sample[1,]$source_id
+# # )
+# #
+# #
+# # # Generalise helper
+# # # Let all params be user defined
+# wastd_post_one <- function(data_row,
+#                            serializer,
+#                            api_url = wastdr::get_wastdr_api_url(),
+#                            api_token = wastdr::get_wastdr_api_token(),
+#                            verbose = FALSE){
+#     data_row %>%
+#         as.list() %>%
+#         wastdr::wastd_POST(
+#             serializer = serializer,
+#             api_url = api_url,
+#             api_token = api_token,
+#             verbose = verbose
+#         )
+# }
 #
-# # Helper: factor out all params except for data
-post_one <- . %>%
-    as.list() %>%
-    wastdr::wastd_POST("occ-observation", verbose=T)
+# # # Naive application example: First ten records
+# # # Still some repetitive code - how to use apply
+# # apply(
+# #     tfa_phys_sample[1:10,],
+# #     1,
+# #     wastd_post_one,
+# #     serializer = "occ-observation",
+# #     api_url = dev,
+# #     api_token=devtoken,
+# #     verbose = TRUE
+# # )
+# #
+# # Generalize applying the helper
+# # Top level ingredients: what (data), how (serializer), where (server)
+# wastd_bulk_post <- function(data,
+#                             serializer,
+#                             api_url = wastdr::get_wastdr_api_url(),
+#                             api_token = wastdr::get_wastdr_api_token(),
+#                             verbose = FALSE){
+#     apply(data,
+#           1,
+#           wastd_post_one,
+#           serializer = serializer,
+#           api_url = api_url,
+#           api_token = api_token,
+#           verbose = verbose)
+# }
 #
-# tfa_phys_sample[1,] %>% post_one
+# # Apply wastd_bulk_post
+# # This should be applicable to all other occ-observation models
+# # TODO error handling, return the HTTP status, report summary "x created, y failed"
+# # tfa_phys_sample %>%
+# #     wastd_bulk_post("occ-observation", api_url = dev, api_token = devtoken, verbose = TRUE)
 #
-# # Base R: do several (subset or all)
-# # apply with margin 1 (rows) does what tidyverse refuses to do
-# res <- apply(tfa_phys_sample[1:10,], 1, post_one)
-# res[[1]]
-# testthat::expect_equal(
-#     res[[1]]$data$encounter$properties$source_id,
-#     tfa_phys_sample[1,]$source_id
-# )
-#
-#
-# # Generalise helper
-# # Let all params be user defined
-wastd_post_one <- function(data_row,
-                           serializer,
-                           api_url = wastdr::get_wastdr_api_url(),
-                           api_token = wastdr::get_wastdr_api_token(),
-                           verbose = FALSE){
-    data_row %>%
-        as.list() %>%
-        wastdr::wastd_POST(
-            serializer = serializer,
-            api_url = api_url,
-            api_token = api_token,
-            verbose = verbose
-        )
-}
-
-# # Naive application example: First ten records
-# # Still some repetitive code - how to use apply
-# apply(
-#     tfa_phys_sample[1:10,],
-#     1,
-#     wastd_post_one,
-#     serializer = "occ-observation",
-#     api_url = dev,
-#     api_token=devtoken,
-#     verbose = TRUE
-# )
-#
-# Generalize applying the helper
-# Top level ingredients: what (data), how (serializer), where (server)
-wastd_bulk_post <- function(data,
-                            serializer,
-                            api_url = wastdr::get_wastdr_api_url(),
-                            api_token = wastdr::get_wastdr_api_token(),
-                            verbose = FALSE){
-    apply(data,
-          1,
-          wastd_post_one,
-          serializer = serializer,
-          api_url = api_url,
-          api_token = api_token,
-          verbose = verbose)
-}
-
-# Apply wastd_bulk_post
-# This should be applicable to all other occ-observation models
-# TODO error handling, return the HTTP status, report summary "x created, y failed"
-# tfa_phys_sample %>%
-#     wastd_bulk_post("occ-observation", api_url = dev, api_token = devtoken, verbose = TRUE)
-
