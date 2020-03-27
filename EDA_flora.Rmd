@@ -912,25 +912,31 @@ A manual step annotated legacy conservation criteria exported from TFL to
 conservation criteria IDs in TSC in a spreadsheet.
 
 ``` {r extract_tsc_cons_criteria, message = FALSE}
-tsc_cons_list <- "conservationlist" %>% 
-  wastdr::wastd_GET(api_url = prod) %>% 
-  wastdr::wastd_parse()
-
-tsc_cons_cat <- "conservationcategory" %>% 
-  wastdr::wastd_GET(api_url = prod) %>% 
+tsc_conslist <- wastdr::wastd_GET("conservationlist") %>% 
   wastdr::wastd_parse() %>% 
-  dplyr::arrange(conservation_list, rank) %>% 
-  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
+  dplyr::select(
+    -conservationcategory_set,
+    -conservationcriterion_set
+  ) %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  )
 
-tsc_cons_crit <- "conservationcriterion" %>% 
-  wastdr::wastd_GET(api_url = prod) %>% 
+tsc_conscat <- wastdr::wastd_GET("conservationcategory") %>% 
   wastdr::wastd_parse() %>% 
-  dplyr::arrange(conservation_list, rank) %>% 
-  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id")) 
+  dplyr::rename(list_id = conservation_list) %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(tsc_conslist, by = "list_id")
 
-tsc_cons_crit %>%
-  dplyr::select(-"conservationcategory_set", -"conservationcriterion_set") %>%
-  readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
+tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(list_id = conservation_list) %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(tsc_conslist, by = "list_id")
+
+readr::write_csv(tsc_conscrit, path = here::here("data/tsc_conscrit_flora.csv"))
 
 # Load manual mapping of tfl cons criteria from CSV file,  join to tfl_cons_crit
 tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
@@ -1175,14 +1181,13 @@ The QA part of this workbook will compare TFL names to TSC names.
 ```{r tfl_cons_listing_subsetting, message=FALSE}
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    tsc_category_id = purrr::map_int(., "id"),
-    category_code = purrr::map_chr(., "code"),
-    tsc_label = purrr::map_chr(., "label"),
-    conservation_list = purrr::map_chr(., "conservation_list")
-  )} %>% 
-  dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    tsc_category_id = id,
+    category_code = code,
+    tsc_label = label
+  ) %>% 
+  dplyr::filter(conservation_list %in% c(1:7))
 
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
@@ -1315,8 +1320,7 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 ```{r tfl_cons_listing_upload, eval=F, message=FALSE}
 
 tfl_listing_cat_priority %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose=TRUE)
+  wastdr::wastd_POST("taxon-conservationlisting")
 
 tfl_listing_cat_epbc %>% 
   wastdr::wastd_POST("taxon-conservationlisting", 
