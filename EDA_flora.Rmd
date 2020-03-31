@@ -18,6 +18,11 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
+default_date <- lubridate::parse_date_time(
+  "1900-01-01 00:00:00", 
+  orders = "ymd HMS", 
+  tz = "Australia/Perth"
+)
 ```
 
 # Context
@@ -41,7 +46,6 @@ on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
 ```{r load_tfl, message=TRUE}
-
 tfl_file <- here::here("data", "tfl.Rdata")
 if (file.exists(tfl_file)) {
   load(tfl_file)
@@ -194,7 +198,8 @@ populations <- tfl_data$DRF_POPULATION %>%
   )
 names_populations <- as.data.frame(names(populations))
 
-pop_forms <- tfl_data$DRF_POP_FORMS %>% #This is the paper form, not the shape of the population!
+# pop_forms is the paper form, not the shape of the population!
+pop_forms <- tfl_data$DRF_POP_FORMS %>% 
   dplyr::transmute(
     pop_forms_id = POP.FORMS.ID %>% as.character(),
     pop_id = POP.ID %>% as.character(),
@@ -209,7 +214,7 @@ pop_forms <- tfl_data$DRF_POP_FORMS %>% #This is the paper form, not the shape o
     chg_type_code = CHG.TYPE.CODE %>% as.character(),
     deact_by = DEACT.BY %>% as.character()
   )
-# pop_forms[1:100, ] %>% DT::datatable(.)
+# pop_forms[1:100, ] %>% rt
 names_pop_forms <- as.data.frame(names(pop_forms))
 
 pop_threats <- tfl_data$DRF_POP_THREATS %>%
@@ -233,7 +238,7 @@ pop_threats <- tfl_data$DRF_POP_THREATS %>%
     sheetno = SHEETNO %>% as.character(),
     observation_date = OBSERVATION.DATE %>% as.character()
   )
-# pop_threats[1:100, ] %>% DT::datatable(.)
+# pop_threats[1:100, ] %>% rt
 names_pop_threats <- as.data.frame(names(pop_threats))
 
 pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
@@ -245,7 +250,7 @@ pop_vegclass <- tfl_data$DRF_POP_VEG_CLASSES %>%
     veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
   )
 names_pop_vegclass <- as.data.frame(names(pop_vegclass))
-# pop_vegclass[1:100, ] %>% DT::datatable(.)
+# pop_vegclass[1:100, ] %>% rt
 ```
 
 ## Conservation listings
@@ -295,7 +300,7 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::mutate(source_id = source_id %>% as.character()) %>% 
   dplyr::arrange(name_id)
 
-# tfl_cons_listing[1:100, ] %>% DT::datatable(.)
+# tfl_cons_listing[1:100, ] %>% rt
 readr::write_csv(tfl_cons_listing, path = here::here("data","tfl_cons_listing.csv"))
 
 flcl_file <- here::here("data", "tfl_cons_listings.Rdata")
@@ -313,8 +318,6 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 
 ## Occurrences
 ```{r load_tfl_occ, message=FALSE, warning=FALSE}
-default_date <- lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)
-
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
@@ -531,8 +534,13 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
 #     )
 
 ## Create occurrence data tables for each card in TSC
+has_name_id_and_location <- . %>% 
+  dplyr::filter(
+    !is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0
+  )
+
 hab_comp <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+   has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
@@ -543,7 +551,13 @@ hab_comp <- tfl_occ %>%
     soil_colour = soil_color,
     drainage = drainage,
     aspect = aspect) %>%
-  filter(landform != "" | rock_type != "" | loose_rock != "" | soil_type != "" | soil_colour != "" | drainage != "" |  aspect != "")
+  filter(landform != "" | 
+           rock_type != "" | 
+           loose_rock != "" | 
+           soil_type != "" | 
+           soil_colour != "" | 
+           drainage != "" |  
+           aspect != "")
 
 hab_comp %>%
   dplyr::select(landform) %>%
@@ -581,27 +595,32 @@ hab_comp %>%
   readr::write_csv(path = here::here("data", "tfl_aspect.csv"))
 
 area_ass <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
     survey_method = svy_extent,
     surveyed_area = svy_effort_area,
     survey_duration = svy_effort_time) %>% 
-  dplyr::filter(survey_method != "" | surveyed_area != "NA" | survey_duration!= "NA")
+  dplyr::filter(
+    survey_method != "" | 
+      surveyed_area != "NA" | 
+      survey_duration!= "NA"
+  )
 
 area_ass %>%
   dplyr::select(survey_method) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfl_survey_method.csv"))
 
+# TODO There is a problem with migrating this- won't match TSC card
 hab_cond <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
     occurrence_condition = habitat_condition,
-    soil_condition = soil_condition) %>%  #There is a problem with migrating this- won't match TSC card
+    soil_condition = soil_condition) %>%  
   dplyr::filter(occurrence_condition != "" | soil_condition != "")
 
 hab_cond %>%
@@ -610,39 +629,43 @@ hab_cond %>%
   readr::write_csv(path = here::here("data", "tfl_soil_condition.csv"))
 
 tfl_fire_hist <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
     fire_intensity = fire_intensity,
     fire_year = fire_year,
     fire_season = fire_season) %>%
-   mutate(fire_year = case_when(is.na(fire_year) ~ "1900",
+   dplyr::mutate(fire_year = case_when(is.na(fire_year) ~ "1900",
   TRUE ~ as.character(fire_year)))%>%
-   mutate(fire_intensity = case_when(fire_intensity == "0" ~ "no",
+   dplyr::mutate(fire_intensity = case_when(fire_intensity == "0" ~ "no",
                                 fire_intensity == "1" ~ "low",
                                 fire_intensity == "2" ~ "medium",
                                 fire_intensity == "3" ~ "high")) %>% 
-  mutate(month = case_when(fire_season == "SPR" ~ "09",
+  dplyr::mutate(month = case_when(fire_season == "SPR" ~ "09",
                                 fire_season == "SUM" ~ "12",
                                 fire_season == "AUT" ~ "03",
                                 fire_season == "WIN" ~ "06",
                            fire_season =="" ~ "01")) %>% 
-  mutate(day = case_when(month == "03" ~ "01",
+  dplyr::mutate(day = case_when(month == "03" ~ "01",
   month == "06" ~ "01",
   month == "09" ~ "01",
   month == "12" ~ "01",
   month == "01" ~ "01")) %>% 
-  transmute(source = source,
+  dplyr::transmute(source = source,
     source_id = source_id,
     fire_intensity = fire_intensity,
-    fire_date = glue::glue("{fire_year}-{month}-{day}", .na = "NA") %>% as.character()) %>% 
-  mutate(fire_date = case_when(is.na(fire_intensity) ~ "NA",
-                               TRUE ~ as.character(fire_date))) %>% 
+    fire_date = glue::glue("{fire_year}-{month}-{day}", .na = "NA") %>% 
+      as.character()
+  ) %>% 
+  dplyr::mutate(fire_date = case_when(
+    is.na(fire_intensity) ~ "NA",
+    TRUE ~ as.character(fire_date))
+  ) %>% 
   dplyr::filter(fire_intensity != "NA" | fire_date != "NA")
 
 plant_count <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
@@ -672,7 +695,12 @@ plant_count <- tfl_occ %>%
     number_dead = simple_dead_tot,
     plant_condition = population_condition,
     comments = population_notes) %>% 
-  dplyr::filter(plant_count_method != "" | counted_subject != "" | plant_condition != "" | comments != "")
+  dplyr::filter(
+    plant_count_method != "" | 
+      counted_subject != "" | 
+      plant_condition != "" | 
+      comments != ""
+  )
 
 plant_count %>%
   dplyr::select(plant_count_method) %>%
@@ -690,20 +718,21 @@ plant_count %>%
   readr::write_csv(path = here::here("data", "tfl_plant_condition.csv"))
 
 ass_species <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
     taxon = associated_species) %>% 
   dplyr::filter(taxon != "")
 
+# TODO add destinations for WA HERB/ INT HERB/ DIS HERB in TSC
 phys_sample <- tfl_occ %>% 
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
     sample_type = "plant specimen",
-    sample_destination = voucher_location, # most of these are listed as WA HERB/ INT HERB/ DIS HERB, but none of these are options in the card
+    sample_destination = voucher_location, 
     duplicate_sample_destination = dupvouch_location,
     sample_label = glue::glue("[{sample_destination}]{barcode}"),
     permit_id = licence) %>% 
@@ -789,10 +818,8 @@ occ_fire <- tfl_data$DRF_FIRE_DETAILS %>%
 
 ## Taxon area encounter
 tfl_tae <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id)) %>% 
+  has_name_id_and_location %>% 
   dplyr::filter(!is.na(observation_date)) %>%
-  dplyr::filter(!is.na(latitude)) %>%
-  dplyr::filter(!is.na(longitude)) %>%
   dplyr::transmute(
     taxon = name_id,
     code = pop_id,
@@ -811,14 +838,15 @@ tfl_tae <- tfl_occ %>%
         ),
     source = 11,
     source_id = source_id %>% as.character(),
-    encounter_type = 3, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
+    # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
+    encounter_type = 3, 
     encountered_on = observation_date %>% as.character(),
     encountered_by = 1,
     area_type = 20, # pop:20, subpop: 21
     geolocation_capture_method='gps-point',
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
-  ) #%>% glimpse()
+  ) 
 
 # names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
@@ -829,7 +857,7 @@ tfl_tae <- tfl_occ %>%
 ## Conservation Threats and Actions
 ```{r load_actions, message=TRUE}
 act_fenc <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
@@ -837,7 +865,7 @@ act_fenc <- tfl_occ %>%
     comments = fencing_comments)
 
 act_rdmk <- tfl_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 11,
     source_id = source_id,
@@ -1068,78 +1096,101 @@ tfl_drainage <- here::here("csv/tfl_drainage_w_tsc.csv") %>%
     ))
 
 tfl_hab_comp <- hab_comp %>%
-  left_join(tfl_landcrit, by = c("landform")) %>% 
+  left_join(tfl_landcrit, by = c("landform")) %>%
   left_join(tfl_rocktype, by = c("rock_type")) %>%
   left_join(tfl_soiltype, by = c("soil_type")) %>%
   left_join(tfl_soilcolour, by = c("soil_colour")) %>%
   left_join(tfl_drainage, by = c("drainage")) %>%
-  dplyr::select(source,source_id,tsc_landforms,tsc_rock_type,loose_rock,tsc_soil_type,tsc_soil_colour,tsc_drainage) %>% 
-  dplyr::rename(landform = tsc_landforms) %>% 
-  dplyr::rename(rocktype = tsc_rock_type) %>% 
-  dplyr::rename(soiltype = tsc_soil_type) %>% 
+  dplyr::select(
+    source,
+    source_id,
+    tsc_landforms,
+    tsc_rock_type,
+    loose_rock,
+    tsc_soil_type,
+    tsc_soil_colour,
+    tsc_drainage
+  ) %>%
+  dplyr::rename(landform = tsc_landforms) %>%
+  dplyr::rename(rocktype = tsc_rock_type) %>%
+  dplyr::rename(soiltype = tsc_soil_type) %>%
   dplyr::rename(soilcolour = tsc_soil_colour) %>%
-  dplyr::rename(drainage = tsc_drainage) %>% 
+  dplyr::rename(drainage = tsc_drainage) %>%
   dplyr::mutate(obstype = "HabitatComposition")
 
 ## Area assessment
-tfl_survey_method <- here::here("csv/tfl_survey_method_w_tsc.csv") %>%
+tfl_survey_method <-
+  here::here("csv/tfl_survey_method_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       survey_method = col_character(),
       tsc_survey_method = col_character(),
       tsc_criteria = col_character()
-    ))
+    )
+  )
 
 tfl_area_ass <- area_ass %>%
-  left_join(tfl_survey_method, by = c("survey_method")) %>% 
-dplyr::select(source,source_id,tsc_survey_method,surveyed_area,survey_duration) %>%
-  dplyr::rename(survey_method = tsc_survey_method) %>% 
-dplyr::mutate(obstype = "AreaAssessment")
+  left_join(tfl_survey_method, by = c("survey_method")) %>%
+  dplyr::select(source,
+                source_id,
+                tsc_survey_method,
+                surveyed_area,
+                survey_duration) %>%
+  dplyr::rename(survey_method = tsc_survey_method) %>%
+  dplyr::mutate(obstype = "AreaAssessment")
 
 ## Habitat condition
-tfl_soil_condition <- here::here("csv/tfl_soil_condition_w_tsc.csv") %>%
+tfl_soil_condition <-
+  here::here("csv/tfl_soil_condition_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       soil_condition = col_character(),
       tsc_soil_condition = col_character(),
       tsc_criteria = col_character()
-    ))
+    )
+  )
 
 tfl_hab_cond <- hab_cond %>%
-  left_join(tfl_soil_condition, by = c("soil_condition")) %>% 
-dplyr::select(source,source_id,occurrence_condition,tsc_soil_condition) %>%
-  dplyr::rename(soil_condition = tsc_soil_condition) %>% 
-dplyr::mutate(obstype = "HabitatCondition")
+  left_join(tfl_soil_condition, by = c("soil_condition")) %>%
+  dplyr::select(source, source_id, occurrence_condition, tsc_soil_condition) %>%
+  dplyr::rename(soil_condition = tsc_soil_condition) %>%
+  dplyr::mutate(obstype = "HabitatCondition")
 
 ## Plant count
-tfl_plant_count_method <- here::here("csv/tfl_plant_count_method_w_tsc.csv") %>%
+tfl_plant_count_method <-
+  here::here("csv/tfl_plant_count_method_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       plant_count_method = col_character(),
       tsc_plant_count_method = col_character(),
       tsc_criteria = col_character()
-    ))
+    )
+  )
 
-tfl_plant_count_subject <- here::here("csv/tfl_counted_subject_w_tsc.csv") %>%
+tfl_plant_count_subject <-
+  here::here("csv/tfl_counted_subject_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       counted_subject = col_character(),
       tsc_counted_subject = col_character(),
       tsc_criteria = col_character()
-    ))
+    )
+  )
 
-tfl_plant_condition <- here::here("csv/tfl_plant_condition_w_tsc.csv") %>%
+tfl_plant_condition <-
+  here::here("csv/tfl_plant_condition_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       plant_condition = col_character(),
       tsc_Plant_condition = col_character(),
       tsc_criteria = col_character()
-    ))
+    )
+  )
 
 tfl_plant_count <- plant_count %>%
   left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
   left_join(tfl_plant_count_subject, by = c("counted_subject")) %>%
-  left_join(tfl_plant_condition, by = c("plant_condition")) %>%  
+  left_join(tfl_plant_condition, by = c("plant_condition")) %>%
   dplyr::select(
     -plant_count_method,
     -counted_subject,
@@ -1148,25 +1199,27 @@ tfl_plant_count <- plant_count %>%
     -tsc_criteria.y,
     -tsc_criteria
   ) %>%
-  dplyr::rename(plant_count_method = tsc_plant_count_method) %>% 
+  dplyr::rename(plant_count_method = tsc_plant_count_method) %>%
   dplyr::rename(counted_subject = tsc_counted_subject) %>%
-  dplyr::rename(plant_condition = tsc_Plant_condition) %>% 
-dplyr::mutate(obstype = "PlantCount")
+  dplyr::rename(plant_condition = tsc_Plant_condition) %>%
+  dplyr::mutate(obstype = "PlantCount")
 
 ## Physical sample
-tfl_sampdest <- here::here("csv/tfl_sample_destination_w_tsc.csv") %>%
+tfl_sampdest <-
+  here::here("csv/tfl_sample_destination_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       sample_destination = col_character(),
       tsc_sample_destination = col_character(),
       tsc_criteria = col_character()
-    ))
+    )
+  )
 
 tfl_phys_sample <- phys_sample %>%
   left_join(tfl_sampdest, by = c("sample_destination")) %>%
-dplyr::select(-sample_destination,-tsc_criteria) %>%
-  dplyr::rename(sample_destination = tsc_sample_destination) %>% 
-dplyr::mutate(obstype = "PhysicalSample")
+  dplyr::select(-sample_destination, -tsc_criteria) %>%
+  dplyr::rename(sample_destination = tsc_sample_destination) %>%
+  dplyr::mutate(obstype = "PhysicalSample")
 ```
 
 # Load legacy data from TFL into TSC
@@ -1191,134 +1244,143 @@ tsc_conscat_sp <- "conservationcategory" %>%
 
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
-tfl_listing_cat_priority <- tfl_tcl %>% 
-  dplyr::filter(list_code=="Priority") %>%
-  dplyr::mutate(
-    category_code=glue::glue("P{category_code}") %>% as.character) %>% 
-  dplyr::left_join(
-    dplyr::filter(tsc_conscat_sp, conservation_list == 6), 
-    by="category_code") %>% 
+tfl_listing_cat_priority <- tfl_tcl %>%
+  dplyr::filter(list_code == "Priority") %>%
+  dplyr::mutate(category_code = glue::glue("P{category_code}") %>% as.character) %>%
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 6),
+                   by = "category_code") %>%
   dplyr::transmute(
-        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
-        source_id = source_id %>% as.character(),
-        scope = 0, # state 0, cwth 1, intl 2, ap 3
-        status = ifelse(is.na(date_delisted), 80, 90),
-        effective_from = date_listed,
-        effective_to = date_delisted,
-        review_due = recovery_plan_expiry_date,# check
-        last_reviewed_on = file_last_updated,
-        taxon = name_id %>% as.numeric,
-        category = tsc_category_id %>% as.list(),
-        criteria = tsc_criteria
-    ) %>% 
+    source = 2,
+    # TaxonGaz.source tfl 1, TFL 2, TEC 3
+    source_id = source_id %>% as.character(),
+    scope = 0,
+    # state 0, cwth 1, intl 2, ap 3
+    status = ifelse(is.na(date_delisted), 80, 90),
+    effective_from = date_listed,
+    effective_to = date_delisted,
+    review_due = recovery_plan_expiry_date,
+    # check
+    last_reviewed_on = file_last_updated,
+    taxon = name_id %>% as.numeric,
+    category = tsc_category_id %>% as.list(),
+    criteria = tsc_criteria
+  ) %>%
   dplyr::filter(!is.na(category))
 
 # Active Priority listings:
-tfl_no_active_listings <- tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
+tfl_no_active_listings <-
+  tfl_listing_cat_priority %>% dplyr::filter(status == 80) %>% nrow
 
 # Inactive Priority listings:
-tfl_no_inactive_listings <- tfl_listing_cat_priority %>% dplyr::filter(status==90) %>% nrow
+tfl_no_inactive_listings <-
+  tfl_listing_cat_priority %>% dplyr::filter(status == 90) %>% nrow
 
 # tfl_cl_priority[3888,] 
 # taxonid 315936 does not exist, 31593 does - typo confirmed
 
 # List codes: "EPBC" 
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/7/
-tfl_listing_cat_epbc <- tfl_tcl %>% 
-  dplyr::filter(list_code=="EPBC") %>% 
-  dplyr::left_join(
-    dplyr::filter(tsc_conscat_sp, conservation_list == 7), 
-    by="category_code") %>% 
+tfl_listing_cat_epbc <- tfl_tcl %>%
+  dplyr::filter(list_code == "EPBC") %>%
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 7),
+                   by = "category_code") %>%
   dplyr::transmute(
-        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
-        source_id = source_id %>% as.character(),
-        scope = 1, # state 0, cwth 1, intl 2, ap 3
-        status = ifelse(is.na(date_delisted), 80, 90),
-        effective_from = date_listed,
-        effective_to = date_delisted,
-        review_due = recovery_plan_expiry_date,# check
-        last_reviewed_on = file_last_updated,
-        taxon = name_id %>% as.numeric,
-        category = tsc_category_id %>% as.list(),
-        criteria = tsc_criteria
-    ) %>% 
+    source = 2,
+    # TaxonGaz.source tfl 1, TFL 2, TEC 3
+    source_id = source_id %>% as.character(),
+    scope = 1,
+    # state 0, cwth 1, intl 2, ap 3
+    status = ifelse(is.na(date_delisted), 80, 90),
+    effective_from = date_listed,
+    effective_to = date_delisted,
+    review_due = recovery_plan_expiry_date,
+    # check
+    last_reviewed_on = file_last_updated,
+    taxon = name_id %>% as.numeric,
+    category = tsc_category_id %>% as.list(),
+    criteria = tsc_criteria
+  ) %>%
   dplyr::filter(!is.na(category))
 
 # List codes: "WCA_1991" = IUCN 1994/2001/2012
 # IUCN 1994 
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/5/change/
-tfl_listing_cat_iucn1994 <- tfl_tcl %>% 
-  dplyr::filter(list_code_wa=="IUCN_1994") %>% 
-  dplyr::mutate(category_code=category_code_wa) %>% 
-  dplyr::left_join(
-    dplyr::filter(tsc_conscat_sp, conservation_list == 5), 
-    by="category_code") %>% 
+tfl_listing_cat_iucn1994 <- tfl_tcl %>%
+  dplyr::filter(list_code_wa == "IUCN_1994") %>%
+  dplyr::mutate(category_code = category_code_wa) %>%
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 5),
+                   by = "category_code") %>%
   dplyr::transmute(
-        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
-        source_id = source_id %>% as.character(),
-        scope = 0, # state 0, cwth 1, intl 2, ap 3
-        status = ifelse(is.na(date_delisted), 80, 90),
-        effective_from = date_listed,
-        effective_to = date_delisted,
-        review_due = recovery_plan_expiry_date,# check
-        last_reviewed_on = file_last_updated,
-        taxon = name_id %>% as.numeric,
-        category = tsc_category_id %>% as.list(),
-        criteria = tsc_criteria
-    ) %>% 
+    source = 2,
+    # TaxonGaz.source tfl 1, TFL 2, TEC 3
+    source_id = source_id %>% as.character(),
+    scope = 0,
+    # state 0, cwth 1, intl 2, ap 3
+    status = ifelse(is.na(date_delisted), 80, 90),
+    effective_from = date_listed,
+    effective_to = date_delisted,
+    review_due = recovery_plan_expiry_date,
+    # check
+    last_reviewed_on = file_last_updated,
+    taxon = name_id %>% as.numeric,
+    category = tsc_category_id %>% as.list(),
+    criteria = tsc_criteria
+  ) %>%
   dplyr::filter(!is.na(category))
 
 # IUCN 2001
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
-tfl_listing_cat_iucn2001 <- tfl_tcl %>% 
-  dplyr::filter(list_code_wa=="IUCN_2001") %>% 
-  dplyr::mutate(category_code=category_code_wa) %>% 
-  dplyr::left_join(
-    dplyr::filter(tsc_conscat_sp, conservation_list == 4), 
-    by="category_code") %>% 
+tfl_listing_cat_iucn2001 <- tfl_tcl %>%
+  dplyr::filter(list_code_wa == "IUCN_2001") %>%
+  dplyr::mutate(category_code = category_code_wa) %>%
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 4),
+                   by = "category_code") %>%
   dplyr::transmute(
-        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
-        source_id = source_id %>% as.character(),
-        scope = 0, # state 0, cwth 1, intl 2, ap 3
-        status = ifelse(is.na(date_delisted), 80, 90),
-        effective_from = date_listed,
-        effective_to = date_delisted,
-        review_due = recovery_plan_expiry_date,# check
-        last_reviewed_on = file_last_updated,
-        taxon = name_id %>% as.numeric,
-        category = tsc_category_id %>% as.list(),
-        criteria = tsc_criteria
-    ) %>% 
+    source = 2,
+    # TaxonGaz.source tfl 1, TFL 2, TEC 3
+    source_id = source_id %>% as.character(),
+    scope = 0,
+    # state 0, cwth 1, intl 2, ap 3
+    status = ifelse(is.na(date_delisted), 80, 90),
+    effective_from = date_listed,
+    effective_to = date_delisted,
+    review_due = recovery_plan_expiry_date,
+    # check
+    last_reviewed_on = file_last_updated,
+    taxon = name_id %>% as.numeric,
+    category = tsc_category_id %>% as.list(),
+    criteria = tsc_criteria
+  ) %>%
   dplyr::filter(!is.na(category))
 
 # IUCN 2012
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/3/change/
-tfl_listing_cat_iucn2012 <- tfl_tcl %>% 
-  dplyr::filter(list_code_wa=="IUCN_2012") %>% 
-  dplyr::mutate(category_code=category_code_wa) %>% 
-  dplyr::left_join(
-    dplyr::filter(tsc_conscat_sp, conservation_list == 3), 
-    by="category_code") %>% 
+tfl_listing_cat_iucn2012 <- tfl_tcl %>%
+  dplyr::filter(list_code_wa == "IUCN_2012") %>%
+  dplyr::mutate(category_code = category_code_wa) %>%
+  dplyr::left_join(dplyr::filter(tsc_conscat_sp, conservation_list == 3),
+                   by = "category_code") %>%
   dplyr::transmute(
-        source = 2, # TaxonGaz.source tfl 1, TFL 2, TEC 3
-        source_id = source_id %>% as.character(),
-        scope = 0, # state 0, cwth 1, intl 2, ap 3
-        status = ifelse(is.na(date_delisted), 80, 90),
-        effective_from = date_listed,
-        effective_to = date_delisted,
-        review_due = recovery_plan_expiry_date,# check
-        last_reviewed_on = file_last_updated,
-        taxon = name_id %>% as.numeric,
-        category = tsc_category_id %>% as.list(),
-        criteria = tsc_criteria
-    ) %>% 
+    source = 2,
+    # TaxonGaz.source tfl 1, TFL 2, TEC 3
+    source_id = source_id %>% as.character(),
+    scope = 0,
+    # state 0, cwth 1, intl 2, ap 3
+    status = ifelse(is.na(date_delisted), 80, 90),
+    effective_from = date_listed,
+    effective_to = date_delisted,
+    review_due = recovery_plan_expiry_date,
+    # check
+    last_reviewed_on = file_last_updated,
+    taxon = name_id %>% as.numeric,
+    category = tsc_category_id %>% as.list(),
+    criteria = tsc_criteria
+  ) %>%
   dplyr::filter(!is.na(category))
-
 ```
 
 
 ```{r tfl_cons_listing_upload, eval=F, message=FALSE}
-
 tfl_listing_cat_priority %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
 
@@ -1373,7 +1435,7 @@ tfl_eoo <- fna %>% make_eoo()
 ```{r upload_eoo, eval=F}
 tfl_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
+  wastdr::wastd_POST("taxon")
 ```
 
 ### Upload TAEs to TSC
@@ -1383,19 +1445,16 @@ x <- tfl_tae[1,] %>% as.list() %>%
   # Or use any of:
   # tfl_tae[1:100,] %>% 
   # tfl_tae[1:1000,] %>% 
-  wastd_POST(serializer = "occ-taxon-points", 
-             # comment in to test against local TSC:
-             # api_url = dev, api_token = Sys.getenv("WASTDR_API_TOKEN_DEV"), 
-             verbose = T)
+  wastd_POST(serializer = "occ-taxon-points")
 
 # Upload all occurrences to TSC PROD
-tfl_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T)
+tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
-tfl_phys_sample[1,] %>% wastd_bulk_post("occ-observation", verbose = TRUE)
+tfl_phys_sample[1,] %>% wastd_bulk_post("occ-observation")
 
 tfl_phys_sample %>% wastd_bulk_post("occ-observation")
 
@@ -1430,21 +1489,19 @@ if (file.exists(datafile_tsc_flora)) {
 } else {
   # TSC contains taxonomic names from WACensus
   tsc_taxa_flora <- "taxon" %>%
-    wastdr::wastd_GET(api_url = prod,
-                      query = list(paraphyletic_groups__icontains = 21)) %>%
+    wastdr::wastd_GET(query = list(paraphyletic_groups__icontains = 21)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
   
   # Taxon conservation listings for flora
-  tsc_tcl_flora <-
-    wastdr::wastd_GET("taxon-conservationlisting") %>%
-    wastdr::parse_taxon_conservationlisting() %>%
+  tsc_tcl_flora <- "taxon-conservationlisting" %>% 
+    wastdr::wastd_GET() %>%
+    wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = taxon %>% as.character()) %>%
     dplyr::right_join(tsc_taxa_flora, by = "taxon")
   
   save(tsc_taxa_flora, tsc_tcl_flora, file = datafile_tsc_flora)
 }
-
 ```
 
 ## Occurrences
@@ -1463,37 +1520,42 @@ taxon occurrences to names.
 
 occurrences are presented as `occ` with DBCA Region and District names (where
 applicable), plus taxonomic names.
-```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
-datafile.flora <- here::here("data/flora_tae.RData")
-tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+```{r extract_tsc_occ, eval = FALSE}
+tsc_occ_datafile <- here::here("data/flora_tae.RData")
 
-if (file.exists(datafile.flora)) {
-  load(datafile.flora)
+if (file.exists(tsc_occ_datafile)) {
+  load(tsc_occ_datafile)
 } else {
-tsc_tae <- tsc_tae_data %>% 
-  magrittr::extract2("features") %>%
-  geojsonio::as.json() %>%
-  geojsonsf::geojson_sf() %>% 
-  dplyr::mutate(taxon = taxon %>% as.character())
-
-tsc_taxa_flora <- "taxon" %>%
+  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+  tsc_tae <- tsc_tae_data %>%
+    magrittr::extract2("data") %>%
+    geojsonio::as.json() %>%
+    geojsonsf::geojson_sf() %>%
+    dplyr::mutate(taxon = taxon %>% as.character())
+  
+  tsc_taxa_flora <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
                       query = list(paraphyletic_groups = 21)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
-
-tsc_areas <- wastdr::wastd_GET("area") %>%
-      magrittr::extract2("features") %>%
-      geojsonio::as.json() %>%
-      geojsonsf::geojson_sf()
-
-save(tsc_tae, tsc_taxa_flora, tsc_areas, file=datafile.flora, compress="xz")
+  
+  tsc_areas <- wastdr::wastd_GET("area") %>%
+    magrittr::extract2("data") %>%
+    geojsonio::as.json() %>%
+    geojsonsf::geojson_sf()
+  
+  save(tsc_tae,
+       tsc_taxa_flora,
+       tsc_areas,
+       file = tsc_occ_datafile,
+       compress = "xz")
 }
 ```
 
 ```{r munge, message = FALSE, warning=FALSE}
-datafile.flora <- here::here("data/flora_tae.RData")
-if (fs::file_exists(datafile.flora)) load(datafile.flora)
+tsc_occ_datafile <- here::here("data/flora_tae.RData")
+if (fs::file_exists(tsc_occ_datafile))
+  load(tsc_occ_datafile)
 
 regions <- tsc_areas %>%
   dplyr::filter(area_type == "Region") %>%
@@ -1504,11 +1566,10 @@ districts <- tsc_areas %>%
   dplyr::transmute(district_id = pk, district_name = name)
 
 tsc_occ_flora <- tsc_tae %>%
-  sf::st_join(regions) %>% 
-  sf::st_join(districts) %>% 
-  dplyr::mutate(taxon = taxon %>% as.character()) %>% 
-  dplyr::inner_join(tsc_taxa_flora, by="taxon") 
-
+  sf::st_join(regions) %>%
+  sf::st_join(districts) %>%
+  dplyr::mutate(taxon = taxon %>% as.character()) %>%
+  dplyr::inner_join(tsc_taxa_flora, by = "taxon") 
 ```
 
 # Compare legacy from TFL to migrated data from TSC
@@ -1527,7 +1588,7 @@ Check unique number of observations and identify observations missing from TSC c
 ```{r tfl_summary}
 tfl_tcl_unique_taxa <- tfl_tcl$name_id %>%
   unique() %>%
-  length() 
+  length()
 
 tsc_tcl_unique_taxa <- tsc_tcl_flora$name_id %>%
   unique() %>%
@@ -1552,18 +1613,19 @@ were not migrated into TSC.
 ```{r missing_observations}
 tfl_tcl %>%
   dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>% 
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 ### TSC conservation listings not in TFL
 
-The following table shows any conservation listings in TSC which are not in TFL. Becasue there are more taxa in TSC than TFL taxa with no source_id have also been removed.
+The following table shows any conservation listings in TSC which are not in TFL. 
+Becasue there are more taxa in TSC than TFL taxa with no source_id have also been removed.
 
 ```{r}
 tsc_tcl_flora %>%
   dplyr::anti_join(tfl_tcl, by = "source_id") %>%
   dplyr::filter(source_id != "") %>% 
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 ### TFL cons listed phrase names
@@ -1573,7 +1635,7 @@ name, once the published name is known and entered into WACensus, then propagate
 into TSC.
 
 ```{r}
-tfl_tcl %>% dplyr::filter(name_id == 0) %>% reactable::reactable()
+tfl_tcl %>% dplyr::filter(name_id == 0) %>% rt
 ```
 
 ### Conservation criteria mapping
@@ -1582,7 +1644,7 @@ Conservation criteria were manually mapped for each species,
 therefore they need to be checked to confirm whether the mapping is correct. 
 ```{r}
 tfl_conscrit %>%
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 In addition, some conservation criteria could not be mapped as they do not exist 
@@ -1622,7 +1684,7 @@ cl_corner_dates <- rbind(tfl_corner_dates, tsc_corner_dates) %>%
   t() %>%
   magrittr::set_colnames(c("TFL", "TSC"))
 
-cl_corner_dates %>% reactable::reactable()
+cl_corner_dates %>% rt
 ```
 
 ### Conservation listing differences
@@ -1635,54 +1697,63 @@ Equality of numbers does not prove absence of equal numbers of false positives
 and false negatives.
 
 ```{r summary_conservation_list}
-make_tfl_cl_summary <- . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFL")
+make_tfl_cl_summary <-
+  . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFL")
 
-tfl_cl_sum_priority <- tfl_listing_cat_priority %>% make_tfl_cl_summary
-tfl_cl_sum_iucn1994 <- tfl_listing_cat_iucn1994 %>% make_tfl_cl_summary
-tfl_cl_sum_iucn2001 <- tfl_listing_cat_iucn2001 %>% make_tfl_cl_summary
-tfl_cl_sum_iucn2012 <- tfl_listing_cat_iucn2012 %>% make_tfl_cl_summary
+tfl_cl_sum_priority <-
+  tfl_listing_cat_priority %>% make_tfl_cl_summary
+tfl_cl_sum_iucn1994 <-
+  tfl_listing_cat_iucn1994 %>% make_tfl_cl_summary
+tfl_cl_sum_iucn2001 <-
+  tfl_listing_cat_iucn2001 %>% make_tfl_cl_summary
+tfl_cl_sum_iucn2012 <-
+  tfl_listing_cat_iucn2012 %>% make_tfl_cl_summary
 tfl_cl_sum_epbc <- tfl_listing_cat_epbc %>% make_tfl_cl_summary
 
 
-make_tsc_cl_summary <- function(data, cn){
+make_tsc_cl_summary <- function(data, cn) {
   data %>%
-  dplyr::select(category_cache) %>%
-  dplyr::filter(str_detect(category_cache, cn)) %>%
-  nrow() %>% 
-  as.data.frame %>% 
-  magrittr::set_colnames("TSC")
+    dplyr::select(category_cache) %>%
+    dplyr::filter(str_detect(category_cache, cn)) %>%
+    nrow() %>%
+    as.data.frame %>%
+    magrittr::set_colnames("TSC")
 }
 
 
-tsc_cl_sum_priority <- tsc_tcl_flora %>% make_tsc_cl_summary("Priority")
-tsc_cl_sum_iucn1994 <- tsc_tcl_flora %>% make_tsc_cl_summary("IUCN1994")
-tsc_cl_sum_iucn2001 <- tsc_tcl_flora %>% make_tsc_cl_summary("IUCN2001")
-tsc_cl_sum_iucn2012 <- tsc_tcl_flora %>% make_tsc_cl_summary("IUCN2012")
+tsc_cl_sum_priority <-
+  tsc_tcl_flora %>% make_tsc_cl_summary("Priority")
+tsc_cl_sum_iucn1994 <-
+  tsc_tcl_flora %>% make_tsc_cl_summary("IUCN1994")
+tsc_cl_sum_iucn2001 <-
+  tsc_tcl_flora %>% make_tsc_cl_summary("IUCN2001")
+tsc_cl_sum_iucn2012 <-
+  tsc_tcl_flora %>% make_tsc_cl_summary("IUCN2012")
 tsc_cl_sum_epbc <- tsc_tcl_flora %>% make_tsc_cl_summary("EPBC")
 
 
 tfl_cons_cat_sum <- rbind(
   tfl_cl_sum_priority,
-  tfl_cl_sum_iucn1994, 
-  tfl_cl_sum_iucn2001, 
+  tfl_cl_sum_iucn1994,
+  tfl_cl_sum_iucn2001,
   tfl_cl_sum_iucn2012,
   tfl_cl_sum_epbc
 )
 
 tsc_cons_cat_sum <- rbind(
   tsc_cl_sum_priority,
-  tsc_cl_sum_iucn1994, 
-  tsc_cl_sum_iucn2001, 
-  tsc_cl_sum_iucn2012, 
-  tsc_cl_sum_epbc 
-  )
+  tsc_cl_sum_iucn1994,
+  tsc_cl_sum_iucn2001,
+  tsc_cl_sum_iucn2012,
+  tsc_cl_sum_epbc
+)
 
 cons_cat_summary <- tfl_cons_cat_sum %>%
   cbind(tsc_cons_cat_sum) %>%
-  cbind(Category = c("Priority","IUCN1994", "IUCN2001", "IUCN2012", "EPBC")) %>%
+  cbind(Category = c("Priority", "IUCN1994", "IUCN2001", "IUCN2012", "EPBC")) %>%
   dplyr::select("Category", everything())
 
-cons_cat_summary %>% reactable::reactable() ## ARE THESE DIFFERENCES FROM USE OF CATEGORY_CODE AND NOT CATEGORY_CODE_WA?
+cons_cat_summary %>% rt ## ARE THESE DIFFERENCES FROM USE OF CATEGORY_CODE AND NOT CATEGORY_CODE_WA?
 ```
 
 
@@ -1690,81 +1761,101 @@ The following tables show any conservation listings in TFL which are not in TSC,
 
 IUCN 2012
 ```{r }
-#### IUCN 2012
 tsc_listing_cat_iucn2012 <- tsc_tcl_flora %>%
-  dplyr::filter(str_detect(category_cache,"IUCN(2012)"))
+  dplyr::filter(stringr::str_detect(category_cache, "IUCN(2012)"))
 
-tfl_listing_cat_iucn2012 %>% anti_join(tsc_listing_cat_iucn2012,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tfl_listing_cat_iucn2012 %>%
+  dplyr::anti_join(
+    tsc_listing_cat_iucn2012,
+    by = c("source_id", "effective_from", "status", "effective_to")
+  ) %>% rt
 ```
 IUCN 2001
 ```{r}
-#### IUCN 2001
 tsc_listing_cat_iucn2001 <- tsc_tcl_flora %>%
-  dplyr::filter(str_detect(category_cache,"IUCN(2001)"))
+  dplyr::filter(stringr::str_detect(category_cache, "IUCN(2001)"))
 
-tfl_listing_cat_iucn2001 %>% anti_join(tsc_listing_cat_iucn2001,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tfl_listing_cat_iucn2001 %>%
+  dplyr::anti_join(
+    tsc_listing_cat_iucn2001,
+    by = c("source_id", "effective_from", "status", "effective_to")
+  ) %>% rt
 ```
 IUCN 1994
 ```{r}
-#### IUCN 1994
 tsc_listing_cat_iucn1994 <- tsc_tcl_flora %>%
-  dplyr::filter(str_detect(category_cache,"IUCN(1994)"))
+  dplyr::filter(stringr::str_detect(category_cache, "IUCN(1994)"))
 
-tfl_listing_cat_iucn1994 %>% anti_join(tsc_listing_cat_iucn1994,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tfl_listing_cat_iucn1994 %>%
+  dplyr::anti_join(
+    tsc_listing_cat_iucn1994,
+    by = c("source_id", "effective_from", "status", "effective_to")
+  ) %>% rt
 ```
 Priority
 ```{r}
-#### Priority
 tsc_listing_cat_priority <- tsc_tcl_flora %>%
-  dplyr::filter(str_detect(category_cache,"Priority"))
+  dplyr::filter(stringr::str_detect(category_cache, "Priority"))
 
-tfl_listing_cat_priority %>% anti_join(tsc_listing_cat_priority,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tfl_listing_cat_priority %>%
+  dplyr::anti_join(
+    tsc_listing_cat_priority,
+    by = c("source_id", "effective_from", "status", "effective_to")
+  ) %>% rt
 ```
 EPBC
 ```{r}
-#### EPBC
 tsc_listing_cat_epbc <- tsc_tcl_flora %>%
-  dplyr::filter(str_detect(category_cache,"EPBC")) 
+  dplyr::filter(stringr::str_detect(category_cache, "EPBC"))
 
-tfl_listing_cat_epbc %>% anti_join(tsc_listing_cat_epbc,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tfl_listing_cat_epbc %>%
+  dplyr::anti_join(
+    tsc_listing_cat_epbc,
+    by = c("source_id", "effective_from", "status", "effective_to")
+  ) %>% rt
 ```
 
 The following tables show any conservation listings in TSC which are not in tfl, for each conservation list.
 
 IUCN 2012
 ```{r }
-#### IUCN 2012
-tsc_listing_cat_iucn2012 %>% anti_join(tfl_listing_cat_iucn2012,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tsc_listing_cat_iucn2012 %>% 
+  dplyr::anti_join(
+  tfl_listing_cat_iucn2012,
+  by = c("source_id", "effective_from", "status", "effective_to")
+) %>% rt
 ```
 IUCN 2001
 ```{r}
-#### IUCN 2001
-tsc_listing_cat_iucn2001 %>% anti_join(tfl_listing_cat_iucn2001,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tsc_listing_cat_iucn2001 %>% 
+  dplyr::anti_join(
+  tfl_listing_cat_iucn2001,
+  by = c("source_id", "effective_from", "status", "effective_to")
+) %>% rt
 ```
 IUCN 1994
 ```{r}
-#### IUCN 1994
-tsc_listing_cat_iucn1994 %>% anti_join(tfl_listing_cat_iucn1994,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tsc_listing_cat_iucn1994 %>% 
+  dplyr::anti_join(
+  tfl_listing_cat_iucn1994,
+  by = c("source_id", "effective_from", "status", "effective_to")
+) %>% rt
 ```
 IUCN Priority
 ```{r}
-#### Priority
-tsc_listing_cat_priority %>% anti_join(tfl_listing_cat_priority,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tsc_listing_cat_priority %>% 
+  dplyr::anti_join(
+  tfl_listing_cat_priority,
+  by = c("source_id", "effective_from", "status", "effective_to")
+) %>% rt
 ```
 EPBC
 ```{r}
-#### EPBC
-tsc_listing_cat_epbc %>% anti_join(tfl_listing_cat_epbc,by = c("source_id","effective_from","status","effective_to")) %>% 
-  reactable::reactable(filterable = T)
+tsc_listing_cat_epbc %>% 
+  dplyr::anti_join(
+    tfl_listing_cat_epbc,
+    by = c("source_id", "effective_from", "status", "effective_to")) %>%
+  rt
 ```
 
 ## Occurrences
@@ -1802,119 +1893,101 @@ tfl_skim <- tfl_occ %>% skimr::skim()
 tfl_skim %>%
   filter(n_missing > 0) %>%
   # select(-stat, -level, -formatted) %>%
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 #### Missing NameID
 ```{r missing_name_id}
-tfl_occ_no_nameid <- tfl_occ %>% 
-    filter(name_id == 0) %>% 
-    select(species_name) %>% 
-    unique()
-tfl_occ_no_nameid %>% reactable::reactable()
+tfl_occ_no_nameid <- tfl_occ %>%
+  filter(name_id == 0) %>%
+  select(species_name) %>%
+  unique()
+tfl_occ_no_nameid %>% rt
 ```
 
 #### Missing PopID
 ```{r missing_species_name}
-tfl_occ_no_popid <- tfl_occ %>% 
-    filter(pop_id == 0) %>% 
-    select(species_name) %>% 
-    unique()
-tfl_occ_no_popid %>% reactable::reactable()
+tfl_occ_no_popid <- tfl_occ %>%
+  filter(pop_id == 0) %>%
+  select(species_name) %>%
+  unique()
+tfl_occ_no_popid %>% rt
 ```
 
-There are `r nrow(tfl_occ_no_nameid)` distinct scientific flora names without NameID, and `r nrow(tfl_occ_no_popid)` distinct scientific flora names without a PopID.
+There are `r nrow(tfl_occ_no_nameid)` distinct scientific flora names without 
+NameID, and `r nrow(tfl_occ_no_popid)` distinct scientific flora names without a PopID.
 Any records listed here need to be fixed in the original Threatened Flora database.
 
 #### Default/ missing date/time
 ```{r missing datetime}
 tfl_occ_no_datetime<- tfl_occ %>% 
     filter(created_date == "")
-tfl_occ_no_datetime %>% reactable::reactable()
+tfl_occ_no_datetime %>% rt
 ```
 
 #### Missing coordinates
 ```{r missing coordinates}
-tfl_occ_no_latlng <- tfl_occ %>% 
-    filter(is.na(latitude) | is.na(longitude))
-tfl_occ_no_latlng %>% reactable::reactable()
+tfl_occ_no_latlng <- tfl_occ %>%
+  filter(is.na(latitude) | is.na(longitude))
+tfl_occ_no_latlng %>% rt
 ```
 
 There are `r nrow(tfl_occ_no_latlng)` distinct flora records with missing latitude or longitude.
 
 ```{r has eastnorthings}
-tfl_occ_no_latlng_w_ne <- tfl_occ %>% 
-  filter(is.na(latitude) | is.na(longitude)) %>% 
-  filter((northing != "NA") | (easting!= "NA"))
-tfl_occ_no_latlng_w_ne %>% reactable::reactable()
+tfl_occ_no_latlng_w_ne <- tfl_occ %>%
+  filter(is.na(latitude) | is.na(longitude)) %>%
+  filter((northing != "NA") | (easting != "NA"))
+tfl_occ_no_latlng_w_ne %>% rt
 ```
 
-There are `r nrow(tfl_occ_no_latlng_w_ne)` distinct flora records with missing latitude or longitude, which have northings and eastings.
+There are `r nrow(tfl_occ_no_latlng_w_ne)` distinct flora records with missing 
+latitude or longitude, which have northings and eastings.
 
 #### Datum
 ```{r datum_tally}
 datum_tally <- tfl_occ %>%
   dplyr::group_by(datum) %>%
   dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>% 
+  dplyr::arrange(desc(n)) %>%
   ungroup()
-datum_tally %>% reactable::reactable()
+datum_tally %>% rt
 ```
 
 There are `r nrow(datum_tally)` different datums used across all distinct flora records. 
 
 ```{r datum_blank}
-datum_blank<- tfl_occ %>% 
-    filter(datum == "")
+datum_blank <- tfl_occ %>%
+  filter(datum == "")
 ```
 
 There are `r nrow(datum_blank)` distinct flora records with missing datum.
 
-TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
+TODO Which datum do we want to use? WGS84 and GDA94 are designed to be <1m different. 
+GDA94 is designed to be comparable with WGS84 GPS data. 
+As GDA94 is the most frequently used datum in the dataset, should we convert all others to GDA94?
 
 ### Occurrence mapping
 
-Occurrence criteria were manually mapped for each variable, therefore they need to be checked to confirm whether the mapping is correct. 
+Occurrence criteria were manually mapped for each variable, 
+therefore they need to be checked to confirm whether the mapping is correct. 
 
 Some conservation criteria could not be mapped as they do not exist in the list/category_code.
 ```{r}
-#landform
-tfl_landcrit %>%
-  reactable::reactable(filterable = TRUE)
-#rocktype
-tfl_rocktype %>%
-  reactable::reactable(filterable = TRUE)
-#soil_type
-tfl_soiltype %>%
-  reactable::reactable(filterable = TRUE)
+tfl_landcrit %>% rt
+tfl_rocktype %>%  rt
+tfl_soiltype %>% rt
 ```
 Soil type: Three of these criteria cound not be mapped because and we don't know what they are.
 ```{r}
-#soil_colour
-tfl_soilcolour %>%
-  reactable::reactable(filterable = TRUE)
-#drainage
-tfl_drainage %>%
-  reactable::reactable(filterable = TRUE)
-#soil_condition
-tfl_soil_condition %>%
-  reactable::reactable(filterable = TRUE)
-#survey_method
-tfl_survey_method %>%
-  reactable::reactable(filterable = TRUE)
-#plant_count_method
-tfl_plant_count_method %>%
-  reactable::reactable(filterable = TRUE)
-#counted_subject
-tfl_plant_count_subject %>%
-  reactable::reactable(filterable = TRUE)
-#plant_condition
-tfl_plant_condition %>%
-  reactable::reactable(filterable = TRUE)
-#sample_destination
-tfl_sampdest %>%
-  reactable::reactable(filterable = TRUE) 
-
+tfl_soilcolour %>% rt
+tfl_drainage %>% rt
+tfl_soil_condition %>% rt
+tfl_survey_method %>% rt
+tfl_plant_count_method %>% rt
+tfl_plant_count_subject %>% rt
+tfl_plant_condition %>% rt
+tfl_sampdest %>% rt 
 ```
 Sample destination was manually mapped to a generic field for its location and the specific location added to the smaple label field as free text. We have done this because, combined with flora, there are > 100 unique locations for sample destination, which would make a very long drop down menu.
 
@@ -1933,8 +2006,7 @@ were not migrated into TSC.
 missing_occ_tfl_tae <- tfl_occ %>%
   dplyr::anti_join(tfl_tae, by = "source_id") 
 
-missing_occ_tfl_tae %>% reactable::reactable(filterable = TRUE)
-
+missing_occ_tfl_tae %>% rt
 ```
 
 There are `r nrow(missing_occ_tfl_tae)` occurrences missing from tfl_tae when compared to tfl_occ. The occurrences listed were likely not migrated because they do not contain lat or long data which is a requirement for valid taxon area encounters.
@@ -1958,7 +2030,7 @@ tfl_occ_tally %>%
   dplyr::rename(tfl = n) %>% 
   left_join(tfl_tae_tally,by = "source_id") %>% 
   dplyr::rename(tae = n) %>% 
-  filter(tfl != tae) %>% reactable::reactable()
+  filter(tfl != tae) %>% rt
 ```
 
 ### TFL_TAE occurrences not in TSC_TAE
@@ -1967,51 +2039,47 @@ Any records in the following table indicate taxon in TFL that were not migrated 
 
 #### Name mismatches tfl_tae to tsc_tae
 ```{r name mismatches tfl_tae to tsc_tae}
-missing_taxa_tsc <- tfl_tae %>% 
-    dplyr::anti_join(tsc_tae, by = "taxon") 
+missing_taxa_tsc <- tfl_tae %>%
+  dplyr::anti_join(tsc_tae, by = "taxon")
 
-missing_taxa_tsc_unique <- missing_taxa_tsc %>% 
-    dplyr::select(taxon) %>% 
-    distinct() %>% 
-  dplyr::left_join(tsc_taxa_flora,by = "taxon")#26
+missing_taxa_tsc_unique <- missing_taxa_tsc %>%
+  dplyr::select(taxon) %>%
+  distinct() %>%
+  dplyr::left_join(tsc_taxa_flora, by = "taxon") #26
 
-missing_taxa_tsc_unique %>% reactable::reactable()
-
+missing_taxa_tsc_unique %>% rt
 ```
 
 There are `r nrow(missing_taxa_tsc)` taxon records missing from tsc_tae when compared to taf_tae. These records are attributed to `r nrow(missing_taxa_tsc_unique)` unique species.  
 
 #### Name mismatches tfl_tae to tsc_occ_flora
 ```{r name mismatches tfl_tae to tsc_occ_flora}
-missing_taxa_occ_flora <- tfl_tae %>% 
-    dplyr::anti_join(tsc_occ_flora, by = "taxon") 
+missing_taxa_occ_flora <- tfl_tae %>%
+  dplyr::anti_join(tsc_occ_flora, by = "taxon")
 
-missing_taxa_occ_flora_unique <- missing_taxa_occ_flora %>% 
-    dplyr::select(taxon) %>% 
-    distinct() %>% 
-  dplyr::left_join(tsc_taxa_flora,by = "taxon")
+missing_taxa_occ_flora_unique <- missing_taxa_occ_flora %>%
+  dplyr::select(taxon) %>%
+  distinct() %>%
+  dplyr::left_join(tsc_taxa_flora, by = "taxon")
 
-missing_taxa_occ_flora_unique %>% reactable::reactable()
-
+missing_taxa_occ_flora_unique %>% rt
 ```
 
 There are `r nrow(missing_taxa_occ_flora)` taxon records missing from tsc_occ_flora when compared to tfl_tae. These records are attributed to `r nrow(missing_taxa_occ_flora_unique)` unique species.  
 
 #### Occurrence mismatches tfl_tae to tsc_tae
 ```{r missing_occurrences tfl_tae to tsc_tae}
-
 missing_occ_tae_tsc <- tfl_tae %>%
-  dplyr::anti_join(tsc_tae, by = "source_id") 
+  dplyr::anti_join(tsc_tae, by = "source_id")
 
-missing_occ_tae_tsc %>% reactable::reactable()
+missing_occ_tae_tsc %>% rt
 # missing_occ_tae_tsc <- tsc_tae %>%
-#   dplyr::anti_join(tsc_occ_flora, by = "source_id") 
+#   dplyr::anti_join(tsc_occ_flora, by = "source_id")
 
-missing_occ_tae_tsc_unique <- missing_occ_tae_tsc %>% 
-    dplyr::select(taxon) %>% 
-    distinct() %>% 
-  dplyr::left_join(tsc_taxa_flora,by = "taxon") #705
-
+missing_occ_tae_tsc_unique <- missing_occ_tae_tsc %>%
+  dplyr::select(taxon) %>%
+  distinct() %>%
+  dplyr::left_join(tsc_taxa_flora, by = "taxon") #705
 ```
 
 There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from tsc_tae when compared to tfl_tae. These missing occurrences come from `r nrow(missing_occ_tae_tsc_unique)` unique species.
@@ -2020,42 +2088,40 @@ The table below is a tally of mismatching occurrences and confirms the missing o
 
 ```{r tally_tfl_tsc_tae}
 tfl_tae_tally <- tfl_tae %>%
-  dplyr::group_by(source_id) %>% 
+  dplyr::group_by(source_id) %>%
   dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>% 
-  ungroup() 
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
 
 tsc_tae_tally <- tsc_tae %>%
-  dplyr::group_by(source_id) %>% 
+  dplyr::group_by(source_id) %>%
   dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>% 
-  ungroup() 
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
 
 tfl_tsc_tae_tally <- tfl_tae_tally %>%
-  dplyr::rename(tfl = n) %>% 
-  left_join(tsc_tae_tally,by = "source_id") %>% 
-  dplyr::rename(tsc = n) %>% 
+  dplyr::rename(tfl = n) %>%
+  left_join(tsc_tae_tally, by = "source_id") %>%
+  dplyr::rename(tsc = n) %>%
   filter(tfl != tsc)
 
-# tfl_tsc_tae_tally %>% reactable::reactable()
+# tfl_tsc_tae_tally %>% rt
 # ## Can't make this into a reactable without a way of changing as sfc feature to a tbl- Florian?
 ```
 
 #### Occurrence mismatches tfl_tae to tsc_occ_flora
 ```{r missing_occurrences tfl_tae to tsc_occ_flora}
-
 missing_occ_tfl_occ_flora <- tfl_tae %>%
   dplyr::anti_join(tsc_occ_flora, by = "source_id") #39073
 
 missing_occ_tfl_occ_flora %>% reactable::reactable(filterable = T)
 # missing_occ_tae_tsc <- tsc_tae %>%
-#   dplyr::anti_join(tsc_occ_flora, by = "source_id") 
+#   dplyr::anti_join(tsc_occ_flora, by = "source_id")
 
-missing_occ_tfl_occ_flora_unique <- missing_occ_tfl_occ_flora %>% 
-    dplyr::select(taxon) %>% 
-    distinct() %>%  
-   dplyr::left_join(tsc_taxa_flora,by = "taxon") #381
-
+missing_occ_tfl_occ_flora_unique <- missing_occ_tfl_occ_flora %>%
+  dplyr::select(taxon) %>%
+  distinct() %>%
+  dplyr::left_join(tsc_taxa_flora, by = "taxon") #381
 ```
 
 There are `r nrow(missing_occ_tfl_occ_flora)` unique occurrences missing from tsc_occ_flora when compared to tfl_tae. These missing occurrences come from `r nrow(missing_occ_tfl_occ_flora_unique)` 381 unique species.
@@ -2064,25 +2130,25 @@ The table below is a tally of mismatching occurrences and confirms the missing o
 
 ```{r tally_tfl_tae_occ_flora}
 tfl_tae_tally <- tfl_tae %>%
-  dplyr::group_by(source_id) %>% 
+  dplyr::group_by(source_id) %>%
   dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>% 
-  ungroup() 
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
 
 tsc_occ_flora_tally <- tsc_occ_flora %>%
-  dplyr::group_by(source_id) %>% 
+  dplyr::group_by(source_id) %>%
   dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>% 
-  ungroup() 
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
 
 tfl_tae_tsc_occ_tally <- tfl_tae_tally %>%
-  dplyr::rename(tfl = n) %>% 
-  left_join(tsc_occ_flora_tally,by = "source_id") %>% 
-  dplyr::rename(tsc = n) %>% 
+  dplyr::rename(tfl = n) %>%
+  left_join(tsc_occ_flora_tally, by = "source_id") %>%
+  dplyr::rename(tsc = n) %>%
   filter(tfl != tsc)
 
-# tfl_tae_tsc_occ_tally %>% reactable::reactable() ## Can't make this into a reactable without a way of changing as sfc feature to a tbl- Florian?
-
+# tfl_tae_tsc_occ_tally %>% rt 
+# TODO cast sfc to tbl_df
 ```
 
 ## Conservation Documents
@@ -2113,5 +2179,35 @@ d <- ckanr::package_show("threatened-and-priority-flora-database")
 #   resource_id = ""
 # )
 # same for other tfl legacy data, copy over from data_etl_flora.Rmd
+
+# TODO review and adjust:
+# upload_to_ckan(flora_occ, "TPFL Species Occurrence",
+#                d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
+# upload_to_ckan(populations, "TPFL Populations", 
+#                d$id, resource_id = "477dbe8c-5bcb-4a5d-90d9-a28869d376b8")
+# upload_to_ckan(occ_vegclass, "TPFL Occurrence vegetation classes", 
+#                d$id, resource_id = "bb8814ff-c423-40d5-b18d-9977a66351b7")
+# upload_to_ckan(occ_threats, "TPFL Occurrence threats", 
+#                d$id, resource_id = "a58b7214-6db1-409b-a08f-d4e28ac0c139")
+# upload_to_ckan(occ_fire, "TPFL Occurrence fire details", 
+#                d$id, resource_id = "9591a80a-cd51-4f57-bc6c-1d0024b49a58")
+# upload_to_ckan(pop_forms, "TPFL Population forms", 
+#                d$id, resource_id = "f881dbd9-31f6-4c9b-a224-62380b2f7e83")
+# upload_to_ckan(pop_threats, "TPFL Population threats", 
+#                d$id, resource_id = "3a1f3e73-7b02-4534-955b-b403ae5577ad")
+# upload_to_ckan(pop_mgmtactions, "TPFL Population management actions", 
+#                d$id, resource_id = "3df48c1e-9fbd-48bf-8b75-ab9dbb71cfc3")
+# upload_to_ckan(pop_fire_summ, "TPFL Population fire summaries", 
+#                d$id, resource_id = "426571af-7c1a-462b-9325-6203383546c3")
+# upload_to_ckan(liaisons, "TPFL Liaisons", 
+#                d$id, resource_id = "610b31a2-d2f0-4c26-9a48-8d7fc8d58265")
+# upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes", 
+#                d$id, resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
+# upload_to_ckan(pop_sectionmap, "TPFL Population section maps", 
+#                d$id, resource_id = "6d557642-cd1f-4cca-8f22-0149d244dd83")
+# upload_to_ckan(flora_cons_listing, "TPFL Conservation Listings", 
+#                d$id, resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
+# upload_to_ckan(cons_prio, "TPFL Conservation priority", 
+#                d$id, resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")
 ```
 
