@@ -17,14 +17,18 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
+default_date <- lubridate::parse_date_time(
+  "1900-01-01 00:00:00", 
+  orders = "ymd HMS", 
+  tz = "Australia/Perth"
+)
 ```
 
 # Context
 This workbook summarises the legacy data migration and QA for the Threatened
 and Priority Fauna database (TFA).
 
-<img src="https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg" 
-width="100%" alt="Legacy data migration and QA diagram"/>
+![](https://data.dbca.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg){width="100%"}
 
 By default, all code blocks are collapsed to provide better readability to the
 non-technical audience. Feel free to expand the code blocks to view the process.
@@ -33,15 +37,17 @@ The code for all SCB workbooks is under version control at
 [github](https://github.com/dbca-wa/scarab-scripts).
 
 
-# Extract and transform legacy Data from TFA
+# Legacy Data (TFA)
+
 Data from the Threatened Fauna Database (TFA) is downloaded from the 
 [TFA dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
-```{r load_tfa, message=FALSE}
 
+```{r get_tfa}
 tfa_file <- here::here("data", "tfa.Rdata")
+
 if (file.exists(tfa_file)) {
   load(tfa_file)
 } else {
@@ -214,7 +220,7 @@ resolution_m <- tibble::tibble(
 ```
 
 ## Conservation listings
-```{r load_tfa_cons, message=FALSE}
+```{r make_tfa_cl}
 # TFA conservation lists
 tfa_cons_lists <- tfa_data$`Listing Names` %>%
   dplyr::transmute(
@@ -288,14 +294,10 @@ readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv")
 Mallee Fowl data is extracted separately and exported, to be stored as a csv file on the data catalogue 
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
 
-```{r load_tfa_occ, message=FALSE, warning=FALSE}
-default_date <- lubridate::parse_date_time("1900-01-01 00:00:00",
-                                           orders = "ymd HMS",
-                                           tz = tz)
+```{r make_tfa_occ, message=FALSE, warning=FALSE}
 tfa_rec <- tfa_data$`Fauna Records` 
-names_tfa_rec <- (as.data.frame(names(tfa_rec)))
 
-# taxon occurences
+# taxon occurrences
 tfa_occ <- tfa_rec %>% dplyr::transmute(
     id = DBNo %>% as.character(),
     district_db = DistDB %>% as.integer(),
@@ -410,8 +412,13 @@ tfa_occ <- tfa_rec %>% dplyr::transmute(
 
 
 ## Create occurence data tables for each card in TSC
+has_name_id_and_location <- . %>% 
+  dplyr::filter(
+    !is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0
+  )
+
 hab_comp <- tfa_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 10,
     source_id = id,
@@ -424,7 +431,7 @@ hab_comp %>%
   readr::write_csv(path = here::here("data", "tfa_landcrit.csv"))
 
 veg_class <- tfa_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 10,
     source_id = id,
@@ -433,7 +440,7 @@ veg_class <- tfa_occ %>%
     filter(vegetation_code != "")
 
 ass_species <- tfa_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 10,
     source_id = id,
@@ -446,7 +453,7 @@ ass_species <- tfa_occ %>%
   dplyr::filter(associated_species_1 != "" | associated_species_2 != "" | associated_species_3 != "" | associated_species_4 != "" | associated_species_5 != "")
     
 anim_obs <- tfa_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>%
   dplyr::transmute(
     source = 10,
     source_id = id,
@@ -488,7 +495,7 @@ anim_obs %>%
   readr::write_csv(path = here::here("data", "tfa_detmeth.csv"))
 
 phys_sample <- tfa_occ %>% 
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>% 
   dplyr::transmute(
     source = 10,
     source_id = id,
@@ -537,7 +544,7 @@ malleefowl_data <- tfa_rec %>% dplyr::transmute(
   
 # Create taxon area encounter
 tfa_tae <- tfa_occ %>%
-  dplyr::filter(!is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0) %>% 
+  has_name_id_and_location %>%
   # dplyr::left_join(taxa, by="name_id") %>% 
   dplyr::transmute(
     taxon = name_id,
@@ -583,7 +590,8 @@ if (file.exists(occ_file)) load(occ_file)
 ```
 
 ## Recovery Actions and Plans
-``` {r load_tfa_rec}
+
+``` {r make_tfa_rec}
 tfa_act <- tfa_data$`Recovery Actions` %>%
   dplyr::transmute(id = ID %>% as.integer(),
                    actions = Recovery.Actions %>% as.character())
@@ -611,7 +619,7 @@ tfa_pla <- tfa_data$`Recovery Plans` %>%
 ```
 
 ## Research priorities and topics
-``` {r load_tfa_res}
+``` {r make_tfa_res}
 tfa_resp <- tfa_data$`Research Priorities` %>%
   dplyr::transmute(species_code = SpCode %>% as.character(),
                    research_priority = ResearchPriority %>% as.character(),
@@ -623,11 +631,11 @@ tfa_rest <- tfa_data$`Research Topics` %>%
                    research_topics = Research.Topics %>% as.character())
 
 
-readr::write_csv(tfa_resp, path = here::here("data", "research_priorities_data.csv")) # this has been added to the data catelogue already
+readr::write_csv(tfa_resp, path = here::here("data", "research_priorities_data.csv"))
 readr::write_csv(tfa_rest, path = here::here("data", "research_topics_data.csv"))
 ```
 
-# Extract and transform criteria Data from TSC
+# Current conservation lists (TSC)
 
 ## Conservation criteria
 
@@ -637,7 +645,7 @@ and transformed into a usable format for manual mapping to TFA.
 A manual step annotated legacy conservation criteria exported from TFA to 
 conservation criteria IDs in TSC in a spreadsheet.
 
-``` {r extract_tsc_cons_criteria, message=FALSE}
+``` {r get_tsc_tcl, message=FALSE}
 tsc_conslist <- wastdr::wastd_GET("conservationlist") %>%
    wastdr::wastd_parse() %>% 
   dplyr::select(
@@ -694,7 +702,7 @@ and transformed into a usable format for manual mapping to TFA.
 A manual step annotated lookup criteria exported from TSC to 
 occurrence data in TFA in a spreadsheet.
 
-``` {r extract_tsc_occurrence_lookup, message=FALSE}
+``` {r get_tsc_occ_lookups, message=FALSE}
 tsc_landforms <- wastdr::wastd_GET("lookup-landform") %>%
   wastdr::wastd_parse() %>% 
   dplyr::rename(
@@ -881,55 +889,19 @@ tfa_veg_class <- veg_class %>%
     )
 ```
 
-# Load legacy data from TFA into TSC
+# Migrate legacy data (TFL to TSC)
+
 In this section, the extracted and transformed data from TFA are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the 
 process.
 
 ## Taxonomy
-Taxonomic names are uploaded to TSC directly from WACensus in a separate workbook.
+
 The QA part of this workbook will compare TFA names to TSC names.
 
 ## Conservation listings
-This section loads conservation listings from TFA into TSC.
 
-Conservation listings are entered in triplicate:
-
-Level 1: Legislation
-
-* WAWCA is the WA Wildlife Conservation Act, the legistation under which taxa 
-  can be gazetted as specially protected.
-* WAWCA has been superseded by the Biodiversity Conservation Act 2016 on 01/01/2019.
-* All conservation listings were/are gazetted under the respective act (WAWCA or BCA).
-
-Level 2: Gazette
-
-* SPFN = "Wildlife Conservation (Specially Protected Fauna) Notice, Schedules"
-* SPFN are the gazetted schedules.
-
-Level 3: Assigned conservation categories and criteria
-
-* DBCA has assigned actual conservation cat&crit to taxa following the IUCN definitions, 
-  or similar cat&crit of own design before IUCN was published.
-* These "IUCN" cons listings are the actual listings we want to preserve.
-
-In future, only IUCN 2012 cat&crit will be assigned to taxa.
-The list of all listed taxa will be published by the government gazette annually, 
-which will set the life cycle status of our IUN listings to "gazetted".
-The underlying legislation (from now on, the BCA) is evident out of the context 
-and does not have to be entered as conservation listing into TSC.
-
-ETL decisions for Fauna cons listings:
-
-* Fauna WAPF = TSC WAPS = Priority species.
-* Fauna RedList = TSC IUCN 2012 (or whichever earlier version was applicable 
-  at the time).
-* Fauna ActionPlan was decided to be discarded.
-* Fauna has three empty listings (no list, no cat, no crit) - discard.
-
-```{r tfa_cons_listing_subsetting, message=FALSE}
-# tsc_conscat$id is the TSC ID for the cons category
-# tsc_conscat$label = tec_cons_listing_categories$category_code
+```{r make_tfa_tcl, message=FALSE}
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET() %>% 
   wastdr::wastd_parse() %>% 
