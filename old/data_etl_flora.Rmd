@@ -32,8 +32,6 @@ The code for all SCB workbooks is under version control at [github](https://gith
 The zipped MS Access snapshot is downloaded, unpacked, and accessed as object `flora_data`.
 
 ```{r flora_load_data}
-# flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>%
-# read.csv(., as.is = TRUE, encoding = "utf8", fileEncoding = "latin1")
 flora_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
 
 snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
@@ -47,22 +45,22 @@ datafile_tsc_flora <- here::here("data", "etl_flora_tsc.Rda")
 ```
 
 ```{r flora_map, eval=F, echo=F}
-# skimr::skim(flora_data)
 leaflet(width = 800, height = 600) %>%
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
   clearBounds() %>%
   addAwesomeMarkers(
     data = flora_data$DRF_POPULATION,
-    lng = ~ Gda94Long, lat = ~ Gda94Lat,
+    lng = ~ GDA94LONG, lat = ~ GDA94LAT,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
-    label = ~ paste(Taxon),
-    popup = ~ paste(
-      "<h3>", Taxon, "</h3>",
-      "<strong>Encountered on</strong>", CountDate, "<br/>",
-      HabNotes, "<br/>",
-      PopNotes, "<br/>",
-      Location
+    label = ~ paste(TAXONID),
+    popup = ~ glue::glue(
+      '
+      <h3>Taxon {TAXONID} Pop {POP.ID}</h3>
+      <strong>Encountered on</strong> {COUNT.SECT.DATE}<br/>
+      {HABITAT.CONDITION}{HABITAT.NOTES}<br/>
+      {LOCATION}
+      '
     ),
     group = "Flora",
     clusterOptions = markerClusterOptions()
@@ -409,11 +407,27 @@ leaflet(width = 800, height = 600) %>%
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
     label = ~ paste(species_name),
-    popup = ~ paste(
-      "<h3>", species_name, "</h3>",
-      "<strong>Encountered on</strong>", observation_date, "<br/>",
-      habitat_notes, "<br/>",
-      population_notes, "<br/>"
+    popup = ~ glue::glue(
+      '
+      <h3>{species_name} [{pop_id}{subpop_code}]</h3>
+      <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>
+      Sheet no {sheetno}. New population: {new_pop_ind}. {population_notes}<br/>
+      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Source of record: {record_src_code}<br/>
+      
+      <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span> {observation_date}<br/>
+      <span class="glyphicon glyphicon-globe" aria-hidden="true"></span> {location}<br/>
+      Located {distance} km {direction} of {nearplace}.<br/>
+      {other_comments}<br/>
+      
+      <h5>Habitat</h5>
+      Landform: {landform}. 
+      Rock type: {rock_type}.
+      Gravel: {gravel}.
+      Soil type: {soil_type}.
+      Soil colour: {soil_color}.
+      Drainage: {drainage}.
+      <br/>
+      '
     ),
     group = "Flora",
     clusterOptions = markerClusterOptions()
