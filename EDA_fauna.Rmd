@@ -636,26 +636,33 @@ and transformed into a usable format for manual mapping to TFA.
 
 A manual step annotated legacy conservation criteria exported from TFA to 
 conservation criteria IDs in TSC in a spreadsheet.
+
 ``` {r extract_tsc_cons_criteria, message=FALSE}
-tsc_cons_list <- "conservationlist" %>%
-  wastdr::wastd_GET()%>%
-  wastdr::wastd_parse()
+tsc_conslist <- wastdr::wastd_GET("conservationlist") %>%
+   wastdr::wastd_parse() %>% 
+  dplyr::select(
+    -conservationcategory_set,
+    -conservationcriterion_set
+  ) %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  )
 
-tsc_cons_cat <- "conservationcategory" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  dplyr::arrange(conservation_list, rank) %>%
-  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
+tsc_conscat <-  wastdr::wastd_GET("conservationcategory") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(list_id = conservation_list) %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(tsc_conslist, by = "list_id")
 
-tsc_cons_crit <- "conservationcriterion" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  dplyr::arrange(conservation_list, rank) %>%
-  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
+tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(list_id = conservation_list) %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(tsc_conslist, by = "list_id")
 
-tsc_cons_crit %>%
-  dplyr::select(-"conservationcategory_set", -"conservationcriterion_set") %>%
-  readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
+readr::write_csv(tsc_conscrit, path = here::here("data/tsc_conscrit_fauna.csv"))
 
 # Load manual mapping of TFA cons criteria from CSV file, join to tfa_cons_crit
 tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
@@ -674,7 +681,9 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_conscrit, by = c("list_code", "criteria_code"))
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) %>%  
+  # dplyr::glimpse() %>% 
+  invisible()
 ```
 
 ## Occurrence lookup criteria
@@ -684,39 +693,69 @@ and transformed into a usable format for manual mapping to TFA.
 
 A manual step annotated lookup criteria exported from TSC to 
 occurrence data in TFA in a spreadsheet.
+
 ``` {r extract_tsc_occurrence_lookup, message=FALSE}
-tsc_landforms <- "lookup-landform" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+tsc_landforms <- wastdr::wastd_GET("lookup-landform") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
 
-tsc_confidence <- "lookup-confidence" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse()
+tsc_confidence <- wastdr::wastd_GET("lookup-confidence") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
+  readr::write_csv(path = here::here("data", "tsc_confidence.csv"))
   
-tsc_repro_mat <- "lookup-reproductivematurity" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_repro_mat <- wastdr::wastd_GET("lookup-reproductivematurity") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_repro_mat.csv"))
 
-tsc_sec_signs <- "lookup-secondarysigns" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+tsc_sec_signs <- wastdr::wastd_GET("lookup-secondarysigns") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
 
-tsc_samp_dest <- "lookup-sampledestination" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_samp_dest <- wastdr::wastd_GET("lookup-sampledestination") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
 
-tsc_samp_type <- "lookup-sampletype" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_samp_type <- wastdr::wastd_GET("lookup-sampletype") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_samp_type.csv"))
 
-tsc_det_meth <- "lookup-detectionmethod" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_det_meth <- wastdr::wastd_GET("lookup-detectionmethod") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
 
 # Load manual mapping of TFA lookup criteria from CSV file, and join to relevant table
