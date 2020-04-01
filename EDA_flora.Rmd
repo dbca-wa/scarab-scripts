@@ -1,5 +1,5 @@
 ---
-title: 'Data ETL: Flora'
+title: 'Data ETL and QA: Flora'
 author: "Florian Mayer and Milly Piggott, DBCA"
 date: "`r Sys.time()`"
 always_allow_html: yes
@@ -11,7 +11,7 @@ output:
     fig_width: 10
     fig_height: 6
     code_folding: hide
-    theme: lumen
+    theme: yeti
   pdf_document: default
 ---
 
@@ -27,10 +27,10 @@ default_date <- lubridate::parse_date_time(
 
 # Context
 
-This workbook summarises the legacy data migration and QA for the Threatened and
+This workbook summarizes the legacy data migration and QA for the Threatened and
 Priority Flora database (TFL).
 
-![](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg){width="100%"}
+![](https://data.dbca.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg){width="100%"}
 
 By default, all code blocks are collapsed to provide better readability to the
 non-technical audience. Feel free to expand the code blocks to view the process.
@@ -38,10 +38,10 @@ non-technical audience. Feel free to expand the code blocks to view the process.
 The code for all SCB workbooks is under version control at
 [github](https://github.com/dbca-wa/scarab-scripts).
 
-# Extract and transform legacy Data from TFL
+# Legacy Data (TFL)
 
 Data from the Threatened Flora Database (TFL) is downloaded from the [TFL
-dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database)
+dataset](https://data.dbca.wa.gov.au/dataset/threatened-and-priority-flora-database)
 on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
@@ -981,7 +981,7 @@ fire_sum <- tfl_data$DRF_FIRE_SUMMARIES %>%
     modified_date = MODIFIED.DATE %>% as.character())
 ```
 
-# Extract and transform criteria Data from TSC
+# Current conservation lists (TSC)
 
 ## Conservation criteria
 
@@ -1275,7 +1275,7 @@ tfl_phys_sample <- phys_sample %>%
   dplyr::mutate(obstype = "PhysicalSample")
 ```
 
-# Load legacy data from TFL into TSC
+# Migrate legacy data (TFL to TSC)
 
 In this section, the extracted and transformed data from TFL are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the
@@ -1520,10 +1520,10 @@ tfl_hab_comp %>% wastdr::wastd_bulk_post("occ-observation")
 
 ## Conservation Threats and Actions
 
-# Extract and transform migrated Data from TSC
+# Migrated Data (TSC)
 
-Data from TSC is extracted through the TSC API and transformed into a useable
-format.
+Data from TSC is extracted through the TSC API and transformed into a usable
+format. This process is also the template for future reporting from TSC.
 
 Expand the code block below to view the process.
 
@@ -1615,7 +1615,8 @@ if (file.exists(tsc_occ_flora_datafile)) {
        compress = "xz")
 }
 ```
-# Compare legacy from TFL to migrated data from TSC
+
+# Compare legacy to migrated data
 
 This section provides an automated comparison between original data from TFL,
 and TFL data as uploaded into TSC.
@@ -1692,8 +1693,8 @@ tfl_conscrit %>% rt
 ```
 
 In addition, some conservation criteria could not be mapped as they do not exist
-in the `list_code` / `category_code`. These need to be corrected before the manual mapping
-can be updated and the correct criteria assigned for all species.
+in the `list_code` / `category_code`. These need to be corrected before the
+manual mapping can be updated and the correct criteria assigned for all species.
 
 ### Conservation listing dates
 
@@ -2160,8 +2161,8 @@ missing_occ_tae_tsc_unique <- missing_occ_tae_tsc %>%
   dplyr::left_join(tsc_taxa_flora, by = "taxon") #705
 ```
 
-There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from `tsc_tae`
-when compared to `tfl_tae`. These missing occurrences come from
+There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from
+`tsc_tae` when compared to `tfl_tae`. These missing occurrences come from
 `r nrow(missing_occ_tae_tsc_unique)` unique species.
 
 The table below is a tally of mismatching occurrences and confirms the missing
@@ -2244,12 +2245,11 @@ tfl_tae_tsc_occ_tally <- tfl_tae_tally %>%
 
 # Upload to data catalogue
 
-The [compiled version of this workbook]() is uploaded to the [Threatened Flora
-Dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-flora-database/)
+The [compiled version of this workbook](https://data.dbca.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/1b5e6401-82fe-4728-83be-f3f8ea4b5876) 
+is uploaded to the [Threatened Flora Dataset](https://data.dbca.wa.gov.au/dataset/threatened-and-priority-flora-database/)
 on the DBCA data catalogue.
 
-The manual mapping of conservation criteria, plus all legacy data is also
-uploaded as CSV snapshots.
+The manual mappings of legacy data to TSC are also uploaded as CSV snapshots.
 
 ```{r upload_data_catalogue}
 # This workbook
