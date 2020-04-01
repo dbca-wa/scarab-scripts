@@ -31,9 +31,7 @@ The code for all SCB workbooks is under version control at [github](https://gith
 # Data
 The zipped MS Access snapshot is downloaded, unpacked, and accessed as object `flora_data`.
 
-```{r flora_load_data, message=FALSE}
-# flora <- ckanr::resource_show("913f3e63-5254-4ab1-927b-7c2a91a0b241")$url %>%
-# read.csv(., as.is = TRUE, encoding = "utf8", fileEncoding = "latin1")
+```{r flora_load_data}
 flora_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
 
 snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
@@ -47,22 +45,22 @@ datafile_tsc_flora <- here::here("data", "etl_flora_tsc.Rda")
 ```
 
 ```{r flora_map, eval=F, echo=F}
-skimr::skim(flora)
 leaflet(width = 800, height = 600) %>%
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
   addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
   clearBounds() %>%
   addAwesomeMarkers(
-    data = flora,
-    lng = ~ Gda94Long, lat = ~ Gda94Lat,
+    data = flora_data$DRF_POPULATION,
+    lng = ~ GDA94LONG, lat = ~ GDA94LAT,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
-    label = ~ paste(Taxon),
-    popup = ~ paste(
-      "<h3>", Taxon, "</h3>",
-      "<strong>Encountered on</strong>", CountDate, "<br/>",
-      HabNotes, "<br/>",
-      PopNotes, "<br/>",
-      Location
+    label = ~ paste(TAXONID),
+    popup = ~ glue::glue(
+      '
+      <h3>Taxon {TAXONID} Pop {POP.ID}</h3>
+      <strong>Encountered on</strong> {COUNT.SECT.DATE}<br/>
+      {HABITAT.CONDITION}{HABITAT.NOTES}<br/>
+      {LOCATION}
+      '
     ),
     group = "Flora",
     clusterOptions = markerClusterOptions()
@@ -409,11 +407,27 @@ leaflet(width = 800, height = 600) %>%
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "leaf"),
     label = ~ paste(species_name),
-    popup = ~ paste(
-      "<h3>", species_name, "</h3>",
-      "<strong>Encountered on</strong>", observation_date, "<br/>",
-      habitat_notes, "<br/>",
-      population_notes, "<br/>"
+    popup = ~ glue::glue(
+      '
+      <h3>{species_name} [{pop_id}{subpop_code}]</h3>
+      <span class="glyphicon glyphicon-comment" aria-hidden="true"></span>
+      Sheet no {sheetno}. New population: {new_pop_ind}. {population_notes}<br/>
+      <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Source of record: {record_src_code}<br/>
+      
+      <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span> {observation_date}<br/>
+      <span class="glyphicon glyphicon-globe" aria-hidden="true"></span> {location}<br/>
+      Located {distance} km {direction} of {nearplace}.<br/>
+      {other_comments}<br/>
+      
+      <h5>Habitat</h5>
+      Landform: {landform}. 
+      Rock type: {rock_type}.
+      Gravel: {gravel}.
+      Soil type: {soil_type}.
+      Soil colour: {soil_color}.
+      Drainage: {drainage}.
+      <br/>
+      '
     ),
     group = "Flora",
     clusterOptions = markerClusterOptions()
@@ -437,7 +451,7 @@ occ_vegclass <- flora_data$DRF_SHEET_VEG_CLASSES %>%
     veg_class_dom1 = VEG.CLASS.DOM1 %>% as.character(),
     veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
   )
-occ_vegclass[1:100, ] %>% DT::datatable(.)
+occ_vegclass %>% rt
 ```
 
 ## Occurrence threats
@@ -462,7 +476,7 @@ occ_threats <- flora_data$DRF_SHEET_THREATS %>%
     modified_by = MODIFIED.BY %>% as.character(),
     modified_date = MODIFIED.DATE %>% as.character()
   )
-occ_threats[1:100, ] %>% DT::datatable(.)
+occ_threats %>% rt
 ```
 
 ## Occurrence fire details
@@ -507,7 +521,7 @@ occ_fire <- flora_data$DRF_FIRE_DETAILS %>%
     modified_date = MODIFIED.DATE %>% as.character(),
     modified_by = MODIFIED.BY %>% as.character()
   )
-occ_fire[1:100, ] %>% DT::datatable(.)
+occ_fire %>% rt
 ```
 
 ## Population forms
@@ -529,7 +543,7 @@ pop_forms <- flora_data$DRF_POP_FORMS %>%
     chg_type_code = CHG.TYPE.CODE %>% as.character(),
     deact_by = DEACT.BY %>% as.character()
   )
-pop_forms[1:100, ] %>% DT::datatable(.)
+pop_forms %>% rt
 ```
 
 ## Population threats
@@ -556,7 +570,7 @@ pop_threats <- flora_data$DRF_POP_THREATS %>%
     sheetno = SHEETNO %>% as.character(),
     observation_date = OBSERVATION.DATE %>% as.character()
   )
-pop_threats[1:100, ] %>% DT::datatable(.)
+pop_threats %>% rt
 ```
 
 ## Population management actions
@@ -581,7 +595,7 @@ pop_mgmtactions <- flora_data$DRF_POP_MGMT_ACTIONS %>%
     modified_by = MODIFIED.BY %>% as.character(),
     modified_date = MODIFIED.DATE %>% as.character()
   )
-pop_mgmtactions[1:100, ] %>% DT::datatable(.)
+pop_mgmtactions %>% rt
 ```
 
 ## Population fire summaries
@@ -621,7 +635,7 @@ pop_fire_summ <- flora_data$DRF_FIRE_SUMMARIES %>%
     modified_date = MODIFIED.DATE %>% as.character(),
     modified_by = MODIFIED.BY %>% as.character()
   )
-pop_fire_summ[1:100, ] %>% DT::datatable(.)
+pop_fire_summ %>% rt
 ```
 
 ## Liaisons
@@ -648,7 +662,7 @@ liaisons <- flora_data$DRF_LIAISONS %>%
     modified_by = MODIFIED.BY %>% as.character(),
     modified_date = MODIFIED.DATE %>% as.character()
   )
-liaisons[1:100, ] %>% DT::datatable(.)
+liaisons %>% rt
 ```
 
 ## Population vegetation classes
@@ -662,7 +676,7 @@ pop_vegclass <- flora_data$DRF_POP_VEG_CLASSES %>%
     veg_class_dom1 = VEG.CLASS.DOM1 %>% as.character(),
     veg_class_dom2 = VEG.CLASS.DOM2 %>% as.character()
   )
-pop_vegclass[1:100, ] %>% DT::datatable(.)
+pop_vegclass %>% rt
 ```
 
 ## Population section maps
@@ -682,7 +696,7 @@ pop_sectionmap <- flora_data$DRF_POP_SECTION_MAP %>%
     created_date = CREATED.DATE %>% as.character(),
     deact_date = DEACT.DATE %>% as.character()
   )
-pop_sectionmap[1:100, ] %>% DT::datatable(.)
+pop_sectionmap %>% rt
 ```
 
 ## TSC Conservation Listing
@@ -691,20 +705,17 @@ This is the data we need to map to: conservation lists, categories, and criteria
 ### TSC conservation lists
 
 ```{r conslist}
-conslist <- wastdr::wastd_GET("conservationlist", api_url = prod) %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    list_id = purrr::map_int(., "id"),
-    list_code = purrr::map_chr(., "code"),
-    list_label = purrr::map_chr(., "label"),
-    list_description = purrr::map_chr(., "description"),
-    scope_wa = purrr::map_chr(., "scope_wa"),
-    scope_cmw = purrr::map_chr(., "scope_cmw"),
-    scope_intl = purrr::map_chr(., "scope_intl"),
-    scope_species = purrr::map_chr(., "scope_species"),
-    scope_communities = purrr::map_chr(., "scope_communities"),
-    approval_level = purrr::map_int(., "approval_level")
-  )} 
+conslist <- wastdr::wastd_GET("conservationlist") %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::select(
+    -conservationcategory_set,
+    -conservationcriterion_set
+  ) %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  )
 ```
 
 ### TSC conservation categories
@@ -712,17 +723,9 @@ The conservation category serializer writes JSON, not GeoJSON.
 `wastdr` needs a `parse_conservationcategory` parser.
 
 ```{r conscat}
-conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    list_id = purrr::map_int(., "conservation_list"),
-    rank = purrr::map_int(., "rank"),
-    code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label"),
-    description = purrr::map_chr(., "description"),
-    current = purrr::map_chr(., "current")
-  )} %>% 
+conscat <- wastdr::wastd_GET("conservationcategory") %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(conslist, by = "list_id")
 ```
@@ -731,17 +734,12 @@ conscat <- wastdr::wastd_GET("conservationcategory", api_url = prod) %>%
 
 ```{r conscrit}
 conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    id = purrr::map_int(., "id"),
-    list_id = purrr::map_int(., "conservation_list"),
-    rank = purrr::map_int(., "rank"),
-    code = purrr::map_chr(., "code"),
-    label = purrr::map_chr(., "label")
-  )} %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(conslist, by = "list_id")
-readr::write_csv(conscrit,path = here::here("data","tsc_conscrit_flora.csv"))
+
+readr::write_csv(conscrit, path = here::here("data/tsc_conscrit_flora.csv"))
 ```
 
 ## TFL conservation Listing
@@ -791,8 +789,9 @@ flora_cons_listing <- flora_data$DRF_TAXON_CONSV_LISTINGS %>%
   tibble::rowid_to_column("source_id") %>% 
   dplyr::arrange(name_id)
 
-flora_cons_listing[1:100, ] %>% DT::datatable(.)
-readr::write_csv(flora_cons_listing, path = here::here("data","flora_cons_listing.csv"))
+flora_cons_listing %>% rt
+readr::write_csv(flora_cons_listing, 
+                 path = here::here("data","flora_cons_listing.csv"))
 
 flcl_file <- here::here("data", "flora_cons_listings.Rdata")
 save(flora_cons_listing, file=flcl_file)
@@ -810,17 +809,11 @@ all_crit_map <- flora_cons_listing %>%
   dplyr::arrange(list_code_wa, criteria_code_wa) %>% 
   dplyr::select(list_code_wa, criteria_code_wa)
 readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
-  
 ```
 
 
 ```{r compare_tsc_conscrit_listing_to_tfl_conscrit}
-chr2int <- . %>% 
-      stringr::str_split(",") %>% 
-      purrr::map(as.integer)
-
-
-tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
+tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       list_code_wa = col_character(),
@@ -834,26 +827,36 @@ tfl_conscrit <- here::here("tfl_conscrit_w_tsc.csv") %>%
     tsc_criteria = tsc_criteria %>% chr2int()
   )
 
-glimpse(tfl_conscrit)
+tfl_conscrit %>% rt
 
-setdiff(flora_cons_listing$criteria_code_wa,tfl_conscrit$criteria_code_wa) 
-setdiff(tfl_conscrit$criteria_code_wa,flora_cons_listing$criteria_code_wa)
+conscrit_not_in_mapping <- base::setdiff(
+  flora_cons_listing$criteria_code_wa, tfl_conscrit$criteria_code_wa)
 
-flora_cons_listing_w_tsc<-flora_cons_listing %>% 
-  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa"))
+if(conscrit_not_in_mapping != "")
+  wastdr::wastdr_msg_warn(glue::glue(
+    "Cons criteria in data but not in mapping: {conscrit_not_in_mapping}"))
+
+conscrit_not_in_data <- base::setdiff(
+  tfl_conscrit$criteria_code_wa, flora_cons_listing$criteria_code_wa)
+
+if(length(conscrit_not_in_data) > 1)
+  wastdr::wastdr_msg_warn(glue::glue(
+    "Conservation criteria in mapping but not in data: {conscrit_not_in_data}"))
+
+flora_cons_listing_w_tsc <- flora_cons_listing %>% 
+  dplyr::left_join(tfl_conscrit, by=c("list_code_wa", "criteria_code_wa"))
 ```
 
 ```{r cons_listing_tsc_upload, eval=T}
 tsc_conscat_sp <- "conservationcategory" %>% 
   wastdr::wastd_GET(api_url = prod) %>% 
-  magrittr::extract2("features") %>% 
-  {tibble::tibble(
-    tsc_category_id = purrr::map_int(., "id"),
-    category_code = purrr::map_chr(., "code"),
-    tsc_label = purrr::map_chr(., "label"),
-    conservation_list = purrr::map_chr(., "conservation_list")
-  )} %>% 
-  dplyr::filter(conservation_list %in% c(1,2,3,4,5,6,7))
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    tsc_category_id = id,
+    category_code = code,
+    tsc_label = label
+  ) %>% 
+  dplyr::filter(conservation_list %in% c(1:7))
 
 # List codes: "Priority"
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/6/
@@ -879,14 +882,13 @@ tfl_listing_cat_priority <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_priority %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose=TRUE)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 # Active Priority listings:
-tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
+# tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow
 
 # Inactive Priority listings:
-tfl_listing_cat_priority %>% dplyr::filter(status==90) %>% nrow
+# tfl_listing_cat_priority %>% dplyr::filter(status==90) %>% nrow
 
 # tfl_cl_priority[3888,] 
 # taxonid 315936 does not exist, 31593 does - typo confirmed
@@ -913,8 +915,7 @@ tfl_listing_cat_epbc <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_epbc %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose = TRUE)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 
 # List codes: "WCA_1991" = IUCN 1994/2001/2012
@@ -941,8 +942,7 @@ tfl_listing_cat_iucn1994 <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_iucn1994 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose = TRUE)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 # IUCN 2001
 # https://tsc.dbca.wa.gov.au/admin/conservation/conservationlist/4/change/
@@ -967,8 +967,7 @@ tfl_listing_cat_iucn2001 <- flora_cons_listing_w_tsc %>%
   dplyr::filter(!is.na(category))
 
 tfl_listing_cat_iucn2001 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", 
-                     api_url = prod, verbose=TRUE)
+  chunk_post(serializer = "taxon-conservationlisting", chunksize = 1000)
 
 
 # IUCN 2012
@@ -995,7 +994,7 @@ tfl_listing_cat_iucn2012 <- flora_cons_listing_w_tsc %>%
 
 # There are none, skip upload
 # tfl_cl_iucn2012 %>% 
-#   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+#   wastdr::wastd_POST("taxon-conservationlisting")
 
 # List codes: "FIDMS"
 # Legacy, discard
@@ -1004,8 +1003,9 @@ tfl_listing_cat_iucn2012 <- flora_cons_listing_w_tsc %>%
 # TSC will export TO FloraBase, not the other way around
 ```
 
-There are `r tfl_cl_priority %>% dplyr::filter(status==80) %>% nrow` active Priority listings in WA and
-`r tfl_cl_priority %>% dplyr::filter(status==90) %>% nrow`
+There are `r tfl_listing_cat_priority %>% dplyr::filter(status==80) %>% nrow` 
+active Priority listings in WA and
+`r tfl_listing_cat_priority %>% dplyr::filter(status==90) %>% nrow`
 delisted Priority listings in WA.
 
 
@@ -1038,7 +1038,7 @@ cons_prio <- flora_data$DRF_P2K_PRIORITY %>%
     manplan = MANPLAN %>% as.character(),
     row_no = ROW.NO %>% as.character()
   ) %>% dplyr::arrange(taxon_id)
-cons_prio[1:100, ] %>% DT::datatable(.)
+cons_prio %>% rt
 ```
 
 ## Flora data upload
@@ -1049,8 +1049,8 @@ is generated after the R code is run.
 
 ```{r flora_upload}
 d <- ckanr::package_show("threatened-and-priority-flora-database")
-ckanr::resource_update("d1fccebb-02e2-4a40-aba4-c4d6ad012edb",
-"data_etl_flora.html")
+if (fs::file_exists("data_etl_flora.html")) ckanr::resource_update(
+    "d1fccebb-02e2-4a40-aba4-c4d6ad012edb", "data_etl_flora.html")
 upload_to_ckan(flora_occ, "TPFL Species Occurrence", 
                d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
 upload_to_ckan(populations, "TPFL Populations", 

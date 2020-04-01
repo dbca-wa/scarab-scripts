@@ -145,7 +145,6 @@ com_recommendations <- tec$COMMUNITY_RECOMMENDATIONS %>%
 
 readr::write_csv(com_recommendations, path = here::here("data", "tec_com_recommendations.csv"))
 
-com_recommendations %>% DT::datatable(.)
 ```
 
 ### Community Publications
@@ -171,7 +170,6 @@ com_publications <- tec$COMMUNITY_PUBLICATIONS %>%
 
 readr::write_csv(com_publications, path = here::here("data", "tec_com_publications.csv"))
 
-com_publications %>% DT::datatable(.)
 ```
 
 ### Community Reviews
@@ -194,7 +192,6 @@ com_reviews <- tec$COMMUNITY_REVIEWS %>%
 
 readr::write_csv(com_reviews, path = here::here("data", "tec_com_reviews.csv"))
 
-com_reviews %>% DT::datatable(.)
 ```
 
 ### Community Actions
@@ -219,7 +216,6 @@ com_actions <- tec$COMMUNITY_ACTIONS %>%
 
 readr::write_csv(com_actions, path = here::here("data", "tec_com_actions.csv"))
 
-com_actions %>% DT::datatable(.)
 ```
 
 ### Community History, Area Decline
@@ -242,11 +238,10 @@ com_history <- tec$HISTORY %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(area_decline, by = "area_decline_id")
 
-com_history %>% DT::datatable(.)
 ```
 
 ## Conservation listings
-```{r load_tec_cons, message=FALSE}
+```{r load_tec_cons, warning=FALSE,message=FALSE}
 tec_cons_cat <- tec$CATEGORY_TYPES %>%
   dplyr::transmute(
     category_code = CT.TYPE %>% as.character(),
@@ -381,8 +376,6 @@ tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
   dplyr::left_join(reliability, by = "reliability_id") %>%
   dplyr::select(-confidential_id, reliability_id)
 
-tec_names <- tibble::tibble(names(tec_occ))
-
 occ_short <- tec_occ %>% 
    dplyr::transmute(
      occ_id = occ_id,
@@ -392,45 +385,31 @@ occ_short <- tec_occ %>%
      com_label = com_label,
      com_name = com_name)
 
-names(tec_occ)
+## Create occurrence data tables for each card in TSC
 
-
-## Export data for manual mapping
-soil <- tec_occ %>%
+hab_comp <- tec_occ %>%
   dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
   dplyr::transmute(
     source = 10,
     occ_id = occ_id,
+    land_element = land_element,
+    drainage = drainage,
     soil = soil) %>% 
+  filter(land_element != "") %>% 
+  filter(drainage != "") %>% 
   filter(soil != "")
 
-soil %>%
-  dplyr::select(soil) %>%
-  distinct() %>% 
-  readr::write_csv(path = here::here("data", "tec_soil.csv"))
-
-land_element <- tec_occ %>%
-  dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
-  dplyr::transmute(
-    source = 10,
-    occ_id = occ_id,
-    land_element = land_element) %>% 
-  filter(land_element != "")
-
-land_element %>%
+hab_comp %>%
   dplyr::select(land_element) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tec_land_element.csv"))
 
-drainage <- tec_occ %>%
-  dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
-  dplyr::transmute(
-    source = 10,
-    occ_id = occ_id,
-    drainage = drainage) %>% 
-  filter(drainage != "")
+hab_comp %>%
+  dplyr::select(soil) %>%
+  distinct() %>% 
+  readr::write_csv(path = here::here("data", "tec_soil.csv"))
 
-drainage %>%
+hab_comp %>%
   dplyr::select(drainage) %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tec_drainage.csv"))
@@ -451,7 +430,6 @@ occ_actions <- tec$OCCURRENCE_ACTIONS %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(actions, by = "action_id")
 
-occ_actions %>% DT::datatable(.)
 ```
 
 ### Occurrence Recommendations
@@ -469,7 +447,6 @@ occ_recommendations <- tec$OCCURRENCE_RECOMMENDATIONS %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(recommendations, by = "recommendation_code")
 
-occ_recommendations %>% DT::datatable(.)
 ```
 
 ### Occurrence Extent
@@ -499,7 +476,6 @@ occ_extent <- tec$EXTENTS %>%
   dplyr::left_join(sources, by = "source_code") %>%
   dplyr::left_join(area_decline, by = "area_decline_id")
 
-occ_extent %>% DT::datatable(.)
 ```
 
 ### Additional Data
@@ -524,7 +500,6 @@ occ_additional_data <- tec$ADDITIONAL_DATA %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(items, by = "item_code")
 
-occ_additional_data %>% DT::datatable(.)
 ```
 
 ### Occurrence Maps
@@ -550,7 +525,6 @@ occ_biol_process <- tec$BIOL_PROCESSES %>%
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id")
 
-occ_biol_process %>% DT::datatable(.)
 ```
 
 ### Non-biological Processes
@@ -564,7 +538,6 @@ occ_nonbiol_process <- tec$NON_BIOL_PROCESSES %>%
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id")
 
-occ_nonbiol_process %>% DT::datatable(.)
 ```
 
 ## Fire History
@@ -580,7 +553,6 @@ fire_history <- tec$FIRE_HISTORY %>%
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id")
 
-fire_history %>% DT::datatable(.)
 ```
 
 ## Fauna Occurrences
@@ -613,8 +585,6 @@ species_roles <- tec$SPECIES_ROLES %>%
   )
 readr::write_csv(species_roles, path = here::here("data", "tec_species_roles.csv"))
 
-fauna_taxa <- tec$FAUNA_TAXA # taxon_id
-
 # primary
 occ_fauna <- tec$OCCURRENCE_FAUNA %>%
   dplyr::transmute(
@@ -627,8 +597,6 @@ occ_fauna <- tec$OCCURRENCE_FAUNA %>%
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(species_roles, by = "species_role_code")
-
-occ_fauna %>% DT::datatable(.)
 
 occ_species <- tec$OCCURRENCE_SPECIES %>%
   dplyr::transmute(
@@ -647,19 +615,8 @@ occ_species <- tec$OCCURRENCE_SPECIES %>%
 
 ## Surveys
 `Surveys` are full site visits with a complete set of measurements.
-`Site visits` are quick site visits with a partial set of measurements.
-Both relate to Occurrences.
 
-A separate group related to surveys has the tables:
-
-* Threat Impacts
-* Threats
-* Surveys
-* Conditions
-* Survey Conditions
-* Survey Threats
-
-```{r surveys}
+```{r surveys,warning=FALSE}
 # lookups
 impacts <- tec$THREAT_IMPACTS %>%
   dplyr::transmute(
@@ -697,7 +654,8 @@ surveys <- tec$SURVEYS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     survey_id = SUR.NO %>% as.integer(),
-    surveyed_on = SUR.DATE %>% as.character(),
+    surveyed_on = SUR.DATE %>%
+      lubridate::parse_date_time(., orders = orders, tz = tz),
     surveyed_by = SUR.SURVEYOR %>% as.character(),
     survey_comments = SUR.COMMENTS %>% as.character(),
     username = USERNAME %>% as.character()
@@ -706,13 +664,6 @@ surveys <- tec$SURVEYS %>%
   dplyr::mutate(source_id = glue::glue("{boundary_id}{survey_id}"))
 
 readr::write_csv(surveys, path = here::here("data", "tec_surveys.csv"))
-
-## surveys data exploration
-nrow(surveys) # 4492 surveys
-x <- unique(surveys$source_id) # 4088 unique source_id (boundary_id + survey_id), so some boundaries have been surveyed multiple times
-
-## Check for similarities between surveys and boundaries
-x <- intersect(surveys$boundary_id, tec_bdy$BDY_ID) # 2247 similar
 
 survey_threats <- tec$SURVEY_THREATS %>%
   dplyr::transmute(
@@ -750,20 +701,12 @@ readr::write_csv(survey_conditions, path = here::here("data", "tec_survey_condit
 
 ```
 
-Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct `survey_id`s.
-With `length(unique(surveys$surveyed_on))`, this means that a `survey_id` does not denote an individual
+Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct survey_id's.
+With `r length(unique(surveys$surveyed_on))`, this means that a survey_id does not denote an individual
 visit of a TEC boundary.
 
-However, there are exactly as many unique combinations of `survey_id` and `occ_id` 
-(`r surveys %>% group_by(occ_id, survey_id) %>% tally() %>% nrow`) as records in the table `surveys`.
-
-How do `r nrow(survey_conditions)` `survey_conditions` reference `r nrow(surveys)` `surveys`? Likely by `occ_id` and `survey_id`.
-
 ## Site Visits
-* Sites: Point-referenced sites, mostly 10x10m or 6x6m quadrats, within boundaries.
-* Datum: coordinate datum
-* Site Visits: CommunityAreaEncounters of Sites (lat/lon point) at date (site_visit$site_visit_date).
-* Site Species: Species encountered during a site_visit.
+`Site visits` are quick site visits with a partial set of measurements.
 
 ```{r sites}
 datum <- tec$DATUM %>%
@@ -802,8 +745,6 @@ sites <- tec$SITES %>%
 
 readr::write_csv(sites, path = here::here("data", "tec_sites.csv"))
 
-sites$site_code %>% head(n = 100)
-
 site_visit <- tec$SITE_VISITS %>%
   dplyr::transmute(
     site_visit_id = SITE.VISIT.ID %>% as.integer(),
@@ -827,29 +768,12 @@ site_visit <- tec$SITE_VISITS %>%
     observation_notes = SV.OBSERVATION.NOTES %>% as.character()
   )
 
-site_visit$site_code %>% head(n = 100)
-
-## Sites and site_visit data exploration
-nrow(site_visit) # 172 site visits
-unique(site_visit$site_code) # 136 unique site_codes, so some sites have been visited multiple times
-nrow(sites) # 204 sites
-unique(sites$site_code) # 204 unique site_codes
-intersect(sites$site_code, site_visit$site_code) # no common site_codes between sites and site_visit.
-# Don't use sites further, use the tec_sit shapefile to identify sites for site_visit
-## Check for similarities with site_visits
-intersect(site_visit$site_code, tec_sit$S_ID) # 131 similar
-
 bdy_w_one_site <- tec_bdy %>%
   filter(S_ID_COUNT == 1) %>%
   magrittr::extract2("BDY_ID") # 121578 with a site ID = 1, which measn they are duplicates
 
 sites_keep <- tec_sit %>%
   dplyr::filter(!(BDY_ID %in% bdy_w_one_site)) ## These are the sites we want to keep as they are not just boundary duplicates
-nrow(sites_keep) # 3981 unique rows
-unique(sites_keep$BDY_ID) # 956 unique boundary IDs
-
-intersect(site_visit$site_code, sites_keep$S_ID) # 105 site_visit match site_code in sites_keep
-intersect(sites$site_code, sites_keep$S_ID) # 59 sites match site_code in sites_keep
 
 # coll code and number indicates voucher specimens
 voucher_specimens <- tec$SITE_SPECIES %>%
@@ -933,13 +857,8 @@ survey_cae <- surveys %>%
   left_join(communities, by = c("com_id", "com_label", "com_name")) %>% 
   clean_names()
 
-tec_bdy_cae <- survey_cae %>%
-  dplyr::transmute(
-    # occ_id = occ_id,
-    community = com_id,
-    code = boundary_id,
-    name = com_name,
-    description = ifelse(
+tec_bdy_cae_build <- survey_cae %>%
+  dplyr::mutate(description1 = ifelse(
       is.na(first_s_id),
       glue::glue(
         "Boundary ID {boundary_id} named ",
@@ -949,13 +868,22 @@ tec_bdy_cae <- survey_cae %>%
         "Boundary ID {boundary_id} named ",
         "{first_s_id} after first site observed within. ",
         "Survey comments: {survey_comments}"
-      )),
-     description2 = glue::glue(
+      ))) %>% 
+  dplyr::mutate(description2 = glue::glue(
         "Revised on: {date_changed_on};\n",
         "Site description: {occ_desc} {species_desc} {reliability_id};\n",
         "Commonwealth:  {commonwealth_desc} {cwealth_listing};\n",
         "Area assessment: {data} {other};\n",
         "Habitat composition: {soil} {surf_geology} {land_element} {water} {drainage} {com_structure} {classification} {other_attr} {reliability}."
+    )) %>% 
+  dplyr::transmute(
+    # occ_id = occ_id,
+    community = com_id,
+    code = boundary_id,
+    name = com_name,
+    description = glue::glue(
+        "{description1};\n",
+        "{description2}."
     ),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
@@ -968,6 +896,11 @@ tec_bdy_cae <- survey_cae %>%
       geojsonsf::sfc_geojson(.)
   )
 
+## Filter out the NA's
+tec_bdy_cae <- tec_bdy_cae_build %>%
+  dplyr::filter(community != "NA")%>%
+  dplyr::filter(!is.na(encountered_on))%>%
+  dplyr::filter(geom != "null")
 ```
 
 Some boundaries were digitised from a polygonised raster remote sensing product. This results in
@@ -1063,7 +996,10 @@ no_com_id %>% reactable::reactable()
 
 The two communities above do not contain a community ID so they cannot be parsed to TSC
 
-# Extract and transform conservation criteria Data from TSC
+# Extract and transform criteria Data from TSC
+
+## Conservation criteria
+
 Conservation criteria from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TEC.
 
@@ -1143,7 +1079,13 @@ tec_ccl <- tec_cons_listing %>%
   left_join(tec_conscrit, by = c("category_code", "criterion_code"))
 ```
 
-# Extract and transform occurrence lookup Data from TSC and create final data frames
+## Occurrence lookup criteria
+
+Occurrence lookup data from TSC are downloaded from the TSC API 
+and transformed into a usable format for manual mapping to TEC.
+
+A manual step annotated lookup criteria exported from TSC to 
+occurrence data in TEC in a spreadsheet.
 ``` {r extract_tsc_occurrence_lookup, message=FALSE}
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
@@ -1159,6 +1101,32 @@ tsc_soiltype <- "lookup-soiltype" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
+
+# Load manual mapping of TEC lookup criteria from CSV file, and join to relevant table
+tec_land_element <- here::here("csv/tec_landforms_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      land_element = col_character(),
+      tsc_landform = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tec_drainage <- here::here("csv/tec_drainage_w_tsc.csv") %>%
+  readr::read_csv(
+    col_types = cols(
+      drainage = col_character(),
+      tsc_drainage = col_character(),
+      tsc_criteria = col_character()
+    ))
+
+tec_hab_comp <- hab_comp %>%
+  left_join(tec_land_element, by = c("land_element")) %>%
+  left_join(tec_drainage, by = c("drainage")) %>%  
+dplyr::select(source,occ_id,tsc_landform,tsc_drainage) %>% 
+dplyr::rename(source_id = occ_id) %>%
+dplyr::rename(landform = tsc_landform) %>% 
+dplyr::rename(drainage = tsc_drainage) %>% 
+dplyr::mutate(obstype = "HabitatComposition")
 
 ```
 
@@ -1223,15 +1191,15 @@ tec_cl_tsc %>%
 TEC refers to a single AOO as "occurrence". Occurrences may be geo-referenced as boundaries and/or
 buffered boundaries (buffers) and/or through point sites within.
 
-### Boundaries
+### Upload boundaries
 
 Import excluding the heavyweight communities with more than 400 features:
 ```{r tec_bdy_tsc, eval=F}
-tec_bdy_cae %>%
-  chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+tec_bdy_cae [1,] %>% jsonlite::toJSON() %>% 
+  chunk_post(serializer = "occ-community-areas")
 ```
 
-### Buffers
+### Upload buffers
 
 Import all but the numerous ones:
 
@@ -1241,7 +1209,7 @@ Import all but the numerous ones:
 #  chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 ```
 
-### Sites/ TEC EOO
+### Upload sites/ TEC EOO
 
 ```{r}
 # tec <- geojsonsf::geojson_sf("data/tec_eoo.geojson")
@@ -1251,11 +1219,11 @@ Import all but the numerous ones:
 
 ```{r tec_sit_tsc, eval=F}
 # 7008 sites
-tec_sit_cae %>%
+tec_site_cae %>%
   chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
 # 17954 sites
-tec_sit_cae %>%
+tec_site_cae %>%
   dplyr::filter(community == "Banksia Woodlands of the Swan Coastal Plain") %>%
   chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 ```
@@ -1267,14 +1235,23 @@ tec_sit_cae %>%
   dplyr::filter(grepl(fat_filter, community)) %>%
   chunk_post(serializer = "occ-community-points", api_url = prod, verbose = T)
 
-tec_buf_cae %>%
-  dplyr::filter(grepl(fat_filter, community)) %>%
-  chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+# tec_buf_cae %>%
+#   dplyr::filter(grepl(fat_filter, community)) %>%
+#   chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
 
 # 116538 polys from three big one
 tec_bdy_cae %>%
   filter(grepl(fat_filter, community)) %>%
   chunk_post(serializer = "occ-community-areas", api_url = prod, verbose = T)
+```
+
+### Upload ObservationGroups
+
+```{r, eval=FALSE}
+tec_hab_comp[1,] %>% wastd_bulk_post("occ-observation", verbose = TRUE)
+
+tec_hab_comp %>% wastd_bulk_post("occ-observation")
+
 ```
 
 ## Conservation Documents
@@ -1285,36 +1262,56 @@ tec_bdy_cae %>%
 
 
 # Extract and transform migrated Data from TSC
-Data from TSC is extracted through the TSC API and transformed into a useable
+Data from TSC is extracted through the TSC API and transformed into a usable
 format.
 
 Expand the code block below to view the process.
 
+## Conservation listings
+
 ```{r load_tsc, message=FALSE,warning=FALSE}
-# TSC communities
-# tsc_comm <- "community" %>%
-#   wastdr::wastd_GET(
-#     api_url = prod
-#   ) %>%
-#   wastdr::wastd_parse()
-
-tsc_ccl <- wastdr::wastd_GET("community-conservationlisting") %>%
-  wastdr::parse_community_conservationlisting()
-
-
-# tsc_ccl_comm <- tsc_ccl %>%
-#   dplyr::inner_join(tsc_comm, by = "count")
+datafile_tsc_community <- here::here("data/community_tsc.RData")
+if (file.exists(datafile_tsc_community)) {
+  load(datafile_tsc_community)
+} else {
+# Taxon conservation listings for communities
+  tsc_ccl_communities <- wastdr::wastd_GET("community-conservationlisting") %>%
+  wastdr::parse_community_conservationlisting() %>% 
+    dplyr::mutate(com_label = community)
+   
+save(tsc_ccl_communities, file = datafile_tsc_community, compress="xz")
+}
 ```
 
-```{r save_point, message=FALSE}
-datafile <- here::here("data", "community.Rda")
-if (file.exists(datafile)) {
-  load(datafile)
+## Occurrences
+
+We get community occurrences with their point and boundary representations from TSC through the 
+API endpoint [occ-community-points] (https://tsc.dbca.wa.gov.au/api/1/occ-community-points)
+[occ-community-areas] (https://tsc.dbca.wa.gov.au/api/1/occ-community-areas/).
+
+```{r extract_tsc_occurrences, message = FALSE, eval = FALSE}
+datafile.community <- here::here("data/community_cae.RData")
+
+if (file.exists(datafile.community)) {
+  load(datafile.community)
 } else {
-  save(
-    tsc_ccl, # TSC taxon conservation listings
-    file = datafile
-  )
+tsc_cae_data <- wastdr::wastd_GET("occ-community-points") # k records
+
+tsc_community_sites <- tsc_cae_data %>%
+  magrittr::extract2("data") %>% 
+  geojsonio::as.json() %>%
+  geojsonsf::geojson_sf() %>% 
+  dplyr::mutate(area_type = area_type %>% as.character()) %>%
+  dplyr::filter(area_type == 12) 
+
+tsc_community_boundaries <- tsc_cae_data %>%
+  magrittr::extract2("features") %>%
+  geojsonio::as.json() %>%
+  geojsonsf::geojson_sf() %>% 
+  dplyr::mutate(area_type = area_type %>% as.character()) %>% 
+  dplyr::filter(area_type == 10) 
+
+save(tsc_cae_data, file=datafile.community, compress="xz")#tsc_community_sites, tsc_community_boundaries,
 }
 ```
 
@@ -1333,7 +1330,7 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 #
 # General note: variable names should now be recycled like tec_data
 #
-tsc_ccl <- tsc_ccl %>% dplyr::mutate(com_label = community)
+tsc_ccl_communities <- tsc_ccl_communities %>% dplyr::mutate(com_label = community)
 tec_ccl_unique_comm <- tec_ccl$com_label %>%
   unique() %>%
   length() # 476
