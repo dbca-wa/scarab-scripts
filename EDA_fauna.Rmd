@@ -636,26 +636,33 @@ and transformed into a usable format for manual mapping to TFA.
 
 A manual step annotated legacy conservation criteria exported from TFA to 
 conservation criteria IDs in TSC in a spreadsheet.
+
 ``` {r extract_tsc_cons_criteria, message=FALSE}
-tsc_cons_list <- "conservationlist" %>%
-  wastdr::wastd_GET()%>%
-  wastdr::wastd_parse()
+tsc_conslist <- wastdr::wastd_GET("conservationlist") %>%
+   wastdr::wastd_parse() %>% 
+  dplyr::select(
+    -conservationcategory_set,
+    -conservationcriterion_set
+  ) %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  )
 
-tsc_cons_cat <- "conservationcategory" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  dplyr::arrange(conservation_list, rank) %>%
-  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
+tsc_conscat <-  wastdr::wastd_GET("conservationcategory") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(list_id = conservation_list) %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(tsc_conslist, by = "list_id")
 
-tsc_cons_crit <- "conservationcriterion" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
-  dplyr::arrange(conservation_list, rank) %>%
-  dplyr::left_join(tsc_cons_list, by = c("conservation_list" = "id"))
+tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(list_id = conservation_list) %>% 
+  dplyr::arrange(list_id, rank) %>% 
+  dplyr::left_join(tsc_conslist, by = "list_id")
 
-tsc_cons_crit %>%
-  dplyr::select(-"conservationcategory_set", -"conservationcriterion_set") %>%
-  readr::write_csv(path = here::here("data", "tsc_conscrit.csv"))
+readr::write_csv(tsc_conscrit, path = here::here("data/tsc_conscrit_fauna.csv"))
 
 # Load manual mapping of TFA cons criteria from CSV file, join to tfa_cons_crit
 tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
@@ -674,7 +681,9 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_conscrit, by = c("list_code", "criteria_code"))
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) %>%  
+  # dplyr::glimpse() %>% 
+  invisible()
 ```
 
 ## Occurrence lookup criteria
@@ -684,39 +693,69 @@ and transformed into a usable format for manual mapping to TFA.
 
 A manual step annotated lookup criteria exported from TSC to 
 occurrence data in TFA in a spreadsheet.
+
 ``` {r extract_tsc_occurrence_lookup, message=FALSE}
-tsc_landforms <- "lookup-landform" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+tsc_landforms <- wastdr::wastd_GET("lookup-landform") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
 
-tsc_confidence <- "lookup-confidence" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse()
+tsc_confidence <- wastdr::wastd_GET("lookup-confidence") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
+  readr::write_csv(path = here::here("data", "tsc_confidence.csv"))
   
-tsc_repro_mat <- "lookup-reproductivematurity" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_repro_mat <- wastdr::wastd_GET("lookup-reproductivematurity") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_repro_mat.csv"))
 
-tsc_sec_signs <- "lookup-secondarysigns" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+tsc_sec_signs <- wastdr::wastd_GET("lookup-secondarysigns") %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
 
-tsc_samp_dest <- "lookup-sampledestination" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_samp_dest <- wastdr::wastd_GET("lookup-sampledestination") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
 
-tsc_samp_type <- "lookup-sampletype" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_samp_type <- wastdr::wastd_GET("lookup-sampletype") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_samp_type.csv"))
 
-tsc_det_meth <- "lookup-detectionmethod" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+tsc_det_meth <- wastdr::wastd_GET("lookup-detectionmethod") %>%
   wastdr::wastd_parse() %>%
+  dplyr::rename(
+    list_id = id,
+    list_code = code,
+    list_label = label
+  ) %>%
   readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
 
 # Load manual mapping of TFA lookup criteria from CSV file, and join to relevant table
@@ -891,18 +930,15 @@ ETL decisions for Fauna cons listings:
 ```{r tfa_cons_listing_subsetting, message=FALSE}
 # tsc_conscat$id is the TSC ID for the cons category
 # tsc_conscat$label = tec_cons_listing_categories$category_code
-tsc_conscat_sp <- "conservationcategory" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  magrittr::extract2("features") %>%
-  {
-    tibble::tibble(
-      tsc_category_id = purrr::map_int(., "id"),
-      category_code = purrr::map_chr(., "code"),
-      tsc_label = purrr::map_chr(., "label"),
-      conservation_list = purrr::map_chr(., "conservation_list")
-    )
-  } %>%
-  dplyr::filter(conservation_list %in% 1:7)
+tsc_conscat_sp <- "conservationcategory" %>% 
+  wastdr::wastd_GET() %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    tsc_category_id = id,
+    category_code = code,
+    tsc_label = label
+  ) %>% 
+  dplyr::filter(conservation_list %in% c(1:7))
 
 # IUCN 2012 3
 tfa_listing_cat_iucn2012 <- tfa_tcl %>%
@@ -919,7 +955,7 @@ tfa_listing_cat_iucn2012 <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    #category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -927,7 +963,7 @@ tfa_listing_cat_iucn2012 <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # IUCN(2001) 4
@@ -945,7 +981,7 @@ tfa_listing_cat_iucn2001 <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -953,7 +989,7 @@ tfa_listing_cat_iucn2001 <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # IUCN(1994) 5
@@ -971,7 +1007,7 @@ tfa_listing_cat_iucn1994 <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -979,7 +1015,7 @@ tfa_listing_cat_iucn1994 <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # WAWCA 1
@@ -997,7 +1033,7 @@ tfa_listing_cat_wawca <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1005,7 +1041,7 @@ tfa_listing_cat_wawca <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # SPFN 2
@@ -1023,7 +1059,7 @@ tfa_listing_cat_spfn <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1031,7 +1067,7 @@ tfa_listing_cat_spfn <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # WAPS 6
@@ -1049,7 +1085,7 @@ tfa_listing_cat_waps <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1057,7 +1093,7 @@ tfa_listing_cat_waps <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # EPBC 7
@@ -1075,7 +1111,7 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1083,14 +1119,15 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 ```
 
 
 ```{r tfa_cons_listing_upload, eval=F}
-tfa_listing_cat_iucn2012 %>%
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+# this section is not working
+tfa_listing_cat_iucn2012 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
 
 tfa_listing_cat_iucn2001 %>%
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
@@ -1139,7 +1176,7 @@ tfa_eoo <- fna %>% make_eoo()
 ```{r upload_eoo, eval=F}
 tfa_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
+  wastdr::wastd_POST("taxon")
 ```
 
 
@@ -1153,18 +1190,19 @@ wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api
 ```
 
 ```{r, eval = FALSE}
-tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points")
 
-tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points")
 
-tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfa_tae %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
-tfa_phys_sample %>% wastd_bulk_post("occ-observation")
+# this section is not working
+tfa_phys_sample %>% wastdr::wastd_bulk_post("occ-observation")
 
 tfa_anim_obs %>% wastd_bulk_post("occ-observation")
 

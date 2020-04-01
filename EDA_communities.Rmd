@@ -616,7 +616,7 @@ occ_species <- tec$OCCURRENCE_SPECIES %>%
 ## Surveys
 `Surveys` are full site visits with a complete set of measurements.
 
-```{r surveys}
+```{r surveys,warning=FALSE}
 # lookups
 impacts <- tec$THREAT_IMPACTS %>%
   dplyr::transmute(
