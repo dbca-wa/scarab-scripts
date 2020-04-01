@@ -930,18 +930,15 @@ ETL decisions for Fauna cons listings:
 ```{r tfa_cons_listing_subsetting, message=FALSE}
 # tsc_conscat$id is the TSC ID for the cons category
 # tsc_conscat$label = tec_cons_listing_categories$category_code
-tsc_conscat_sp <- "conservationcategory" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
-  magrittr::extract2("features") %>%
-  {
-    tibble::tibble(
-      tsc_category_id = purrr::map_int(., "id"),
-      category_code = purrr::map_chr(., "code"),
-      tsc_label = purrr::map_chr(., "label"),
-      conservation_list = purrr::map_chr(., "conservation_list")
-    )
-  } %>%
-  dplyr::filter(conservation_list %in% 1:7)
+tsc_conscat_sp <- "conservationcategory" %>% 
+  wastdr::wastd_GET() %>% 
+  wastdr::wastd_parse() %>% 
+  dplyr::rename(
+    tsc_category_id = id,
+    category_code = code,
+    tsc_label = label
+  ) %>% 
+  dplyr::filter(conservation_list %in% c(1:7))
 
 # IUCN 2012 3
 tfa_listing_cat_iucn2012 <- tfa_tcl %>%
@@ -958,7 +955,7 @@ tfa_listing_cat_iucn2012 <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    #category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -966,7 +963,7 @@ tfa_listing_cat_iucn2012 <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # IUCN(2001) 4
@@ -984,7 +981,7 @@ tfa_listing_cat_iucn2001 <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -992,7 +989,7 @@ tfa_listing_cat_iucn2001 <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # IUCN(1994) 5
@@ -1010,7 +1007,7 @@ tfa_listing_cat_iucn1994 <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1018,7 +1015,7 @@ tfa_listing_cat_iucn1994 <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # WAWCA 1
@@ -1036,7 +1033,7 @@ tfa_listing_cat_wawca <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1044,7 +1041,7 @@ tfa_listing_cat_wawca <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # SPFN 2
@@ -1062,7 +1059,7 @@ tfa_listing_cat_spfn <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1070,7 +1067,7 @@ tfa_listing_cat_spfn <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # WAPS 6
@@ -1088,7 +1085,7 @@ tfa_listing_cat_waps <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1096,7 +1093,7 @@ tfa_listing_cat_waps <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
 # EPBC 7
@@ -1114,7 +1111,7 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
     effective_to = delisted_on,
     last_reviewed_on = last_reviewed_on,
     taxon = name_id %>% as.numeric(),
-    category = tsc_category_id %>% as.list(),
+    category = tsc_category_id,
     criteria = tsc_criteria,
     comments = glue::glue(
       "Reviewed by {reviewed_by}\n\n",
@@ -1122,14 +1119,15 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
       "Comments: {comments}"
     )
   ) %>%
-  dplyr::filter(!is.na(category)) %>%
+  dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 ```
 
 
 ```{r tfa_cons_listing_upload, eval=F}
-tfa_listing_cat_iucn2012 %>%
-  wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
+# this section is not working
+tfa_listing_cat_iucn2012 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
 
 tfa_listing_cat_iucn2001 %>%
   wastdr::wastd_POST("taxon-conservationlisting", api_url = prod)
@@ -1178,7 +1176,7 @@ tfa_eoo <- fna %>% make_eoo()
 ```{r upload_eoo, eval=F}
 tfa_eoo %>%
   dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon", verbose = T, api_url = prod)
+  wastdr::wastd_POST("taxon")
 ```
 
 
@@ -1192,18 +1190,19 @@ wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points", verbose = T, api
 ```
 
 ```{r, eval = FALSE}
-tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfa_tae[1:100,] %>% chunk_post(serializer = "occ-taxon-points")
 
-tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfa_tae[1:1000,] %>% chunk_post(serializer = "occ-taxon-points")
 
-tfa_tae %>% chunk_post(serializer = "occ-taxon-points", verbose = T, api_url = prod)
+tfa_tae %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
-tfa_phys_sample %>% wastd_bulk_post("occ-observation")
+# this section is not working
+tfa_phys_sample %>% wastdr::wastd_bulk_post("occ-observation")
 
 tfa_anim_obs %>% wastd_bulk_post("occ-observation")
 
