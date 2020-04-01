@@ -40,8 +40,8 @@ The code for all SCB workbooks is under version control at
 
 # Legacy Data (TFL)
 
-Data from the Threatened Flora Database (TFL) is downloaded from the [TFL
-dataset](https://data.dbca.wa.gov.au/dataset/threatened-and-priority-flora-database)
+Data from the Threatened Flora Database (TFL) is downloaded from the 
+[TFL dataset](https://data.dbca.wa.gov.au/dataset/threatened-and-priority-flora-database)
 on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
