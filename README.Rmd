@@ -12,18 +12,23 @@ knitr::opts_chunk$set(echo = TRUE)
 # Welcome
 This repo contains ETL, QA and analytical scripts, workbooks and apps consuming
 SCB data from legacy database snapshots kept on 
-[data.dpaw.wa.gov.au](https://data.dpaw.wa.gov.au/organization/species-and-communities)
-and later the SCB API.
+[data.dbca.wa.gov.au](https://data.dbca.wa.gov.au/organization/species-and-communities)
+and later the TSC API.
 
-Tasks are tracked at [scarab](https://github.com/parksandwildlife/scarab/issues)
-with a neat [Kanban board](https://waffle.io/parksandwildlife/scarab/).
+Tasks are tracked at [wastd](https://github.com/dbca-wa/wastd/issues)
+with a neat [Kanban board](https://github.com/dbca-wa/wastd/projects/4).
 Contact Florian to gain write access.
 
 # Content
-Three workbooks prefixed with "data_etl_" run data extraction, transformation, and loading (ETL) from snapshots of the three original TSC databases on DBCA's CKAN data catalogue into
-CSV extracts of cleaned and renamed data. Running each one re-runs the ETL from the snapshots to the extracts.
+Three workbooks prefixed with "EDA_" run data extraction, transformation, and 
+loading (ETL) from snapshots of the three original TSC databases on DBCA's 
+CKAN data catalogue the Threatened Species and Communities DB, 
+[TSC](https://tsc.dbca.wa.gov.au/). Exploratory data analysis then compares
+legacy and migrated data to QA the migration process.
 
-"Data ETL WACensus" loads a staging copy of WACensus (published as a few layers in KMI's GeoServer) into TSC's API. Subsequently, TSC's function "update taxa" re-builds the taxonomic tree from the WACensus staging copy.
+"ETL_WACensus" loads a staging copy of WACensus (published as a few layers in 
+KMI's GeoServer) into TSC's API. Subsequently, TSC's function "update taxa" 
+re-builds the taxonomic tree from the WACensus staging copy.
 
-"Conservation status" explores the commonalities and differences in CS handling between
-the three original TSC databases.
+"old/conservation_status" explores the commonalities and differences in CS handling 
+between the three original TSC databases.

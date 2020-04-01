@@ -10,8 +10,8 @@ library(networkD3)
 #------------------------------------------------------------------------------#
 # Settings - change as appropriate
 #
-Sys.setenv(GH_OWNER = "parksandwildlife")
-Sys.setenv(GH_REPO = "scarab")
+Sys.setenv(GH_OWNER = "dbca-wa")
+Sys.setenv(GH_REPO = "wastd")
 # Sys.setenv(GITHUB_PAT="my-GH-personal-access-token")
 
 #------------------------------------------------------------------------------#
@@ -21,7 +21,7 @@ Sys.setenv(GH_REPO = "scarab")
 map_chr_hack <- function(.x, .f, ...) {
     purrr::map(.x, .f, ...) %>%
         purrr::map_if(is.null, ~ NA_character_) %>%
-        purrr::flatten_chr(.x)
+        purrr::flatten_chr()
 }
 
 #' Format url and label as HTML hyperlink
