@@ -1201,7 +1201,7 @@ tfa_tae %>% chunk_post(serializer = "occ-taxon-points")
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
-# this section is not working
+# I can't get this section to run successfully
 tfa_phys_sample %>% wastdr::wastd_bulk_post("occ-observation")
 
 tfa_anim_obs %>% wastd_bulk_post("occ-observation")
@@ -1262,7 +1262,7 @@ if (file.exists(datafile_tsc_fauna)) {
   # Taxon conservation listings for fauna
   tsc_tcl_fauna <-
     wastdr::wastd_GET("taxon-conservationlisting") %>%
-    wastdr::parse_taxon_conservationlisting()  %>%
+    wastdr::wastd_parse()  %>%
     dplyr::mutate(name_id = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
   
@@ -1331,7 +1331,6 @@ tsc_occ_fauna <- tsc_tae%>%
   sf::st_join(regions) %>% 
   sf::st_join(districts) %>% 
   dplyr::inner_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id") # %>% sf_as_tbl()
-
 
 ## prior to right_join there are 93977 obs
 
