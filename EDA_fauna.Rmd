@@ -1121,20 +1121,21 @@ For further details on the methodology behind the movement of EOO data, please f
 
 ```{r make_eoo, eval=F}
 # extract all eoo
-fna <- tfa_occ %>% 
+tfa_occ_with_coords <- tfa_occ %>% 
   dplyr::filter(!is.na(latitude)) %>% 
   dplyr::filter(!is.na(longitude))
 
-fna_eoo_all <- eoo_polygon(fna)
+# The total convex hull of all occurrences (one polygon)
+tfa_eoo_all <- eoo_polygon(tfa_occ_with_coords)
+mapview::mapview(tfa_eoo_all)
 
-# Calculate_eoo
-tfa_eoo <- fna %>% make_eoo()
+# Calculate EOO for each taxon
+tfa_eoo <- tfa_occ_with_coords %>% make_eoo()
+# mapview::mapview(head(tfl_eoo$eoo_sfc))
 ```
 
 ```{r load_eoo, eval=F}
-tfa_eoo %>%
-  dplyr::select(-data, -eoo_sfc) %>%
-  wastdr::wastd_POST("taxon")
+tfa_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
 ```
 
 ### Upload TAEs to TSC
@@ -1238,7 +1239,7 @@ We get Taxon ocurrences with their point representations from TSC through the
 API endpoint 
 [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
 
-Currently, all Fauna and Flora occurrences are georeferenced only with point 
+Currently, all Fauna occurrences are georeferenced only with point 
 coordinates, not polygons.
 
 We then get TSC Areas and split them into DBCA Regions and Districts.
@@ -1366,8 +1367,7 @@ NameID must be changed to the WACensus NameID of the correct taxon.
 
 ```{r show_name_mismatches_subsp}
 name_mismatches %>%
-  dplyr::filter(grepl("subsp", wace_name)) %>%
-  reactable::reactable(filterable = TRUE)
+  dplyr::filter(grepl("subsp", wace_name)) %>% rt
 ```
 
 #### Typo mismatches
@@ -1376,8 +1376,7 @@ parentheses and quotation marks.
 
 ```{r show_name_mismatches_typo}
 name_mismatches %>%
-  dplyr::filter(!grepl("subsp", wace_name)) %>%
-  reactable::reactable(filterable = TRUE)
+  dplyr::filter(!grepl("subsp", wace_name)) %>% rt
 ```
 
 #### True mismatches
@@ -1400,8 +1399,7 @@ true_mismatches <- tfa_data_wacensus %>%
   dplyr::filter(scientific_name != wace_name) %>%
   dplyr::select(name_id, species_code, scientific_name, wace_name)
 
-true_mismatches %>%
-  reactable::reactable(filterable = TRUE)
+true_mismatches %>% rt
 ```
 
 ### Species names in TFA but not in TSC
@@ -1480,8 +1478,7 @@ They are listed here.
 
 ```{r show_unmigrated_cl}
 tfa_tcl %>%
-  dplyr::filter(list_code == c("ActionPlan", "BCA", "RedList")) %>%
-  reactable::reactable(filterable = TRUE)
+  dplyr::filter(list_code == c("ActionPlan", "BCA", "RedList")) %>% rt
 ```
 
 ### Conservation criteria mapping
@@ -1490,8 +1487,7 @@ Conservation criteria were manually mapped for each species,
 therefore they need to be checked to confirm whether the mapping is correct. 
 
 ```{r show_cl_mapping}
-tfa_conscrit %>%
-  reactable::reactable(filterable = TRUE)
+tfa_conscrit %>% rt
 ```
 
 In addition, some conservation criteria could not be mapped as they do not exist 
@@ -1628,7 +1624,7 @@ tsc_listing_cat_iucn2012 <- tsc_tcl_fauna %>%
 
 tfa_listing_cat_iucn2012 %>% 
   dplyr::anti_join(tsc_listing_cat_iucn2012, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 IUCN 2001
@@ -1641,7 +1637,7 @@ tsc_listing_cat_iucn2001 <- tsc_tcl_fauna %>%
 
 tfa_listing_cat_iucn2001 %>% 
   dplyr::anti_join(tsc_listing_cat_iucn2001, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 IUCN 1994
@@ -1654,7 +1650,7 @@ tsc_listing_cat_iucn1994 <- tsc_tcl_fauna %>%
 
 tfa_listing_cat_iucn1994 %>% 
   dplyr::anti_join(tsc_listing_cat_iucn1994, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 WAWCA
@@ -1667,7 +1663,7 @@ tsc_listing_cat_wawca <- tsc_tcl_fauna %>%
 
 tfa_listing_cat_wawca %>% 
   dplyr::anti_join(tsc_listing_cat_wawca, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 WAPS
@@ -1680,7 +1676,7 @@ tsc_listing_cat_waps <- tsc_tcl_fauna %>%
 
 tfa_listing_cat_waps %>% 
   dplyr::anti_join(tsc_listing_cat_waps, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 SPFN
@@ -1693,7 +1689,7 @@ tsc_listing_cat_spfn <- tsc_tcl_fauna %>%
 
 tfa_listing_cat_spfn %>% 
   dplyr::anti_join(tsc_listing_cat_spfn, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 EPBC
@@ -1706,7 +1702,7 @@ tsc_listing_cat_epbc <- tsc_tcl_fauna %>%
 
 tfa_listing_cat_epbc %>% 
   dplyr::anti_join(tsc_listing_cat_epbc, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 The following tables show any conservation listings in TSC which are not in TFA, 
