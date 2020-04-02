@@ -1317,7 +1317,7 @@ tfl_listing_cat_priority <- tfl_tcl %>%
     review_due = recovery_plan_expiry_date,
     # check
     last_reviewed_on = file_last_updated,
-    taxon = name_id %>% as.numeric,
+    taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
   ) %>%
@@ -1352,7 +1352,7 @@ tfl_listing_cat_epbc <- tfl_tcl %>%
     review_due = recovery_plan_expiry_date,
     # check
     last_reviewed_on = file_last_updated,
-    taxon = name_id %>% as.numeric,
+    taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
   ) %>%
@@ -1378,7 +1378,7 @@ tfl_listing_cat_iucn1994 <- tfl_tcl %>%
     review_due = recovery_plan_expiry_date,
     # check
     last_reviewed_on = file_last_updated,
-    taxon = name_id %>% as.numeric,
+    taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
   ) %>%
@@ -1403,7 +1403,7 @@ tfl_listing_cat_iucn2001 <- tfl_tcl %>%
     review_due = recovery_plan_expiry_date,
     # check
     last_reviewed_on = file_last_updated,
-    taxon = name_id %>% as.numeric,
+    taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
   ) %>%
@@ -1428,7 +1428,7 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
     review_due = recovery_plan_expiry_date,
     # check
     last_reviewed_on = file_last_updated,
-    taxon = name_id %>% as.numeric,
+    taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
   ) %>%
@@ -1800,7 +1800,8 @@ cons_cat_summary <- tfl_cons_cat_sum %>%
   dplyr::select("Category", everything())
 
 cons_cat_summary %>% rt ## ARE THESE DIFFERENCES FROM USE OF CATEGORY_CODE AND NOT CATEGORY_CODE_WA?
-#  No. It happens if you right_join rather than inner_join tsc_taxa_flora to tsc_tcl_flora.
+#  No. It happens if you right_join rather than inner_join tsc_taxa_flora to tsc_tcl_flora. I have 
+#  changed this above to be an inner_join, is there any reason I shouldn't?
 ```
 
 The following tables show any conservation listings in TFL which are not in TSC,
@@ -1824,7 +1825,7 @@ tsc_listing_cat_iucn2001 <- tsc_tcl_flora %>%
   dplyr::filter(stringr::str_detect(category_cache, "IUCN(2001)"))
 
 tfl_listing_cat_iucn2001 %>%
-  dplyr::anti_join(tsc_listing_cat_iucn2012, by = "source_id") %>% 
+  dplyr::anti_join(tsc_listing_cat_iucn2012, by = c("source_id")) %>% 
   rt
 ```
 
