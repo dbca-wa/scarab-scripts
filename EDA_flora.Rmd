@@ -1545,7 +1545,9 @@ if (file.exists(tsc_cl_flora_datafile)) {
     wastdr::wastd_GET() %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = taxon %>% as.character()) %>%
-    dplyr::right_join(tsc_taxa_flora, by = "taxon")
+    dplyr::inner_join(tsc_taxa_flora, by = "taxon") # If we use inner_join here 
+  # the date comparisions with tfl below match, if we use right_join, which was 
+  # here before, we get mismatches.
   
   save(tsc_taxa_flora, tsc_tcl_flora, file = tsc_cl_flora_datafile)
 }
@@ -1557,7 +1559,7 @@ We get Taxon occurrences with their point representations from TSC through the
 API endpoint
 [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
 
-Currently, all flora and Flora occurrences are georeferenced only with point
+Currently, all Flora occurrences are georeferenced only with point
 coordinates, not polygons.
 
 We then get TSC Areas and split them into DBCA Regions and Districts. Caveat:
@@ -1798,6 +1800,7 @@ cons_cat_summary <- tfl_cons_cat_sum %>%
   dplyr::select("Category", everything())
 
 cons_cat_summary %>% rt ## ARE THESE DIFFERENCES FROM USE OF CATEGORY_CODE AND NOT CATEGORY_CODE_WA?
+#  No. It happens if you right_join rather than inner_join tsc_taxa_flora to tsc_tcl_flora.
 ```
 
 The following tables show any conservation listings in TFL which are not in TSC,
