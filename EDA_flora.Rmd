@@ -1663,7 +1663,7 @@ tfl_tcl %>% dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>% rt
 ### TSC conservation listings not in TFL
 
 The following table shows any conservation listings in TSC which are not in TFL.
-Because there are more taxa in TSC than TFL taxa with no `source_id` have also
+Because there are more taxa in TSC than TFL, taxa with no `source_id` have also
 been removed.
 
 ```{r show_tsc_tcl_not_in_tfl}
@@ -1754,7 +1754,6 @@ tfl_cl_sum_iucn2001 <-
 tfl_cl_sum_iucn2012 <-
   tfl_listing_cat_iucn2012 %>% make_tfl_cl_summary
 tfl_cl_sum_epbc <- tfl_listing_cat_epbc %>% make_tfl_cl_summary
-
 
 make_tsc_cl_summary <- function(data, cn) {
   data %>%
@@ -1947,31 +1946,6 @@ tfl_skim %>%
   rt
 ```
 
-#### Missing NameID
-
-```{r show_tfl_occ_missing_name_id}
-tfl_occ_no_nameid <- tfl_occ %>%
-  filter(name_id == 0) %>%
-  select(species_name) %>%
-  unique()
-tfl_occ_no_nameid %>% rt
-```
-
-#### Missing PopID
-
-```{r show_tfl_occ_missing_species_name}
-tfl_occ_no_popid <- tfl_occ %>%
-  filter(pop_id == 0) %>%
-  select(species_name) %>%
-  unique()
-tfl_occ_no_popid %>% rt
-```
-
-There are `r nrow(tfl_occ_no_nameid)` distinct scientific flora names without
-NameID, and `r nrow(tfl_occ_no_popid)` distinct scientific flora names without a
-PopID. Any records listed here need to be fixed in the original Threatened Flora
-database.
-
 #### Default/ missing date/time
 
 ```{r show_tfl_occ_missing_datetime}
@@ -2025,6 +1999,36 @@ TODO Which datum do we want to use? WGS84 and GDA94 are designed to be \<1 m
 different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is
 the most frequently used datum in the dataset, should we convert all others to
 GDA94?
+
+#### Taxonomic caveats
+
+Flora use a live copy of WACensus names, therefore we don't need to QA taxonomy,
+but we do need to QA occurrences with missing `name_id` / `pop_id`.
+
+#### Missing NameID
+
+```{r show_tfl_occ_missing_name_id}
+tfl_occ_no_nameid <- tfl_occ %>%
+  filter(name_id == 0) %>%
+  select(species_name) %>%
+  unique()
+tfl_occ_no_nameid %>% rt
+```
+
+#### Missing PopID
+
+```{r show_tfl_occ_missing_pop_id}
+tfl_occ_no_popid <- tfl_occ %>%
+  filter(pop_id == 0) %>%
+  select(species_name) %>%
+  unique()
+tfl_occ_no_popid %>% rt
+```
+
+There are `r nrow(tfl_occ_no_nameid)` distinct scientific flora names without
+NameID, and `r nrow(tfl_occ_no_popid)` distinct scientific flora names without a
+PopID. Any records listed here need to be fixed in the original Threatened Flora
+database.
 
 ### Occurrence mapping
 
@@ -2168,7 +2172,7 @@ There are `r nrow(missing_occ_tae_tsc)` unique occurrences missing from
 The table below is a tally of mismatching occurrences and confirms the missing
 occurrences identified above.
 
-```{r tally_tfl_tsc_tae}
+```{r show_tally_tfl_tsc_tae}
 tfl_tae_tally <- tfl_tae %>%
   dplyr::group_by(source_id) %>%
   dplyr::tally() %>%
@@ -2214,7 +2218,7 @@ There are `r nrow(missing_occ_tfl_occ_flora)` unique occurrences missing from
 The table below is a tally of mismatching occurrences and confirms the missing
 occurrences identified above.
 
-```{r tally_tfl_tae_occ_flora}
+```{r show_tally_tfl_tae_occ_flora}
 tfl_tae_tally <- tfl_tae %>%
   dplyr::group_by(source_id) %>%
   dplyr::tally() %>%
