@@ -1986,7 +1986,7 @@ tfa_tae_tally <- tfa_tae %>%
 
 tfa_occ_tally %>%
   dplyr::rename(tfa_occ = n) %>% 
-  left_join(tfa_tae_tally,by = "name_id") %>% 
+  left_join(tfa_tae_tally, by = c("name_id" = "taxon")) %>% 
   dplyr::rename(tfa_tae = n) %>% 
   filter(tfa_occ != tfa_tae) %>% rt
 ```
@@ -2018,7 +2018,7 @@ a requirement for valid taxon area encounters.
 The table below is a tally of mismatching occurrences by taxon. This does not match the 
 result above-FLORIAN?
 
-```{r make_tally_tfa_occ_tae}
+```{r make_tally_tfa_tae_tsc}
 tfa_tae_tally <- tfa_tae %>%
   dplyr::group_by(taxon) %>% 
   dplyr::tally() %>%
@@ -2040,7 +2040,7 @@ tfa_tae_tsc_tally <- tfa_tae_tally %>%
 # TODO cast sfc to tbl_df
 ```
 
-#### tfa\_occ names not in tfa\_tae
+### tfa\_occ names not in tfa\_tae
 
 Any records in the following table indicate names in `tfa_occ` that are not 
 in `tfa_tae`.
@@ -2053,7 +2053,7 @@ missing_taxa_tfa_tae <- tfa_occ %>%
 There are `r nrow(missing_taxa_tfa_tae)` taxon records missing from 
 `tfa_tae` when compared to `tfa_occ`.
 
-#### tfa\_tae names not in tsc\_occ\_fauna
+### tfa\_tae names not in tsc\_occ\_fauna
 
 Any records in the following table indicate names in `tfa_tae` that were not
 migrated into `tsc_occ_fauna`.
