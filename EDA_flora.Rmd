@@ -2088,8 +2088,33 @@ missing_occ_tfl_tae_unique <- missing_occ_tfl_tae %>%
 
 There are `r nrow(missing_occ_tfl_tae)` occurrences missing from `tfl_tae` when
 compared to `tfl_occ`. These missing occurrences come from
-`r nrow(missing_occ_tfl_tae_unique)` unique species. The occurrences listed were likely not migrated because
-they do not contain a name_id and/or a location which are a requirement of a tfa taxon area encounter.
+`r nrow(missing_occ_tfl_tae_unique)` unique species. The occurrences listed 
+were likely not migrated because they do not contain a name_id and/or a 
+location which are a requirement of a tfa taxon area encounter.
+
+The table below is a tally of mismatching occurrences by taxon and confirms the 
+missing occurrences identified above.
+
+```{r make_tally_tfl_occ_tae}
+tfl_occ_tally <- tfl_occ %>%
+  dplyr::group_by(name_id) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+
+tfl_tae_tally <- tfl_tae %>%
+  dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup() %>% 
+  dplyr::rename(name_id = taxon)
+
+tfl_occ_tally %>%
+  dplyr::rename(tfl_occ = n) %>% 
+  left_join(tfl_tae_tally,by = "name_id") %>% 
+  dplyr::rename(tfl_tae = n) %>% 
+  filter(tfl_occ != tfl_tae) %>% rt
+```
 
 ### tfl\_tae occurrences not in tsc\_occ\_flora
 
@@ -2112,73 +2137,11 @@ missing_occ_tfl_occ_flora_unique <- missing_occ_tfl_occ_flora %>%
 
 There are `r nrow(missing_occ_tfl_occ_flora)` unique occurrences missing from
 `tsc_occ_flora` when compared to `tfl_tae`. These missing occurrences come from
-`r nrow(missing_occ_tfl_occ_flora_unique)` unique species. The occurrences listed were likely not migrated because
-they do not contain lat or long data which is a requirement for valid taxon area
-encounter in tsc.
+`r nrow(missing_occ_tfl_occ_flora_unique)` unique species. The occurrences 
+listed were likely not migrated because they do not contain lat or long data 
+which is a requirement for valid taxon area encounter in tsc.
 
-### tfl\_occ names not in tfl\_tae
-
-```{r show_name_mismatches_tfl_tae_to_tsc_tae}
-missing_taxa_tfl_tae <- tfl_occ %>%
-  dplyr::anti_join(tfl_tae, by = c("name_id" = "taxon"))
-
-missing_taxa_tfl_tae_unique <- missing_taxa_tfl_tae %>%
-  dplyr::select(name_id) %>%
-  distinct() %>%
-  dplyr::left_join(tsc_taxa_flora, by = c("name_id"="taxon")) #26
-
-missing_taxa_tfl_tae_unique %>% rt
-```
-
-There are `r nrow(missing_taxa_tfl_tae)` taxon records missing from `tsc_tae` when
-compared to `tfa_tae`. These records are attributed to
-`r nrow(missing_taxa_tfl_tae_unique)` unique species.
-
-The table below is a tally of mismatching name_id's and confirms the missing
-occurrences identified above.
-
-```{r show_tally_tfl_occ_tae_flora}
-tfl_occ_tally <- tfl_occ %>%
-  dplyr::group_by(name_id) %>%
-  dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>%
-  ungroup()
-
-tfl_tae_tally <- tfl_tae %>%
-  dplyr::group_by(taxon) %>%
-  dplyr::tally() %>%
-  dplyr::arrange(desc(n)) %>%
-  ungroup()
-
-tfl_occ_tfl_tae_tally <- tfl_occ_tally %>%
-  dplyr::rename(tfl_occ = n) %>%
-  left_join(tfl_tae_tally, by = c("name_id" = "taxon")) %>%
-  dplyr::rename(tfl_tae = n) %>%
-  filter(tfl_occ != tfl_tae)
-
-tfl_occ_tfl_tae_tally %>% rt 
-
-```
-
-#### tfl\_tae names not in tsc\_occ\_flora
-
-```{r show_name_mismatches_tfl_tae_to_tsc_taxa_flora}
-missing_taxa_tsc <- tfl_tae %>%
-  dplyr::anti_join(tsc_occ_flora, by = "taxon")
-
-missing_taxa_tsc_unique <- missing_taxa_tsc %>%
-  dplyr::select(taxon) %>%
-  distinct() %>%
-  dplyr::left_join(tsc_taxa_flora, by = "taxon") #26
-
-missing_taxa_tsc_unique %>% rt
-```
-
-There are `r nrow(missing_taxa_tsc)` taxon records missing from `tsc_occ_flora` when
-compared to `tfa_tae`. These records are attributed to
-`r nrow(missing_taxa_tsc_unique)` unique species.
-
-The table below is a tally of mismatching name_id's and confirms the missing
+The table below is a tally of mismatching occurrences by taxon and confirms the missing
 occurrences identified above.
 
 ```{r show_tally_tfl_tae_occ_flora}
@@ -2203,6 +2166,42 @@ tfl_tae_tsc_occ_tally <- tfl_tae_tally %>%
 # tfl_tae_tsc_occ_tally %>% rt 
 # TODO cast sfc to tbl_df
 ```
+
+### tfl\_occ names not in tfl\_tae
+
+```{r show_name_mismatches_tfl_tae_to_tsc_tae}
+missing_taxa_tfl_tae <- tfl_occ %>%
+  dplyr::anti_join(tfl_tae, by = c("name_id" = "taxon"))
+
+missing_taxa_tfl_tae_unique <- missing_taxa_tfl_tae %>%
+  dplyr::select(name_id) %>%
+  distinct() %>%
+  dplyr::left_join(tsc_taxa_flora, by = c("name_id"="taxon")) #26
+
+missing_taxa_tfl_tae_unique %>% rt
+```
+
+There are `r nrow(missing_taxa_tfl_tae)` taxon records missing from `tsc_tae` when
+compared to `tfa_tae`. These records are attributed to
+`r nrow(missing_taxa_tfl_tae_unique)` unique species.
+
+#### tfl\_tae names not in tsc\_occ\_flora
+
+```{r show_name_mismatches_tfl_tae_to_tsc_taxa_flora}
+missing_taxa_tsc <- tfl_tae %>%
+  dplyr::anti_join(tsc_occ_flora, by = "taxon")
+
+missing_taxa_tsc_unique <- missing_taxa_tsc %>%
+  dplyr::select(taxon) %>%
+  distinct() %>%
+  dplyr::left_join(tsc_taxa_flora, by = "taxon") #26
+
+missing_taxa_tsc_unique %>% rt
+```
+
+There are `r nrow(missing_taxa_tsc)` taxon records missing from `tsc_occ_flora` when
+compared to `tfa_tae`. These records are attributed to
+`r nrow(missing_taxa_tsc_unique)` unique species.
 
 ## Conservation Documents
 
