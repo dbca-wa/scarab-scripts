@@ -2185,7 +2185,7 @@ There are `r nrow(missing_taxa_tfl_tae)` taxon records missing from `tsc_tae` wh
 compared to `tfa_tae`. These records are attributed to
 `r nrow(missing_taxa_tfl_tae_unique)` unique species.
 
-#### tfl\_tae names not in tsc\_occ\_flora
+### tfl\_tae names not in tsc\_occ\_flora
 
 ```{r show_name_mismatches_tfl_tae_to_tsc_taxa_flora}
 missing_taxa_tsc <- tfl_tae %>%
