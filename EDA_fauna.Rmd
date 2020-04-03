@@ -67,6 +67,7 @@ snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
 tsc_cl_fauna_datafile <- here::here("data/tsc_cl_fauna.RData")
 tsc_occ_fauna_datafile <- here::here("data/tsc_tae_fauna.RData")
 
+
 # Lookup tables
 shires <- tfa_data$Shires %>%
   dplyr::transmute(
@@ -1252,43 +1253,42 @@ Occurrences are presented as `occ` with DBCA Region and District names (where
 applicable), plus taxonomic names.
 
 ```{r get_tsc_occ}
-datafile.fauna <- here::here("data/fauna_tae.RData")
-
 if (file.exists(tsc_occ_fauna_datafile)) {
   load(tsc_occ_fauna_datafile)
 } else {
-tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
-tsc_tae <- tsc_tae_data %>% 
-  magrittr::extract2("features") %>%
-  geojsonio::as.json() %>%
-  geojsonsf::geojson_sf() %>% 
-  dplyr::mutate(taxon = taxon %>% as.character()) 
+  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+  tsc_tae <- tsc_tae_data %>% 
+    magrittr::extract2("features") %>%
+    geojsonio::as.json() %>%
+    geojsonsf::geojson_sf() %>% 
+    dplyr::mutate(taxon = taxon %>% as.character()) 
   
-tsc_taxa_fauna <- "taxon" %>%
+  tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
                       query = list(paraphyletic_groups = 20)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
-
-tsc_areas <- wastdr::wastd_GET("area") %>%
-      magrittr::extract2("features") %>%
-      geojsonio::as.json() %>%
-      geojsonsf::geojson_sf()
-
-regions <- tsc_areas %>%
-  dplyr::filter(area_type == "Region") %>%
-  dplyr::transmute(region_id = pk, region_name = name)
-
-districts <- tsc_areas %>%
-  dplyr::filter(area_type == "District") %>%
-  dplyr::transmute(district_id = pk, district_name = name)
-
-tsc_occ_fauna <- tsc_tae %>% 
-  sf::st_join(regions) %>% 
-  sf::st_join(districts) %>% 
-  dplyr::inner_join(tsc_taxa_fauna, by = c("taxon")) %>% na.omit("source_id")
-
- save(tsc_tae,
+  
+  tsc_areas <- wastdr::wastd_GET("area") %>%
+    magrittr::extract2("features") %>%
+    geojsonio::as.json() %>%
+    geojsonsf::geojson_sf()
+  
+  regions <- tsc_areas %>%
+    dplyr::filter(area_type == "Region") %>%
+    dplyr::transmute(region_id = pk, region_name = name)
+  
+  districts <- tsc_areas %>%
+    dplyr::filter(area_type == "District") %>%
+    dplyr::transmute(district_id = pk, district_name = name)
+  
+  tsc_occ_fauna <- tsc_tae %>% 
+    sf::st_join(regions) %>% 
+    sf::st_join(districts) %>%
+    dplyr::mutate(taxon = taxon %>% as.character())%>% 
+    dplyr::inner_join(tsc_taxa_fauna, by = c("taxon"))
+  
+  save(tsc_tae,
        tsc_taxa_fauna,
        tsc_areas,
        regions,
@@ -1298,7 +1298,6 @@ tsc_occ_fauna <- tsc_tae %>%
        compress = "xz")
 }
 ```
-
 
 # Compare legacy from TFA to migrated data from TSC
 This section provides an automated comparison between original data from TFA 
@@ -1315,7 +1314,7 @@ Check unique number of species by name\_id. Check unique number of observations
 and identify observations missing from TSC compared to TFA.
 
 ```{r make_tfl_summary}
-tfa_cl_edit <- tfa_cl %>%
+tfa_tcl_edit <- tfa_tcl %>%
   dplyr::filter(list_code != "ActionPlan") %>%
   dplyr::filter(list_code != "BCA") %>%
   dplyr::filter(list_code != "RedList") %>%
@@ -1328,7 +1327,6 @@ tfa_tcl_unique_taxa <- tfa_tcl_edit$name_id %>%
 tsc_tcl_unique_taxa <- tsc_tcl_fauna$name_id %>%
   unique() %>%
   length()
-
 ```
 
 ## Taxonomy
@@ -1946,10 +1944,10 @@ Currently, we assume that all occurrence records in the legacy databases are
 trustworthy. If this weren't the case, this analysis should exclude the 
 non-trustworthy records.
 
-### `tfa_occ` occurrences not in `tfa_tae`
+### tfa\_occ occurrences not in tfa\_tae
 
-Any records in the following table indicate occurrences in TFA that were not 
-migrated into TSC.
+Any records in the following table indicate occurrences in `tfa_occ` that are not 
+in `tfa_tae`.
 
 ```{r show_tfa_tae_missing_occurrences}
 missing_occ_tfa_tae <- tfa_occ %>%
