@@ -53,7 +53,7 @@ tfl_file <- here::here("data/tfl.Rdata")
 if (file.exists(tfl_file)) {
   load(tfl_file)
 } else {
-  tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd")
+  tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd", verbose = T)
   tfl_file <- here::here("data", "tfl.Rdata")
 save(tfl_data, file=tfl_file)
 }

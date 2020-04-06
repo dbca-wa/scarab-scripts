@@ -1164,16 +1164,18 @@ tfa_tae %>% chunk_post(serializer = "occ-taxon-points")
 ### Upload ObservationGroups
 
 ```{r load_obsgroups, eval=FALSE}
+wbp <- . %>% wastdr::wastd_bulk_post("occ-observation", verbose = T)
+
 # Example: one record
-tfa_phys_sample[1,] %>% wastdr::wastd_bulk_post("occ-observation")
+tfa_phys_sample[1,] %>% wbp
 
 # Bulk upload
-# LONG RUNNING UPLOAD
-tfa_phys_sample %>% wastdr::wastd_bulk_post("occ-observation")
-tfa_anim_obs %>% wastdr::wastd_bulk_post("occ-observation")
-tfa_ass_species %>% wastdr::wastd_bulk_post("occ-observation")
-tfa_veg_class %>% wastdr::wastd_bulk_post("occ-observation")
-tfa_hab_comp %>% wastdr::wastd_bulk_post("occ-observation")
+# LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
+tfa_phys_sample_res <- tfa_phys_sample %>% wbp
+tfa_anim_obs_res <- tfa_anim_obs %>% wbp
+tfa_ass_species_res <- tfa_ass_species %>% wbp
+tfa_veg_class_res <- tfa_veg_class %>% wbp
+tfa_hab_comp_res <- tfa_hab_comp %>% wbp
 ```
 
 ## Conservation Documents
