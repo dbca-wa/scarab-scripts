@@ -51,9 +51,8 @@ tfa_file <- here::here("data", "tfa.Rdata")
 if (file.exists(tfa_file)) {
   load(tfa_file)
 } else {
-  tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2")
-  tfa_file <- here::here("data", "tfa.Rdata")
-save(tfa_data, file=tfa_file)
+  tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2", verbose = T)
+  save(tfa_data, file=tfa_file)
 }
 
 snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
@@ -270,7 +269,7 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     authority = AUTHORITY %>% as.character(),
     gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
     delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReviewed %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -298,116 +297,119 @@ Mallee Fowl data is extracted separately and exported, to be stored as a csv fil
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
 
 ```{r make_tfa_occ, message=FALSE, warning=FALSE}
-tfa_rec <- tfa_data$`Fauna Records` 
-
-# taxon occurrences
-tfa_occ <- tfa_rec %>% dplyr::transmute(
-    id = DBNo %>% as.character(),
-    district_db = DistDB %>% as.integer(),
-    district_db_no = DistDBNo %>% as.character(),
-    species_code = SpCode %>% as.character(),
-    # name_id = NameId %>% as.character(), # they're all NA
-    orig_date = Date,
-    orig_time = Time,
-    o_date = ifelse(
-        Date == "",
-        default_date,
-        lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 19L)
-        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    o_time = ifelse(
-        Time == "",
-        default_date,
-        lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 19L)
-        ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    datetime = ifelse(
-        is.na(o_date),
-        default_date,
-        ifelse(
-            is.na(o_time),
-            o_date,
-            o_date + hours(hour(o_time)) + minutes(minute(o_time))
-        )) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    observer_name = Observer %>% as.character(),
-    observer_role = OrgRole %>% as.character(),
-    observer_address = Address %>% as.character(),
-    observer_phone = Phone %>% as.character(),
-    certainty_id = Certainty %>% as.integer(),
-    number_seen = NumSeen %>% as.integer(), # sum of number_*
-    animal_features = Features %>% as.character(),
-    number_adult_males = AdultM %>% as.integer(),
-    number_adult_females = AdultF %>% as.integer(),
-    number_adult_unknown = AdultU %>% as.integer(),
-    number_juvenile_males = JuvM %>% as.integer(),
-    number_juvenile_females = JuvF %>% as.integer(),
-    number_juvenile_unknown = JuvU %>% as.integer(),
-    location_id = Location. %>% as.character(),
-    location_name = LocName %>% as.character(),
-    tenure_id = TenCode %>% as.character(),
-    lga_id = LGACode %>% as.integer(),
-    district_id = DistrictNo %>% as.character(),
-    site_comment = Site %>% as.character(),
-    latitude = Lat %>% as.double(),
-    longitude = Long %>% as.double(),
-    zone = MapZone %>% as.character(),
-    northing = SightNorth %>% as.character(),
-    easting = SightEast %>% as.character(),
-    datum = Datum %>% as.character(),
-    resolution_id = Resolution %>% as.integer(),
-    landform_id = Landform %>% as.character(),
-    vegetation_type_id = VegType %>% as.character(),
-    fire_history = Fire %>% as.character(),
-    associated_flora_species_1 = Sp1 %>% as.character(),
-    associated_flora_species_2 = Sp2 %>% as.character(),
-    associated_flora_species_3 = Sp3 %>% as.character(),
-    associated_flora_species_4 = Sp4 %>% as.character(),
-    associated_flora_species_5 = Sp5 %>% as.character(),
-    associated_flora_species_6 = Sp6 %>% as.character(),
-    observation_method = ObservMethod %>% as.character(),
-    observation_type = ObservType %>% as.character(),
-    secondary_signs = SecSign %>% as.character(),
-    observation_comments = Observation %>% as.character(),
-    breeding_status = Breeding %>% as.character(),
-    specimen_status = Specimen %>% as.character(),
-    species_id_confirmed_by = Identification %>% as.character(),
-    map_provided = Map %>% as.character(), # TODO parse bool
-    mudmap_provided = MudMap %>% as.character(), # TODO parse bool
-    photo_taken = Photo %>% as.character(), # TODO parse bool
-    notes = Notes %>% as.character(),
-    comments = Comments %>% as.character(),
-    entered_by = EnName %>% as.character(),
-    entered_on = parse_date_time(EnDate, orders = orders, tz = tz),
-    changed_by = ChName %>% as.character(),
-    changed_on = parse_date_time(ChDate, orders = orders, tz = tz),
-    specimen_voucher_exists = SpVoucher %>% as.logical(),
-    specimen_voucher_location = SpHeld %>% as.character(), # specimen catalogue
-    specimen_voucher_catalogue_number = SpCatNum %>% as.character(),
-    occurrence_not_published = UnPublished %>% as.logical(),
-    occurrence_citation = ReportTitle %>% as.character(),
-    occurrence_citation_author = Author %>% as.character(),
-    # malleefowl_MFeggsH = MFeggsH %>% as.character(),
-    # malleefowl_MFeggsU = MFeggsU %>% as.character(),
-    # malleefowl_MFmoundU = MFmoundU %>% as.character(),
-    # malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
-    # malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
-    # malleefowl_MFmoundI = MFmoundI %>% as.character(),
-    # malleefowl_MFMage = MFMage %>% as.character(),
-    # malleefowl_MFMdiam = MFMdiam %>% as.character(),
-    # malleefowl_MFMheight = MFMheight %>% as.character(),
-    # malleefowl_MFMwidth = MFMwidth %>% as.character(),
-    # malleefowl_MFMdepth = MFMdepth %>% as.character(),
-    # malleefowl_MFMsoil = MFMsoil %>% as.character(),
-    # malleefowl_MFMcomment = MFMcomment %>% as.character(),
-    # malleefowl_MFextract = MFextract %>% as.character()
-    # Field* are empty, skipping:
-    # Field1 = Field1 %>% as.character(),
-    # Field2 = Field2 %>% as.character(),
-    # Field3 = Field3 %>% as.character(),
-    # Field4 = Field4 %>% as.character(),
-    # Field5 = Field5 %>% as.character()
-  ) %>% 
+# Taxon occurrences
+tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
+  id = DBNo %>% as.character(),
+  district_db = DistDB %>% as.integer(),
+  district_db_no = DistDBNo %>% as.character(),
+  species_code = SpCode %>% as.character(),
+  # name_id = NameId %>% as.character(), # they're all NA
+  orig_date = Date,
+  orig_time = Time,
+  o_date = ifelse(
+    Date == "",
+    default_date,
+    lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 19L)
+  ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+  o_time = ifelse(
+    Time == "",
+    default_date,
+    lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 19L)
+  ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+  datetime = ifelse(
+    is.na(o_date),
+    default_date,
+    ifelse(is.na(o_time),
+           o_date,
+           o_date + hours(hour(o_time)) + minutes(minute(o_time)))
+  ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+  observer_name = Observer %>% as.character(),
+  observer_role = OrgRole %>% as.character(),
+  observer_address = Address %>% as.character(),
+  observer_phone = Phone %>% as.character(),
+  certainty_id = Certainty %>% as.integer(),
+  number_seen = NumSeen %>% as.integer(),
+  # sum of number_*
+  animal_features = Features %>% as.character(),
+  number_adult_males = AdultM %>% as.integer(),
+  number_adult_females = AdultF %>% as.integer(),
+  number_adult_unknown = AdultU %>% as.integer(),
+  number_juvenile_males = JuvM %>% as.integer(),
+  number_juvenile_females = JuvF %>% as.integer(),
+  number_juvenile_unknown = JuvU %>% as.integer(),
+  location_id = Location. %>% as.character(),
+  location_name = LocName %>% as.character(),
+  tenure_id = TenCode %>% as.character(),
+  lga_id = LGACode %>% as.integer(),
+  district_id = DistrictNo %>% as.character(),
+  site_comment = Site %>% as.character(),
+  latitude = Lat %>% as.double(),
+  longitude = Long %>% as.double(),
+  zone = MapZone %>% as.character(),
+  northing = SightNorth %>% as.character(),
+  easting = SightEast %>% as.character(),
+  datum = Datum %>% as.character(),
+  resolution_id = Resolution %>% as.integer(),
+  landform_id = Landform %>% as.character(),
+  vegetation_type_id = VegType %>% as.character(),
+  fire_history = Fire %>% as.character(),
+  associated_flora_species_1 = Sp1 %>% as.character(),
+  associated_flora_species_2 = Sp2 %>% as.character(),
+  associated_flora_species_3 = Sp3 %>% as.character(),
+  associated_flora_species_4 = Sp4 %>% as.character(),
+  associated_flora_species_5 = Sp5 %>% as.character(),
+  associated_flora_species_6 = Sp6 %>% as.character(),
+  observation_method = ObservMethod %>% as.character(),
+  observation_type = ObservType %>% as.character(),
+  secondary_signs = SecSign %>% as.character(),
+  observation_comments = Observation %>% as.character(),
+  breeding_status = Breeding %>% as.character(),
+  specimen_status = Specimen %>% as.character(),
+  species_id_confirmed_by = Identification %>% as.character(),
+  map_provided = Map %>% as.character(),
+  # TODO parse bool
+  mudmap_provided = MudMap %>% as.character(),
+  # TODO parse bool
+  photo_taken = Photo %>% as.character(),
+  # TODO parse bool
+  notes = Notes %>% as.character(),
+  comments = Comments %>% as.character(),
+  entered_by = EnName %>% as.character(),
+  entered_on = parse_date_time(EnDate, orders = orders, tz = tz),
+  changed_by = ChName %>% as.character(),
+  changed_on = parse_date_time(ChDate, orders = orders, tz = tz),
+  specimen_voucher_exists = SpVoucher %>% as.logical(),
+  specimen_voucher_location = SpHeld %>% as.character(),
+  # specimen catalogue
+  specimen_voucher_catalogue_number = SpCatNum %>% as.character(),
+  occurrence_not_published = UnPublished %>% as.logical(),
+  occurrence_citation = ReportTitle %>% as.character(),
+  occurrence_citation_author = Author %>% as.character(),
+  # malleefowl_MFeggsH = MFeggsH %>% as.character(),
+  # malleefowl_MFeggsU = MFeggsU %>% as.character(),
+  # malleefowl_MFmoundU = MFmoundU %>% as.character(),
+  # malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
+  # malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
+  # malleefowl_MFmoundI = MFmoundI %>% as.character(),
+  # malleefowl_MFMage = MFMage %>% as.character(),
+  # malleefowl_MFMdiam = MFMdiam %>% as.character(),
+  # malleefowl_MFMheight = MFMheight %>% as.character(),
+  # malleefowl_MFMwidth = MFMwidth %>% as.character(),
+  # malleefowl_MFMdepth = MFMdepth %>% as.character(),
+  # malleefowl_MFMsoil = MFMsoil %>% as.character(),
+  # malleefowl_MFMcomment = MFMcomment %>% as.character(),
+  # malleefowl_MFextract = MFextract %>% as.character()
+  # Field* are empty, skipping:
+  # Field1 = Field1 %>% as.character(),
+  # Field2 = Field2 %>% as.character(),
+  # Field3 = Field3 %>% as.character(),
+  # Field4 = Field4 %>% as.character(),
+  # Field5 = Field5 %>% as.character()
+) %>%
   dplyr::left_join(shires, by = "lga_id") %>%
   dplyr::left_join(tenure, by = "tenure_id") %>%
-  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>% ## there are duplicates in this dataframe
+  ## veg types has duplicates
+  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>% 
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
@@ -443,7 +445,7 @@ veg_class <- tfa_occ %>%
     filter(vegetation_code != "")
 
 ass_species <- tfa_occ %>%
-  has_name_id_and_location %>% 
+  has_name_id_and_location %>%
   dplyr::transmute(
     source = 10,
     source_id = id,
@@ -452,8 +454,14 @@ ass_species <- tfa_occ %>%
     associated_species_3 = associated_flora_species_3,
     associated_species_4 = associated_flora_species_4,
     associated_species_5 = associated_flora_species_5,
-    associated_species_6 = associated_flora_species_6) %>%  #parse as free text
-  dplyr::filter(associated_species_1 != "" | associated_species_2 != "" | associated_species_3 != "" | associated_species_4 != "" | associated_species_5 != "")
+    associated_species_6 = associated_flora_species_6
+  ) %>%  #parse as free text
+  dplyr::filter(
+    associated_species_1 != "" |
+      associated_species_2 != "" |
+      associated_species_3 != "" |
+      associated_species_4 != "" | associated_species_5 != ""
+  )
     
 anim_obs <- tfa_occ %>%
   has_name_id_and_location %>%
@@ -497,20 +505,29 @@ anim_obs %>%
   distinct() %>% 
   readr::write_csv(path = here::here("data", "tfa_detmeth.csv"))
 
-phys_sample <- tfa_occ %>% 
-  has_name_id_and_location %>% 
+phys_sample <- tfa_occ %>%
+  has_name_id_and_location %>%
   dplyr::transmute(
     source = 10,
     source_id = id,
     sample_type = specimen_status,
-    specimen_voucher_exists = specimen_voucher_exists, # This column is confusing- what does it mean?
+    specimen_voucher_exists = specimen_voucher_exists,
+    # This column is confusing- what does it mean?
     sample_destination = specimen_voucher_location,
-    sample_label = glue::glue("[{specimen_voucher_location}]{specimen_voucher_catalogue_number}")) %>% 
-  dplyr::filter(specimen_voucher_exists != "FALSE" | sample_destination != "") %>% 
-  dplyr::filter(specimen_voucher_exists != "FALSE" | sample_destination != "Not retained") %>% 
-  dplyr::filter(sample_type != "No specimen" | sample_destination != "Not retained")%>% 
-  dplyr::filter(sample_type != "Unknown" | sample_destination != "Unknown")%>% 
-  dplyr::filter(sample_type != "Unknown" | sample_destination != "Unknown location")
+    sample_label = glue::glue(
+      "[{specimen_voucher_location}]{specimen_voucher_catalogue_number}"
+    )
+  ) %>%
+  dplyr::filter(specimen_voucher_exists != "FALSE" |
+                  sample_destination != "") %>%
+  dplyr::filter(specimen_voucher_exists != "FALSE" |
+                  sample_destination != "Not retained") %>%
+  dplyr::filter(sample_type != "No specimen" |
+                  sample_destination != "Not retained") %>%
+  dplyr::filter(sample_type != "Unknown" |
+                  sample_destination != "Unknown") %>%
+  dplyr::filter(sample_type != "Unknown" |
+                  sample_destination != "Unknown location")
 
 
 phys_sample %>%
@@ -524,26 +541,27 @@ phys_sample %>%
   readr::write_csv(path = here::here("data", "tfa_samptype.csv"))
 
 ## Put Malleefowl in separate csv file and add to data catalogue
-malleefowl_data <- tfa_rec %>% dplyr::transmute(
-  id = DBNo %>% as.character(),
-  malleefowl_MFeggsH = MFeggsH %>% as.character(),
-  malleefowl_MFeggsU = MFeggsU %>% as.character(),
-  malleefowl_MFmoundU = MFmoundU %>% as.character(),
-  malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
-  malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
-  malleefowl_MFmoundI = MFmoundI %>% as.character(),
-  malleefowl_MFMage = MFMage %>% as.character(),
-  malleefowl_MFMdiam = MFMdiam %>% as.character(),
-  malleefowl_MFMheight = MFMheight %>% as.character(),
-  malleefowl_MFMwidth = MFMwidth %>% as.character(),
-  malleefowl_MFMdepth = MFMdepth %>% as.character(),
-  malleefowl_MFMsoil = MFMsoil %>% as.character(),
-  malleefowl_MFMcomment = MFMcomment %>% as.character(),
-  malleefowl_MFextract = MFextract %>% as.character()
-  ) %>% 
-  na.omit() %>% 
-  dplyr::left_join(tfa_occ,by = "id")
-  readr::write_csv(malleefowl_data, path = here::here("data", "malleefowl_data.csv"))
+malleefowl_data <- tfa_data$`Fauna Records` %>%
+  dplyr::transmute(
+    id = DBNo %>% as.character(),
+    malleefowl_MFeggsH = MFeggsH %>% as.character(),
+    malleefowl_MFeggsU = MFeggsU %>% as.character(),
+    malleefowl_MFmoundU = MFmoundU %>% as.character(),
+    malleefowl_MFmoundCA = MFmoundCA %>% as.character(),
+    malleefowl_MFmoundRA = MFmoundRA %>% as.character(),
+    malleefowl_MFmoundI = MFmoundI %>% as.character(),
+    malleefowl_MFMage = MFMage %>% as.character(),
+    malleefowl_MFMdiam = MFMdiam %>% as.character(),
+    malleefowl_MFMheight = MFMheight %>% as.character(),
+    malleefowl_MFMwidth = MFMwidth %>% as.character(),
+    malleefowl_MFMdepth = MFMdepth %>% as.character(),
+    malleefowl_MFMsoil = MFMsoil %>% as.character(),
+    malleefowl_MFMcomment = MFMcomment %>% as.character(),
+    malleefowl_MFextract = MFextract %>% as.character()
+  ) %>%
+  na.omit() %>%
+  dplyr::left_join(tfa_occ, by = "id")
+readr::write_csv(malleefowl_data, path = here::here("data", "malleefowl_data.csv"))
   
 # Create taxon area encounter
 tfa_tae <- tfa_occ %>%
@@ -587,8 +605,8 @@ tfa_tae <- tfa_occ %>%
   ) %>%
   dplyr::arrange(taxon) %>% distinct()
    
-occ_file <- here::here("data", "occ.Rdata")
-save(tfa_occ, tfa_tae, file=occ_file)
+occ_file <- here::here("data", "tfa_occ.Rdata")
+save(tfa_occ, tfa_tae, file=occ_file, compress = "xz")
 if (file.exists(occ_file)) load(occ_file)
 ```
 
@@ -600,42 +618,50 @@ tfa_act <- tfa_data$`Recovery Actions` %>%
                    actions = Recovery.Actions %>% as.character())
 
 tfa_pla <- tfa_data$`Recovery Plans` %>%
-  dplyr::transmute(species_code = SpCode %>% as.character(),
-                   program_no = ProgramNo %>% as.character(),
-                   recovery_plan = RecoveryPlan %>% as.character(),
-                   national_state = NationalorState %>% as.character(),
-                   year_approved = YearApproved %>% as.character(),
-                   objectives = Objectives %>% as.character(),
-                   action_types = ActionTypes %>% as.character(),
-                   research_topics = ResearchTopics %>% as.character(),
-                   recovery_team = RecoveryTeam %>% as.character(),
-                   active = Active %>% as.character(),
-                   rt_national_state = RTNationalorState %>% as.character(),
-                   lead_org = LeadOrg %>% as.character(),
-                   chair_org = ChairOrg %>% as.character(),
-                   chair_name = ChairName %>% as.character(),
-                   chair_contact = ChairContact %>% as.character(),
-                   exec_name = ExecOName %>% as.character(),
-                   exec_contact = ExecOContact %>% as.character(),
-                   membership = Membership %>% as.character(),
-                   rt_file_number = RTFileNumber %>% as.character())
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    program_no = ProgramNo %>% as.character(),
+    recovery_plan = RecoveryPlan %>% as.character(),
+    national_state = NationalorState %>% as.character(),
+    year_approved = YearApproved %>% as.character(),
+    objectives = Objectives %>% as.character(),
+    action_types = ActionTypes %>% as.character(),
+    research_topics = ResearchTopics %>% as.character(),
+    recovery_team = RecoveryTeam %>% as.character(),
+    active = Active %>% as.character(),
+    rt_national_state = RTNationalorState %>% as.character(),
+    lead_org = LeadOrg %>% as.character(),
+    chair_org = ChairOrg %>% as.character(),
+    chair_name = ChairName %>% as.character(),
+    chair_contact = ChairContact %>% as.character(),
+    exec_name = ExecOName %>% as.character(),
+    exec_contact = ExecOContact %>% as.character(),
+    membership = Membership %>% as.character(),
+    rt_file_number = RTFileNumber %>% as.character()
+  )
 ```
 
 ## Research priorities and topics
 ``` {r make_tfa_res}
 tfa_resp <- tfa_data$`Research Priorities` %>%
-  dplyr::transmute(species_code = SpCode %>% as.character(),
-                   research_priority = ResearchPriority %>% as.character(),
-                   undertaken = Undertaken %>% as.character(),
-                   comments = Comments %>% as.character())
+  dplyr::transmute(
+    species_code = SpCode %>% as.character(),
+    research_priority = ResearchPriority %>% as.character(),
+    undertaken = Undertaken %>% as.character(),
+    comments = Comments %>% as.character()
+  )
 
 tfa_rest <- tfa_data$`Research Topics` %>%
-  dplyr::transmute(id = ID %>% as.integer(),
-                   research_topics = Research.Topics %>% as.character())
+  dplyr::transmute(
+    id = ID %>% as.integer(),
+    research_topics = Research.Topics %>% as.character()
+  )
 
 
-readr::write_csv(tfa_resp, path = here::here("data", "research_priorities_data.csv"))
-readr::write_csv(tfa_rest, path = here::here("data", "research_topics_data.csv"))
+readr::write_csv(tfa_resp,
+                 path = here::here("data", "research_priorities_data.csv"))
+readr::write_csv(tfa_rest, 
+                 path = here::here("data", "research_topics_data.csv"))
 ```
 
 # Current conservation lists (TSC)
@@ -692,9 +718,7 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) %>%  
-  # dplyr::glimpse() %>% 
-  invisible()
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code"))
 ```
 
 ## Occurrence lookup criteria
@@ -1146,7 +1170,22 @@ A single record (taxon area encounter), or a list of (one or) many records, can 
 ```{r load_tfa_tae, eval=F}
 # Test upload one, some, many to local or PROD:
 # 25757
-taxonpoint = rjson::fromJSON('[{"taxon": 25757, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,  "encounter_type":1,  "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT(119.732234 -32.35756)"}]')
+taxonpoint = rjson::fromJSON(
+  '[{"taxon": 25757, 
+  "code": "Condingup", 
+  "description": "Pine plantations off Fisheries Rd east of Condinup\n
+  Opportunistic sighting\nDay sighting\nHeard/Call\n
+  Saw a flock of approximately 200 birds in the pine plantation\n
+  Observed by Abby Thomas, DBCA Technical Officer, Albany",   
+  "source": 10,
+  "source_id": "94654",    
+  "encountered_on": "2018-04-16T15:00:00+08:00",    
+  "encountered_by": 1, 
+  "encounter_type":1,  
+  "area_type": 30,    
+  "accuracy": 1000.0,    
+  "point":"SRID=4326;POINT(119.732234 -32.35756)"}]'
+)
 wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points")
 
 x <- tfa_tae[1,] %>% as.list() %>% 
@@ -1172,10 +1211,17 @@ tfa_phys_sample[1,] %>% wbp
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
 tfa_phys_sample_res <- tfa_phys_sample %>% wbp
-tfa_anim_obs_res <- tfa_anim_obs %>% wbp
-tfa_ass_species_res <- tfa_ass_species %>% wbp
+tfa_anim_obs_res <- tfa_anim_obs %>% wbp # fails with 500
+tfa_ass_species_res <- tfa_ass_species[1,] %>% wbp # fails with 400
 tfa_veg_class_res <- tfa_veg_class %>% wbp
-tfa_hab_comp_res <- tfa_hab_comp %>% wbp
+tfa_hab_comp_res <- tfa_hab_comp %>% wbp # fails with 400
+
+# Export as (confidential) test data for API
+tfa_phys_sample %>% readr::write_csv(path = here::here("data/tfa_phys_sample.csv"))
+tfa_anim_obs %>% readr::write_csv(path = here::here("data/tfa_anim_obs.csv"))
+tfa_ass_species %>% readr::write_csv(path = here::here("data/tfa_ass_species.csv"))
+tfa_veg_class %>% readr::write_csv(path = here::here("data/tfa_veg_class.csv"))
+tfa_hab_comp %>% readr::write_csv(path = here::here("data/tfa_hab_comp.csv"))
 ```
 
 ## Conservation Documents
