@@ -594,7 +594,7 @@ if (file.exists(occ_file)) load(occ_file)
 
 ## Recovery Actions and Plans
 
-``` {r make_tfa_rec}
+```{r make_tfa_rec}
 tfa_act <- tfa_data$`Recovery Actions` %>%
   dplyr::transmute(id = ID %>% as.integer(),
                    actions = Recovery.Actions %>% as.character())
@@ -622,7 +622,7 @@ tfa_pla <- tfa_data$`Recovery Plans` %>%
 ```
 
 ## Research priorities and topics
-``` {r make_tfa_res}
+```{r make_tfa_res}
 tfa_resp <- tfa_data$`Research Priorities` %>%
   dplyr::transmute(species_code = SpCode %>% as.character(),
                    research_priority = ResearchPriority %>% as.character(),
@@ -1099,7 +1099,7 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
 ```
 
 
-```{r load_tfa_tcl, eval=F}
+```{r load_tfa_tcl, eval=FALSE}
 # LONG RUNNING UPLOAD
 tfa_listing_cat_iucn2012 %>% wastdr::wastd_POST("taxon-conservationlisting")
 tfa_listing_cat_iucn2001 %>% wastdr::wastd_POST("taxon-conservationlisting")
@@ -1120,7 +1120,7 @@ For further details on the methodology behind the movement of EOO data, please f
 
 ### Upload EOOs to TSC
 
-```{r make_eoo, eval=F}
+```{r make_eoo, eval=FALSE}
 # extract all eoo
 tfa_occ_with_coords <- tfa_occ %>% 
   dplyr::filter(!is.na(latitude)) %>% 
@@ -1143,7 +1143,7 @@ tfa_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
 
 A single record (taxon area encounter), or a list of (one or) many records, can be uploaded to the TSC API as follows.
 
-```{r load_tfa_tae, eval=F}
+```{r load_tfa_tae, eval=FALSE}
 # Test upload one, some, many to local or PROD:
 # 25757
 taxonpoint = rjson::fromJSON('[{"taxon": 25757, "code": "Condingup", "description": "Pine plantations off Fisheries Rd east of Condinup\nOpportunistic sighting\nDay sighting\nHeard/Call\nSaw a flock of approximately 200 birds in the pine plantation\nObserved by Abby Thomas, DBCA Technical Officer, Albany",    "source": 10,    "source_id": "94654",    "encountered_on": "2018-04-16T15:00:00+08:00",    "encountered_by": 1,  "encounter_type":1,  "area_type": 30,    "accuracy": 1000.0,    "point":"SRID=4326;POINT(119.732234 -32.35756)"}]')
