@@ -269,7 +269,7 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     authority = AUTHORITY %>% as.character(),
     gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
     delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReviewed %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -848,26 +848,22 @@ tfa_anim_obs <- anim_obs %>%
   left_join(tfa_det_meth, by = c("detection_method")) %>%
   left_join(tfa_sec_sign, by = c("secondary_signs")) %>%
   left_join(tfa_repmap, by = c("reproductive_maturity")) %>%
-  dplyr::select(
-    source,
-    source_id,
-    tsc_species_id_confidence,
-    observation_details,
-    tsc_detection_method,
-    tsc_reproductive_maturity,
-    tsc_secondary_signs,
-    distinctive_features,
-    number_of_adult_males,
-    number_of_adult_females,
-    number_of_adult_unknown,
-    number_of_juvenile_males,
-    number_of_juvenile_females,
-    number_of_juvenile_unknown
-  ) %>%
-  dplyr::rename(species_id_confidence = tsc_species_id_confidence) %>%
-  dplyr::rename(detection_method = tsc_detection_method) %>%
-  dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
-  dplyr::rename(secondary_signs = tsc_secondary_signs) %>% 
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    species_id_confidence = tsc_species_id_confidence,
+    observation_details = observation_details,
+    detection_method = tsc_detection_method,
+    reproductive_maturity = tsc_reproductive_maturity,
+    secondary_signs = tsc_secondary_signs,
+    distinctive_features = distinctive_features,
+    no_adult_male = number_of_adult_males,
+    no_adult_female = number_of_adult_females,
+    no_adult_unknown = number_of_adult_unknown,
+    no_juvenile_male = number_of_juvenile_males,
+    no_juvenile_female =  number_of_juvenile_females,
+    no_juvenile_unknown = number_of_juvenile_unknown,
+  ) %>% 
   dplyr::mutate(obstype = "AnimalObservation")
 
 # Associated species
