@@ -260,7 +260,7 @@ names_pop_vegclass <- as.data.frame(names(pop_vegclass))
 
 ## Conservation listings
 
-```{r make_tfl_cl}
+```{r get_tfl_cl}
 tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
@@ -324,7 +324,7 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 
 ## Occurrences
 
-```{r make_tfl_occ, message=FALSE, warning=FALSE}
+```{r get_tfl_occ, message=FALSE, warning=FALSE}
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
     # IDs
@@ -1437,10 +1437,14 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 
 ```{r load_tfl_tcl, eval=FALSE}
 # LONG RUNNING UPLOAD
-tfl_listing_cat_priority %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_epbc %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn1994 %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn2001 %>% wastdr::wastd_POST("taxon-conservationlisting")
+tfl_listing_cat_priority %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfl_listing_cat_epbc %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfl_listing_cat_iucn1994 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfl_listing_cat_iucn2001 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
 
 # There are none, skip upload:
 # tfl_cl_iucn2012 %>% wastdr::wastd_POST("taxon-conservationlisting")
@@ -1496,22 +1500,29 @@ x <- tfl_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
+tfl_tae %>% 
+  chunk_post(serializer = "occ-taxon-points")
 ```
 
 ### Upload ObservationGroups
 
 ```{r load_obsgroups, eval=FALSE}
 # Example: one record
-tfl_phys_sample[1,] %>% wastdr::wastd_bulk_post("occ-observation")
+tfl_phys_sample[1,] %>% 
+  wastdr::wastd_bulk_post("occ-observation")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-tfl_phys_sample %>% wastdr::wastd_bulk_post("occ-observation")
-tfl_hab_cond %>% wastdr::wastd_bulk_post("occ-observation")
-tfl_area_ass %>% wastdr::wastd_bulk_post("occ-observation")
-tfl_plant_count %>% wastdr::wastd_bulk_post("occ-observation")
-tfl_hab_comp %>% wastdr::wastd_bulk_post("occ-observation")
+tfl_phys_sample %>% 
+  wastdr::wastd_bulk_post("occ-observation")
+tfl_hab_cond %>% 
+  wastdr::wastd_bulk_post("occ-observation")
+tfl_area_ass %>% 
+  wastdr::wastd_bulk_post("occ-observation")
+tfl_plant_count %>% 
+  wastdr::wastd_bulk_post("occ-observation")
+tfl_hab_comp %>% 
+  wastdr::wastd_bulk_post("occ-observation")
 ```
 
 ## Conservation Documents
@@ -1574,6 +1585,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
   load(tsc_occ_flora_datafile)
 } else {
   tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+  
   tsc_tae <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
@@ -1651,7 +1663,7 @@ TFL has `r nrow(tfl_tcl)` conservation listings of `r tfl_tcl_unique_taxa`
 unique taxa. TSC has `r nrow(tsc_tcl_flora)` flora conservation listings of
 `r tsc_tcl_unique_taxa` unique taxa.
 
-### TFL conservation listings not in TSC
+### tfl\_tcl conservation listings not in tsc\_tcl\_flora
 
 Any records in the following table indicate conservation listings in TFL that
 were not migrated into TSC.
@@ -1660,7 +1672,7 @@ were not migrated into TSC.
 tfl_tcl %>% dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>% rt
 ```
 
-### TSC conservation listings not in TFL
+### tsc\_tcl\_flora conservation listings not in tfl\_tcl
 
 The following table shows any conservation listings in TSC which are not in TFL.
 Because there are more taxa in TSC than TFL, taxa with no `source_id` have also
@@ -1673,7 +1685,7 @@ tsc_tcl_flora %>%
   rt
 ```
 
-### TFL cons listed phrase names
+### tfl\_tcl listed phrase names
 
 Some TFL cons listings have a name\_id of 0. These are phrase names and require
 to be assigned the `name_id` of the published name, once the published name is
@@ -1797,9 +1809,7 @@ cons_cat_summary <- tfl_cons_cat_sum %>%
   cbind(Category = c("Priority", "IUCN1994", "IUCN2001", "IUCN2012", "EPBC")) %>%
   dplyr::select("Category", everything())
 
-cons_cat_summary %>% rt ## ARE THESE DIFFERENCES FROM USE OF CATEGORY_CODE AND NOT CATEGORY_CODE_WA?
-#  No. It happens if you right_join rather than inner_join tsc_taxa_flora to tsc_tcl_flora. I have 
-#  changed this above to be an inner_join, is there any reason I shouldn't?
+cons_cat_summary %>% rt
 ```
 
 The following tables show any conservation listings in TFL which are not in TSC,
@@ -1936,7 +1946,7 @@ default handling):
 -   `r tfl_occ %>% dplyr::filter(latitude > 0) %>% nrow` latitudes lack the
     minus sign and turn up in China.
 
-There are `r nrow(tfl_occ)` species occurrence records (encounters)in TFL. The
+There are `r nrow(tfl_occ)` species occurrence records (encounters) in TFL. The
 following columns are incomplete.
 
 ```{r show_tfl_occ_missing_values}
