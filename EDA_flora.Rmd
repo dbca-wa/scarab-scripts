@@ -1435,7 +1435,7 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
   dplyr::filter(!is.na(category))
 ```
 
-```{r load_tfl_tcl, eval=F}
+```{r load_tfl_tcl, eval=FALSE}
 # LONG RUNNING UPLOAD
 tfl_listing_cat_priority %>% wastdr::wastd_POST("taxon-conservationlisting")
 tfl_listing_cat_epbc %>% wastdr::wastd_POST("taxon-conservationlisting")
@@ -1455,7 +1455,7 @@ workbook.
 
 ### TSC upload example for EOOs
 
-```{r load_one_taxon_eoo, eval=F}
+```{r load_one_taxon_eoo, eval=FALSE}
 one_taxon_eoo <- tibble::tibble(
   name_id = 24162,
   eoo = eoo_polygon(tfl_occ, nid = 17914) %>% sfc_geojson()
@@ -1465,7 +1465,7 @@ one_taxon_eoo %>% wastdr::wastd_POST("taxon")
 
 ### Upload EOOs to TSC
 
-```{r make_eoo, eval=F}
+```{r make_eoo, eval=FALSE}
 # extract all eoo
 tfl_occ_with_coords <- tfl_occ %>% 
   dplyr::filter(!is.na(latitude)) %>% 
@@ -1480,13 +1480,13 @@ tfl_eoo <- tfl_occ_with_coords %>% make_eoo()
 # mapview::mapview(head(tfl_eoo$eoo_sfc))
 ```
 
-```{r load_eoo, eval=F}
+```{r load_eoo, eval=FALSE}
 tfl_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
 ```
 
 ### Upload TAEs to TSC
 
-```{r load_tfl_tae, eval=F}
+```{r load_tfl_tae, eval=FALSE}
 # Test upload one, some, many to local or PROD:
 x <- tfl_tae[1,] %>% as.list() %>% 
   # Or use any of:
