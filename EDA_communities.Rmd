@@ -1565,10 +1565,10 @@ default handling):
     lack an explicit date\time and were defaulted to midnight AWST.
 -   `r site_visit %>% dplyr::filter(is.na(site_visit_date)) %>% nrow()` site
     records lack an explicit date\time and were defaulted to midnight AWST.
--   `r surveys %>% dplyr::filter(surveyed_on == "") %>% nrow()` survey records 
-    lack an explicit date\time and were defaulted to midnight AWST.
--   `r site_visit %>% dplyr::filter(is.na(site_visit_date)) %>% nrow()` site
-    records lack an explicit date\time and were defaulted to midnight AWST.
+-   `r tec_bdy %>% dplyr::filter(BDY_ID ==  0) %>% nrow()` survey records 
+    lack an explicit boundary_id so could not be migrated.
+-   `r tec_occ_no_sit <- tec_sit %>% dplyr::filter(S_ID == 0) %>% nrow()` site
+    records lack an explicit site_id so could not be migrated.
 
 There are `r nrow(tec_occ)` species occurrence records (encounters) in TEC. The
 following columns are incomplete.
@@ -1590,19 +1590,10 @@ surveys_no_datetime <- surveys %>%
     filter(surveyed_on == "")
 surveys_no_datetime %>% rt
 
-tec_bdy_cae_no_encountered_on <- tec_bdy_cae_build %>%
-  dplyr::filter(is.na(encountered_on))
-tec_bdy_cae_no_encountered_on %>% rt
-
 # Sites
 site_visit_no_datetime <- site_visit %>% 
     filter(is.na(site_visit_date))
 site_visit_no_datetime %>% rt
-
-tec_site_cae_no_encountered_on <- tec_site_cae_build %>%
-  dplyr::filter(is.na(encountered_on))
-tec_site_cae_no_encountered_on %>% rt
-
 ```
 
 ### Missing location ID
@@ -1619,7 +1610,21 @@ tec_occ_no_sit <- tec_sit %>%
 tec_occ_no_sit %>% rt
 ```
 
-### Missing community ID
+### Missing date/time cae
+
+```{r show_tec_occ_missing datetime}
+# Surveys
+tec_bdy_cae_no_encountered_on <- tec_bdy_cae_build %>%
+  dplyr::filter(is.na(encountered_on))
+tec_bdy_cae_no_encountered_on %>% rt
+
+# Sites
+tec_site_cae_no_encountered_on <- tec_site_cae_build %>%
+  dplyr::filter(is.na(encountered_on))
+tec_site_cae_no_encountered_on %>% rt
+```
+
+### Missing community ID cae
 
 ```{r show_missing_com_id}
 # Survey communities
@@ -1633,7 +1638,7 @@ tec_site_cae_no_com_id <- tec_site_cae_build %>%
 tec_site_cae_no_com_id %>% rt
 ```
 
-### Missing geometry
+### Missing geometry cae
 
 ```{r show_missing_geometry}
 # Surveys
@@ -1647,45 +1652,24 @@ tec_site_cae_no_point <- tec_site_cae_build %>%
 tec_site_cae_no_point %>% rt
 ```
 
-There are `r nrow(tec_bdy_missing_boundary_ID)` distinct boundary records with a missing boundary ID.
+There are `r nrow(tec_bdy_cae_no_encountered_on)` boundary records 
+and `r nrow(tec_site_cae_no_encountered_on)` site records which 
+lack an explicit date\time.
 
-There are `r nrow(tec_occ_no_sit)` distinct site records with a missing site ID.
+There are `r nrow(tec_bdy_cae_no_com_id)` boundary records and 
+`r nrow(tec_site_cae_no_com_id)`  site records which
+lack an explicit community ID.
+
+There are `r nrow(tec_bdy_cae_no_geom)` boundary records and 
+`r nrow(tec_site_cae_no_point)`  site records which
+lack location data (e.g. geometry or point).
+
+Any records listed here need to be fixed in the original Threatened 
+Ecological Communities database.
 
 ### Occurrence mismatches
+
 ```{r }
-
-
-
-# MISSING COM ID
-## The following communities contain no com_id and therefore cannot be parsed
-
-
-
-names(tec_bdy)
-names(surveys)
-names(tec_occ)
-names(communities)
-
-## Check for similarities between surveys and boundaries
-x <- intersect(tec_occ$boundary_id, tec_bdy$BDY_ID) # 122049 similar
-setdiff(tec_bdy$BDY_ID, tec_occ$boundary_id) # There are 0 boundarys in tec_bdy that are not in tec_occ
-setdiff(tec_occ$boundary_id, tec_bdy$BDY_ID) # There are 566 boundaries in tec_occ that are not in tec_bdy
-setdiff(tec_bdy$BDY_ID, surveys$boundary_id) # There are 118803 boundaries that have never been surveyed
-setdiff(surveys$boundary_id, tec_bdy$BDY_ID) # There are 129 surveyed boundaries which don't have a matching boundary ID in tec_bdy
-
-unique(surveys$com_id)
-
-names(surveys)
-names(tec_occ)
-names(communities)
-
-glimpse(surveys)
-glimpse(communities)
-
-
-names(survey_cae)
-setdiff(survey_cae$com_id, communities$com_id) # There are 145 communities that have not been surveyed
-
 
 ```
 
