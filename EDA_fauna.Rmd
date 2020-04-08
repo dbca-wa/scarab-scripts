@@ -153,7 +153,10 @@ secondary_signs <- tfa_data$`Secondary Signs` %>%
   dplyr::transmute(
     sign = Sign %>% as.character()
   )
-readr::write_csv(secondary_signs, path = here::here("data", "secondary_signs_data.csv")) 
+readr::write_csv(
+  secondary_signs, 
+  path = here::here("data", "secondary_signs_data.csv")
+) 
 
 # TODO species notes
 species <- tfa_data$`Species List` %>%
@@ -906,10 +909,11 @@ tfa_veg_class <- veg_class %>%
   dplyr::transmute(
     source = source,
     source_id = source_id,
-    vegetation_classification = glue::glue(
+    level1 = glue::glue(
       "{vegetation_code}; {vegetation_type}"),
     obstype = "VegetationClassification"
     )
+# TODO tidyr::drop_na() where level1 is NA
 ```
 
 # Migrate legacy data (TFL to TSC)
@@ -1198,18 +1202,74 @@ tfa_tae %>% chunk_post(serializer = "occ-taxon-points")
 
 ### Upload ObservationGroups
 
+* Associated species are free text which will never map to proper taxonomic names.
+  TODO add as plain text to TAE comments. 
+  Challenge: merge 0 to many associated species per TAE into one comment.
+
 ```{r load_obsgroups, eval=FALSE}
-wbp <- . %>% wastdr::wastd_bulk_post("occ-observation", verbose = T)
+wbp <- . %>% 
+  # wastdr::wastd_bulk_post(
+  wastdr::wastd_POST(
+    "occ-observation", 
+    verbose = T, 
+    api_url = dev,
+    api_token = Sys.getenv("WASTDR_API_TOKEN"),
+    query = list(obstype="PhysicalSample")
+  )
+
+# Example: tfa_anim_obs 
+# http://tsc.dbca.wa.gov.au/api/1/occ-observation/bulk_create/?format=json&obstype=AnimalObservation
+# 
+# [{'source': '10',
+#   'source_id': '96964',
+#   'species_id_confidence': 'determined-layman',
+#   'observation_details': 'Number seen: 2;\nDetection: Opportunistic sighting: Night sighting;\nComments: Female with juvenile seen in drey on top of carport, under house roof. Drey has since washed off carport roof but animals still seen walking on the fences throughout week.',
+#   'detection_method': 'direct-encounter',
+#   'maturity': 'adult-young-heel',
+#   'secondary_signs': ['nest-or-mound'],
+#   'distinctive_features': 'white prehensile tail',
+#   'no_adult_male': '0',
+#   'no_adult_female': '1',
+#   'no_adult_unknown': '0',
+#   'no_juvenile_male': '0',
+#   'no_juvenile_female': '0',
+#   'no_juvenile_unknown': '1'}]
 
 # Example: one record
 tfa_phys_sample[1,] %>% wbp
 
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
-tfa_phys_sample_res <- tfa_phys_sample %>% wbp
-tfa_anim_obs_res <- tfa_anim_obs %>% wbp # fails with 500
-tfa_ass_species_res <- tfa_ass_species[1,] %>% wbp # fails with 400
-tfa_veg_class_res <- tfa_veg_class %>% wbp
+tfa_phys_sample_res <- tfa_phys_sample %>% 
+  wastdr::wastd_POST(
+    "occ-observation/bulk_create", 
+    verbose = T, 
+    api_url = dev,
+    api_token = Sys.getenv("WASTDR_API_TOKEN"),
+    query = list(obstype="PhysicalSample")
+  )
+tfa_anim_obs_res <- tfa_anim_obs %>%  
+  wastdr::wastd_POST(
+    "occ-observation/bulk_create", 
+    verbose = T, 
+    api_url = dev,
+    pi_token = Sys.getenv("WASTDR_API_TOKEN"),
+    query = list(obstype="AnimalObservation")
+  )
+# tfa_ass_species_res <- tfa_ass_species[1,] %>% 
+#   wastdr::wastd_POST(
+#     "occ-observation/bulk_create", 
+#     verbose = T, 
+#     query = list(obstype="AssociatedSpecies")
+#   )
+tfa_veg_class_res <- tfa_veg_class %>%
+  wastdr::wastd_POST(
+    "occ-observation/bulk_create", 
+    verbose = T, 
+    api_url = dev,
+    pi_token = Sys.getenv("WASTDR_API_TOKEN"),
+    query = list(obstype="VegetationClassification")
+  )
 tfa_hab_comp_res <- tfa_hab_comp %>% wbp # fails with 400
 
 # Export as (confidential) test data for API
