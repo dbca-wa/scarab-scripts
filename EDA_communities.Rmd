@@ -58,7 +58,7 @@ save(tec, file=tec_file)
 }
 
 tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
-tec_sit <- geojsonsf::geojson_sf("data/tec_sites.geojson")
+tec_site <- geojsonsf::geojson_sf("data/tec_sites.geojson")
 # tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 
@@ -774,7 +774,7 @@ bdy_w_one_site <- tec_bdy %>%
   filter(S_ID_COUNT == 1) %>%
   magrittr::extract2("BDY_ID") # 121578 with a site ID = 1, which measn they are duplicates
 
-sites_keep <- tec_sit %>%
+sites_keep <- tec_site %>%
   dplyr::filter(!(BDY_ID %in% bdy_w_one_site)) ## These are the sites we want to keep as they are not just boundary duplicates
 
 # coll code and number indicates voucher specimens
@@ -1100,7 +1100,7 @@ tsc_soiltype <- "lookup-soiltype" %>%
 # Load manual mapping of TEC lookup criteria from CSV file, and join to relevant table
 
 # habitat composition
-tec_land_element <- here::here("csv/tec_landforms_w_tsc.csv") %>%
+tec_landforms <- here::here("csv/tec_landforms_w_tsc.csv") %>%
   readr::read_csv(
     col_types = cols(
       land_element = col_character(),
@@ -1117,7 +1117,7 @@ tec_drainage <- here::here("csv/tec_drainage_w_tsc.csv") %>%
     ))
 
 tec_hab_comp <- hab_comp %>%
-  left_join(tec_land_element, by = c("land_element")) %>%
+  left_join(tec_landforms, by = c("land_element")) %>%
   left_join(tec_drainage, by = c("drainage")) %>%  
 dplyr::select(source,occ_id,tsc_landform,tsc_drainage) %>% 
 dplyr::rename(source_id = occ_id) %>%
@@ -1567,7 +1567,7 @@ default handling):
     records lack an explicit date\time and were defaulted to midnight AWST.
 -   `r tec_bdy %>% dplyr::filter(BDY_ID ==  0) %>% nrow()` survey records 
     lack an explicit boundary_id so could not be migrated.
--   `r tec_occ_no_sit <- tec_sit %>% dplyr::filter(S_ID == 0) %>% nrow()` site
+-   `r tec_occ_no_sit <- tec_site %>% dplyr::filter(S_ID == 0) %>% nrow()` site
     records lack an explicit site_id so could not be migrated.
 
 There are `r nrow(tec_occ)` species occurrence records (encounters) in TEC. The
@@ -1605,7 +1605,7 @@ tec_bdy_missing_boundary_id <- tec_bdy %>%
 tec_bdy_missing_boundary_id %>% rt
 
 # Sites
-tec_occ_no_sit <- tec_sit %>% 
+tec_occ_no_sit <- tec_site %>% 
     dplyr::filter(S_ID == 0)
 tec_occ_no_sit %>% rt
 ```
@@ -1667,12 +1667,156 @@ lack location data (e.g. geometry or point).
 Any records listed here need to be fixed in the original Threatened 
 Ecological Communities database.
 
-### Occurrence mismatches
+### Occurrence mapping
 
-```{r }
+Occurrence criteria were manually mapped for each variable, therefore they need
+to be checked to confirm whether the mapping is correct. 
 
+Landforms: These terms were mapped to 'umbrella' terms which generally follow the morphological types listed in McDonald et al. (1998, p13). However, some of the terms could not be mapped as they are vegetation types (e.g. FOR = Forest) and not landform types. 
+
+McDonald, R.C., Isbell, R.F., Speight, J.G., Walker, J., and Hopkins, M.S. (1998) Australian Soil and Land Survey - Field Handbook, Second Addition. CSIRO, Canberra, Australia.
+
+```{r show_tfl_lookup_mappings}
+tec_landforms %>% rt
+tec_drainage %>% rt
 ```
 
+### Trust level of occurrence records
+
+Currently, we assume that all occurrence records in the legacy databases are 
+trustworthy. If this weren't the case, this analysis should exclude the 
+non-trustworthy records.
+
+### tec\_bdy\_cae occurrences not in tsc\_community\_boundaries
+
+Any records in the following table indicate occurrences in `tec_bdy_cae` that are not 
+in `tsc_community_boundaries`.
+
+```{r show_tec_bdy_cae_missing_occurrences}
+missing_occ_tsc_community_boundaries <- tec_bdy_cae %>%
+  dplyr::anti_join(tsc_community_boundaries, by = "source_id")
+
+missing_occ_tsc_community_boundaries %>% rt
+
+missing_occ_tsc_community_boundaries_unique <- missing_occ_tsc_community_boundaries %>%
+  dplyr::select(source_id) %>%
+  distinct() 
+
+missing_occ_tsc_community_boundaries_unique %>% rt 
+```
+
+There are `r nrow(missing_occ_tsc_community_boundaries)` occurrences 
+missing from tfa\_tae when
+compared to tfa\_occ. These missing occurrences come from 
+`r nrow(missing_occ_tsc_community_boundaries_unique)` unique species. The 
+occurrences listed were likely not migrated because they do not contain a 
+name_id and/or a location which are a requirement of a tfa taxon area 
+encounter.
+
+The table below is a tally of mismatching occurrences by taxon and confirms the two
+missing occurrences identified above.
+
+```{r make_tally_tfa_occ_tae}
+tfa_occ_tally <- tfa_occ %>%
+  dplyr::group_by(name_id) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+
+tfa_tae_tally <- tfa_tae %>%
+  dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+
+tfa_occ_tally %>%
+  dplyr::rename(tfa_occ = n) %>% 
+  left_join(tfa_tae_tally, by = c("name_id" = "taxon")) %>% 
+  dplyr::rename(tfa_tae = n) %>% 
+  filter(tfa_occ != tfa_tae) %>% rt
+```
+
+### tfa\_tae occurrences not in tsc\_tae
+
+Any records in the following table indicate occurrences in `tfa_tae` that were not
+migrated into `tsc_occ_fauna`.
+
+```{r show_name_mismatches_tfa_tae_to_tsc_tae}
+missing_occ_tfa_tae_tsc <- tfa_tae %>% 
+  dplyr::anti_join(tsc_occ_fauna, by = "source_id")
+
+missing_occ_tfa_tae_tsc %>% rt
+
+missing_occ_tfa_tae_tsc_unique <- missing_occ_tfa_tae_tsc %>% 
+  dplyr::select(taxon) %>% 
+  distinct()
+
+missing_occ_tfa_tae_tsc_unique %>% rt
+```
+
+There are `r nrow(missing_occ_tfa_tae_tsc)` taxon records missing from `tsc_occ_fauna` when 
+compared to `tfa_tae`. These records are attributed to 
+`r nrow(missing_occ_tfa_tae_tsc_unique)` unique species. The occurrences listed 
+were likely not migrated because they do not contain lat or long data which is 
+a requirement for valid taxon area encounters.
+
+The table below is a tally of mismatching occurrences by taxon. This does not match the 
+result above-FLORIAN?
+
+```{r make_tally_tfa_tae_tsc}
+tfa_tae_tally <- tfa_tae %>%
+  dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+
+tsc_occ_tally <- tsc_occ_fauna %>%
+  dplyr::group_by(taxon) %>% 
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>% 
+  ungroup()
+
+tfa_tae_tsc_tally <- tfa_tae_tally %>%
+  dplyr::rename(tfa_tae = n) %>% 
+  left_join(tsc_occ_tally,by = "taxon") %>% 
+  dplyr::rename(tsc_occ = n) %>% 
+  filter(tfa_tae != tsc_occ)
+# tfa_tae_tsc_tally %>% rt 
+# TODO cast sfc to tbl_df
+```
+
+### tfa\_occ names not in tfa\_tae
+
+Any records in the following table indicate names in `tfa_occ` that are not 
+in `tfa_tae`.
+
+```{r show_name_mismatches_tfa_occ_to_tfa_tae}
+missing_taxa_tfa_tae <- tfa_occ %>% 
+    dplyr::anti_join(tfa_tae, by = c("name_id" = "taxon"))
+```
+
+There are `r nrow(missing_taxa_tfa_tae)` taxon records missing from 
+`tfa_tae` when compared to `tfa_occ`.
+
+### tfa\_tae names not in tsc\_occ\_fauna
+
+Any records in the following table indicate names in `tfa_tae` that were not
+migrated into `tsc_occ_fauna`.
+
+```{r show_missing_occurrences_tfa_tae_to_tsc_tae}
+missing_taxa_tae_tsc <- tfa_tae %>%
+  dplyr::anti_join(tsc_occ_fauna, by = "taxon") 
+
+missing_taxa_tae_tsc %>% rt
+
+missing_taxa_tae_tsc_unique <- missing_taxa_tae_tsc %>% 
+    dplyr::select(taxon) %>% 
+    distinct()
+```
+
+There are `r nrow(missing_taxa_tae_tsc)` unique occurrences missing from
+`tsc_occ_fauna` when compared to `tfa_tae`. These missing occurrences come from 
+`r nrow(missing_taxa_tae_tsc_unique)` unique species.
 
 
 # Upload to data catalogue
