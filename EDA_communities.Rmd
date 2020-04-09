@@ -1120,6 +1120,7 @@ tec_hab_comp <- hab_comp %>%
   left_join(tec_landforms, by = c("land_element")) %>%
   left_join(tec_drainage, by = c("drainage")) %>%  
 dplyr::transmute(
+  source = source,
   source_id = occ_id,
   landform = tsc_landform,
   drainage = tsc_drainage) %>% 
@@ -1248,7 +1249,7 @@ tec_site_cae %>%
 ```{r, eval=FALSE}
 # Example: one record
 tec_hab_comp[1,] %>% 
-  wastdr::wastd_bulk_post("occ-observation", verbose = TRUE)
+  wastdr::wastd_bulk_post("occ-observation")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
@@ -1784,6 +1785,7 @@ confirms the...
 ```
 
 # Upload to data catalogue
+
 ```{r upload_data_catalogue}
 # This workbook
 upload_file_to_ckan("7942b979-f768-4365-8303-f1b1e00b3a61", "EDA_communities.html")
@@ -1807,7 +1809,7 @@ Also upload the compiled workbook.
 Note, this process lags one compilation of this workbook, as the HTML output
 is generated after the R code is run - knit a workbook twice to update the data catalogue.
 
-```{r tec_upload}
+```{r tec_upload, eval = FALSE}
 d <- ckanr::package_show("threatened-ecological-communities-database")
 # ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
 upload_to_ckan(communities, "Threatened Ecological Communities (TEC)",
