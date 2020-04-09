@@ -678,7 +678,7 @@ plant_count <- tfl_occ %>%
     source_id = source_id,
     number_of_quadrats_surveyed = quad_num,
     individual_quadrat_area = quad_size,
-    yotal_quadrat_area =quad_tot_sq_m,
+    total_quadrat_area =quad_tot_sq_m,
     land_manager_present = landowner_present,
     plant_count_method = count_mthd_code,
     number_alive_mature = mature_plants,
@@ -1154,21 +1154,15 @@ tfl_hab_comp <- hab_comp %>%
   left_join(tfl_soiltype, by = c("soil_type")) %>%
   left_join(tfl_soilcolour, by = c("soil_colour")) %>%
   left_join(tfl_drainage, by = c("drainage")) %>%
-  dplyr::select(
-    source,
-    source_id,
-    tsc_landforms,
-    tsc_rock_type,
-    loose_rock,
-    tsc_soil_type,
-    tsc_soil_colour,
-    tsc_drainage
-  ) %>%
-  dplyr::rename(landform = tsc_landforms) %>%
-  dplyr::rename(rocktype = tsc_rock_type) %>%
-  dplyr::rename(soiltype = tsc_soil_type) %>%
-  dplyr::rename(soilcolour = tsc_soil_colour) %>%
-  dplyr::rename(drainage = tsc_drainage) %>%
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    landform = tsc_landforms,
+    rock_type = tsc_rock_type,
+    soil_type = tsc_soil_type,
+    soil_colour = tsc_soil_colour,
+    drainage = tsc_drainage
+    ) %>%
   dplyr::mutate(obstype = "HabitatComposition")
 
 ## Area assessment
@@ -1184,12 +1178,12 @@ tfl_survey_method <-
 
 tfl_area_ass <- area_ass %>%
   left_join(tfl_survey_method, by = c("survey_method")) %>%
-  dplyr::select(source,
-                source_id,
-                tsc_survey_method,
-                surveyed_area,
-                survey_duration) %>%
-  dplyr::rename(survey_method = tsc_survey_method) %>%
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    survey_method = tsc_survey_method,
+    area_surveyed_m2 = surveyed_area,
+    survey_duration_min = survey_duration) %>%
   dplyr::mutate(obstype = "AreaAssessment")
 
 ## Habitat condition
@@ -1205,9 +1199,13 @@ tfl_soil_condition <-
 
 tfl_hab_cond <- hab_cond %>%
   left_join(tfl_soil_condition, by = c("soil_condition")) %>%
-  dplyr::select(source, source_id, occurrence_condition, tsc_soil_condition) %>%
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    soil_condition = tsc_soil_condition) %>%
   dplyr::rename(soil_condition = tsc_soil_condition) %>%
-  dplyr::mutate(obstype = "HabitatCondition")
+  dplyr::mutate(obstype = "HabitatCondition") # 'occurrence_condition' cannot 
+# be migrated to tsc card options which require a %. This has been added to tae description.
 
 ## Plant count
 tfl_plant_count_method <-
@@ -1244,17 +1242,36 @@ tfl_plant_count <- plant_count %>%
   left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
   left_join(tfl_plant_count_subject, by = c("counted_subject")) %>%
   left_join(tfl_plant_condition, by = c("plant_condition")) %>%
-  dplyr::select(
-    -plant_count_method,
-    -counted_subject,
-    -plant_condition,
-    -tsc_criteria.x,
-    -tsc_criteria.y,
-    -tsc_criteria
-  ) %>%
-  dplyr::rename(plant_count_method = tsc_plant_count_method) %>%
-  dplyr::rename(counted_subject = tsc_counted_subject) %>%
-  dplyr::rename(plant_condition = tsc_Plant_condition) %>%
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    count_method = tsc_plant_count_method,
+    counted_subject = tsc_counted_subject,
+    plant_condition = tsc_Plant_condition,
+    land_manager_present = land_manager_present,
+    no_alive_mature = number_alive_mature,
+    no_alive_juvenile = number_alive_juvenile,
+    no_alive_seedlings = number_alive_seedlings,
+    no_dead_mature = number_dead_mature,
+    no_dead_juvenile = number_dead_juvenile,
+    no_dead_seedlings = number_dead_seedlings,
+    no_alive_simple = number_alive,
+    no_dead_simple = number_dead,
+    no_quadrats_surveyed = number_of_quadrats_surveyed,
+    quadrat_area_individual_m2 = individual_quadrat_area,
+    quadrat_area_total_m2 = total_quadrat_area,
+    no_quadrats_surveyed = number_of_quadrats_surveyed,
+    population_area_estimated_m2 = estimates_population_area,
+    clonal_present = clonal_reproduction_present,
+    vegetative_present = vegetative_state_present,
+    flowerbuds_present = flower_buds_present,
+    flowers_present = flowers_present,
+    flowering_plants_percent = flowering_plants,
+    immature_fruit_present = immature_fruit_present,
+    ripe_fruit_present = ripe_fruit_present,
+    dehisced_fruit_present = dehisced_fruit_present,
+    comments = comments,
+    ) %>%
   dplyr::mutate(obstype = "PlantCount")
 
 ## Physical sample
@@ -1270,8 +1287,13 @@ tfl_sampdest <-
 
 tfl_phys_sample <- phys_sample %>%
   left_join(tfl_sampdest, by = c("sample_destination")) %>%
-  dplyr::select(-sample_destination, -tsc_criteria) %>%
-  dplyr::rename(sample_destination = tsc_sample_destination) %>%
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    sample_type = sample_type,
+    sample_destination = tsc_sample_destination,
+    sample_label = sample_label,
+    permit_id = permit_id) %>%
   dplyr::mutate(obstype = "PhysicalSample")
 ```
 

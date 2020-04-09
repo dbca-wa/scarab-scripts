@@ -1119,10 +1119,10 @@ tec_drainage <- here::here("csv/tec_drainage_w_tsc.csv") %>%
 tec_hab_comp <- hab_comp %>%
   left_join(tec_landforms, by = c("land_element")) %>%
   left_join(tec_drainage, by = c("drainage")) %>%  
-dplyr::select(source,occ_id,tsc_landform,tsc_drainage) %>% 
-dplyr::rename(source_id = occ_id) %>%
-dplyr::rename(landform = tsc_landform) %>% 
-dplyr::rename(drainage = tsc_drainage) %>% 
+dplyr::transmute(
+  source_id = occ_id,
+  landform = tsc_landform,
+  drainage = tsc_drainage) %>% 
 dplyr::mutate(obstype = "HabitatComposition")
 ```
 

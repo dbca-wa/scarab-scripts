@@ -857,7 +857,7 @@ tfa_anim_obs <- anim_obs %>%
     species_id_confidence = tsc_species_id_confidence,
     observation_details = observation_details,
     detection_method = tsc_detection_method,
-    reproductive_maturity = tsc_reproductive_maturity,
+    maturity = tsc_reproductive_maturity,
     secondary_signs = tsc_secondary_signs,
     distinctive_features = distinctive_features,
     no_adult_male = number_of_adult_males,
@@ -1237,6 +1237,7 @@ wbp <- . %>%
 
 # Example: one record
 tfa_phys_sample[1,] %>% wbp
+tfa_anim_obs[1,] %>% wbp
 
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
