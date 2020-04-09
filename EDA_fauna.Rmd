@@ -1592,8 +1592,9 @@ therefore they need to be checked to confirm whether the mapping is correct.
 tfa_conscrit %>% rt
 ```
 
-In addition, some conservation criteria could not be mapped as they do not exist 
-in the list/category_code. 
+Some conservation criteria could not be mapped as they do not exist in the
+`list_code` / `category_code`.
+
 These need to be corrected before the manual mapping can be updated and the 
 correct criteria assigned for all species.
 
@@ -2015,9 +2016,6 @@ Any records listed here need to be fixed in the original Threatened Fauna databa
 
 Occurrence criteria were manually mapped for each variable, therefore they need
 to be checked to confirm whether the mapping is correct. 
-
-Some conservation criteria could not be mapped as they do not exist in the
-`list_code` / `category_code`.
 
 Landforms: These terms were mapped to 'umbrella' terms which generally follow the morphological types listed in McDonald et al. (1998, p13). However, some of the terms could not be mapped as they are vegetation types (e.g. FOR = Forest) and not landform types. 
 
