@@ -272,7 +272,7 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     authority = AUTHORITY %>% as.character(),
     gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
     delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReviewed %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -851,26 +851,22 @@ tfa_anim_obs <- anim_obs %>%
   left_join(tfa_det_meth, by = c("detection_method")) %>%
   left_join(tfa_sec_sign, by = c("secondary_signs")) %>%
   left_join(tfa_repmap, by = c("reproductive_maturity")) %>%
-  dplyr::select(
-    source,
-    source_id,
-    tsc_species_id_confidence,
-    observation_details,
-    tsc_detection_method,
-    tsc_reproductive_maturity,
-    tsc_secondary_signs,
-    distinctive_features,
-    number_of_adult_males,
-    number_of_adult_females,
-    number_of_adult_unknown,
-    number_of_juvenile_males,
-    number_of_juvenile_females,
-    number_of_juvenile_unknown
-  ) %>%
-  dplyr::rename(species_id_confidence = tsc_species_id_confidence) %>%
-  dplyr::rename(detection_method = tsc_detection_method) %>%
-  dplyr::rename(reproductive_maturity = tsc_reproductive_maturity) %>%
-  dplyr::rename(secondary_signs = tsc_secondary_signs) %>% 
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    species_id_confidence = tsc_species_id_confidence,
+    observation_details = observation_details,
+    detection_method = tsc_detection_method,
+    maturity = tsc_reproductive_maturity,
+    secondary_signs = tsc_secondary_signs,
+    distinctive_features = distinctive_features,
+    no_adult_male = number_of_adult_males,
+    no_adult_female = number_of_adult_females,
+    no_adult_unknown = number_of_adult_unknown,
+    no_juvenile_male = number_of_juvenile_males,
+    no_juvenile_female =  number_of_juvenile_females,
+    no_juvenile_unknown = number_of_juvenile_unknown,
+  ) %>% 
   dplyr::mutate(obstype = "AnimalObservation")
 
 # Associated species
@@ -1243,6 +1239,7 @@ wbp <- . %>%
 
 # Example: one record
 tfa_phys_sample[1,] %>% wbp
+tfa_anim_obs[1,] %>% wbp
 
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
@@ -1598,8 +1595,9 @@ therefore they need to be checked to confirm whether the mapping is correct.
 tfa_conscrit %>% rt
 ```
 
-In addition, some conservation criteria could not be mapped as they do not exist 
-in the list/category_code. 
+Some conservation criteria could not be mapped as they do not exist in the
+`list_code` / `category_code`.
+
 These need to be corrected before the manual mapping can be updated and the 
 correct criteria assigned for all species.
 
@@ -2021,9 +2019,6 @@ Any records listed here need to be fixed in the original Threatened Fauna databa
 
 Occurrence criteria were manually mapped for each variable, therefore they need
 to be checked to confirm whether the mapping is correct. 
-
-Some conservation criteria could not be mapped as they do not exist in the
-`list_code` / `category_code`.
 
 Landforms: These terms were mapped to 'umbrella' terms which generally follow the morphological types listed in McDonald et al. (1998, p13). However, some of the terms could not be mapped as they are vegetation types (e.g. FOR = Forest) and not landform types. 
 
