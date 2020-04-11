@@ -1200,7 +1200,10 @@ x <- tfa_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfa_tae %>% chunk_post(serializer = "occ-taxon-points")
+tfa_tae %>% chunk_post(
+  serializer = "occ-taxon-points"
+  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
+)
 ```
 
 
@@ -1215,9 +1218,8 @@ wbp <- . %>%
   # wastdr::wastd_bulk_post(
   wastdr::wastd_POST(
     "occ-observation", 
-    verbose = T, 
     api_url = dev,
-    api_token = Sys.getenv("WASTDR_API_TOKEN"),
+    api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"),
     query = list(obstype="PhysicalSample")
   )
 

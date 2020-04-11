@@ -209,7 +209,6 @@ chunk_post <- function(data,
                        api_pw = wastdr::get_wastdr_api_pw(),
                        chunksize = 1000,
                        verbose = wastdr::get_wastdr_verbose()) {
-    . <- NULL
     if (verbose)
         wastdr::wastdr_msg_info(
             glue::glue("[chunk_post] Updating {api_url}{serializer}..."))
@@ -427,86 +426,3 @@ fix_incomplete_date <- function(
     year <- ifelse(is.na(year_int), 1900, year_int)
     lubridate::make_datetime(year, month, day, 12, tz = tz)
 }
-
-
-# Moved to wastdr
-# ### Upload ObservationGroups
-# # devtoken <- Sys.getenv("WASTDR_API_TOKEN_DEV")
-# #
-# # # This chunk explains the development steps for wastd_bulk_post
-# #
-# # # Naive: do first record only
-# # # API expects a key-value dict = R list of exactly one record
-# # # API might get a bulk_create which then accepts a list of dicts (R data.frame)
-# # x <- tfa_phys_sample[1,] %>%
-# #     as.list() %>%
-# #     wastdr::wastd_POST("occ-observation", api_url = dev, api_token = devtoken, verbose = TRUE)
-# #
-# # # Helper: factor out all params except for data
-# post_one <- . %>%
-#     as.list() %>%
-#     wastdr::wastd_POST("occ-observation", verbose=T)
-# #
-# # tfa_phys_sample[1,] %>% post_one
-# #
-# # # Base R: do several (subset or all)
-# # # apply with margin 1 (rows) does what tidyverse refuses to do
-# # res <- apply(tfa_phys_sample[1:10,], 1, post_one)
-# # res[[1]]
-# # testthat::expect_equal(
-# #     res[[1]]$data$encounter$properties$source_id,
-# #     tfa_phys_sample[1,]$source_id
-# # )
-# #
-# #
-# # # Generalise helper
-# # # Let all params be user defined
-# wastd_post_one <- function(data_row,
-#                            serializer,
-#                            api_url = wastdr::get_wastdr_api_url(),
-#                            api_token = wastdr::get_wastdr_api_token(),
-#                            verbose = FALSE){
-#     data_row %>%
-#         as.list() %>%
-#         wastdr::wastd_POST(
-#             serializer = serializer,
-#             api_url = api_url,
-#             api_token = api_token,
-#             verbose = verbose
-#         )
-# }
-#
-# # # Naive application example: First ten records
-# # # Still some repetitive code - how to use apply
-# # apply(
-# #     tfa_phys_sample[1:10,],
-# #     1,
-# #     wastd_post_one,
-# #     serializer = "occ-observation",
-# #     api_url = dev,
-# #     api_token=devtoken,
-# #     verbose = TRUE
-# # )
-# #
-# # Generalize applying the helper
-# # Top level ingredients: what (data), how (serializer), where (server)
-# wastd_bulk_post <- function(data,
-#                             serializer,
-#                             api_url = wastdr::get_wastdr_api_url(),
-#                             api_token = wastdr::get_wastdr_api_token(),
-#                             verbose = FALSE){
-#     apply(data,
-#           1,
-#           wastd_post_one,
-#           serializer = serializer,
-#           api_url = api_url,
-#           api_token = api_token,
-#           verbose = verbose)
-# }
-#
-# # Apply wastd_bulk_post
-# # This should be applicable to all other occ-observation models
-# # TODO error handling, return the HTTP status, report summary "x created, y failed"
-# # tfa_phys_sample %>%
-# #     wastd_bulk_post("occ-observation", api_url = dev, api_token = devtoken, verbose = TRUE)
-#
