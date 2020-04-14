@@ -857,7 +857,7 @@ tfa_anim_obs <- anim_obs %>%
     observation_details = observation_details,
     detection_method = tsc_detection_method,
     maturity = tsc_reproductive_maturity,
-    secondary_signs = tsc_secondary_signs,
+    secondary_signs = tsc_secondary_signs %>% as.list(), # TSC expects list
     distinctive_features = distinctive_features,
     no_adult_male = number_of_adult_males,
     no_adult_female = number_of_adult_females,
@@ -1205,48 +1205,36 @@ tfa_tae %>% chunk_post(
   Challenge: merge 0 to many associated species per TAE into one comment.
 
 ```{r load_obsgroups, eval=FALSE}
-wbp <- function(data, obstype = "PhysicalSample") {
-  data %>%
-    wastdr::wastd_POST(
-      "occ-observation/bulk_create",
-      api_url = dev,
-      api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"),
-      query = list(obstype = obstype)
-    )
-}
-# Example: tfa_anim_obs 
-# http://tsc.dbca.wa.gov.au/api/1/occ-observation/bulk_create/?format=json&obstype=AnimalObservation
-# 
-# [{'source': '10',
-#   'source_id': '96964',
-#   'species_id_confidence': 'determined-layman',
-#   'observation_details': 'Number seen: 2;\nDetection: Opportunistic sighting: Night sighting;\nComments: Female with juvenile seen in drey on top of carport, under house roof. Drey has since washed off carport roof but animals still seen walking on the fences throughout week.',
-#   'detection_method': 'direct-encounter',
-#   'maturity': 'adult-young-heel',
-#   'secondary_signs': ['nest-or-mound'],
-#   'distinctive_features': 'white prehensile tail',
-#   'no_adult_male': '0',
-#   'no_adult_female': '1',
-#   'no_adult_unknown': '0',
-#   'no_juvenile_male': '0',
-#   'no_juvenile_female': '0',
-#   'no_juvenile_unknown': '1'}]
-
-# Example: one record
-tfa_phys_sample_res <- tfa_phys_sample %>% wbp(obstype="PhysicalSample")
-tfa_anim_obs[1,] %>% wbp
+# Examples:
+# tfa_phys_sample_res <- tfa_phys_sample[1,] %>% 
+#   wastd_occ_obs_post(obstype="PhysicalSample")
+# tfa_phys_sample_res <- tfa_phys_sample[1:100,] %>% 
+#   wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
+tfa_phys_sample_res <- tfa_phys_sample[1:100,] %>% 
+  wastd_occ_obs_post(obstype="PhysicalSample",
+                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
-tfa_anim_obs_res <- tfa_anim_obs[1,] %>%  wbp(obstype="AnimalObservation")
+tfa_anim_obs_res <- tfa_anim_obs[400:4000,] %>% 
+  wastd_occ_obs_post(obstype="AnimalObservation",
+                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
+                     )
 
 # We cannot map hand-written AssSpecies to TSC NameIDs.
-# tfa_ass_species_res <- tfa_ass_species[1,] %>% wbp(obstype="AssociatedSpecies")
+# tfa_ass_species_res <- tfa_ass_species[1,] %>% 
+#   wastd_occ_obs_post(obstype="AssociatedSpecies")
 
-tfa_veg_class_res <- tfa_veg_class %>% wbp(obstype="VegetationClassification")
+tfa_veg_class_res <- tfa_veg_class %>% 
+  wastd_occ_obs_post(obstype="VegetationClassification",
+                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
+                     )
 
-tfa_hab_comp_res <- tfa_hab_comp %>% wbp(obstype="HabitatComposition") # fails with 400
+tfa_hab_comp_res <- tfa_hab_comp %>% 
+  wastd_occ_obs_post(obstype="HabitatComposition",
+                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
+                     ) # fails with 400
 
 # Export as (confidential) test data for API
 tfa_phys_sample %>% readr::write_csv(path = here::here("data/tfa_phys_sample.csv"))

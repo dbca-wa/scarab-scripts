@@ -1,6 +1,6 @@
 reproductive_maturity,tsc_reproductive_maturity,tsc_criteria
 Mating,adult-mating,14
-Non-breeding,Adult,1
+Non-breeding,adult,1
 Young in pouch,adult-young-pouch,17
 Eggs,eggs,23
 Male in breeding colours,adult-male-breeding-colours,12
@@ -16,6 +16,6 @@ Fledgling/hatchling emergence,hatchling,7
 Breeding behaviour,adult-breeding-behaviour,10
 Recent signs of breeding,adult-recent-signs-breeding,22
 eggs,eggs,23
-Breeding/mating call,adult-breedingmating-call,13
+Breeding/mating call,adult-breeding-mating-call,13
 nesting,adult-nesting,20
 young at heel,adult-young-heel,19
