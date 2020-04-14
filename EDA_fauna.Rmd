@@ -272,7 +272,7 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     authority = AUTHORITY %>% as.character(),
     gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
     delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReviewed %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -866,8 +866,7 @@ tfa_anim_obs <- anim_obs %>%
     no_juvenile_male = number_of_juvenile_males,
     no_juvenile_female =  number_of_juvenile_females,
     no_juvenile_unknown = number_of_juvenile_unknown,
-  ) %>% 
-  dplyr::mutate(obstype = "AnimalObservation")
+  )
 
 # Associated species
 tfa_ass_species <- ass_species %>% 
@@ -1210,15 +1209,15 @@ tfa_tae %>% chunk_post(
   Challenge: merge 0 to many associated species per TAE into one comment.
 
 ```{r load_obsgroups, eval=FALSE}
-wbp <- . %>% 
-  # wastdr::wastd_bulk_post(
-  wastdr::wastd_POST(
-    "occ-observation", 
-    api_url = dev,
-    api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"),
-    query = list(obstype="PhysicalSample")
-  )
-
+wbp <- function(data, obstype = "PhysicalSample") {
+  data %>%
+    wastdr::wastd_POST(
+      "occ-observation/bulk_create",
+      api_url = dev,
+      api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"),
+      query = list(obstype = obstype)
+    )
+}
 # Example: tfa_anim_obs 
 # http://tsc.dbca.wa.gov.au/api/1/occ-observation/bulk_create/?format=json&obstype=AnimalObservation
 # 
@@ -1238,42 +1237,20 @@ wbp <- . %>%
 #   'no_juvenile_unknown': '1'}]
 
 # Example: one record
-tfa_phys_sample[1,] %>% wbp
+tfa_phys_sample_res <- tfa_phys_sample %>% wbp(obstype="PhysicalSample")
 tfa_anim_obs[1,] %>% wbp
 
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
-tfa_phys_sample_res <- tfa_phys_sample %>% 
-  wastdr::wastd_POST(
-    "occ-observation/bulk_create", 
-    verbose = T, 
-    api_url = dev,
-    api_token = Sys.getenv("WASTDR_API_TOKEN"),
-    query = list(obstype="PhysicalSample")
-  )
-tfa_anim_obs_res <- tfa_anim_obs %>%  
-  wastdr::wastd_POST(
-    "occ-observation/bulk_create", 
-    verbose = T, 
-    api_url = dev,
-    pi_token = Sys.getenv("WASTDR_API_TOKEN"),
-    query = list(obstype="AnimalObservation")
-  )
-# tfa_ass_species_res <- tfa_ass_species[1,] %>% 
-#   wastdr::wastd_POST(
-#     "occ-observation/bulk_create", 
-#     verbose = T, 
-#     query = list(obstype="AssociatedSpecies")
-#   )
-tfa_veg_class_res <- tfa_veg_class %>%
-  wastdr::wastd_POST(
-    "occ-observation/bulk_create", 
-    verbose = T, 
-    api_url = dev,
-    pi_token = Sys.getenv("WASTDR_API_TOKEN"),
-    query = list(obstype="VegetationClassification")
-  )
-tfa_hab_comp_res <- tfa_hab_comp %>% wbp # fails with 400
+
+tfa_anim_obs_res <- tfa_anim_obs[1,] %>%  wbp(obstype="AnimalObservation")
+
+# We cannot map hand-written AssSpecies to TSC NameIDs.
+# tfa_ass_species_res <- tfa_ass_species[1,] %>% wbp(obstype="AssociatedSpecies")
+
+tfa_veg_class_res <- tfa_veg_class %>% wbp(obstype="VegetationClassification")
+
+tfa_hab_comp_res <- tfa_hab_comp %>% wbp(obstype="HabitatComposition") # fails with 400
 
 # Export as (confidential) test data for API
 tfa_phys_sample %>% readr::write_csv(path = here::here("data/tfa_phys_sample.csv"))
