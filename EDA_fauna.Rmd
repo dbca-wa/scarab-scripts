@@ -65,7 +65,7 @@ snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
 # datafile_tsc_fauna <- here::here("data", "etl_fauna_tsc.Rda")
 tsc_cl_fauna_datafile <- here::here("data/tsc_cl_fauna.RData")
 tsc_occ_fauna_datafile <- here::here("data/tsc_tae_fauna.RData")
-
+tfa_occ_datafile <- here::here("data", "tfa_occ.Rdata")
 
 # Lookup tables
 shires <- tfa_data$Shires %>%
@@ -608,9 +608,9 @@ tfa_tae <- tfa_occ %>%
   ) %>%
   dplyr::arrange(taxon) %>% distinct()
    
-occ_file <- here::here("data", "tfa_occ.Rdata")
-save(tfa_occ, tfa_tae, file=occ_file, compress = "xz")
-if (file.exists(occ_file)) load(occ_file)
+
+save(tfa_occ, tfa_tae, file=tfa_occ_datafile, compress = "xz")
+if (file.exists(tfa_occ_datafile)) load(tfa_occ_datafile)
 ```
 
 ## Recovery Actions and Plans
@@ -810,8 +810,7 @@ tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
 tfa_hab_comp <- hab_comp %>%
   left_join(tfa_landcrit, by = c("landform_id")) %>%  
 dplyr::select(source,source_id,tsc_landform_id) %>% 
-dplyr::rename(landform = tsc_landform_id) %>% 
-dplyr::mutate(obstype = "HabitatComposition")
+dplyr::rename(landform = tsc_landform_id)
 
 # Animal observations
 tfa_confidence <- here::here("csv/tfa_id_conf_w_tsc.csv") %>%
@@ -869,8 +868,7 @@ tfa_anim_obs <- anim_obs %>%
   )
 
 # Associated species
-tfa_ass_species <- ass_species %>% 
-  dplyr::mutate(obstype = "AssociatedSpecies")
+tfa_ass_species <- ass_species
 
 # Physical sample
 tfa_samptype <- here::here("csv/tfa_samptype_w_tsc.csv") %>%
@@ -899,8 +897,7 @@ tfa_phys_sample <- phys_sample %>%
     # specimen_voucher_exists,
     sample_destination = tsc_sample_destination,
     sample_label = sample_label,
-    permit_type = NA,
-    obstype = "PhysicalSample"
+    permit_type = NA
   )
 
 # Vegetation classification 
@@ -909,8 +906,7 @@ tfa_veg_class <- veg_class %>%
     source = source,
     source_id = source_id,
     level1 = glue::glue(
-      "{vegetation_code}; {vegetation_type}"),
-    obstype = "VegetationClassification"
+      "{vegetation_code}; {vegetation_type}")
     )
 # TODO tidyr::drop_na() where level1 is NA
 ```
