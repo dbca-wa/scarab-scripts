@@ -200,7 +200,6 @@ load_ckan_csv <- .  %>%
     read_csv()
 
 
-
 chunk_post <- function(data,
                        serializer = "names",
                        api_url = wastdr::get_wastdr_api_url(),
@@ -229,6 +228,41 @@ chunk_post <- function(data,
     }
     wastdr::wastdr_msg_success(
         glue::glue("[chunk_post] Finished, {len} records created/updated."))
+}
+
+
+#' Post a list of records to "occ-observation/bulk_create"
+#'
+#' @param data A tbl_df of occ-observation records
+#' @param obstype The model type of the occ-observation model,
+#'   default: "PhysicalSample"
+#' @param api_url TSC API URL, default: `wastdr::get_wastdr_api_url()`
+#' @param api_token TSC API URL, default: `wastdr::get_wastdr_api_token()`
+#' @export
+wastd_occ_obs_post <- function(data,
+                               obstype = "PhysicalSample",
+                               api_url = wastdr::get_wastdr_api_url(),
+                               api_token = wastdr::get_wastdr_api_token()) {
+    wastdr::wastdr_msg_info(
+        glue::glue("Uploading {nrow(data)} {obstype}s to  TSC {api_url}")
+    )
+
+    res <- wastdr::wastd_POST(
+        data,
+        serializer = "occ-observation/bulk_create",
+        query = list(obstype = obstype),
+        api_url = api_url,
+        api_token = api_token
+    )
+
+    if ("createed_count" %in% names(tfa_anim_obs_res$data))
+        wastdr::wastdr_msg_success(
+            glue::glue("Done, created {res$data$created_count} records."))
+    if ("errors" %in% names(tfa_anim_obs_res$data) &&
+        length(tfa_anim_obs_res$data$errors) > 0)
+        wastdr::wastdr_msg_warn(
+            glue::glue("Got {length(tfa_anim_obs_res$data$errors)} errors."))
+    res
 }
 
 # -----------------------------------------------------------------------------#
