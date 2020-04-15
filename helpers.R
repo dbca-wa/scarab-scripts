@@ -261,7 +261,7 @@ wastd_occ_obs_post <- function(data,
     if ("errors" %in% names(tfa_anim_obs_res$data) &&
         length(tfa_anim_obs_res$data$errors) > 0)
         wastdr::wastdr_msg_warn(
-            glue::glue("Got {length(tfa_anim_obs_res$data$errors)} errors."))
+            glue::glue("Got {length(res$data$errors)} errors."))
     res
 }
 

@@ -22,6 +22,12 @@ default_date <- lubridate::parse_date_time(
   orders = "ymd HMS", 
   tz = "Australia/Perth"
 )
+
+# Cached data from TSC - delete to force refresh
+tfa_file <- here::here("data", "tfa.Rdata")
+tsc_cl_fauna_datafile <- here::here("data/tsc_cl_fauna.RData")
+tsc_occ_fauna_datafile <- here::here("data/tsc_tae_fauna.RData")
+tfa_occ_datafile <- here::here("data", "tfa_occ.Rdata")
 ```
 
 # Context
@@ -46,8 +52,6 @@ on the DBCA data catalogue, then extracted and transformed.
 ## Taxonomy
 
 ```{r get_tfa}
-tfa_file <- here::here("data", "tfa.Rdata")
-
 if (file.exists(tfa_file)) {
   load(tfa_file)
 } else {
@@ -60,12 +64,6 @@ snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
   magrittr::extract2("last_modified") %>%
   lubridate::as_datetime() %>%
   lubridate::with_tz("Australia/Perth")
-
-# Cached data from TSC - delete to force refresh
-# datafile_tsc_fauna <- here::here("data", "etl_fauna_tsc.Rda")
-tsc_cl_fauna_datafile <- here::here("data/tsc_cl_fauna.RData")
-tsc_occ_fauna_datafile <- here::here("data/tsc_tae_fauna.RData")
-tfa_occ_datafile <- here::here("data", "tfa_occ.Rdata")
 
 # Lookup tables
 shires <- tfa_data$Shires %>%
@@ -808,9 +806,9 @@ tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
     ))
 
 tfa_hab_comp <- hab_comp %>%
-  left_join(tfa_landcrit, by = c("landform_id")) %>%  
-dplyr::select(source,source_id,tsc_landform_id) %>% 
-dplyr::rename(landform = tsc_landform_id)
+  left_join(tfa_landcrit, by = c("landform_id")) %>%
+  dplyr::select(source, source_id, tsc_landform_id) %>%
+  dplyr::rename(landform = tsc_landform_id)
 
 # Animal observations
 tfa_confidence <- here::here("csv/tfa_id_conf_w_tsc.csv") %>%
@@ -1213,14 +1211,13 @@ tfa_tae %>% chunk_post(
 
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
-tfa_phys_sample_res <- tfa_phys_sample[1:100,] %>% 
-  wastd_occ_obs_post(obstype="PhysicalSample",
-                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+tfa_phys_sample_res <- tfa_phys_sample %>% 
+  wastd_occ_obs_post(obstype="PhysicalSample") 
+  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
-tfa_anim_obs_res <- tfa_anim_obs[400:4000,] %>% 
-  wastd_occ_obs_post(obstype="AnimalObservation",
-                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
-                     )
+tfa_anim_obs_res <- tfa_anim_obs[1:100,] %>% 
+  wastd_occ_obs_post(obstype="AnimalObservation")
+  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
 # We cannot map hand-written AssSpecies to TSC NameIDs.
 # tfa_ass_species_res <- tfa_ass_species[1,] %>% 
