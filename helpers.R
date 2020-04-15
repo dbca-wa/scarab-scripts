@@ -210,13 +210,13 @@ chunk_post <- function(data,
                        verbose = wastdr::get_wastdr_verbose()) {
     if (verbose)
         wastdr::wastdr_msg_info(
-            glue::glue("[chunk_post] Updating {api_url}{serializer}..."))
+            glue::glue("[chunk_post][{Sys.time()}] Updating {api_url}{serializer}..."))
     len <- nrow(data)
     for (i in 0:((len/chunksize)-1)) {
         start <- (i * chunksize) + 1
         end <- min((start + chunksize) - 1, len)
         wastdr::wastdr_msg_info(
-            glue::glue("[chunk_post] Processing feature {start} to {end}"))
+            glue::glue("[chunk_post][{Sys.time()}] Processing feature {start} to {end}"))
         data[start:end,] %>%
             wastdr::wastd_POST(.,
                                serializer = serializer,
@@ -227,7 +227,7 @@ chunk_post <- function(data,
                                verbose = verbose)
     }
     wastdr::wastdr_msg_success(
-        glue::glue("[chunk_post] Finished, {len} records created/updated."))
+        glue::glue("[chunk_post][{Sys.time()}] Finished, {len} records created/updated."))
 }
 
 
@@ -244,7 +244,7 @@ wastd_occ_obs_post <- function(data,
                                api_url = wastdr::get_wastdr_api_url(),
                                api_token = wastdr::get_wastdr_api_token()) {
     wastdr::wastdr_msg_info(
-        glue::glue("Uploading {nrow(data)} {obstype}s to  TSC {api_url}")
+        glue::glue("[{Sys.time()}] Uploading {nrow(data)} {obstype}s to  TSC {api_url}")
     )
 
     res <- wastdr::wastd_POST(
@@ -257,11 +257,11 @@ wastd_occ_obs_post <- function(data,
 
     if ("createed_count" %in% names(tfa_anim_obs_res$data))
         wastdr::wastdr_msg_success(
-            glue::glue("Done, created {res$data$created_count} records."))
+            glue::glue("[{Sys.time()}] Done, created {res$data$created_count} records."))
     if ("errors" %in% names(tfa_anim_obs_res$data) &&
         length(tfa_anim_obs_res$data$errors) > 0)
         wastdr::wastdr_msg_warn(
-            glue::glue("Got {length(res$data$errors)} errors."))
+            glue::glue("[{Sys.time()}] Got {length(res$data$errors)} errors."))
     res
 }
 
