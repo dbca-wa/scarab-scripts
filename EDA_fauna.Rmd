@@ -1214,24 +1214,29 @@ tfa_tae %>% chunk_post(
 tfa_phys_sample_res <- tfa_phys_sample %>% 
   wastd_occ_obs_post(obstype="PhysicalSample") 
   #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+# some TAE missing - MIlly to doublecheck all source_ids here exist in tfa_tae,
+# Florian to re-upload tfa_tae to TSC
+# Florian to create: get TSC TAE source and sourceID, then compare locally
+# to determine what to create, what to update (if ever), what to skip
+
 
 tfa_anim_obs_res <- tfa_anim_obs[1:100,] %>% 
   wastd_occ_obs_post(obstype="AnimalObservation")
   #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+# TAE missing
+
 
 # We cannot map hand-written AssSpecies to TSC NameIDs.
 # tfa_ass_species_res <- tfa_ass_species[1,] %>% 
 #   wastd_occ_obs_post(obstype="AssociatedSpecies")
 
 tfa_veg_class_res <- tfa_veg_class %>% 
-  wastd_occ_obs_post(obstype="VegetationClassification",
-                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
-                     )
+  wastd_occ_obs_post(obstype="VegetationClassification")
+  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
 tfa_hab_comp_res <- tfa_hab_comp %>% 
-  wastd_occ_obs_post(obstype="HabitatComposition",
-                     api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
-                     ) # fails with 400
+  wastd_occ_obs_post(obstype="HabitatComposition")
+  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
 # Export as (confidential) test data for API
 tfa_phys_sample %>% readr::write_csv(path = here::here("data/tfa_phys_sample.csv"))
