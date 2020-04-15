@@ -665,6 +665,72 @@ readr::write_csv(tfa_rest,
                  path = here::here("data", "research_topics_data.csv"))
 ```
 
+
+```{r savepoint_tfa}
+tfa_datafile <- here::here("data/tfa_all.RData")
+save(
+  all_crit_map,
+anim_fauna,
+anim_obs,
+ass_species,
+category,
+certainty,
+chunk_post,
+dec_tfa_cons_lists,
+default_date,
+default_date_notime,
+dev,
+dl_mdbzip,
+eoo_polygon,
+fix_incomplete_date,
+hab_comp,
+landform,
+lonlat_to_convex_hull,
+make_eoo,
+malleefowl_data,
+orders,
+parse_as_datetime,
+phylo_class,
+phylo_group,
+phys_sample,
+prod,
+resolution,
+resolution_m,
+secondary_signs,
+shires,
+snapshot_last_updated,
+species,
+species_names,
+species_notes,
+tenure,
+tfa_act,
+tfa_cons_cat,
+tfa_cons_listings,
+tfa_cons_lists,
+tfa_data,
+tfa_file,
+tfa_occ,
+tfa_occ_datafile,
+tfa_pla,
+tfa_resp,
+tfa_rest,
+tfa_tae,
+tsc_cl_fauna_datafile,
+tsc_occ_fauna_datafile,
+tz,
+uat,
+upload_file_to_ckan,
+upload_to_ckan,
+users,
+veg_class,
+vegetation_types,
+wastd_occ_obs_post,
+file = tfa_datafile,
+compress = "xz"
+)
+load(tfa_datafile)
+```
+
 # Current conservation lists (TSC)
 
 ## Conservation criteria
@@ -1189,10 +1255,8 @@ x <- tfa_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfa_tae %>% chunk_post(
-  serializer = "occ-taxon-points"
-  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN")
-)
+tfa_tae %>% chunk_post(serializer = "occ-taxon-points")
+  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 ```
 
 
