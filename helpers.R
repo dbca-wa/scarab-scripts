@@ -202,6 +202,7 @@ load_ckan_csv <- .  %>%
 
 chunk_post <- function(data,
                        serializer = "names",
+                       query = list(),
                        api_url = wastdr::get_wastdr_api_url(),
                        api_token = wastdr::get_wastdr_api_token(),
                        api_un = wastdr::get_wastdr_api_un(),
@@ -220,6 +221,7 @@ chunk_post <- function(data,
         data[start:end,] %>%
             wastdr::wastd_POST(.,
                                serializer = serializer,
+                               query = query,
                                api_url = api_url,
                                api_token = api_token,
                                api_un = api_un,
@@ -241,25 +243,29 @@ chunk_post <- function(data,
 #' @export
 wastd_occ_obs_post <- function(data,
                                obstype = "PhysicalSample",
+                               chunksize = 100,
                                api_url = wastdr::get_wastdr_api_url(),
                                api_token = wastdr::get_wastdr_api_token()) {
     wastdr::wastdr_msg_info(
-        glue::glue("[{Sys.time()}] Uploading {nrow(data)} {obstype}s to  TSC {api_url}")
+        glue::glue("[{Sys.time()}] Uploading {nrow(data)} ",
+                   "{obstype}s to  TSC {api_url}")
     )
 
-    res <- wastdr::wastd_POST(
+    res <- chunk_post(
         data,
         serializer = "occ-observation/bulk_create",
         query = list(obstype = obstype),
         api_url = api_url,
-        api_token = api_token
+        api_token = api_token,
+        chunksize = chunksize
     )
 
-    if ("createed_count" %in% names(tfa_anim_obs_res$data))
+    if ("created_count" %in% names(res$data))
         wastdr::wastdr_msg_success(
-            glue::glue("[{Sys.time()}] Done, created {res$data$created_count} records."))
-    if ("errors" %in% names(tfa_anim_obs_res$data) &&
-        length(tfa_anim_obs_res$data$errors) > 0)
+            glue::glue("[{Sys.time()}] Done, created ",
+                       "{res$data$created_count} records."))
+    if ("errors" %in% names(res$data) &&
+        length(res$data$errors) > 0)
         wastdr::wastdr_msg_warn(
             glue::glue("[{Sys.time()}] Got {length(res$data$errors)} errors."))
     res
