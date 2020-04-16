@@ -1257,6 +1257,7 @@ x <- tfa_tae[1,] %>% as.list() %>%
 # LONG RUNNING UPLOAD
 tfa_tae[90000:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+
 ```
 
 
@@ -1431,6 +1432,16 @@ if (file.exists(tsc_occ_fauna_datafile)) {
        file = tsc_occ_fauna_datafile,
        compress = "xz")
 }
+
+#### Identify missing tae in tsc\_tae
+tfa_tae_create <- tfa_tae %>% 
+  dplyr::anti_join(tsc_tae, by = "source_id")
+
+tfa_tae_update <- tfa_tae %>% 
+  dplyr::right_join(tsc_tae, by = "source_id")
+
+## Upload the missing tfa_tae to tsc_tae
+tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 # Compare legacy from TFA to migrated data from TSC
@@ -1905,17 +1916,6 @@ tsc_listing_cat_epbc %>%
 ```
 
 ## Occurrences
-
-#### Identify missing tae in tsc\_tae
-```{r }
-tfa_tae_create <- tfa_tae %>% 
-  dplyr::anti_join(tsc_tae, by = "source_id")
-
-tfa_tae_update <- tfa_tae %>% 
-  dplyr::right_join(tsc_tae, by = "source_id")
-
-tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points")
-```
 
 #### Date/ Location caveats
 
