@@ -1304,7 +1304,7 @@ applicable).
 if (file.exists(tsc_occ_community_datafile)) {
   load(tsc_occ_community_datafile)
 } else {
-tsc_cae_data <- wastdr::wastd_GET("occ-community-points") # k records
+tsc_cae_data <- wastdr::wastd_GET("occ-community-points",chunk_size = 100) # k records
 
 tsc_community_sites <- tsc_cae_data %>%
   magrittr::extract2("data") %>% 
