@@ -1392,7 +1392,7 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 } else {
   tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
   tsc_tae <- tsc_tae_data %>% 
-    magrittr::extract2("features") %>%
+    magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
     geojsonsf::geojson_sf() %>% 
     dplyr::mutate(taxon = taxon %>% as.character()) 
@@ -1404,7 +1404,7 @@ if (file.exists(tsc_occ_fauna_datafile)) {
     dplyr::mutate(taxon = name_id %>% as.character())
   
   tsc_areas <- wastdr::wastd_GET("area") %>%
-    magrittr::extract2("features") %>%
+    magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
     geojsonsf::geojson_sf()
   
@@ -1905,6 +1905,17 @@ tsc_listing_cat_epbc %>%
 ```
 
 ## Occurrences
+
+#### Identify missing tae in tsc\_tae
+```{r }
+tfa_tae_create <- tfa_tae %>% 
+  dplyr::anti_join(tsc_tae, by = "source_id")
+
+tfa_tae_update <- tfa_tae %>% 
+  dplyr::right_join(tsc_tae, by = "source_id")
+
+tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points")
+```
 
 #### Date/ Location caveats
 
