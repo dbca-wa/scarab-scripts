@@ -1255,9 +1255,9 @@ x <- tfa_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
+
 tfa_tae[90000:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
-
 ```
 
 
@@ -1278,16 +1278,16 @@ tfa_tae[90000:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
 tfa_phys_sample_res <- tfa_phys_sample %>% 
   wastd_occ_obs_post(obstype="PhysicalSample") 
-  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 # some TAE missing - MIlly to doublecheck all source_ids here exist in tfa_tae,
 # Florian to re-upload tfa_tae to TSC
 # Florian to create: get TSC TAE source and sourceID, then compare locally
 # to determine what to create, what to update (if ever), what to skip
 
 
-tfa_anim_obs_res <- tfa_anim_obs[1:100,] %>% 
+tfa_anim_obs_res <- tfa_anim_obs %>% 
   wastd_occ_obs_post(obstype="AnimalObservation")
-  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 # TAE missing
 
 
@@ -1297,7 +1297,7 @@ tfa_anim_obs_res <- tfa_anim_obs[1:100,] %>%
 
 tfa_veg_class_res <- tfa_veg_class %>% 
   wastd_occ_obs_post(obstype="VegetationClassification")
-  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
 tfa_hab_comp_res <- tfa_hab_comp %>% 
   wastd_occ_obs_post(obstype="HabitatComposition")
@@ -2087,7 +2087,7 @@ Currently, we assume that all occurrence records in the legacy databases are
 trustworthy. If this weren't the case, this analysis should exclude the 
 non-trustworthy records.
 
-### tfa\_occ occurrences not in tfa\_tae
+### `tfa_occ` occurrences not in `tfa_tae`
 
 Any records in the following table indicate occurrences in `tfa_occ` that are not 
 in `tfa_tae`.
@@ -2105,8 +2105,8 @@ missing_occ_tfa_tae_unique <- missing_occ_tfa_tae %>%
 missing_occ_tfa_tae_unique %>% rt 
 ```
 
-There are `r nrow(missing_occ_tfa_tae)` occurrences missing from tfa\_tae when
-compared to tfa\_occ. These missing occurrences come from 
+There are `r nrow(missing_occ_tfa_tae)` occurrences missing from `tfa_tae`when
+compared to `tfa_occ`. These missing occurrences come from 
 `r nrow(missing_occ_tfa_tae_unique)` unique species. The occurrences listed 
 were likely not migrated because they do not contain a name_id and/or a 
 location which are a requirement of a tfa taxon area encounter.
@@ -2134,7 +2134,7 @@ tfa_occ_tally %>%
   filter(tfa_occ != tfa_tae) %>% rt
 ```
 
-### tfa\_tae occurrences not in tsc\_tae
+### `tfa_tae`occurrences not in `tsc_tae`
 
 Any records in the following table indicate occurrences in `tfa_tae` that were not
 migrated into `tsc_occ_fauna`.
@@ -2183,7 +2183,7 @@ tfa_tae_tsc_tally <- tfa_tae_tally %>%
 # TODO cast sfc to tbl_df
 ```
 
-### tfa\_occ names not in tfa\_tae
+### `tfa_occ` names not in `tfa_tae`
 
 Any records in the following table indicate names in `tfa_occ` that are not 
 in `tfa_tae`.
@@ -2196,7 +2196,7 @@ missing_taxa_tfa_tae <- tfa_occ %>%
 There are `r nrow(missing_taxa_tfa_tae)` taxon records missing from 
 `tfa_tae` when compared to `tfa_occ`.
 
-### tfa\_tae names not in tsc\_occ\_fauna
+### `tfa_tae`names not in `tsc_occ_fauna`
 
 Any records in the following table indicate names in `tfa_tae` that were not
 migrated into `tsc_occ_fauna`.
