@@ -1255,8 +1255,9 @@ x <- tfa_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfa_tae[90000:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100,
-   , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+
+tfa_tae[90000:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 ```
 
 
@@ -1392,7 +1393,7 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 } else {
   tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
   tsc_tae <- tsc_tae_data %>% 
-    magrittr::extract2("features") %>%
+    magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
     geojsonsf::geojson_sf() %>% 
     dplyr::mutate(taxon = taxon %>% as.character()) 
@@ -1404,7 +1405,7 @@ if (file.exists(tsc_occ_fauna_datafile)) {
     dplyr::mutate(taxon = name_id %>% as.character())
   
   tsc_areas <- wastdr::wastd_GET("area") %>%
-    magrittr::extract2("features") %>%
+    magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
     geojsonsf::geojson_sf()
   
@@ -1431,6 +1432,16 @@ if (file.exists(tsc_occ_fauna_datafile)) {
        file = tsc_occ_fauna_datafile,
        compress = "xz")
 }
+
+#### Identify missing tae in tsc\_tae
+tfa_tae_create <- tfa_tae %>% 
+  dplyr::anti_join(tsc_tae, by = "source_id")
+
+tfa_tae_update <- tfa_tae %>% 
+  dplyr::right_join(tsc_tae, by = "source_id")
+
+## Upload the missing tfa_tae to tsc_tae
+tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 # Compare legacy from TFA to migrated data from TSC

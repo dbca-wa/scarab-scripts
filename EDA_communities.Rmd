@@ -1327,6 +1327,16 @@ save(tsc_cae_data,
      file = tsc_occ_community_datafile, 
      compress="xz")
 }
+
+#### Identify missing tae in tsc\_tae
+site_cae_create <- tec_site_cae %>% 
+  dplyr::anti_join(tsc_community_sites, by = "source_id")
+
+bdy_cae_update <- tec_bdy_cae %>% 
+  dplyr::right_join(tsc_community_boundaries, by = "source_id")
+
+## Upload the missing tfa_tae to tsc_tae
+tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 # Compare legacy to migrated data

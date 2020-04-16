@@ -1203,7 +1203,6 @@ tfl_hab_cond <- hab_cond %>%
     source = source,
     source_id = source_id,
     soil_condition = tsc_soil_condition) %>%
-  dplyr::rename(soil_condition = tsc_soil_condition) %>%
   dplyr::mutate(obstype = "HabitatCondition") # 'occurrence_condition' cannot 
 # be migrated to tsc card options which require a %. This has been added to tae description.
 
@@ -1648,6 +1647,16 @@ if (file.exists(tsc_occ_flora_datafile)) {
        file = tsc_occ_flora_datafile,
        compress = "xz")
 }
+
+#### Identify missing tae in tsc\_tae
+tfl_tae_create <- tfl_tae %>% 
+  dplyr::anti_join(tsc_tae, by = "source_id")
+
+tfl_tae_update <- tfl_tae %>% 
+  dplyr::right_join(tsc_tae, by = "source_id")
+
+## Upload the missing tfa_tae to tsc_tae
+tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 # Compare legacy to migrated data
