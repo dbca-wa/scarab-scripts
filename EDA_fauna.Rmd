@@ -270,7 +270,7 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     authority = AUTHORITY %>% as.character(),
     gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
     delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReviewed %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -1256,7 +1256,7 @@ x <- tfa_tae[1,] %>% as.list() %>%
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 
-tfa_tae[90000:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+tfa_tae[1:10000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 ```
 
