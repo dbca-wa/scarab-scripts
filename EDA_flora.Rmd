@@ -1536,23 +1536,22 @@ tfl_tae %>%
 ```{r load_obsgroups, eval=FALSE}
 # Example: one record
 # Examples:
-tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
-  wastd_occ_obs_post(obstype="PhysicalSample")
-tfa_phys_sample_res <- tfa_phys_sample[1:100,] %>%
-  wastd_occ_obs_post(obstype="PhysicalSample")
-
+# tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
+#   wastd_occ_obs_post(obstype="PhysicalSample")
+# tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
+#   wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
 tfl_phys_sample_res <- tfl_phys_sample %>% 
   wastd_occ_obs_post(obstype="PhysicalSample") 
-tfl_hab_cond_res <- tfl_hab_cond %>% 
+tfl_hab_cond_res <- tfl_hab_cond[1,] %>% 
   wastd_occ_obs_post(obstype="HabitatCondition") 
-tfl_area_ass_res <- tfl_area_ass %>% 
-  wastd_occ_obs_post(obstype="AreaAssessment") 
-tfl_plant_count_res <- tfl_plant_count %>% 
-  wastd_occ_obs_post(obstype="PlantCount") 
-tfl_hab_comp_res <- tfl_hab_comp %>% 
+# tfl_area_ass_res <- tfl_area_ass %>% 
+#   wastd_occ_obs_post(obstype="AreaAssessment") 
+# tfl_plant_count_res <- tfl_plant_count %>% 
+#   wastd_occ_obs_post(obstype="PlantCount") 
+tfl_hab_comp_res <- tfl_hab_comp[1,] %>% 
   wastdr::wastd_bulk_post("HabitatComposition")
 
 # Export as (confidential) test data for API
