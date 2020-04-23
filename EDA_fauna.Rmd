@@ -268,21 +268,9 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     population = Popn %>% as.character(),
     criteria_code = Reasons %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    gazetted_on = ifelse(
-    DateList == "",
-    default_date,
-    lubridate::parse_date_time2(DateList, orders, tz = tz, cutoff_2000 = 19L)) %>% 
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    delisted_on = ifelse(
-    DateDeList == "",
-    default_date,
-    lubridate::parse_date_time2(DateDeList, orders, tz = tz, cutoff_2000 = 19L)) %>% 
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    last_reviewed_on = ifelse(
-    DateReview == "",
-    default_date,
-    lubridate::parse_date_time2(DateReview, orders, tz = tz, cutoff_2000 = 19L)) %>% 
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
+    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -1286,9 +1274,9 @@ tfa_tae[1:10000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 10
 
 ```{r load_obsgroups, eval=FALSE}
 # Examples:
-# tfa_phys_sample_res <- tfa_phys_sample[1,] %>% 
+# tfa_phys_sample_res <- tfa_phys_sample[1,] %>%
 #   wastd_occ_obs_post(obstype="PhysicalSample")
-# tfa_phys_sample_res <- tfa_phys_sample[1:100,] %>% 
+# tfa_phys_sample_res <- tfa_phys_sample[1:100,] %>%
 #   wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
@@ -1296,7 +1284,7 @@ tfa_tae[1:10000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 10
 tfa_phys_sample_res <- tfa_phys_sample %>% 
   wastd_occ_obs_post(obstype="PhysicalSample") 
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
-# some TAE missing - MIlly to doublecheck all source_ids here exist in tfa_tae,
+# some TAE missing - MIlly to doublecheck all source_ids here exist in tfa_tae. DONE, all good.
 # Florian to re-upload tfa_tae to TSC
 # Florian to create: get TSC TAE source and sourceID, then compare locally
 # to determine what to create, what to update (if ever), what to skip
