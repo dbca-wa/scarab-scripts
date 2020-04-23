@@ -738,13 +738,12 @@ phys_sample <- tfl_occ %>%
   dplyr::transmute(
     source = 11,
     source_id = source_id,
-    sample_type = "plant specimen",
+    sample_type = "plant-specimen",
     sample_destination = voucher_location, 
     duplicate_sample_destination = dupvouch_location,
     sample_label = glue::glue("[{sample_destination}]{barcode}"),
     permit_id = licence) %>% 
   dplyr::filter(sample_destination != "") 
-
 
 phys_sample %>%
   dplyr::select(sample_destination) %>%
@@ -1294,6 +1293,13 @@ tfl_phys_sample <- phys_sample %>%
     sample_label = sample_label,
     permit_id = permit_id) %>%
   dplyr::mutate(obstype = "PhysicalSample")
+
+# some TAE missing? - doublecheck all source_ids in occ_observations exist in tfl_tae
+setdiff(tfl_phys_sample$source_id,tfl_tae$source_id) # 22
+setdiff(tfl_plant_count$source_id,tfl_tae$source_id) # 19
+setdiff(tfl_hab_cond$source_id,tfl_tae$source_id) # 28
+setdiff(tfl_area_ass$source_id,tfl_tae$source_id) # 10
+setdiff(tfl_hab_comp$source_id,tfl_tae$source_id) # 36
 ```
 
 # Migrate legacy data (TFL to TSC)
@@ -1529,21 +1535,30 @@ tfl_tae %>%
 
 ```{r load_obsgroups, eval=FALSE}
 # Example: one record
-tfl_phys_sample[1,] %>% 
-  wastdr::wastd_bulk_post("occ-observation")
+# Examples:
+tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
+  wastd_occ_obs_post(obstype="PhysicalSample")
+tfa_phys_sample_res <- tfa_phys_sample[1:100,] %>%
+  wastd_occ_obs_post(obstype="PhysicalSample")
+
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-tfl_phys_sample %>% 
-  wastdr::wastd_bulk_post("occ-observation")
-tfl_hab_cond %>% 
-  wastdr::wastd_bulk_post("occ-observation")
-tfl_area_ass %>% 
-  wastdr::wastd_bulk_post("occ-observation")
-tfl_plant_count %>% 
-  wastdr::wastd_bulk_post("occ-observation")
-tfl_hab_comp %>% 
-  wastdr::wastd_bulk_post("occ-observation")
+tfl_phys_sample_res <- tfl_phys_sample %>% 
+  wastd_occ_obs_post(obstype="PhysicalSample") 
+tfl_hab_cond_res <- tfl_hab_cond %>% 
+  wastd_occ_obs_post(obstype="HabitatCondition") 
+tfl_area_ass_res <- tfl_area_ass %>% 
+  wastd_occ_obs_post(obstype="AreaAssessment") 
+tfl_plant_count_res <- tfl_plant_count %>% 
+  wastd_occ_obs_post(obstype="PlantCount") 
+tfl_hab_comp_res <- tfl_hab_comp %>% 
+  wastdr::wastd_bulk_post("HabitatComposition")
+
+# Export as (confidential) test data for API
+tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
+tfl_area_ass %>% readr::write_csv(path = here::here("data/tfl_area_ass.csv"))
+tfl_plant_count %>% readr::write_csv(path = here::here("data/tfl_plant_count.csv"))
 ```
 
 ## Conservation Documents
