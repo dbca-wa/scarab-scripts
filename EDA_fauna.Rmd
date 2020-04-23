@@ -268,9 +268,21 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     population = Popn %>% as.character(),
     criteria_code = Reasons %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
-    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    gazetted_on = ifelse(
+    DateList == "",
+    default_date,
+    lubridate::parse_date_time2(DateList, orders, tz = tz, cutoff_2000 = 19L)) %>% 
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    delisted_on = ifelse(
+    DateDeList == "",
+    default_date,
+    lubridate::parse_date_time2(DateDeList, orders, tz = tz, cutoff_2000 = 19L)) %>% 
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    last_reviewed_on = ifelse(
+    DateReview == "",
+    default_date,
+    lubridate::parse_date_time2(DateReview, orders, tz = tz, cutoff_2000 = 19L)) %>% 
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -278,6 +290,7 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   tibble::rowid_to_column("source_id") %>% 
   dplyr::mutate(source_id = source_id %>% as.character())
+  
 # tfa_cons_listings %>% skim()
 # tfa_cons_listings %>% head(10) %>% DT::datatable()
 
@@ -785,7 +798,7 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_conscrit, by = c("list_code", "criteria_code"))
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) 
 ```
 
 ## Occurrence lookup criteria
@@ -1024,6 +1037,9 @@ tfa_listing_cat_iucn2012 <- tfa_tcl %>%
   dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
 
+trickytaxa <- tfa_listing_cat_iucn2012 %>% 
+  dplyr::filter(taxon == 48126) 
+
 # IUCN(2001) 4
 tfa_listing_cat_iucn2001 <- tfa_tcl %>%
   dplyr::filter(list_code == "IUCN(2001)") %>%
@@ -1185,6 +1201,7 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
 ```{r load_tfa_tcl, eval=FALSE}
 # LONG RUNNING UPLOAD
 tfa_listing_cat_iucn2012 %>% wastdr::wastd_POST("taxon-conservationlisting")
+trickytaxa %>% wastdr::wastd_POST("taxon-conservationlisting")
 tfa_listing_cat_iucn2001 %>% wastdr::wastd_POST("taxon-conservationlisting")
 tfa_listing_cat_iucn1994 %>% wastdr::wastd_POST("taxon-conservationlisting")
 tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxon-conservationlisting")
