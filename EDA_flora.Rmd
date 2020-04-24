@@ -1162,7 +1162,8 @@ tfl_hab_comp <- hab_comp %>%
     soil_colour = tsc_soil_colour,
     drainage = tsc_drainage
     ) %>%
-  dplyr::mutate(obstype = "HabitatComposition")
+  dplyr::mutate(obstype = "HabitatComposition") %>% 
+  base::replace(., is.na(.), "")
 
 ## Area assessment
 tfl_survey_method <-
@@ -1183,7 +1184,8 @@ tfl_area_ass <- area_ass %>%
     survey_method = tsc_survey_method,
     area_surveyed_m2 = surveyed_area,
     survey_duration_min = survey_duration) %>%
-  dplyr::mutate(obstype = "AreaAssessment")
+  dplyr::mutate(obstype = "AreaAssessment") %>% 
+  base::replace(., is.na(.), "")
 
 ## Habitat condition
 tfl_soil_condition <-
@@ -1202,7 +1204,8 @@ tfl_hab_cond <- hab_cond %>%
     source = source,
     source_id = source_id,
     soil_condition = tsc_soil_condition) %>%
-  dplyr::mutate(obstype = "HabitatCondition") # 'occurrence_condition' cannot 
+  dplyr::mutate(obstype = "HabitatCondition") %>% 
+  base::replace(., is.na(.), "") # 'occurrence_condition' cannot 
 # be migrated to tsc card options which require a %. This has been added to tae description.
 
 ## Plant count
@@ -1270,7 +1273,8 @@ tfl_plant_count <- plant_count %>%
     dehisced_fruit_present = dehisced_fruit_present,
     comments = comments,
     ) %>%
-  dplyr::mutate(obstype = "PlantCount")
+  dplyr::mutate(obstype = "PlantCount") %>% 
+  base::replace(., is.na(.), "")
 
 ## Physical sample
 tfl_sampdest <-
@@ -1292,7 +1296,8 @@ tfl_phys_sample <- phys_sample %>%
     sample_destination = tsc_sample_destination,
     sample_label = sample_label,
     permit_id = permit_id) %>%
-  dplyr::mutate(obstype = "PhysicalSample")
+  dplyr::mutate(obstype = "PhysicalSample") %>% 
+  base::replace(., is.na(.), "")
 
 # some TAE missing? - doublecheck all source_ids in occ_observations exist in tfl_tae
 setdiff(tfl_phys_sample$source_id,tfl_tae$source_id) # 22
@@ -1301,6 +1306,10 @@ setdiff(tfl_hab_cond$source_id,tfl_tae$source_id) # 28
 setdiff(tfl_area_ass$source_id,tfl_tae$source_id) # 10
 setdiff(tfl_hab_comp$source_id,tfl_tae$source_id) # 36
 ```
+
+# Habitat Condition: 'occurrence_condition' could not be migrated
+to the Habitat Condition card in TSC because it requires a %. 
+Instead, 'occurrence_condition' has been added to the TAE description.
 
 # Migrate legacy data (TFL to TSC)
 
@@ -1552,7 +1561,7 @@ tfl_hab_cond_res <- tfl_hab_cond[1,] %>%
 # tfl_plant_count_res <- tfl_plant_count %>% 
 #   wastd_occ_obs_post(obstype="PlantCount") 
 tfl_hab_comp_res <- tfl_hab_comp[1,] %>% 
-  wastdr::wastd_bulk_post("HabitatComposition")
+  wastd_occ_obs_post(obstype="HabitatComposition")
 
 # Export as (confidential) test data for API
 tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
