@@ -261,6 +261,7 @@ names_pop_vegclass <- as.data.frame(names(pop_vegclass))
 ## Conservation listings
 
 ```{r get_tfl_cl}
+names(tfl_data$DRF_TAXON_CONSV_LISTINGS)
 tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
@@ -271,12 +272,16 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
     list_code_wa = WA.IUCN.RANK.LIST.CODE %>% as.character(),
     category_code_wa = WA.IUCN.RANK %>% as.character(),
     criteria_code_wa = IUCN.CRITERIA %>% as.character(),
-    date_listed = DATE.LISTED %>% 
-      parse_date_time(., orders = orders, tz = tz),
+    date_listed = ifelse(DATE.LISTED == "",
+    default_date,
+    lubridate::parse_date_time2(DATE.LISTED, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     reasons = REASONS %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    date_delisted = DATE.DELISTED %>% 
-      parse_date_time(., orders = orders, tz = tz),
+    date_delisted = ifelse(DATE.DELISTED == "",
+    default_date,
+    lubridate::parse_date_time2(DATE.DELISTED, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     comments = COMMENTS %>% as.character(),
     distribution = DISTRIBUTION %>% as.character(),
     fl_period = FL.PERIOD %>% as.character(),
@@ -285,20 +290,30 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
     fam_no = FAM.NO %>% as.character(),
     recovery_plan = R.PLAN %>% as.character(),
     recovery_plan_comments = RP.COMMENTS %>% as.character(),
-    recovery_plan_expiry_date = RP.EXP.DATE %>% 
-      parse_date_time(., orders = orders, tz = tz),
+    recovery_plan_expiry_date = ifelse(RP.EXP.DATE == "",
+    default_date,
+    lubridate::parse_date_time2(RP.EXP.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     active_ind = ACTIVE.IND %>% as.character(),
-    deactivated_date = DEACTIVATED.DATE %>% 
-      parse_date_time(., orders = orders, tz = tz),
+    deactivated_date = ifelse(DEACTIVATED.DATE == "",
+    default_date,
+    lubridate::parse_date_time2(DEACTIVATED.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     reason_deactivated = REASON.DEACTIVATED %>% as.character(),
     created_by = CREATED.BY %>% as.character(),
-    created_date = CREATED.DATE %>% 
-      parse_date_time(., orders = orders, tz = tz),
+    created_date = ifelse(CREATED.DATE == "",
+    default_date,
+    lubridate::parse_date_time2(CREATED.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     modified_by = MODIFIED.BY %>% as.character(),
-    modified_date = MODIFIED.DATE %>% 
-      parse_date_time(., orders = orders, tz = tz),
-    file_last_updated = FILE.LAST.UPDATED %>% 
-      parse_date_time(., orders = orders, tz = tz),
+    modified_date = ifelse(MODIFIED.DATE == "",
+    default_date,
+    lubridate::parse_date_time2(MODIFIED.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    file_last_updated = ifelse(FILE.LAST.UPDATED == "",
+    default_date,
+    lubridate::parse_date_time2(FILE.LAST.UPDATED, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     file_comments = FILE.COMMENTS %>% as.character(),
     file_no = FILE.NO %>% as.character()
   ) %>% 
@@ -852,7 +867,8 @@ tfl_tae <- tfl_occ %>%
     geolocation_capture_method='gps-point',
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
-  ) 
+  ) %>% 
+  base::replace(., is.na(.), "") 
 
 # names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
@@ -1035,9 +1051,12 @@ tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
 # glimpse(tfl_conscrit)
 
 tfl_tcl <- tfl_cons_listing %>% 
-  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>%  
-  # dplyr::glimpse() %>% 
+  left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% 
+  # dplyr::select_if(~sum(!is.na(.)) > 0)
+  base::replace(., is.na(.), "") %>% 
   invisible()
+
+names(tfl_tcl)
 ```
 
 ## Occurrence lookup criteria
@@ -1184,8 +1203,9 @@ tfl_area_ass <- area_ass %>%
     survey_method = tsc_survey_method,
     area_surveyed_m2 = surveyed_area,
     survey_duration_min = survey_duration) %>%
-  dplyr::mutate(obstype = "AreaAssessment") %>% 
-  base::replace(., is.na(.), "")
+  dplyr::mutate(obstype = "AreaAssessment")
+# %>% 
+#   base::replace(., is.na(.), "")
 
 ## Habitat condition
 tfl_soil_condition <-
@@ -1472,14 +1492,24 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 ```
 
 ```{r load_tfl_tcl, eval=FALSE}
+# Example: one record
+tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+
 # LONG RUNNING UPLOAD
-tfl_listing_cat_priority %>% 
+tfl_listing_cat_priority_res <- tfl_listing_cat_priority %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_epbc %>% 
+tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn1994 %>% 
+tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994 %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn2001 %>% 
+tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001 %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
 
 # There are none, skip upload:
@@ -1544,24 +1574,32 @@ tfl_tae %>%
 
 ```{r load_obsgroups, eval=FALSE}
 # Example: one record
-# Examples:
-# tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
-#   wastd_occ_obs_post(obstype="PhysicalSample")
-# tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
-#   wastd_occ_obs_post(obstype="PhysicalSample")
+tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
+  wastd_occ_obs_post(obstype="PhysicalSample")
+tfl_hab_cond_res <- tfl_hab_cond[1:100,]%>%
+  wastd_occ_obs_post(obstype="HabitatCondition")
+tfl_area_ass_res <- tfl_area_ass[1,] %>%
+  wastd_occ_obs_post(obstype="AreaAssessment")
+tfl_plant_count_res <- tfl_plant_count[1,] %>%
+  wastd_occ_obs_post(obstype="PlantCount")
+tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
+  wastd_occ_obs_post(obstype="HabitatComposition")
+# Example: one hundred records
+tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
+  wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-tfl_phys_sample_res <- tfl_phys_sample %>% 
-  wastd_occ_obs_post(obstype="PhysicalSample") 
-tfl_hab_cond_res <- tfl_hab_cond[1,] %>% 
-  wastd_occ_obs_post(obstype="HabitatCondition") 
-# tfl_area_ass_res <- tfl_area_ass %>% 
-#   wastd_occ_obs_post(obstype="AreaAssessment") 
-# tfl_plant_count_res <- tfl_plant_count %>% 
-#   wastd_occ_obs_post(obstype="PlantCount") 
-tfl_hab_comp_res <- tfl_hab_comp[1,] %>% 
-  wastd_occ_obs_post(obstype="HabitatComposition")
+# tfl_phys_sample_res <- tfl_phys_sample %>% 
+#   wastd_occ_obs_post(obstype="PhysicalSample") 
+# tfl_hab_cond_res <- tfl_hab_cond %>% 
+#   wastd_occ_obs_post(obstype="HabitatCondition") 
+# tfl_area_ass_res <- tfl_area_ass %>%
+#   wastd_occ_obs_post(obstype="AreaAssessment")
+# tfl_plant_count_res <- tfl_plant_count %>%
+#   wastd_occ_obs_post(obstype="PlantCount")
+# tfl_hab_comp_res <- tfl_hab_comp %>% 
+#   wastd_occ_obs_post(obstype="HabitatComposition")
 
 # Export as (confidential) test data for API
 tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
@@ -1637,7 +1675,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
     dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_taxa_flora <- "taxon" %>%
-    wastdr::wastd_GET(api_url = prod,
+    wastdr::wastd_GET(api_url = prod, # can be removed?
                       query = list(paraphyletic_groups = 21)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
