@@ -68,7 +68,7 @@ library(reactable)
 dev <- "http://localhost:8220/api/1/"
 uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
 prod <- "https://tsc.dbca.wa.gov.au/api/1/"
-
+dev_token <- Sys.getenv("WASTDR_API_DEV_TOKEN", unset = "")
 
 # -----------------------------------------------------------------------------#
 # Setup packages
