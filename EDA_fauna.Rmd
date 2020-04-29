@@ -1268,7 +1268,7 @@ tfa_eoo <- tfa_occ_with_coords %>% make_eoo()
 ```
 
 ```{r load_eoo, eval=F}
-tfa_eoo_res <- tfa_eoo[1] %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
+tfa_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
 ```
 
 ### Upload TAEs to TSC
@@ -1299,7 +1299,7 @@ wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points")
 x <- tfa_tae[1,] %>% as.list() %>% 
   # Or use any of:
   # tfa_tae[1:100,] %>% 
-  # tfa_tae[1:1000,] %>% 
+  # tfa_tae[1:1000,] %>%
   wastd_POST(serializer = "occ-taxon-points")
 
 # Upload all occurrences to TSC PROD
