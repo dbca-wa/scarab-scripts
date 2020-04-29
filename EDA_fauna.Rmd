@@ -268,9 +268,18 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     population = Popn %>% as.character(),
     criteria_code = Reasons %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
-    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    gazetted_on = ifelse(DateList == "",
+    default_date,
+    lubridate::parse_date_time2(DateList, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    delisted_on = ifelse(DateDeList == "",
+    default_date,
+    lubridate::parse_date_time2(DateDeList, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    last_reviewed_on = ifelse(DateReview  == "",
+    default_date,
+    lubridate::parse_date_time2(DateReview, orders, tz = tz, cutoff_2000 = 19L)) %>%
+      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -781,12 +790,14 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
       actions = col_character()
     )
   ) %>%
+  base::replace(., is.na(.), "") %>% 
   dplyr::mutate(
     tsc_criteria = purrr::map(tsc_criteria, chr2int)
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) 
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code"))  %>% 
+  invisible()
 ```
 
 ## Occurrence lookup criteria
@@ -875,7 +886,9 @@ tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
 tfa_hab_comp <- hab_comp %>%
   left_join(tfa_landcrit, by = c("landform_id")) %>%
   dplyr::select(source, source_id, tsc_landform_id) %>%
-  dplyr::rename(landform = tsc_landform_id)
+  dplyr::rename(landform = tsc_landform_id) %>% 
+  base::replace(., is.na(.), "") %>% 
+  invisible()
 
 # Animal observations
 tfa_confidence <- here::here("csv/tfa_id_conf_w_tsc.csv") %>%
@@ -930,10 +943,14 @@ tfa_anim_obs <- anim_obs %>%
     no_juvenile_male = number_of_juvenile_males,
     no_juvenile_female =  number_of_juvenile_females,
     no_juvenile_unknown = number_of_juvenile_unknown,
-  )
+  ) %>% 
+  base::replace(., is.na(.), "") %>% 
+  invisible()
 
 # Associated species
-tfa_ass_species <- ass_species
+tfa_ass_species <- ass_species %>% 
+  base::replace(., is.na(.), "") %>% 
+  invisible()
 
 # Physical sample
 tfa_samptype <- here::here("csv/tfa_samptype_w_tsc.csv") %>%
@@ -963,7 +980,9 @@ tfa_phys_sample <- phys_sample %>%
     sample_destination = tsc_sample_destination,
     sample_label = sample_label,
     permit_type = NA
-  )
+  ) %>% 
+  base::replace(., is.na(.), "") %>% 
+  invisible()
 
 # Vegetation classification 
 tfa_veg_class <- veg_class %>% 
@@ -972,7 +991,10 @@ tfa_veg_class <- veg_class %>%
     source_id = source_id,
     level1 = glue::glue(
       "{vegetation_code}; {vegetation_type}")
-    )
+    ) %>% 
+  base::replace(., is.na(.), "") %>% 
+  invisible()
+
 # TODO tidyr::drop_na() where level1 is NA
 ```
 
@@ -1024,9 +1046,6 @@ tfa_listing_cat_iucn2012 <- tfa_tcl %>%
   ) %>%
   dplyr::filter(category != 0) %>%
   dplyr::filter(taxon != 0)
-
-trickytaxa <- tfa_listing_cat_iucn2012 %>% 
-  dplyr::filter(taxon == 48126) 
 
 # IUCN(2001) 4
 tfa_listing_cat_iucn2001 <- tfa_tcl %>%
@@ -1188,19 +1207,19 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
 
 ```{r load_tfa_tcl, eval=FALSE}
 # Example: one record
-tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012[1] %>% 
+tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001[1] %>% 
+tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994[1] %>% 
+tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca[1] %>% 
+tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn[1] %>% 
+tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_waps_res <- tfa_listing_cat_waps[1] %>% 
+tfa_listing_cat_waps_res <- tfa_listing_cat_waps[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc[1] %>% 
+tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
 
 trickytaxa %>% wastdr::wastd_POST("taxon-conservationlisting")
@@ -1248,7 +1267,7 @@ tfa_eoo <- tfa_occ_with_coords %>% make_eoo()
 ```
 
 ```{r load_eoo, eval=F}
-tfa_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
+tfa_eoo_res <- tfa_eoo[1] %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
 ```
 
 ### Upload TAEs to TSC
