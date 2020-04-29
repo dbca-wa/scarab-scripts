@@ -797,6 +797,7 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
 
 tfa_tcl <- tfa_cons_listings %>%
   left_join(tfa_conscrit, by = c("list_code", "criteria_code"))  %>% 
+  base::replace(., is.na(.), "") %>%
   invisible()
 ```
 

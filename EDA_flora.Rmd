@@ -1044,6 +1044,7 @@ tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
       comments = col_character()
     )
   )  %>%
+  base::replace(., is.na(.), "") %>% 
   dplyr::mutate(
     tsc_criteria = purrr::map(tsc_criteria, chr2int)
   )
@@ -1052,8 +1053,6 @@ tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
 
 tfl_tcl <- tfl_cons_listing %>% 
   left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% 
-  # dplyr::select_if(~sum(!is.na(.)) > 0)
-  base::replace(., is.na(.), "") %>% 
   invisible()
 
 names(tfl_tcl)
