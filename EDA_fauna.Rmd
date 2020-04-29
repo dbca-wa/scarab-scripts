@@ -1187,15 +1187,39 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
 
 
 ```{r load_tfa_tcl, eval=FALSE}
-# LONG RUNNING UPLOAD
-tfa_listing_cat_iucn2012 %>% wastdr::wastd_POST("taxon-conservationlisting")
+# Example: one record
+tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_waps_res <- tfa_listing_cat_waps[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc[1] %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+
 trickytaxa %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_iucn2001 %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_iucn1994 %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_wawca %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_spfn %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_waps %>% wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_epbc %>% wastdr::wastd_POST("taxon-conservationlisting")
+
+# LONG RUNNING UPLOAD
+tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994 %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_waps_res <- tfa_listing_cat_waps %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
+tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc %>% 
+  wastdr::wastd_POST("taxon-conservationlisting")
 
 # Expire cached TSC TCL
 if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
