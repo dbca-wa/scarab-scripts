@@ -1044,6 +1044,7 @@ tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
       comments = col_character()
     )
   )  %>%
+  base::replace(., is.na(.), "") %>% 
   dplyr::mutate(
     tsc_criteria = purrr::map(tsc_criteria, chr2int)
   )
@@ -1052,7 +1053,6 @@ tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
 
 tfl_tcl <- tfl_cons_listing %>% 
   left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% 
-  # dplyr::select_if(~sum(!is.na(.)) > 0)
   base::replace(., is.na(.), "") %>% 
   invisible()
 
@@ -1493,13 +1493,13 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 
 ```{r load_tfl_tcl, eval=FALSE}
 # Example: one record
-tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1] %>% 
+tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc[1] %>% 
+tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994[1] %>% 
+tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001[1] %>% 
+tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001[1,] %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
 
 # LONG RUNNING UPLOAD
