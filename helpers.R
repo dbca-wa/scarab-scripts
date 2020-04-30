@@ -310,7 +310,6 @@ parse_as_datetime <- function(
         lubridate::with_tz(tzone = tz)
 }
 
-
 # Present tabular data as reactable
 rt <- . %>%
     reactable::reactable(
