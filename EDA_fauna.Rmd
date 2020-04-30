@@ -1290,7 +1290,7 @@ x <- tfa_tae[1,] %>% as.list() %>%
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 
-tfa_tae[1:5000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 1000)
+tfa_tae[1:10000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 1000)
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 ```
 
