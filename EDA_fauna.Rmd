@@ -263,17 +263,17 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     population = Popn %>% as.character(),
     criteria_code = Reasons %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
-    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
-    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
+    gazetted_on = DateList %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    delisted_on = DateDeList %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    last_reviewed_on = DateReview %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
-  ) %>%
+    ) %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   tibble::rowid_to_column("source_id") %>% 
-  dplyr::mutate(source_id = source_id %>% as.character())
-  
+  dplyr::mutate(source_id = source_id %>% as.character()) 
+
 # tfa_cons_listings %>% skim()
 # tfa_cons_listings %>% head(10) %>% DT::datatable()
 
@@ -409,7 +409,7 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>% 
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
-  dplyr::left_join(resolution_m, by = "resolution_id") %>%
+  dplyr::left_join(resolution_m, by = "resolution_id") %>% 
   invisible() %>% distinct()
 
 
@@ -599,7 +599,8 @@ tfa_tae <- tfa_occ %>%
     accuracy = accuracy,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})"),
     # observation_details = glue::glue("{observation_method} {observation_type} {secondary_signs} {observation_comments}")
-  ) %>%
+  ) %>% 
+  dplyr::mutate(encountered_on = replace(encountered_on, encountered_on == "NA+08:00", "")) %>%
   dplyr::arrange(taxon) %>% distinct()
    
 
@@ -1280,16 +1281,16 @@ taxonpoint = rjson::fromJSON(
 )
 wastdr::wastd_POST(taxonpoint, serializer = "occ-taxon-points")
 
-x <- tfa_tae[1,] %>% as.list() %>% 
+x <- tfa_tae[1,] %>% as.list() %>%
   # Or use any of:
-  # tfa_tae[1:100,] %>% 
+  # tfa_tae[1:100,] %>%
   # tfa_tae[1:1000,] %>%
   wastd_POST(serializer = "occ-taxon-points")
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 
-tfa_tae[1:10000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+tfa_tae[1:5000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 1000)
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 ```
 
