@@ -17,11 +17,6 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
-default_date <- lubridate::parse_date_time(
-  "1900-01-01 00:00:00", 
-  orders = "ymd HMS", 
-  tz = "Australia/Perth"
-)
 
 # Cached data from TSC - delete to force refresh
 tfa_file <- here::here("data", "tfa.Rdata")
@@ -268,18 +263,9 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
     population = Popn %>% as.character(),
     criteria_code = Reasons %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    gazetted_on = ifelse(DateList == "",
-    default_date,
-    lubridate::parse_date_time2(DateList, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    delisted_on = ifelse(DateDeList == "",
-    default_date,
-    lubridate::parse_date_time2(DateDeList, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    last_reviewed_on = ifelse(DateReview  == "",
-    default_date,
-    lubridate::parse_date_time2(DateReview, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    gazetted_on = DateList %>% parse_date_time(., orders = orders, tz = tz),
+    delisted_on = DateDeList %>% parse_date_time(., orders = orders, tz = tz),
+    last_reviewed_on = DateReview %>% parse_date_time(., orders = orders, tz = tz),
     reviewed_by = INTERIM %>% as.character(),
     review_outcome = TRANSLOCATION %>% as.character(),
     comments = Comments %>% as.character()
@@ -797,7 +783,7 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
 
 tfa_tcl <- tfa_cons_listings %>%
   left_join(tfa_conscrit, by = c("list_code", "criteria_code"))  %>% 
-  base::replace(., is.na(.), "") %>%
+  # base::replace(., is.na(.), "") %>%
   invisible()
 ```
 
@@ -1208,23 +1194,20 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
 
 ```{r load_tfa_tcl, eval=FALSE}
 # Example: one record
-# tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012[1,] %>% 
+# tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
-# tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001[1,] %>% 
+# tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
-# tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994[1,] %>% 
+# tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
-# tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca[1,] %>% 
+# tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
-# tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn[1,] %>% 
+# tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
-# tfa_listing_cat_waps_res <- tfa_listing_cat_waps[1,] %>% 
+# tfa_listing_cat_waps_res <- tfa_listing_cat_waps[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
-# tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc[1,] %>% 
+# tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
-# 
-# trickytaxa %>% wastdr::wastd_POST("taxon-conservationlisting")
-
 
 # LONG RUNNING UPLOAD
 tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012 %>% 

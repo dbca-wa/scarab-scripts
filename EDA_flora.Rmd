@@ -272,16 +272,10 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
     list_code_wa = WA.IUCN.RANK.LIST.CODE %>% as.character(),
     category_code_wa = WA.IUCN.RANK %>% as.character(),
     criteria_code_wa = IUCN.CRITERIA %>% as.character(),
-    date_listed = ifelse(DATE.LISTED == "",
-    default_date,
-    lubridate::parse_date_time2(DATE.LISTED, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    date_listed = DATE.LISTED %>% parse_date_time(., orders = orders, tz = tz),
     reasons = REASONS %>% as.character(),
     authority = AUTHORITY %>% as.character(),
-    date_delisted = ifelse(DATE.DELISTED == "",
-    default_date,
-    lubridate::parse_date_time2(DATE.DELISTED, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    date_delisted = DATE.DELISTED %>% parse_date_time(., orders = orders, tz = tz),
     comments = COMMENTS %>% as.character(),
     distribution = DISTRIBUTION %>% as.character(),
     fl_period = FL.PERIOD %>% as.character(),
@@ -290,30 +284,15 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
     fam_no = FAM.NO %>% as.character(),
     recovery_plan = R.PLAN %>% as.character(),
     recovery_plan_comments = RP.COMMENTS %>% as.character(),
-    recovery_plan_expiry_date = ifelse(RP.EXP.DATE == "",
-    default_date,
-    lubridate::parse_date_time2(RP.EXP.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    recovery_plan_expiry_date = RP.EXP.DATE %>% parse_date_time(., orders = orders, tz = tz),
     active_ind = ACTIVE.IND %>% as.character(),
-    deactivated_date = ifelse(DEACTIVATED.DATE == "",
-    default_date,
-    lubridate::parse_date_time2(DEACTIVATED.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    deactivated_date = DEACTIVATED.DATE %>% parse_date_time(., orders = orders, tz = tz),
     reason_deactivated = REASON.DEACTIVATED %>% as.character(),
     created_by = CREATED.BY %>% as.character(),
-    created_date = ifelse(CREATED.DATE == "",
-    default_date,
-    lubridate::parse_date_time2(CREATED.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    created_date = CREATED.DATE %>% parse_date_time(., orders = orders, tz = tz),
     modified_by = MODIFIED.BY %>% as.character(),
-    modified_date = ifelse(MODIFIED.DATE == "",
-    default_date,
-    lubridate::parse_date_time2(MODIFIED.DATE, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-    file_last_updated = ifelse(FILE.LAST.UPDATED == "",
-    default_date,
-    lubridate::parse_date_time2(FILE.LAST.UPDATED, orders, tz = tz, cutoff_2000 = 19L)) %>%
-      lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+    modified_date = MODIFIED.DATE%>% parse_date_time(., orders = orders, tz = tz),
+    file_last_updated = FILE.LAST.UPDATED %>% parse_date_time(., orders = orders, tz = tz),
     file_comments = FILE.COMMENTS %>% as.character(),
     file_no = FILE.NO %>% as.character()
   ) %>% 
@@ -1053,10 +1032,8 @@ tfl_conscrit <- here::here("csv/tfl_conscrit_w_tsc.csv") %>%
 
 tfl_tcl <- tfl_cons_listing %>% 
   left_join(tfl_conscrit,by=c("list_code_wa","criteria_code_wa")) %>% 
-  base::replace(., is.na(.), "") %>% 
+  # base::replace(., is.na(.), "") %>% 
   invisible()
-
-names(tfl_tcl)
 ```
 
 ## Occurrence lookup criteria
@@ -1493,14 +1470,14 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 
 ```{r load_tfl_tcl, eval=FALSE}
 # Example: one record
-tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1,] %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc[1,] %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994[1,] %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
-tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001[1,] %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+# tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1,] %>% 
+#   wastdr::wastd_POST("taxon-conservationlisting")
+# tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc[1,] %>% 
+#   wastdr::wastd_POST("taxon-conservationlisting")
+# tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994[1,] %>% 
+#   wastdr::wastd_POST("taxon-conservationlisting")
+# tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001[1,] %>% 
+  # wastdr::wastd_POST("taxon-conservationlisting")
 
 # LONG RUNNING UPLOAD
 tfl_listing_cat_priority_res <- tfl_listing_cat_priority %>% 
