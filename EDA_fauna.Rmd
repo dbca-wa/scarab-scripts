@@ -787,7 +787,7 @@ tfa_tcl <- tfa_cons_listings %>%
   invisible()
 ```
 
-## Occurrence lookup criteria
+## Observation Groups criteria
 
 Occurrence lookup data from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TFA.
@@ -1312,7 +1312,6 @@ tfa_tae[1:10000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 10
 tfa_phys_sample_res <- tfa_phys_sample %>% 
   wastd_occ_obs_post(obstype="PhysicalSample") 
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
-# some TAE missing - MIlly to doublecheck all source_ids here exist in tfa_tae. DONE, all good.
 # Florian to re-upload tfa_tae to TSC
 # Florian to create: get TSC TAE source and sourceID, then compare locally
 # to determine what to create, what to update (if ever), what to skip
