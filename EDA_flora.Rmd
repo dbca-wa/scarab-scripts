@@ -1036,7 +1036,7 @@ tfl_tcl <- tfl_cons_listing %>%
   invisible()
 ```
 
-## Occurrence lookup criteria
+## Observation Groups criteria
 
 Occurrence lookup data from TSC are downloaded from the TSC API and transformed
 into a usable format for manual mapping to TFL.
@@ -1159,7 +1159,8 @@ tfl_hab_comp <- hab_comp %>%
     drainage = tsc_drainage
     ) %>%
   dplyr::mutate(obstype = "HabitatComposition") %>% 
-  base::replace(., is.na(.), "")
+  base::replace(., is.na(.), "") %>% 
+  dplyr::semi_join(tfl_tae)
 
 ## Area assessment
 tfl_survey_method <-
@@ -1180,9 +1181,9 @@ tfl_area_ass <- area_ass %>%
     survey_method = tsc_survey_method,
     area_surveyed_m2 = surveyed_area,
     survey_duration_min = survey_duration) %>%
-  dplyr::mutate(obstype = "AreaAssessment")
-# %>% 
-#   base::replace(., is.na(.), "")
+  dplyr::mutate(obstype = "AreaAssessment") %>% 
+  base::replace(., is.na(.), "") %>% 
+  dplyr::semi_join(tfl_tae)
 
 ## Habitat condition
 tfl_soil_condition <-
@@ -1202,7 +1203,8 @@ tfl_hab_cond <- hab_cond %>%
     source_id = source_id,
     soil_condition = tsc_soil_condition) %>%
   dplyr::mutate(obstype = "HabitatCondition") %>% 
-  base::replace(., is.na(.), "") # 'occurrence_condition' cannot 
+  base::replace(., is.na(.), "") %>% 
+  dplyr::semi_join(tfl_tae) # 'occurrence_condition' cannot 
 # be migrated to tsc card options which require a %. This has been added to tae description.
 
 ## Plant count
@@ -1271,7 +1273,8 @@ tfl_plant_count <- plant_count %>%
     comments = comments,
     ) %>%
   dplyr::mutate(obstype = "PlantCount") %>% 
-  base::replace(., is.na(.), "")
+  base::replace(., is.na(.), "") %>% 
+  dplyr::semi_join(tfl_tae)
 
 ## Physical sample
 tfl_sampdest <-
@@ -1294,14 +1297,8 @@ tfl_phys_sample <- phys_sample %>%
     sample_label = sample_label,
     permit_id = permit_id) %>%
   dplyr::mutate(obstype = "PhysicalSample") %>% 
-  base::replace(., is.na(.), "")
-
-# some TAE missing? - doublecheck all source_ids in occ_observations exist in tfl_tae
-setdiff(tfl_phys_sample$source_id,tfl_tae$source_id) # 22
-setdiff(tfl_plant_count$source_id,tfl_tae$source_id) # 19
-setdiff(tfl_hab_cond$source_id,tfl_tae$source_id) # 28
-setdiff(tfl_area_ass$source_id,tfl_tae$source_id) # 10
-setdiff(tfl_hab_comp$source_id,tfl_tae$source_id) # 36
+  base::replace(., is.na(.), "") %>% 
+  dplyr::semi_join(tfl_tae)
 ```
 
 # Habitat Condition: 'occurrence_condition' could not be migrated
@@ -1547,36 +1544,36 @@ tfl_tae %>%
   chunk_post(serializer = "occ-taxon-points")
 ```
 
-### Upload ObservationGroups
+### Upload Observation Groups
 
 ```{r load_obsgroups, eval=FALSE}
 # Example: one record
-tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
-  wastd_occ_obs_post(obstype="PhysicalSample")
-tfl_hab_cond_res <- tfl_hab_cond[1:100,]%>%
-  wastd_occ_obs_post(obstype="HabitatCondition")
-tfl_area_ass_res <- tfl_area_ass[1,] %>%
-  wastd_occ_obs_post(obstype="AreaAssessment")
-tfl_plant_count_res <- tfl_plant_count[1,] %>%
-  wastd_occ_obs_post(obstype="PlantCount")
-tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
-  wastd_occ_obs_post(obstype="HabitatComposition")
-# Example: one hundred records
-tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
-  wastd_occ_obs_post(obstype="PhysicalSample")
+# tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
+#   wastd_occ_obs_post(obstype="PhysicalSample")
+# tfl_hab_cond_res <- tfl_hab_cond[1:100,]%>%
+#   wastd_occ_obs_post(obstype="HabitatCondition")
+# tfl_area_ass_res <- tfl_area_ass[1,] %>%
+#   wastd_occ_obs_post(obstype="AreaAssessment")
+# tfl_plant_count_res <- tfl_plant_count[1,] %>%
+#   wastd_occ_obs_post(obstype="PlantCount")
+# tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
+#   wastd_occ_obs_post(obstype="HabitatComposition")
+# # Example: one hundred records
+# tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
+#   wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-# tfl_phys_sample_res <- tfl_phys_sample %>% 
-#   wastd_occ_obs_post(obstype="PhysicalSample") 
-# tfl_hab_cond_res <- tfl_hab_cond %>% 
-#   wastd_occ_obs_post(obstype="HabitatCondition") 
-# tfl_area_ass_res <- tfl_area_ass %>%
-#   wastd_occ_obs_post(obstype="AreaAssessment")
-# tfl_plant_count_res <- tfl_plant_count %>%
-#   wastd_occ_obs_post(obstype="PlantCount")
-# tfl_hab_comp_res <- tfl_hab_comp %>% 
-#   wastd_occ_obs_post(obstype="HabitatComposition")
+tfl_phys_sample_res <- tfl_phys_sample %>%
+  wastd_occ_obs_post(obstype="PhysicalSample")
+tfl_hab_cond_res <- tfl_hab_cond %>%
+  wastd_occ_obs_post(obstype="HabitatCondition")
+tfl_area_ass_res <- tfl_area_ass %>%
+  wastd_occ_obs_post(obstype="AreaAssessment")
+tfl_plant_count_res <- tfl_plant_count %>%
+  wastd_occ_obs_post(obstype="PlantCount")
+tfl_hab_comp_res <- tfl_hab_comp %>%
+  wastd_occ_obs_post(obstype="HabitatComposition")
 
 # Export as (confidential) test data for API
 tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
@@ -2031,15 +2028,19 @@ tfl_skim %>%
 
 ```{r show_tfl_occ_missing_datetime}
 tfl_occ_no_datetime<- tfl_occ %>% 
-    filter(created_date == "")
+  dplyr::filter(created_date == "")
 tfl_occ_no_datetime %>% rt
+
+tfl_tae_no_obs_date <- tfl_occ %>%
+  dplyr::filter(observation_date == "") 
+
 ```
 
 #### Missing coordinates
 
 ```{r show_tfl_occ_missing_coordinates}
 tfl_occ_no_latlng <- tfl_occ %>%
-  filter(is.na(latitude) | is.na(longitude))
+  dplyr::filter(is.na(latitude) | is.na(longitude))
 tfl_occ_no_latlng %>% rt
 ```
 
@@ -2048,8 +2049,8 @@ latitude or longitude.
 
 ```{r show_tfl_occ_has_eastnorthings}
 tfl_occ_no_latlng_w_ne <- tfl_occ %>%
-  filter(is.na(latitude) | is.na(longitude)) %>%
-  filter((northing != "NA") | (easting != "NA"))
+  dplyr::filter(is.na(latitude) | is.na(longitude)) %>%
+  dplyr::filter((northing != "NA") | (easting != "NA"))
 tfl_occ_no_latlng_w_ne %>% rt
 ```
 
@@ -2111,7 +2112,7 @@ NameID, and `r nrow(tfl_occ_no_popid)` distinct scientific flora names without a
 PopID. Any records listed here need to be fixed in the original Threatened Flora
 database.
 
-### Occurrence mapping
+### Occurrence observation mapping
 
 Occurrence criteria were manually mapped for each variable, therefore they need
 to be checked to confirm whether the mapping is correct.
@@ -2142,6 +2143,33 @@ this because, combined with flora, there are \> 100 unique locations for sample
 destination, which would make a very long drop down menu.
 
 The above need to be corrected before the manual mapping can be completed.
+
+### Occurrence observations with no matching TAE
+
+Below are occurrence observations which have not been migrated because they do 
+not have a corresponding TAE for them to be assigned to. 
+
+```{r}
+missing_tae_phys_sample <- tfl_phys_sample %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+missing_tae_plant_count <- tfl_plant_count %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+missing_tae_hab_cond <- tfl_hab_cond %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+missing_tae_area_ass <- tfl_area_ass %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+missing_tae_hab_comp <- tfl_hab_comp %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+
+missing_tae_phys_sample %>% rt
+missing_tae_plant_count %>% rt
+missing_tae_hab_cond %>% rt
+missing_tae_area_ass %>% rt
+missing_tae_hab_comp %>% rt
+```
+
+The above need to be reviewed and a decision made on whether the information 
+should be migrated despite not having a TAE to assign it to.
 
 ### Trust level of occurrence records
 
