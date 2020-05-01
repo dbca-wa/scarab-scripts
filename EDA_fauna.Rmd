@@ -301,25 +301,10 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   district_db_no = DistDBNo %>% as.character(),
   species_code = SpCode %>% as.character(),
   # name_id = NameId %>% as.character(), # they're all NA
-  orig_date = Date,
-  orig_time = Time,
-  o_date = ifelse(
-    Date == "",
-    default_date,
-    lubridate::parse_date_time2(Date, orders, tz = tz, cutoff_2000 = 19L)
-  ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-  o_time = ifelse(
-    Time == "",
-    default_date,
-    lubridate::parse_date_time2(Time, orders, tz = tz, cutoff_2000 = 19L)
-  ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
-  datetime = ifelse(
-    is.na(o_date),
-    default_date,
-    ifelse(is.na(o_time),
-           o_date,
-           o_date + hours(hour(o_time)) + minutes(minute(o_time)))
-  ) %>% lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+  orig_date = Date %>% as.character(),
+  orig_time = Time %>% as.character(),
+  datetime = Date %>% parse_as_datetime() %>% 
+    lubridate::as_datetime(.) %>% with_tz(tzone = tz),
   observer_name = Observer %>% as.character(),
   observer_role = OrgRole %>% as.character(),
   observer_address = Address %>% as.character(),
@@ -411,7 +396,6 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>% 
   invisible() %>% distinct()
-
 
 ## Create occurence data tables for each card in TSC
 has_name_id_and_location <- . %>% 
@@ -559,7 +543,7 @@ malleefowl_data <- tfa_data$`Fauna Records` %>%
   na.omit() %>%
   dplyr::left_join(tfa_occ, by = "id")
 readr::write_csv(malleefowl_data, path = here::here("data", "malleefowl_data.csv"))
-  
+
 # Create taxon area encounter
 tfa_tae <- tfa_occ %>%
   has_name_id_and_location %>%
@@ -600,7 +584,7 @@ tfa_tae <- tfa_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})"),
     # observation_details = glue::glue("{observation_method} {observation_type} {secondary_signs} {observation_comments}")
   ) %>% 
-  dplyr::mutate(encountered_on = replace(encountered_on, encountered_on == "NA+08:00", "")) %>%
+  dplyr::mutate(encountered_on = replace(encountered_on, encountered_on == "NA+08:00", "1900-01-01 00:00:00+08:00")) %>%
   dplyr::arrange(taxon) %>% distinct()
    
 
@@ -1290,10 +1274,9 @@ x <- tfa_tae[1,] %>% as.list() %>%
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 
-tfa_tae[1:10000,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 1000)
+tfa_tae[3801:3900,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 ```
-
 
 ### Upload ObservationGroups
 
