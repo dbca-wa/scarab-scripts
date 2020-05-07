@@ -916,7 +916,7 @@ tfa_anim_obs <- anim_obs %>%
     no_juvenile_female =  number_of_juvenile_females,
     no_juvenile_unknown = number_of_juvenile_unknown,
   ) %>% 
-  base::replace(., is.na(.), "") %>% 
+  # base::replace(., is.na(.), "") %>% 
   invisible()
 
 # Associated species
@@ -1274,8 +1274,8 @@ x <- tfa_tae[1,] %>% as.list() %>%
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 
-tfa_tae[3801:3900,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
-  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+tfa_tae[100001:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+    # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 ```
 
 ### Upload ObservationGroups
@@ -1300,12 +1300,10 @@ tfa_phys_sample_res <- tfa_phys_sample %>%
 # Florian to create: get TSC TAE source and sourceID, then compare locally
 # to determine what to create, what to update (if ever), what to skip
 
-
 tfa_anim_obs_res <- tfa_anim_obs %>% 
   wastd_occ_obs_post(obstype="AnimalObservation")
   # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 # TAE missing
-
 
 # We cannot map hand-written AssSpecies to TSC NameIDs.
 # tfa_ass_species_res <- tfa_ass_species[1,] %>% 
