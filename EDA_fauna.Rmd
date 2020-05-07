@@ -1985,7 +1985,7 @@ tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::
 
 ```{r missing dates}
 tfa_occ_no_date <- tfa_occ %>% 
-    filter(o_date == "1900-01-01")
+    filter(datetime == "1900-01-01")
 tfa_occ_no_date %>% reactable::reactable()
 ```
 There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing a date.
@@ -1993,7 +1993,7 @@ There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing a da
 #### Default/ missing times
 ```{r missing times}
 tfa_occ_no_time<- tfa_occ %>% 
-    filter(o_time == "1900-01-01 00:00:00")
+    filter(orig_time == "1900-01-01 00:00:00")
 tfa_occ_no_time %>% reactable::reactable()
 ```
 There are `r nrow(tfa_occ_no_time)` distinct scientific fauna names missing a time.
@@ -2172,8 +2172,8 @@ compared to `tfa_tae`. These records are attributed to
 were likely not migrated because they do not contain lat or long data which is 
 a requirement for valid taxon area encounters.
 
-The table below is a tally of mismatching occurrences by taxon. This does not match the 
-result above-FLORIAN?
+The table below is a tally of mismatching occurrences by taxon. There are no mismatches but
+there are five duplicated records. 
 
 ```{r make_tally_tfa_tae_tsc}
 tfa_tae_tally <- tfa_tae %>%
