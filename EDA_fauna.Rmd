@@ -218,7 +218,7 @@ resolution_m <- tibble::tibble(
 ```
 
 ## Conservation listings
-```{r make_tfa_cl}
+```{r make_tfa_cl, warning = FALSE}
 # TFA conservation lists
 tfa_cons_lists <- tfa_data$`Listing Names` %>%
   dplyr::transmute(
@@ -1446,8 +1446,11 @@ if (file.exists(tsc_occ_fauna_datafile)) {
        file = tsc_occ_fauna_datafile,
        compress = "xz")
 }
+```
 
-#### Identify missing tae in tsc\_tae
+
+```{r eval = FALSE}
+# Identify missing tae in tsc\_tae
 tfa_tae_create <- tfa_tae %>% 
   dplyr::anti_join(tsc_tae, by = "source_id")
 
@@ -2195,6 +2198,15 @@ tfa_tae_tsc_tally <- tfa_tae_tally %>%
   filter(tfa_tae != tsc_occ)
 # tfa_tae_tsc_tally %>% rt 
 # TODO cast sfc to tbl_df
+
+## Check for duplicates
+missing <- tfa_tae %>% 
+  dplyr::filter(taxon == 48070)
+to_many <- tsc_occ_fauna %>% 
+  dplyr::filter(taxon == 48070)
+extra <- missing %>% 
+  dplyr::anti_join(to_many, by = "source_id")
+
 ```
 
 ### `tfa_occ` names not in `tfa_tae`
