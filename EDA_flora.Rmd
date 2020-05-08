@@ -1541,7 +1541,7 @@ x <- tfl_tae[1,] %>% as.list() %>%
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 tfl_tae %>% 
-  chunk_post(serializer = "occ-taxon-points")
+  chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 ### Upload Observation Groups
@@ -1550,7 +1550,7 @@ tfl_tae %>%
 # Example: one record
 # tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
 #   wastd_occ_obs_post(obstype="PhysicalSample")
-# tfl_hab_cond_res <- tfl_hab_cond[1:100,]%>%
+# tfl_hab_cond_res <- tfl_hab_cond[1,]%>%
 #   wastd_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
 #   wastd_occ_obs_post(obstype="AreaAssessment")
@@ -1558,13 +1558,13 @@ tfl_tae %>%
 #   wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
-# # Example: one hundred records
+# Example: one hundred records
 # tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
 #   wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-tfl_phys_sample_res <- tfl_phys_sample %>%
+tfl_phys_sample_res <- tfl_phys_sample[23501:23632,] %>%
   wastd_occ_obs_post(obstype="PhysicalSample")
 tfl_hab_cond_res <- tfl_hab_cond %>%
   wastd_occ_obs_post(obstype="HabitatCondition")
