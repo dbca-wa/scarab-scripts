@@ -27,7 +27,10 @@ tfa_occ_datafile <- here::here("data", "tfa_occ.Rdata")
 
 # Context
 This workbook summarises the legacy data migration and QA for the Threatened
-and Priority Fauna database (TFA).
+and Priority Fauna database (TFA) as shown in the following diagram.
+
+The last chapter of this workbook forms the "data migration report", which 
+shows whether the data migration was correct, consistent, and comprehensive.
 
 ![](https://data.dbca.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg){width="100%"}
 
@@ -38,13 +41,51 @@ The code for all SCB workbooks is under version control at
 [github](https://github.com/dbca-wa/scarab-scripts).
 
 
-# Legacy Data (TFA)
+## How to read this workbook
+This workbook servers several audiences.
 
-Data from the Threatened Fauna Database (TFA) is downloaded from the 
+### Data custodians
+**Data custodians** are the "daily drivers" of the legacy systems, and will be
+the "daily drivers" of TSC.
+Data custodians should 
+
+* read this workbook end to end, and be able to understand each section,
+* review the summary tables for matching totals of legacy systems vs TSC,
+* use the interactive tables for spot checks of individual records.
+
+### Data analysts
+**Data analysts** will re-build all legacy reports from TSC's API. Since this
+workbook accesses and parses all data from TSC, it thereby supplies working
+examples of extracting every bit of TSC data.
+
+Reports follow a common scheme:
+
+* access data from TSC,
+* parse data into suitable shape (spreadsheets-like flat tables) and 
+  datatypes (e.g. dates, locations),
+* filter data as required (date range, regions),
+* visualise data as required (pivot tables, maps),
+* export data as required (CSV, GeoJSON),
+* disseminate report as required (data catalogue, Google Drive).
+
+This workbook shows many examples of the above steps, which then can be 
+recombined and adapted by data analysts as required.
+
+### Data engineers
+**Data engineers** will ingest other data sources into TSC as required.
+This workbook also contains working examples to upload every TSC related data 
+using the TSC API.
+Future data imports from other sources can recombine and adapt the code in this
+workbook for a running start.
+
+# Legacy Data (TFA)
+In this section, data from the Threatened Fauna Database (TFA) is downloaded from the 
 [TFA dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
+This section extracts taxonomic data from TFA. 
+This data will later be compared to the taxonomic data from TSC.
 
 ```{r get_tfa}
 if (file.exists(tfa_file)) {
@@ -218,6 +259,10 @@ resolution_m <- tibble::tibble(
 ```
 
 ## Conservation listings
+This section extracts conservation listings from TFA.
+TFA conservation criteria are exported as CSV spreadsheet for manual mapping
+to TSC values.
+
 ```{r make_tfa_cl, warning = FALSE}
 # TFA conservation lists
 tfa_cons_lists <- tfa_data$`Listing Names` %>%
@@ -289,9 +334,13 @@ readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv")
 ```
 
 ## Occurrences
+This section extracts TFA occurrences.
 
-Mallee Fowl data is extracted separately and exported, to be stored as a csv file on the data catalogue 
-[Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv)
+
+The Mallee Fowl occurrence data subset forms a special case. 
+It is extracted into a CSV spreadsheet to the 
+[Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv) resource on the 
+data catalogue.
 
 ```{r make_tfa_occ, message=FALSE, warning=FALSE}
 # Taxon occurrences
@@ -584,15 +633,70 @@ tfa_tae <- tfa_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})"),
     # observation_details = glue::glue("{observation_method} {observation_type} {secondary_signs} {observation_comments}")
   ) %>% 
-  dplyr::mutate(encountered_on = replace(encountered_on, encountered_on == "NA+08:00", "1900-01-01 00:00:00+08:00")) %>%
-  dplyr::arrange(taxon) %>% distinct()
+  dplyr::mutate(
+    encountered_on = replace(
+      encountered_on, 
+      encountered_on == "NA+08:00", 
+      "1900-01-01 00:00:00+08:00")
+  ) %>%
+  dplyr::arrange(taxon) %>% 
+  distinct()
    
-
 save(tfa_occ, tfa_tae, file=tfa_occ_datafile, compress = "xz")
 if (file.exists(tfa_occ_datafile)) load(tfa_occ_datafile)
 ```
 
+## Occurrence map
+The following map shows the occurrence data from TFA.
+Occurrences without `name_id` or location are skipped.
+
+```{r tfa_tae_map}
+tfa_occ_map <- tfa_occ %>% has_name_id_and_location
+
+leaflet::leaflet(width = 800, height = 600) %>%
+  leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
+  leaflet::addProviderTiles("OpenStreetMap.Mapnik", group = "Place names") %>%
+  leaflet::clearBounds() %>%
+  leaflet::addAwesomeMarkers(
+    data = tfa_occ_map,
+    lng = ~ longitude, lat = ~ latitude,
+    icon = leaflet::makeAwesomeIcon(icon = "eye"),
+    # label = ~ glue::glue("{name_id} {location_id} ({location_name})"),
+    # popup = ~ glue::glue(
+    #     "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}\n",
+    #     "Species ID confirmation: {species_id_confirmed_by}\n",
+    #     "Specimen voucher exists: {specimen_voucher_exists}\n",
+    #     "Site comments: {site_comment}\n",
+    #     "Curator comments: {comments}\n",
+    #     "District: {district_db} {district_db_no}\n",
+    #     "Shire: {shire_name} {shire_label}\n",
+    #     "Tenure: {tenure}\n",
+    #     "LGA ID: {lga_id}\n",
+    #     "District ID: {district_id}\n",
+    #     "Vegetation type: {vegetation_type}\n",
+    #     "Associated species: {associated_flora_species_1} ",
+    #     "{associated_flora_species_2} {associated_flora_species_3} ",
+    #     "{associated_flora_species_4} {associated_flora_species_5}\n",
+    #     "Fire history: {fire_history}\n",
+    #     "Date entered: {entered_on} {entered_by}\n",
+    #     "Date changed: {changed_on} {changed_by}\n",
+    #     "Not published: {occurrence_not_published}\n",
+    #     "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
+    #     ),
+    group = "Fauna"
+    # clusterOptions = leaflet::markerClusterOptions()
+  ) %>%
+  leaflet::addLayersControl(
+    baseGroups = c("Aerial", "Place names"),
+    overlayGroups = c("Fauna"),
+    options = leaflet::layersControlOptions(collapsed = FALSE)
+  )
+```
+
+
 ## Recovery Actions and Plans
+This section extracts recovery actions and plans, which will be ingested into 
+TSC later.
 
 ```{r make_tfa_rec}
 tfa_act <- tfa_data$`Recovery Actions` %>%
@@ -624,6 +728,9 @@ tfa_pla <- tfa_data$`Recovery Plans` %>%
 ```
 
 ## Research priorities and topics
+This section extracts research priorities and topics, which are not ingested into
+TSC.
+
 ```{r make_tfa_res}
 tfa_resp <- tfa_data$`Research Priorities` %>%
   dplyr::transmute(
