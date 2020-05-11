@@ -319,6 +319,12 @@ rt <- . %>%
     )
 
 
+## Create occurence data tables for each card in TSC
+has_name_id_and_location <- . %>%
+    dplyr::filter(
+        !is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id != 0
+    )
+
 # -----------------------------------------------------------------------------#
 # Spatial helpers
 #

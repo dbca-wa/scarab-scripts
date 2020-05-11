@@ -446,12 +446,6 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   dplyr::left_join(resolution_m, by = "resolution_id") %>% 
   invisible() %>% distinct()
 
-## Create occurence data tables for each card in TSC
-has_name_id_and_location <- . %>% 
-  dplyr::filter(
-    !is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0
-  )
-
 hab_comp <- tfa_occ %>%
   has_name_id_and_location %>% 
   dplyr::transmute(
@@ -660,31 +654,32 @@ leaflet::leaflet(width = 800, height = 600) %>%
   leaflet::addAwesomeMarkers(
     data = tfa_occ_map,
     lng = ~ longitude, lat = ~ latitude,
-    icon = leaflet::makeAwesomeIcon(icon = "eye"),
-    # label = ~ glue::glue("{name_id} {location_id} ({location_name})"),
-    # popup = ~ glue::glue(
-    #     "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}\n",
-    #     "Species ID confirmation: {species_id_confirmed_by}\n",
-    #     "Specimen voucher exists: {specimen_voucher_exists}\n",
-    #     "Site comments: {site_comment}\n",
-    #     "Curator comments: {comments}\n",
-    #     "District: {district_db} {district_db_no}\n",
-    #     "Shire: {shire_name} {shire_label}\n",
-    #     "Tenure: {tenure}\n",
-    #     "LGA ID: {lga_id}\n",
-    #     "District ID: {district_id}\n",
-    #     "Vegetation type: {vegetation_type}\n",
-    #     "Associated species: {associated_flora_species_1} ",
-    #     "{associated_flora_species_2} {associated_flora_species_3} ",
-    #     "{associated_flora_species_4} {associated_flora_species_5}\n",
-    #     "Fire history: {fire_history}\n",
-    #     "Date entered: {entered_on} {entered_by}\n",
-    #     "Date changed: {changed_on} {changed_by}\n",
-    #     "Not published: {occurrence_not_published}\n",
-    #     "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
-    #     ),
-    group = "Fauna"
-    # clusterOptions = leaflet::markerClusterOptions()
+    icon = leaflet::makeAwesomeIcon(icon = "spider"),
+    label = ~ glue::glue("{datetime} {name_id} {location_id} ({location_name})"),
+    popup = ~ glue::glue(
+        "<h3>{datetime} {name_id} {location_id} ({location_name})</h3>",
+        "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}<br/>",
+        "Species ID confirmation: {species_id_confirmed_by}<br/>",
+        "Specimen voucher exists: {specimen_voucher_exists}<br/>",
+        "Site comments: {site_comment}<br/>",
+        "Curator comments: {comments}<br/>",
+        "District: {district_db} {district_db_no}<br/>",
+        "Shire: {shire_name} {shire_label}<br/>",
+        "Tenure: {tenure}<br/>",
+        "LGA ID: {lga_id}<br/>",
+        "District ID: {district_id}<br/>",
+        "Vegetation type: {vegetation_type}<br/>",
+        "Associated species: {associated_flora_species_1} ",
+        "{associated_flora_species_2} {associated_flora_species_3} ",
+        "{associated_flora_species_4} {associated_flora_species_5}<br/>",
+        "Fire history: {fire_history}<br/>",
+        "Date entered: {entered_on} {entered_by}<br/>",
+        "Date changed: {changed_on} {changed_by}<br/>",
+        "Not published: {occurrence_not_published}<br/>",
+        "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
+        ),
+    group = "Fauna",
+    clusterOptions = leaflet::markerClusterOptions()
   ) %>%
   leaflet::addLayersControl(
     baseGroups = c("Aerial", "Place names"),
