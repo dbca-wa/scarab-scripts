@@ -644,7 +644,7 @@ if (file.exists(tfa_occ_datafile)) load(tfa_occ_datafile)
 The following map shows the occurrence data from TFA.
 Occurrences without `name_id` or location are skipped.
 
-```{r tfa_tae_map}
+```{r tfa_tae_map, eval=F}
 tfa_occ_map <- tfa_occ %>% has_name_id_and_location
 
 leaflet::leaflet(width = 800, height = 600) %>%
@@ -656,28 +656,28 @@ leaflet::leaflet(width = 800, height = 600) %>%
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "spider"),
     label = ~ glue::glue("{datetime} {name_id} {location_id} ({location_name})"),
-    popup = ~ glue::glue(
-        "<h3>{datetime} {name_id} {location_id} ({location_name})</h3>",
-        "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}<br/>",
-        "Species ID confirmation: {species_id_confirmed_by}<br/>",
-        "Specimen voucher exists: {specimen_voucher_exists}<br/>",
-        "Site comments: {site_comment}<br/>",
-        "Curator comments: {comments}<br/>",
-        "District: {district_db} {district_db_no}<br/>",
-        "Shire: {shire_name} {shire_label}<br/>",
-        "Tenure: {tenure}<br/>",
-        "LGA ID: {lga_id}<br/>",
-        "District ID: {district_id}<br/>",
-        "Vegetation type: {vegetation_type}<br/>",
-        "Associated species: {associated_flora_species_1} ",
-        "{associated_flora_species_2} {associated_flora_species_3} ",
-        "{associated_flora_species_4} {associated_flora_species_5}<br/>",
-        "Fire history: {fire_history}<br/>",
-        "Date entered: {entered_on} {entered_by}<br/>",
-        "Date changed: {changed_on} {changed_by}<br/>",
-        "Not published: {occurrence_not_published}<br/>",
-        "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
-        ),
+    # popup = ~ glue::glue(
+    #     "<h3>{datetime} {name_id} {location_id} ({location_name})</h3>",
+    #     "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}<br/>",
+    #     "Species ID confirmation: {species_id_confirmed_by}<br/>",
+    #     "Specimen voucher exists: {specimen_voucher_exists}<br/>",
+    #     "Site comments: {site_comment}<br/>",
+    #     "Curator comments: {comments}<br/>",
+    #     "District: {district_db} {district_db_no}<br/>",
+    #     "Shire: {shire_name} {shire_label}<br/>",
+    #     "Tenure: {tenure}<br/>",
+    #     "LGA ID: {lga_id}<br/>",
+    #     "District ID: {district_id}<br/>",
+    #     "Vegetation type: {vegetation_type}<br/>",
+    #     "Associated species: {associated_flora_species_1} ",
+    #     "{associated_flora_species_2} {associated_flora_species_3} ",
+    #     "{associated_flora_species_4} {associated_flora_species_5}<br/>",
+    #     "Fire history: {fire_history}<br/>",
+    #     "Date entered: {entered_on} {entered_by}<br/>",
+    #     "Date changed: {changed_on} {changed_by}<br/>",
+    #     "Not published: {occurrence_not_published}<br/>",
+    #     "Occurrence citation: {occurrence_citation} {occurrence_citation_author}"
+    #     ),
     group = "Fauna",
     clusterOptions = leaflet::markerClusterOptions()
   ) %>%
@@ -2096,7 +2096,7 @@ tfa_occ_no_date %>% reactable::reactable()
 There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing a date.
 
 #### Default/ missing times
-```{r missing times}
+```{r missing_times}
 tfa_occ_no_time<- tfa_occ %>% 
     filter(orig_time == "1900-01-01 00:00:00")
 tfa_occ_no_time %>% reactable::reactable()
@@ -2104,7 +2104,7 @@ tfa_occ_no_time %>% reactable::reactable()
 There are `r nrow(tfa_occ_no_time)` distinct scientific fauna names missing a time.
 
 #### Missing coordinates
-```{r missing coordinates}
+```{r missing_coordinates}
 tfa_occ_no_latlng <- tfa_occ %>% 
     filter(is.na(latitude) | is.na(longitude))
 tfa_occ_no_latlng %>% reactable::reactable()
@@ -2112,7 +2112,7 @@ tfa_occ_no_latlng %>% reactable::reactable()
 
 There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
 
-```{r has eastnorthings}
+```{r has_eastnorthings}
 tfa_occ_no_latlng_w_ne <- tfa_occ %>% 
   filter(is.na(latitude) | is.na(longitude)) %>% 
   filter((northing != "NA") | (easting!= "NA"))
@@ -2120,6 +2120,13 @@ tfa_occ_no_latlng_w_ne %>% reactable::reactable()
 ```
 
 There are `r nrow(tfa_occ_no_latlng_w_ne)` distinct fauna records with missing latitude or longitude, which have northings and eastings.
+
+#### Impossible locations
+Geographic coordinates outside possible boundaries must be rectified at source.
+```{r tfa_occ_impossible_locations}
+tfa_occ %>% impossible_location() %>% rt
+```
+
 
 #### Datum
 ```{r datum_tally}
