@@ -1690,8 +1690,8 @@ if (file.exists(tsc_occ_flora_datafile)) {
 
 ```
 
+<<<<<<< HEAD
 ```{r show_duplicates_and_missing_tae}
-
 ## Check for duplicates
 tsc_flora_duplicates <- here::here("data/tsc_tae_flora_duplicates.RData")
 
