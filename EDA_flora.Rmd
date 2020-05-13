@@ -1688,6 +1688,10 @@ if (file.exists(tsc_occ_flora_datafile)) {
        compress = "xz")
 }
 
+```
+
+```{r}
+
 ## Check for duplicates
 tsc_flora_duplicates <- here::here("data/tsc_tae_flora_duplicates.RData")
 
@@ -1702,9 +1706,6 @@ save(tsc_tae_dup,
      file = tsc_flora_duplicates,
        compress = "xz")
 
-```
-
-```{r}
 #### Identify missing tae in tsc\_tae
 tfl_tae_create <- tfl_tae %>% 
   dplyr::anti_join(tsc_occ_flora, by = "source_id") #2448
