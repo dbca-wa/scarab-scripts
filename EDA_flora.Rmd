@@ -1690,13 +1690,15 @@ if (file.exists(tsc_occ_flora_datafile)) {
 
 ```
 
-<<<<<<< HEAD
+
 ```{r show_duplicates_and_missing_tae}
 ## Check for duplicates
 tsc_flora_duplicates <- here::here("data/tsc_tae_flora_duplicates.RData")
 
 tsc_tae_dup <- tsc_tae %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
+
+tsc_tae_dup_2 <- tsc_tae %>% group_by(source_id) %>% filter(n()>1)
 
 tsc_occ_flora_dup <- tsc_occ_flora %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
