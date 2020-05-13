@@ -1301,7 +1301,7 @@ tfl_phys_sample <- phys_sample %>%
   dplyr::semi_join(tfl_tae)
 ```
 
-# Habitat Condition: 'occurrence_condition' could not be migrated
+Habitat Condition: 'occurrence_condition' could not be migrated
 to the Habitat Condition card in TSC because it requires a %. 
 Instead, 'occurrence_condition' has been added to the TAE description.
 
@@ -1554,8 +1554,8 @@ tfl_tae %>%
 #   wastd_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
 #   wastd_occ_obs_post(obstype="AreaAssessment")
-# tfl_plant_count_res <- tfl_plant_count[1,] %>%
-#   wastd_occ_obs_post(obstype="PlantCount")
+tfl_plant_count_res <- tfl_plant_count[1:2,] %>%
+  wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
 # Example: one hundred records
@@ -1564,16 +1564,19 @@ tfl_tae %>%
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-tfl_phys_sample_res <- tfl_phys_sample[23501:23632,] %>%
+tfl_phys_sample_res <- tfl_phys_sample[23591:23632,] %>%
   wastd_occ_obs_post(obstype="PhysicalSample")
-tfl_hab_cond_res <- tfl_hab_cond %>%
+x <- tfl_phys_sample[23591:23632,]
+tfl_hab_cond_res <- tfl_hab_cond[22091:22181,] %>%
   wastd_occ_obs_post(obstype="HabitatCondition")
 tfl_area_ass_res <- tfl_area_ass %>%
   wastd_occ_obs_post(obstype="AreaAssessment")
-tfl_plant_count_res <- tfl_plant_count %>%
+tfl_plant_count_res <- tfl_plant_count[1:10000,] %>%
   wastd_occ_obs_post(obstype="PlantCount")
 tfl_hab_comp_res <- tfl_hab_comp %>%
   wastd_occ_obs_post(obstype="HabitatComposition")
+
+setdiff(tfl_phys_sample$source_id,tfl_tae$source_id)
 
 # Export as (confidential) test data for API
 tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
@@ -1682,16 +1685,23 @@ if (file.exists(tsc_occ_flora_datafile)) {
        file = tsc_occ_flora_datafile,
        compress = "xz")
 }
+```
 
+```{r}
 #### Identify missing tae in tsc\_tae
 tfl_tae_create <- tfl_tae %>% 
-  dplyr::anti_join(tsc_tae, by = "source_id")
+  dplyr::anti_join(tsc_occ_flora, by = "source_id") #2012
+
+setdiff(tfl_tae$source_id,tsc_occ_flora$source_id) #2012
+setdiff(tsc_occ_flora$source_id,tfl_tae$source_id) #0
+
+occ_flora_dup <- tsc_occ_flora %>%filter(duplicated(.[["source_id"]])) #2010
 
 tfl_tae_update <- tfl_tae %>% 
-  dplyr::right_join(tsc_tae, by = "source_id")
+  dplyr::semi_join(tsc_occ_flora, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points")
+tfl_tae_create_res <- tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 # Compare legacy to migrated data
