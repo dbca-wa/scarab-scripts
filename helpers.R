@@ -319,6 +319,27 @@ rt <- . %>%
     )
 
 
+## Create occurence data tables for each card in TSC
+has_name_id_and_location <- . %>%
+    dplyr::filter(
+        !is.na(name_id) &
+            !is.na(latitude) &
+            !is.na(longitude) &
+            name_id != 0 &
+            latitude >= -90 &
+            latitude <= 90 &
+            longitude >= -180 &
+            longitude <= 180
+    )
+
+impossible_location <- . %>%
+    dplyr::filter(
+            latitude < -90 |
+            latitude > 90 |
+            longitude < -180 |
+            longitude > 180
+    )
+
 # -----------------------------------------------------------------------------#
 # Spatial helpers
 #
