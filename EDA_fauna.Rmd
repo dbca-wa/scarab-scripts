@@ -1538,10 +1538,13 @@ if (file.exists(tsc_occ_fauna_datafile)) {
     dplyr::transmute(district_id = pk, district_name = name)
   
   tsc_occ_fauna <- tsc_tae %>% 
-    sf::st_join(regions) %>% 
-    sf::st_join(districts) %>%
+    # sf::st_join(regions) %>% 
+    # sf::st_join(districts) %>%
     dplyr::mutate(taxon = taxon %>% as.character())%>% 
     dplyr::inner_join(tsc_taxa_fauna, by = c("taxon"))
+  # nrow(tsc_tae) 150987 - all fauna taxa occurrences in TSC
+  # nrow(tsc_occ_fauna) 106177 - all fauna taxa occurrences joined to tsc_taxa_fauna
+  # this is puzzling
   
   save(tsc_tae,
        tsc_taxa_fauna,
