@@ -443,7 +443,7 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>% 
-  invisible() %>% distinct()
+  invisible()
 
 hab_comp <- tfa_occ %>%
   has_name_id_and_location %>% 
@@ -632,8 +632,7 @@ tfa_tae <- tfa_occ %>%
       encountered_on == "NA+08:00", 
       "1900-01-01 00:00:00+08:00")
   ) %>%
-  dplyr::arrange(taxon) %>% 
-  distinct()
+  dplyr::arrange(taxon)
    
 save(tfa_occ, tfa_tae, file=tfa_occ_datafile, compress = "xz")
 if (file.exists(tfa_occ_datafile)) load(tfa_occ_datafile)
@@ -656,7 +655,7 @@ leaflet::leaflet(width = 800, height = 600) %>%
     data = tfa_occ_map,
     lng = ~ longitude, lat = ~ latitude,
     icon = leaflet::makeAwesomeIcon(icon = "spider"),
-    label = ~ glue::glue("{datetime} {name_id} {location_id} ({location_name})"),
+    label = ~ glue::glue("{datetime} [DBNo {id}] {name_id} {location_id} ({location_name})"),
     # popup = ~ glue::glue(
     #     "<h3>{datetime} {name_id} {location_id} ({location_name})</h3>",
     #     "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}<br/>",
@@ -1379,7 +1378,7 @@ x <- tfa_tae[1,] %>% as.list() %>%
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 
-tfa_tae[100001:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+tfa_tae[100001:nrow(tfa_tae),] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
     # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
     
 tfa_tae_res <- tfa_tae %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
@@ -1511,12 +1510,34 @@ applicable), plus taxonomic names.
 if (file.exists(tsc_occ_fauna_datafile)) {
   load(tsc_occ_fauna_datafile)
 } else {
-  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
-  tsc_tae <- tsc_tae_data %>% 
+   tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+ 
+  tsc_tae <- tsc_tae_data$data %>%
+    {
+    tibble::tibble(
+      source = purrr::map_chr(., c("properties", "source"), .default = NA),
+      source_id = purrr::map_chr(., c("properties", "source_id"), .default = NA),
+      taxon = purrr::map_chr(., c("properties", "taxon"), .default = NA),
+      code = purrr::map_chr(., c("properties", "code"), .default = NA),
+      name = purrr::map_chr(., c("properties", "name"), .default = NA),
+      label = purrr::map_chr(., c("properties", "label"), .default = NA),
+      description = purrr::map_chr(., c("properties", "description"), .default = NA),
+      status = purrr::map_chr(., c("properties", "status"), .default = NA),
+      encounter_type = purrr::map_chr(., c("properties", "encounter_type"), .default = NA),
+      encountered_on = purrr::map_chr(., c("properties", "encountered_on"), .default = NA),
+      encountered_by = purrr::map_chr(., c("properties", "encountered_by"), .default = NA),
+      area_type = purrr::map_chr(., c("properties", "area_type"), .default = NA),
+      geolocation_capture_method = purrr::map_chr(., c("properties", "geolocation_capture_method"), .default = NA)
+      # longitude = purrr::map_chr(., c("geometry", "coordinates", 1L), .default = NA),
+      # latitude = purrr::map_chr(., c("geometry", "coordinates", 2L), .default = NA)
+    )
+    }
+ 
+  tsc_tae_sf <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
-    geojsonsf::geojson_sf() %>% 
-    dplyr::mutate(taxon = taxon %>% as.character()) 
+    geojsonsf::geojson_sf() %>%
+    dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
@@ -1538,13 +1559,16 @@ if (file.exists(tsc_occ_fauna_datafile)) {
     dplyr::transmute(district_id = pk, district_name = name)
   
   tsc_occ_fauna <- tsc_tae %>% 
-    # sf::st_join(regions) %>% 
+    dplyr::filter(source == 10) %>% 
+     # sf::st_join(regions) %>% 
     # sf::st_join(districts) %>%
-    dplyr::mutate(taxon = taxon %>% as.character())%>% 
-    dplyr::inner_join(tsc_taxa_fauna, by = c("taxon"))
-  # nrow(tsc_tae) 150987 - all fauna taxa occurrences in TSC
-  # nrow(tsc_occ_fauna) 106177 - all fauna taxa occurrences joined to tsc_taxa_fauna
+    dplyr::mutate(taxon = taxon %>% as.character()) %>% 
+    dplyr::left_join(tsc_taxa_fauna, by = c("taxon"))
+  
+  # nrow(tsc_tae) 150987 - all fauna + flora taxa occurrences in TSC
+  # nrow(tsc_occ_fauna) 106108 - all fauna taxa occurrences joined to tsc_taxa_fauna
   # this is puzzling
+  # length(unique(tsc_occ_fauna$source_id)) #102563
   
   save(tsc_tae,
        tsc_taxa_fauna,
@@ -1561,7 +1585,14 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 ```{r eval = FALSE}
 # Identify missing tae in tsc_tae
 tfa_tae_create <- tfa_tae %>% 
-  dplyr::anti_join(tsc_tae, by = "source_id")
+  dplyr::anti_join(tsc_occ_fauna, by = "source_id")
+
+# All sources are fauna (10)
+unique(tsc_occ_fauna$source)
+length(unique(tsc_occ_fauna$source_id)) # 102563
+
+tsc_occ_fauna_duplicate_source_ids <- tsc_occ_fauna %>%
+  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
 
 tfa_tae_update <- tfa_tae %>% 
   dplyr::right_join(tsc_tae, by = "source_id")
@@ -2115,6 +2146,19 @@ There are `r nrow(tfa_occ_no_time)` distinct scientific fauna names missing a ti
 tfa_occ_no_latlng <- tfa_occ %>% 
     filter(is.na(latitude) | is.na(longitude))
 tfa_occ_no_latlng %>% reactable::reactable()
+
+# tfa_occ_bad_location <- tfa_occ %>% 
+#   impossible_location() #4
+# 
+# tfa_occ_missing_name_id <- tfa_occ %>% 
+#   filter(is.na(name_id)) #1
+# 
+# tfa_occ_missing_lat_or_long <- tfa_occ %>% 
+#   filter(is.na(latitude) |
+#             is.na(longitude)) #3
+
+# The above eight records are the eight records we remove from tfa_occ prior 
+# to creating tfa_tae and are therefore not migrated. Amy to correct asap- email her.
 ```
 
 There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
