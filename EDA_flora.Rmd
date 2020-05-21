@@ -1713,7 +1713,7 @@ tfl_tae_create <- tfl_tae %>%
   dplyr::anti_join(tsc_occ_flora, by = "source_id") #2448
 
 tfl_tae_update <- tfl_tae %>% 
-  dplyr::semi_join(tsc_occ_flora, by = "source_id")
+  dplyr::semi_join(tsc_occ_flora, by = "source_id") #42343
 
 ## Upload the missing tfa_tae to tsc_tae
 tfl_tae_create_res <- tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
