@@ -25,7 +25,7 @@
 # remotes::install_github("r-lib/lifecycle")
 # remotes::install_github("ropensci/rredlist")
 # remotes::install_github("dbca-wa/wastdr")
-# remotes::install_github("dbca-wa/wastdr", lib="/home/milly/R/library")
+# remotes::install_github("dbca-wa/wastdr", dependencies = TRUE, lib="/home/milly/R/library")
 # remotes::install_github("dbca-wa/wastdr", lib="/home/florianm/R/library")
 
 # -----------------------------------------------------------------------------#
