@@ -92,14 +92,13 @@ if (file.exists(tfa_file)) {
   load(tfa_file)
 } else {
   tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2", verbose = T)
-  save(tfa_data, file=tfa_file)
+  snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
+    ckanr::resource_show() %>%
+    magrittr::extract2("last_modified") %>%
+    lubridate::as_datetime() %>%
+    lubridate::with_tz("Australia/Perth")
+  save(tfa_data, snapshot_last_updated, file=tfa_file)
 }
-
-snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
-  ckanr::resource_show() %>%
-  magrittr::extract2("last_modified") %>%
-  lubridate::as_datetime() %>%
-  lubridate::with_tz("Australia/Perth")
 
 # Lookup tables
 shires <- tfa_data$Shires %>%
@@ -638,6 +637,8 @@ tfa_tae <- tfa_occ %>%
    
 save(tfa_occ, tfa_tae, file=tfa_occ_datafile, compress = "xz")
 if (file.exists(tfa_occ_datafile)) load(tfa_occ_datafile)
+
+## TODO FM: compare tfa_occ to tfa_tae - duplicates? missing?
 ```
 
 ## Occurrence map
@@ -874,12 +875,11 @@ tfa_tcl <- tfa_cons_listings %>%
   invisible()
 ```
 
-## Observation Groups criteria
-
-Occurrence lookup data from TSC are downloaded from the TSC API 
+## Observation Groups
+Occurrence lookups from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TFA.
 
-A manual step annotated lookup criteria exported from TSC to 
+A manual step annotated lookups exported from TSC to 
 occurrence data in TFA in a spreadsheet.
 
 ``` {r get_tsc_occ_lookups, message=FALSE}
@@ -1303,10 +1303,13 @@ tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001 %>%
   wastdr::wastd_POST("taxon-conservationlisting")
 tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994 %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
-tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+
+# DO NOT LOAD THESE DUPLICATES:
+# tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca %>% 
+#   wastdr::wastd_POST("taxon-conservationlisting")
+# tfa_listing_cat_spfn_res <- tfa_listing_cat_spfn %>% 
+#   wastdr::wastd_POST("taxon-conservationlisting")
+
 tfa_listing_cat_waps_res <- tfa_listing_cat_waps %>% 
   wastdr::wastd_POST("taxon-conservationlisting")
 tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc %>% 
@@ -1378,6 +1381,8 @@ x <- tfa_tae[1,] %>% as.list() %>%
 
 tfa_tae[100001:106201,] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
     # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
+    
+tfa_tae_res <- tfa_tae %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 ### Upload ObservationGroups
@@ -1443,7 +1448,6 @@ Expand the code block below to view the process.
 ## Conservation listings
 
 ```{r get_tsc_tcl2, message=FALSE, warning=FALSE}
-
 if (file.exists(tsc_cl_fauna_datafile)) {
   load(tsc_cl_fauna_datafile)
 } else {
@@ -1534,10 +1538,13 @@ if (file.exists(tsc_occ_fauna_datafile)) {
     dplyr::transmute(district_id = pk, district_name = name)
   
   tsc_occ_fauna <- tsc_tae %>% 
-    sf::st_join(regions) %>% 
-    sf::st_join(districts) %>%
+    # sf::st_join(regions) %>% 
+    # sf::st_join(districts) %>%
     dplyr::mutate(taxon = taxon %>% as.character())%>% 
     dplyr::inner_join(tsc_taxa_fauna, by = c("taxon"))
+  # nrow(tsc_tae) 150987 - all fauna taxa occurrences in TSC
+  # nrow(tsc_occ_fauna) 106177 - all fauna taxa occurrences joined to tsc_taxa_fauna
+  # this is puzzling
   
   save(tsc_tae,
        tsc_taxa_fauna,
@@ -1552,7 +1559,7 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 
 
 ```{r eval = FALSE}
-# Identify missing tae in tsc\_tae
+# Identify missing tae in tsc_tae
 tfa_tae_create <- tfa_tae %>% 
   dplyr::anti_join(tsc_tae, by = "source_id")
 
