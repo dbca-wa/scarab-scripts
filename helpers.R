@@ -305,7 +305,7 @@ parse_as_datetime <- function(
     if (is.null(x)) return(default_datetime)
 
     x %>%
-        lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>%
+        lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 20L) %>%
         lubridate::as_datetime(.) %>%
         lubridate::with_tz(tzone = tz)
 }
