@@ -351,8 +351,7 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   # name_id = NameId %>% as.character(), # they're all NA
   orig_date = Date %>% as.character(),
   orig_time = Time %>% as.character(),
-  datetime = Date %>% parse_as_datetime() %>% 
-    lubridate::as_datetime(.) %>% with_tz(tzone = tz),
+  datetime = orig_date %>% parse_as_datetime(),
   observer_name = Observer %>% as.character(),
   observer_role = OrgRole %>% as.character(),
   observer_address = Address %>% as.character(),
@@ -1595,7 +1594,7 @@ tsc_occ_fauna_duplicate_source_ids <- tsc_occ_fauna %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
 
 tfa_tae_update <- tfa_tae %>% 
-  dplyr::right_join(tsc_tae, by = "source_id")
+  dplyr::right_join(tsc_occ_fauna, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
 tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points")
@@ -2124,32 +2123,41 @@ tfa_skim %>%
 tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400) %>% ungroup()
 ```
 
-#### Default/ missing dates
+#### Missing date/times- orig_date
 
-```{r missing dates}
+```{r missing orig_dates}
 tfa_occ_no_date <- tfa_occ %>% 
-    filter(datetime == "1900-01-01")
+    filter(orig_date == "")
 tfa_occ_no_date %>% reactable::reactable()
 ```
-There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing a date.
+There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing an orig_date.
 
-#### Default/ missing times
-```{r missing_times}
+#### Missing date/times- orig_time
+
+```{r missing_orig_times}
 tfa_occ_no_time<- tfa_occ %>% 
-    filter(orig_time == "1900-01-01 00:00:00")
+    filter(orig_time == "")
 tfa_occ_no_time %>% reactable::reactable()
 ```
-There are `r nrow(tfa_occ_no_time)` distinct scientific fauna names missing a time.
+There are `r nrow(tfa_occ_no_time)` distinct scientific fauna names missing an orig_time.
+
+#### Default encountered_on in tfa_tae
+Orig_date was used to populate the datetime field in tfa_occ and encountered_on in 
+tfa_tae. Records with no date/time for the encountered_on field were given a 
+default datetime. The records below are those.
+
+```{r default_encountered_on}
+tfa_tae_default_datetime <- tfa_tae %>% 
+  filter(encountered_on == "1900-01-01 00:00:00")
+```
 
 #### Missing coordinates
+
 ```{r missing_coordinates}
 tfa_occ_no_latlng <- tfa_occ %>% 
     filter(is.na(latitude) | is.na(longitude))
 tfa_occ_no_latlng %>% reactable::reactable()
 
-# tfa_occ_bad_location <- tfa_occ %>% 
-#   impossible_location() #4
-# 
 # tfa_occ_missing_name_id <- tfa_occ %>% 
 #   filter(is.na(name_id)) #1
 # 
@@ -2177,7 +2185,6 @@ Geographic coordinates outside possible boundaries must be rectified at source.
 ```{r tfa_occ_impossible_locations}
 tfa_occ %>% impossible_location() %>% rt
 ```
-
 
 #### Datum
 ```{r datum_tally}
