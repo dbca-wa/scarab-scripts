@@ -1511,26 +1511,11 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 } else {
    tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
  
-  tsc_tae <- tsc_tae_data$data %>%
-    {
-    tibble::tibble(
-      source = purrr::map_chr(., c("properties", "source"), .default = NA),
-      source_id = purrr::map_chr(., c("properties", "source_id"), .default = NA),
-      taxon = purrr::map_chr(., c("properties", "taxon"), .default = NA),
-      code = purrr::map_chr(., c("properties", "code"), .default = NA),
-      name = purrr::map_chr(., c("properties", "name"), .default = NA),
-      label = purrr::map_chr(., c("properties", "label"), .default = NA),
-      description = purrr::map_chr(., c("properties", "description"), .default = NA),
-      status = purrr::map_chr(., c("properties", "status"), .default = NA),
-      encounter_type = purrr::map_chr(., c("properties", "encounter_type"), .default = NA),
-      encountered_on = purrr::map_chr(., c("properties", "encountered_on"), .default = NA),
-      encountered_by = purrr::map_chr(., c("properties", "encountered_by"), .default = NA),
-      area_type = purrr::map_chr(., c("properties", "area_type"), .default = NA),
-      geolocation_capture_method = purrr::map_chr(., c("properties", "geolocation_capture_method"), .default = NA)
-      # longitude = purrr::map_chr(., c("geometry", "coordinates", 1L), .default = NA),
-      # latitude = purrr::map_chr(., c("geometry", "coordinates", 2L), .default = NA)
-    )
-    }
+  tsc_tae <- tsc_tae_data %>%
+    magrittr::extract2("data") %>%
+    geojsonio::as.json() %>%
+    geojsonsf::geojson_sf() %>%
+    dplyr::mutate(taxon = taxon %>% as.character())
  
   tsc_tae_sf <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
@@ -1581,23 +1566,24 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 ```
 
 
-```{r eval = FALSE}
-# Identify missing tae in tsc_tae
-tfa_tae_create <- tfa_tae %>% 
-  dplyr::anti_join(tsc_occ_fauna, by = "source_id")
-
+```{r show_duplicates_and_missing_tae, eval = FALSE}
 # All sources are fauna (10)
 unique(tsc_occ_fauna$source)
-length(unique(tsc_occ_fauna$source_id)) # 102563
+length(unique(tsc_occ_fauna$source_id)) # 102563 on Thur 21st, now 102366 on Fri 22nd
 
+## Check for duplicates
 tsc_occ_fauna_duplicate_source_ids <- tsc_occ_fauna %>%
-  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
+  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])])) #3797 on Fri 22nd
+
+#### Identify missing tae in tsc\_tae
+tfa_tae_create <- tfa_tae %>% 
+  dplyr::anti_join(tsc_occ_fauna, by = "source_id") #2448
 
 tfa_tae_update <- tfa_tae %>% 
-  dplyr::right_join(tsc_occ_fauna, by = "source_id")
+  dplyr::semi_join(tsc_occ_fauna, by = "source_id") #42343
 
 ## Upload the missing tfa_tae to tsc_tae
-tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points")
+tfa_tae_create_res <- tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 # Compare legacy from TFA to migrated data from TSC
@@ -2014,7 +2000,7 @@ IUCN 2012
 #### IUCN 2012
 tsc_listing_cat_iucn2012 %>%
   dplyr::anti_join(tfa_listing_cat_iucn2012, by = "taxon") %>%
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 IUCN 2001
@@ -2023,7 +2009,7 @@ IUCN 2001
 #### IUCN 2001
 tsc_listing_cat_iucn2001 %>% 
   dplyr::anti_join(tfa_listing_cat_iucn2001,by = "taxon") %>% 
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 IUCN 1994
@@ -2032,7 +2018,7 @@ IUCN 1994
 #### IUCN 1994
 tsc_listing_cat_iucn1994 %>% 
   dplyr::anti_join(tfa_listing_cat_iucn1994,by = "taxon") %>% 
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 WAWCA
@@ -2041,7 +2027,7 @@ WAWCA
 #### WAWCA
 tsc_listing_cat_wawca %>% 
   dplyr::anti_join(tfa_listing_cat_wawca,by = "taxon") %>% 
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 WAPS
@@ -2050,7 +2036,7 @@ WAPS
 #### WAPS
 tsc_listing_cat_waps %>% 
   dplyr::anti_join(tfa_listing_cat_waps,by = "taxon") %>% 
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 SPFN
@@ -2059,7 +2045,7 @@ SPFN
 #### SPFN
 tsc_listing_cat_spfn %>% 
   dplyr::anti_join(tfa_listing_cat_spfn,by = "taxon") %>% 
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 EPBC
@@ -2068,7 +2054,7 @@ EPBC
 #### EPBC
 tsc_listing_cat_epbc %>% 
   dplyr::anti_join(tfa_listing_cat_epbc,by = "taxon") %>% 
-  reactable::reactable(filterable = T)
+  rt
 ```
 
 ## Occurrences
@@ -2117,7 +2103,7 @@ tfa_skim <- tfa_occ %>% skimr::skim()
 tfa_skim %>%
   filter(n_missing > 0) %>%
   # select(-stat, -level, -formatted) %>%
-  reactable::reactable(filterable = TRUE)
+  rt
 
 # Big Fauna: taxa with a lot of sightings
 tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::arrange(-n) %>% filter(n>400) %>% ungroup()
@@ -2128,7 +2114,7 @@ tfa_tae_big <- tfa_tae %>% dplyr::group_by(taxon) %>% dplyr::tally() %>% dplyr::
 ```{r missing orig_dates}
 tfa_occ_no_date <- tfa_occ %>% 
     filter(orig_date == "")
-tfa_occ_no_date %>% reactable::reactable()
+tfa_occ_no_date %>% rt
 ```
 There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing an orig_date.
 
@@ -2137,18 +2123,19 @@ There are `r nrow(tfa_occ_no_date)` distinct scientific fauna names missing an o
 ```{r missing_orig_times}
 tfa_occ_no_time<- tfa_occ %>% 
     filter(orig_time == "")
-tfa_occ_no_time %>% reactable::reactable()
+tfa_occ_no_time %>% rt
 ```
 There are `r nrow(tfa_occ_no_time)` distinct scientific fauna names missing an orig_time.
 
-#### Default encountered_on in tfa_tae
+#### Default date/times
 Orig_date was used to populate the datetime field in tfa_occ and encountered_on in 
 tfa_tae. Records with no date/time for the encountered_on field were given a 
 default datetime. The records below are those.
 
 ```{r default_encountered_on}
 tfa_tae_default_datetime <- tfa_tae %>% 
-  filter(encountered_on == "1900-01-01 00:00:00")
+  filter(encountered_on == "1900-01-01 00:00:00+08:00") %>% 
+  rt
 ```
 
 #### Missing coordinates
@@ -2156,17 +2143,7 @@ tfa_tae_default_datetime <- tfa_tae %>%
 ```{r missing_coordinates}
 tfa_occ_no_latlng <- tfa_occ %>% 
     filter(is.na(latitude) | is.na(longitude))
-tfa_occ_no_latlng %>% reactable::reactable()
-
-# tfa_occ_missing_name_id <- tfa_occ %>% 
-#   filter(is.na(name_id)) #1
-# 
-# tfa_occ_missing_lat_or_long <- tfa_occ %>% 
-#   filter(is.na(latitude) |
-#             is.na(longitude)) #3
-
-# The above eight records are the eight records we remove from tfa_occ prior 
-# to creating tfa_tae and are therefore not migrated. Amy to correct asap- email her.
+tfa_occ_no_latlng %>% rt
 ```
 
 There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitude or longitude.
@@ -2175,7 +2152,7 @@ There are `r nrow(tfa_occ_no_latlng)` distinct fauna records with missing latitu
 tfa_occ_no_latlng_w_ne <- tfa_occ %>% 
   filter(is.na(latitude) | is.na(longitude)) %>% 
   filter((northing != "NA") | (easting!= "NA"))
-tfa_occ_no_latlng_w_ne %>% reactable::reactable()
+tfa_occ_no_latlng_w_ne %>% rt
 ```
 
 There are `r nrow(tfa_occ_no_latlng_w_ne)` distinct fauna records with missing latitude or longitude, which have northings and eastings.
@@ -2193,7 +2170,7 @@ datum_tally <- tfa_occ %>%
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>% 
   ungroup()
-datum_tally %>% reactable::reactable()
+datum_tally %>% rt
 ```
 
 There are `r nrow(datum_tally)` different datums used across all distinct fauna records. 
@@ -2216,9 +2193,7 @@ Occurrence query should show hints linking to current / legal names and their hi
 
 ```{r show_tfa_occ_missing_name_id}
 tfa_occ_no_nameid <- tfa_occ %>% 
-    filter(name_id == 0) %>% 
-    select(scientific_name) %>% 
-    unique()
+    filter(is.na(name_id))
 tfa_occ_no_nameid %>% rt
 ```
 
@@ -2228,9 +2203,7 @@ There are `r nrow(tfa_occ_no_nameid)` distinct scientific fauna names missing a 
 
 ```{r show_tfa_occ_missing_species_code}
 tfa_occ_no_specode <- tfa_occ %>% 
-    filter(species_code == 0) %>% 
-    select(scientific_name) %>% 
-    unique()
+    filter(is.na(species_code)) 
 tfa_occ_no_nameid %>% rt
 ```
 
@@ -2365,15 +2338,6 @@ tfa_tae_tsc_tally <- tfa_tae_tally %>%
   filter(tfa_tae != tsc_occ)
 # tfa_tae_tsc_tally %>% rt 
 # TODO cast sfc to tbl_df
-
-## Check for duplicates
-missing <- tfa_tae %>% 
-  dplyr::filter(taxon == 48070)
-to_many <- tsc_occ_fauna %>% 
-  dplyr::filter(taxon == 48070)
-extra <- missing %>% 
-  dplyr::anti_join(to_many, by = "source_id")
-
 ```
 
 ### `tfa_occ` names not in `tfa_tae`
