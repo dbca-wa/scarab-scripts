@@ -50,24 +50,23 @@ on the DBCA data catalogue, then extracted and transformed.
 # Cached data from TFL database on CKAN - delete to force refresh
 tfl_file <- here::here("data/tfl.Rdata")
 
-if (file.exists(tfl_file)) {
-  load(tfl_file)
-} else {
-  tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd", verbose = T)
-  tfl_file <- here::here("data", "tfl.Rdata")
-save(tfl_data, file=tfl_file)
-}
-
-snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
-  ckanr::resource_show() %>%
-  magrittr::extract2("last_modified") %>%
-  lubridate::as_datetime() %>%
-  lubridate::with_tz("Australia/Perth")
-
 # Cached data from TSC - delete to force refresh
 # datafile_tsc_flora <- here::here("data", "etl_flora_tsc.Rda")
 tsc_cl_flora_datafile <- here::here("data/tsc_cl_flora.RData")
 tsc_occ_flora_datafile <- here::here("data/tsc_tae_flora.RData")
+
+if (file.exists(tfl_file)) {
+  load(tfl_file)
+} else {
+  tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd", verbose = T)
+  snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
+    ckanr::resource_show() %>%
+    magrittr::extract2("last_modified") %>%
+    lubridate::as_datetime() %>%
+    lubridate::with_tz("Australia/Perth")
+save(tfl_data, snapshot_last_updated, file=tfl_file)
+}
+
 
 lookups <-  tfl_data$DRF_LOOKUP_TERMS
 
@@ -261,7 +260,6 @@ names_pop_vegclass <- as.data.frame(names(pop_vegclass))
 ## Conservation listings
 
 ```{r get_tfl_cl}
-names(tfl_data$DRF_TAXON_CONSV_LISTINGS)
 tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
   dplyr::transmute(
     txn_list_id = TXN.LIST.ID %>% as.character(),
@@ -303,9 +301,9 @@ tfl_cons_listing <- tfl_data$DRF_TAXON_CONSV_LISTINGS %>%
 # tfl_cons_listing[1:100, ] %>% rt
 readr::write_csv(tfl_cons_listing, path = here::here("data","tfl_cons_listing.csv"))
 
-flcl_file <- here::here("data", "tfl_cons_listings.Rdata")
-save(tfl_cons_listing, file=flcl_file)
-if (file.exists(flcl_file)) load(flcl_file)
+tfl_cl_datafile <- here::here("data", "tfl_cons_listings.Rdata")
+save(tfl_cons_listing, file=tfl_cl_datafile)
+if (file.exists(tfl_cl_datafile)) load(tfl_cl_datafile)
 
 # ETL condensed criteria mixed with free text, therefore must be manually mapped
 all_crit_map <- tfl_cons_listing %>%
@@ -471,8 +469,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     classification_code = CLASSIFICATION.CODE %>% as.character(),
     florabus_ind = FLORABUS.IND %>% as.character(),
     licence = LICENCE %>% as.character()
-  ) %>%
-  invisible()
+  )
 
 # occ_liasons <- tfl_data$DRF_LIAISONS %>%
 #   dplyr::transmute(
@@ -523,12 +520,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
 #     row_num = ROW.NO %>% as.integer()
 #     )
 
-## Create occurrence data tables for each card in TSC
-has_name_id_and_location <- . %>% 
-  dplyr::filter(
-    !is.na(name_id) & !is.na(latitude) & !is.na(longitude) & name_id!=0
-  )
-
+## Occurence observations
 hab_comp <- tfl_occ %>%
    has_name_id_and_location %>% 
   dplyr::transmute(
@@ -548,6 +540,7 @@ hab_comp <- tfl_occ %>%
            soil_colour != "" | 
            drainage != "" |  
            aspect != "")
+# TODO fiter correct?
 
 hab_comp %>%
   dplyr::select(landform) %>%
@@ -691,6 +684,7 @@ plant_count <- tfl_occ %>%
       plant_condition != "" | 
       comments != ""
   )
+# TODO filter correct?
 
 plant_count %>%
   dplyr::select(plant_count_method) %>%
@@ -837,8 +831,6 @@ tfl_tae <- tfl_occ %>%
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   ) %>% 
   base::replace(., is.na(.), "") 
-
-# names_tfl_occ <- (as.data.frame(names(tfl_occ)))
 
 ## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
 # tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
@@ -1567,7 +1559,7 @@ tfl_plant_count_res <- tfl_plant_count[1:10000,] %>%
 tfl_hab_comp_res <- tfl_hab_comp %>%
   wastd_occ_obs_post(obstype="HabitatComposition")
 
-setdiff(tfl_phys_sample$source_id,tfl_tae$source_id)
+# setdiff(tfl_phys_sample$source_id,tfl_tae$source_id)
 
 # Export as (confidential) test data for API
 tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
@@ -1614,11 +1606,11 @@ if (file.exists(tsc_cl_flora_datafile)) {
 
 ## Occurrences
 
-We get Taxon occurrences with their point representations from TSC through the
+We get taxon occurrences with their point representations from TSC through the
 API endpoint
 [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
 
-Currently, all Flora occurrences are georeferenced only with point
+Currently, all Flora occurrences are geo-referenced only with point
 coordinates, not polygons.
 
 We then get TSC Areas and split them into DBCA Regions and Districts. Caveat:
@@ -1643,8 +1635,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
     dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_taxa_flora <- "taxon" %>%
-    wastdr::wastd_GET(api_url = prod, # can be removed?
-                      query = list(paraphyletic_groups = 21)) %>%
+    wastdr::wastd_GET(query = list(paraphyletic_groups = 21)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
 
@@ -1662,8 +1653,8 @@ if (file.exists(tsc_occ_flora_datafile)) {
     dplyr::transmute(district_id = pk, district_name = name)
   
   tsc_occ_flora <- tsc_tae %>%
-    sf::st_join(regions) %>%
-    sf::st_join(districts) %>%
+    # sf::st_join(regions) %>%
+    # sf::st_join(districts) %>%
     dplyr::mutate(taxon = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_flora, by = "taxon")
   
@@ -1680,7 +1671,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
 ```
 
 
-```{r show_duplicates_and_missing_tae}
+```{r show_duplicates_and_missing_tae, eval=FALSE}
 # All sources are flora (11)
 unique(tsc_occ_flora$source)
 length(unique(tsc_occ_flora$source_id)) # 43050 on Fri 22nd
@@ -1691,13 +1682,13 @@ tsc_occ_flora_dup <- tsc_occ_flora %>%
 
 #### Identify missing tae in tsc\_tae
 tfl_tae_create <- tfl_tae %>% 
-  dplyr::anti_join(tsc_occ_flora, by = "source_id") #2448
+  dplyr::anti_join(tsc_occ_flora, by = "source_id") #2448 # 2211 # 2293
 
 tfl_tae_update <- tfl_tae %>% 
-  dplyr::semi_join(tsc_occ_flora, by = "source_id") #42343
+  dplyr::semi_join(tsc_occ_flora, by = "source_id") #42343 # 42580 # 42498
 
 ## Upload the missing tfa_tae to tsc_tae
-tfl_tae_create_res <- tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 # Compare legacy to migrated data
@@ -1712,7 +1703,7 @@ Legacy data snapshot used for TFL was updated last on `r snapshot_last_updated`.
 
 ## Summary statistics
 
-Check unique number of species by name\_id. Check unique number of observations
+Check unique number of species by `name_id`. Check unique number of observations
 and identify observations missing from TSC compared to TFL.
 
 ```{r make_tfl_summary}
@@ -1735,7 +1726,7 @@ TFL has `r nrow(tfl_tcl)` conservation listings of `r tfl_tcl_unique_taxa`
 unique taxa. TSC has `r nrow(tsc_tcl_flora)` flora conservation listings of
 `r tsc_tcl_unique_taxa` unique taxa.
 
-### tfl\_tcl conservation listings not in tsc\_tcl\_flora
+### `tfl_tcl` conservation listings not in `tsc_tcl_flora`
 
 Any records in the following table indicate conservation listings in TFL that
 were not migrated into TSC.
@@ -1744,7 +1735,7 @@ were not migrated into TSC.
 tfl_tcl %>% dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>% rt
 ```
 
-### tsc\_tcl\_flora conservation listings not in tfl\_tcl
+### `tsc_tcl_flora` conservation listings not in `tfl_tcl`
 
 The following table shows any conservation listings in TSC which are not in TFL.
 Because there are more taxa in TSC than TFL, taxa with no `source_id` have also
@@ -1757,9 +1748,9 @@ tsc_tcl_flora %>%
   rt
 ```
 
-### tfl\_tcl listed phrase names
+### `tfl_tcl` listed phrase names
 
-Some TFL cons listings have a name\_id of 0. These are phrase names and require
+Some TFL cons listings have a `name_id` of 0. These are phrase names and require
 to be assigned the `name_id` of the published name, once the published name is
 known and entered into WACensus, then propagated into TSC.
 
@@ -1819,8 +1810,8 @@ cl_corner_dates %>% rt
 
 Summary of the number of conservation listings for each list.
 
-Discrepancies in numbers indicate the need for a closer review of category\_code
-and criteria\_code in TFL.
+Discrepancies in numbers indicate the need for a closer review of `category_code`
+and `criteria_code` in TFL.
 
 Equality of numbers does not prove absence of equal numbers of false positives
 and false negatives.
@@ -1957,15 +1948,15 @@ IUCN 2001
 
 ```{r show_tsc_tcl_not_in_tfl_iucn2001}
 tsc_listing_cat_iucn2001 %>% 
-  dplyr::anti_join(tfl_listing_cat_iucn2001, by = "source_id") %>% 
-  rt
+  dplyr::anti_join(dplyr::select(tfl_listing_cat_iucn2001, -"category"), by = "source_id")
 ```
 
 IUCN 1994
 
 ```{r show_tsc_tcl_not_in_tfl_iucn1994}
 tsc_listing_cat_iucn1994 %>% 
-  dplyr::anti_join(tfl_listing_cat_iucn1994, by = "source_id") %>% 
+  dplyr::select(-"category", -"criteria") %>% 
+  dplyr::anti_join(dplyr::select(tfl_listing_cat_iucn1994, -"category", -"criteria"), by = "source_id") %>% 
   rt
 ```
 
@@ -1973,6 +1964,7 @@ IUCN Priority
 
 ```{r show_tsc_tcl_not_in_tfl_prio}
 tsc_listing_cat_priority %>% 
+  dplyr::select(-"category", -"criteria") %>% 
   dplyr::anti_join(tfl_listing_cat_priority, by = "source_id") %>% 
   rt
 ```
@@ -1981,6 +1973,7 @@ EPBC
 
 ```{r  show_tsc_tcl_not_in_tfl_epbc}
 tsc_listing_cat_epbc %>%
+  dplyr::select(-"category", -"criteria") %>% 
   dplyr::anti_join(tfl_listing_cat_epbc, by = "source_id") %>% 
   rt
 ```
@@ -2037,9 +2030,9 @@ tfl_occ_no_datetime<- tfl_occ %>%
   dplyr::filter(created_date == "")
 tfl_occ_no_datetime %>% rt
 
-tfl_tae_no_obs_date <- tfl_occ %>%
-  dplyr::filter(observation_date == "") 
-
+# tfl_tae_no_obs_date <- tfl_occ %>%
+#   dplyr::filter(observation_date == "") 
+#   TODO
 ```
 
 #### Missing coordinates
@@ -2183,7 +2176,7 @@ Currently, we assume that all occurrence records in the legacy databases are
 trustworthy. If this weren't the case, this analysis should exclude the
 non-trustworthy records.
 
-### tfl\_occ occurrences not in tfl\_tae
+### `tfl_occ` occurrences not in `tfl_tae`
 
 Any records in the following table indicate occurrences in `tfl_occ` that are 
 not in `tfl_tae`.
@@ -2280,7 +2273,7 @@ tfl_tae_tsc_occ_tally <- tfl_tae_tally %>%
 # TODO cast sfc to tbl_df
 ```
 
-### tfl\_occ names not in tfl\_tae
+### `tfl_occ` names not in `tfl_tae`
 
 ```{r show_name_mismatches_tfl_tae_to_tsc_tae}
 missing_taxa_tfl_tae <- tfl_occ %>%
@@ -2298,7 +2291,7 @@ There are `r nrow(missing_taxa_tfl_tae)` taxon records missing from `tsc_tae` wh
 compared to `tfa_tae`. These records are attributed to
 `r nrow(missing_taxa_tfl_tae_unique)` unique species.
 
-### tfl\_tae names not in tsc\_occ\_flora
+### `tfl_tae` names not in `tsc_occ_flora`
 
 ```{r show_name_mismatches_tfl_tae_to_tsc_taxa_flora}
 missing_taxa_tsc <- tfl_tae %>%
