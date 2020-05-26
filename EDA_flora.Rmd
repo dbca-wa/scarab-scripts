@@ -1682,7 +1682,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
 ```
 
 
-```{r show_duplicates_and_missing_tae}
+```{r show_duplicates_and_missing_tae, eval=FALSE}
 ## Check for duplicates
 tsc_flora_duplicates <- here::here("data/tsc_tae_flora_duplicates.RData")
 
@@ -1707,7 +1707,7 @@ tfl_tae_update <- tfl_tae %>%
   dplyr::semi_join(tsc_occ_flora, by = "source_id") #42343 # 42580 # 42498
 
 ## Upload the missing tfa_tae to tsc_tae
-tfl_tae_create_res <- tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 # Compare legacy to migrated data
@@ -1722,7 +1722,7 @@ Legacy data snapshot used for TFL was updated last on `r snapshot_last_updated`.
 
 ## Summary statistics
 
-Check unique number of species by name\_id. Check unique number of observations
+Check unique number of species by `name_id`. Check unique number of observations
 and identify observations missing from TSC compared to TFL.
 
 ```{r make_tfl_summary}
@@ -1745,7 +1745,7 @@ TFL has `r nrow(tfl_tcl)` conservation listings of `r tfl_tcl_unique_taxa`
 unique taxa. TSC has `r nrow(tsc_tcl_flora)` flora conservation listings of
 `r tsc_tcl_unique_taxa` unique taxa.
 
-### tfl\_tcl conservation listings not in tsc\_tcl\_flora
+### `tfl_tcl` conservation listings not in `tsc_tcl_flora`
 
 Any records in the following table indicate conservation listings in TFL that
 were not migrated into TSC.
@@ -1754,7 +1754,7 @@ were not migrated into TSC.
 tfl_tcl %>% dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>% rt
 ```
 
-### tsc\_tcl\_flora conservation listings not in tfl\_tcl
+### `tsc_tcl_flora` conservation listings not in `tfl_tcl`
 
 The following table shows any conservation listings in TSC which are not in TFL.
 Because there are more taxa in TSC than TFL, taxa with no `source_id` have also
@@ -1767,9 +1767,9 @@ tsc_tcl_flora %>%
   rt
 ```
 
-### tfl\_tcl listed phrase names
+### `tfl_tcl` listed phrase names
 
-Some TFL cons listings have a name\_id of 0. These are phrase names and require
+Some TFL cons listings have a `name_id` of 0. These are phrase names and require
 to be assigned the `name_id` of the published name, once the published name is
 known and entered into WACensus, then propagated into TSC.
 
@@ -1829,8 +1829,8 @@ cl_corner_dates %>% rt
 
 Summary of the number of conservation listings for each list.
 
-Discrepancies in numbers indicate the need for a closer review of category\_code
-and criteria\_code in TFL.
+Discrepancies in numbers indicate the need for a closer review of `category_code`
+and `criteria_code` in TFL.
 
 Equality of numbers does not prove absence of equal numbers of false positives
 and false negatives.
@@ -2195,7 +2195,7 @@ Currently, we assume that all occurrence records in the legacy databases are
 trustworthy. If this weren't the case, this analysis should exclude the
 non-trustworthy records.
 
-### tfl\_occ occurrences not in tfl\_tae
+### `tfl_occ` occurrences not in `tfl_tae`
 
 Any records in the following table indicate occurrences in `tfl_occ` that are 
 not in `tfl_tae`.
