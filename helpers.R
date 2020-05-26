@@ -103,7 +103,7 @@ dl_mdbzip <- function(resource_id,
     if (!fs::dir_exists(destdir)) {fs::dir_create(destdir)}
 
     r <- ckanr::resource_show(resource_id)
-    res_url <- r$url
+    res_url <- r$url %>% stringr::str_replace("dpaw", "dbca")
     res_fn <- r$url %>% fs::path_file()
     res_file <- fs::path(fs::path(destdir, res_fn))
 
