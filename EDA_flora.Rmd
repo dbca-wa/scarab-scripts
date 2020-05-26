@@ -400,18 +400,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     quad_num_total = QUAD.NUM.TOTAL %>% as.character(),
 
     # survey / site visit
-    observation_date = OBSERVATION.DATE %>% 
-            lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 19L) %>% 
-            lubridate::as_datetime(.) %>%
-            lubridate::with_tz(tzone = tz),
-        # ifelse(
-        # is.na(OBSERVATION.DATE),
-        # default_date,
-        # OBSERVATION.DATE %>% 
-        #     lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 18L) %>% 
-        #     lubridate::as_datetime(.) %>%
-        #     with_tz(tzone = tz)
-        # ),
+    observation_date = OBSERVATION.DATE %>% parse_as_datetime(),
     svy_extent = SVY.EXTENT %>% as.character(),
     svy_effort_area = SVY.EFFORT.AREA %>% as.character(),
     svy_effort_time = SVY.EFFORT.TIME %>% as.character(),
@@ -1692,21 +1681,13 @@ if (file.exists(tsc_occ_flora_datafile)) {
 
 
 ```{r show_duplicates_and_missing_tae}
+# All sources are flora (11)
+unique(tsc_occ_flora$source)
+length(unique(tsc_occ_flora$source_id)) # 43050 on Fri 22nd
+
 ## Check for duplicates
-tsc_flora_duplicates <- here::here("data/tsc_tae_flora_duplicates.RData")
-
-tsc_tae_dup <- tsc_tae %>%
-  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
-
-tsc_tae_dup_2 <- tsc_tae %>% group_by(source_id) %>% filter(n()>1)
-
 tsc_occ_flora_dup <- tsc_occ_flora %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
-
-save(tsc_tae_dup,
-     tsc_occ_flora_dup,
-     file = tsc_flora_duplicates,
-       compress = "xz")
 
 #### Identify missing tae in tsc\_tae
 tfl_tae_create <- tfl_tae %>% 
