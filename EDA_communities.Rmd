@@ -146,7 +146,9 @@ com_recommendations <- tec$COMMUNITY_RECOMMENDATIONS %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(recommendations, by = "recommendation_code")
 
-readr::write_csv(com_recommendations, path = here::here("data", "tec_com_recommendations.csv"))
+readr::write_csv(
+  com_recommendations, 
+  path = here::here("data", "tec_com_recommendations.csv"))
 ```
 
 ### Community Publications
@@ -170,7 +172,9 @@ com_publications <- tec$COMMUNITY_PUBLICATIONS %>%
   dplyr::left_join(publications, by = "publication_id") %>%
   dplyr::left_join(com_short, by = "com_id")
 
-readr::write_csv(com_publications, path = here::here("data", "tec_com_publications.csv"))
+readr::write_csv(
+  com_publications, 
+  path = here::here("data", "tec_com_publications.csv"))
 ```
 
 ### Community Reviews
@@ -191,7 +195,9 @@ com_reviews <- tec$COMMUNITY_REVIEWS %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(reviews, by = "review_id")
 
-readr::write_csv(com_reviews, path = here::here("data", "tec_com_reviews.csv"))
+readr::write_csv(
+  com_reviews, 
+  path = here::here("data", "tec_com_reviews.csv"))
 ```
 
 ### Community Actions
@@ -214,7 +220,9 @@ com_actions <- tec$COMMUNITY_ACTIONS %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(actions, by = "action_id")
 
-readr::write_csv(com_actions, path = here::here("data", "tec_com_actions.csv"))
+readr::write_csv(
+  com_actions, 
+  path = here::here("data", "tec_com_actions.csv"))
 ```
 
 ### Community History, Area Decline
@@ -253,12 +261,16 @@ tec_cons_crit <- tec$CRITERIA_CODES %>%
     criterion_code = CRIT.CODE %>% as.character(),
     criterion_description = CRIT.DESC %>% as.character()
   )
-readr::write_csv(tec_cons_crit, path = here::here("data", "tec_cons_crit.csv"))
+readr::write_csv(
+  tec_cons_crit, 
+  path = here::here("data", "tec_cons_crit.csv"))
 
 # Using a built-in function to turn uppercase into lowercase? Nah. Hold my beer.
 authorities <- tec$AUTHORITIES # A lookup for upper cased authorities vs lower cased authorities.
 endorsement <- tec$ENDORSED_BY # another lookup for lower case.
-readr::write_csv(endorsement, path = here::here("data", "tec_endorsement.csv"))
+readr::write_csv(
+  endorsement, 
+  path = here::here("data", "tec_endorsement.csv"))
 
 # primary
 tec_cons_listing_categories <- tec$CATEGORIES %>%
@@ -284,7 +296,6 @@ tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
   dplyr::left_join(tec_cons_crit, by = "criterion_code")
-# join com_short, criteria codes
 
 # TODO: load cons crit from IUCN RLE into TSC, map resulting codes to:
 # tec_cons_crit$criterion_code
@@ -302,7 +313,9 @@ tec_cons_listing <- tec_cons_listing_categories %>%
 ## Extract criterion_codes to manual map all criteria
 all_crit_map <- tec_cons_listing %>%
   dplyr::distinct(criterion_code)
-readr::write_csv(all_crit_map, path = here::here("data", "all_tec_conscrit.csv"))
+readr::write_csv(
+  all_crit_map, 
+  path = here::here("data", "all_tec_conscrit.csv"))
 ```
 
 ## Occurrences
@@ -312,8 +325,9 @@ reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability_id = BR.CODE %>% as.character(),
   reliability = BR.DESC %>% as.character()
 )
-
-readr::write_csv(reliability, path = here::here("data", "tec_reliability.csv"))
+readr::write_csv(
+  reliability, 
+  path = here::here("data", "tec_reliability.csv"))
 
 tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
   tibble::as_tibble() %>%
@@ -456,8 +470,9 @@ sources <- tec$SOURCES %>%
     source_code = SOURCE.CODE %>% as.character(),
     source = SOURCE.DESC %>% as.character()
   )
-
-readr::write_csv(sources, path = here::here("data", "tec_sources.csv"))
+readr::write_csv(
+  sources, 
+  path = here::here("data", "tec_sources.csv"))
 
 occ_extent <- tec$EXTENTS %>%
   dplyr::transmute(
@@ -474,7 +489,6 @@ occ_extent <- tec$EXTENTS %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(sources, by = "source_code") %>%
   dplyr::left_join(area_decline, by = "area_decline_id")
-
 ```
 
 ### Additional Data
@@ -485,8 +499,9 @@ items <- tec$ITEMS %>%
     item_code = ITEM.CODE %>% as.character(),
     item = ITEM.DESC %>% as.character()
   )
-
-readr::write_csv(items, path = here::here("data", "tec_items.csv"))
+readr::write_csv(
+  items, 
+  path = here::here("data", "tec_items.csv"))
 
 occ_additional_data <- tec$ADDITIONAL_DATA %>%
   dplyr::transmute(
@@ -509,7 +524,6 @@ readr::write_csv(maps, path = here::here("data", "tec_maps.csv"))
 
 occ_maps <- tec$OCCURRENCE_MAPS
 readr::write_csv(occ_maps, path = here::here("data", "tec_occ_maps.csv"))
-
 ```
 
 ### Biological Processes
@@ -580,7 +594,9 @@ species_roles <- tec$SPECIES_ROLES %>%
     species_role_code = SP.ROLE.CODE %>% as.character(),
     species_role = SP.ROLE.DESC %>% as.character()
   )
-readr::write_csv(species_roles, path = here::here("data", "tec_species_roles.csv"))
+readr::write_csv(
+  species_roles, 
+  path = here::here("data", "tec_species_roles.csv"))
 
 # primary data
 occ_fauna <- tec$OCCURRENCE_FAUNA %>%
@@ -620,21 +636,27 @@ impacts <- tec$THREAT_IMPACTS %>%
     impact_code = IMP.CODE %>% as.character(),
     impact = IMP.DESC %>% as.character()
   )
-readr::write_csv(impacts, path = here::here("data", "tec_impacts.csv"))
+readr::write_csv(
+  impacts, 
+  path = here::here("data", "tec_impacts.csv"))
 
 threats <- tec$THREATS %>%
   dplyr::transmute(
     threat_code = THREAT.CODE %>% as.character(),
     threat = THREAT.DESC %>% as.character()
   )
-readr::write_csv(threats, path = here::here("data", "tec_threats.csv"))
+readr::write_csv(
+  threats, 
+  path = here::here("data", "tec_threats.csv"))
 
 conditions <- tec$CONDITIONS %>%
   dplyr::transmute(
     condition_code = COND.CODE %>% as.character(),
     condition = COND.DESC %>% as.character()
   )
-readr::write_csv(conditions, path = here::here("data", "tec_conditions.csv"))
+readr::write_csv(
+  conditions, 
+  path = here::here("data", "tec_conditions.csv"))
 
 # primary
 com_threats <- tec$COMMUNITY_THREATS %>%
@@ -660,7 +682,9 @@ surveys <- tec$SURVEYS %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::mutate(source_id = glue::glue("{boundary_id}{survey_id}"))
 
-readr::write_csv(surveys, path = here::here("data", "tec_surveys.csv"))
+readr::write_csv(
+  surveys, 
+  path = here::here("data", "tec_surveys.csv"))
 
 survey_threats <- tec$SURVEY_THREATS %>%
   dplyr::transmute(
@@ -694,7 +718,9 @@ survey_conditions <- tec$SURVEY_CONDITIONS %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(conditions, by = "condition_code")
 
-readr::write_csv(survey_conditions, path = here::here("data", "tec_survey_conditions.csv"))
+readr::write_csv(
+  survey_conditions, 
+  path = here::here("data", "tec_survey_conditions.csv"))
 ```
 
 Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct survey_id's.
@@ -712,7 +738,9 @@ datum <- tec$DATUM %>%
     semi_major_axis = SEMI.MAJOR.AXIS %>% as.double(),
     inverse_flattening = INVERSE.FLATTENING %>% as.double()
   )
-readr::write_csv(datum, path = here::here("data", "tec_datum.csv"))
+readr::write_csv(
+  datum, 
+  path = here::here("data", "tec_datum.csv"))
 
 sites <- tec$SITES %>%
   dplyr::transmute(
@@ -739,7 +767,9 @@ sites <- tec$SITES %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(datum, by = "datum_code")
 
-readr::write_csv(sites, path = here::here("data", "tec_sites.csv"))
+readr::write_csv(
+  sites, 
+  path = here::here("data", "tec_sites.csv"))
 
 site_visit <- tec$SITE_VISITS %>%
   dplyr::transmute(
@@ -835,8 +865,9 @@ recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
   ) %>%
   dplyr::left_join(com_short, by = "com_id")
 
-readr::write_csv(recovery_plans, path = here::here("data", "tec_recovery_plans.csv"))
-
+readr::write_csv(
+  recovery_plans, 
+  path = here::here("data", "tec_recovery_plans.csv"))
 ```
 
 ## Occurrence Boundaries
@@ -1176,7 +1207,7 @@ tec_cl_tsc <- tec_tsc %>%
 
 ```{r load_tec_tcl, eval=FALSE}
 # LONG RUNNING UPLOAD
-tec_cl_tsc %>%
+tec_cl_tsc_res <- tec_cl_tsc %>%
   wastdr::wastd_POST("community-conservationlisting")
 ```
 
@@ -1321,16 +1352,40 @@ save(tsc_cae_data,
      file = tsc_occ_community_datafile, 
      compress="xz")
 }
+```
 
-#### Identify missing tae in tsc\_tae
+
+```{r show_duplicates_and_missing_tae, eval = FALSE}
+# All sources are communities ()
+unique(tsc_community_sites$source)
+length(unique(tsc_community_sites$source_id))
+
+unique(tsc_community_boundaries$source)
+length(unique(tsc_community_boundaries$source_id))
+
+## Check for duplicates
+tsc_community_sites_duplicate_source_ids <- tsc_community_sites %>%
+  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])])) 
+tsc_community_boundaries_duplicate_source_ids <- tsc_community_boundaries %>%
+  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])])) 
+
+#### Identify missing tae in tsc\_cae
 site_cae_create <- tec_site_cae %>% 
+  dplyr::anti_join(tsc_community_sites, by = "source_id")
+
+site_cae_update <- tec_site_cae %>% 
+  dplyr::right_join(tsc_community_boundaries, by = "source_id")
+
+bdy_cae_create <- tec_bdy_cae %>% 
   dplyr::anti_join(tsc_community_sites, by = "source_id")
 
 bdy_cae_update <- tec_bdy_cae %>% 
   dplyr::right_join(tsc_community_boundaries, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points")
+site_cae_create_res <- site_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
+
+bdy_cae_create_res <- bdy_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
 ```
 
 # Compare legacy to migrated data
