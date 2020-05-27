@@ -918,7 +918,7 @@ mgmt_act <- tfl_data$DRF_POP_MGMT_ACTIONS %>%
   )
 ```
 
-## Fire History
+## Fire Response
 
 ```{r make_fire_hist}
 fire_sum <- tfl_data$DRF_FIRE_SUMMARIES %>%
@@ -1017,12 +1017,12 @@ tfl_tcl <- tfl_cons_listing %>%
   invisible()
 ```
 
-## Observation Groups criteria
+## Observation Groups lookups
 
 Occurrence lookup data from TSC are downloaded from the TSC API and transformed
 into a usable format for manual mapping to TFL.
 
-A manual step annotated lookup criteria exported from TSC to occurrence data in
+A manual step annotated lookup values exported from TSC to occurrence data in
 TFL in a spreadsheet.
 
 ```{r get_tsc_occ_lookups, message=FALSE}
@@ -1329,7 +1329,9 @@ tfl_listing_cat_priority <- tfl_tcl %>%
     effective_to = date_delisted,
     review_due = recovery_plan_expiry_date,
     # check
-    last_reviewed_on = file_last_updated,
+    last_reviewed_on = NA,
+    comments = glue::glue("Occurences last reviewed on: {file_last_updated}."),
+    
     taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
@@ -1364,7 +1366,8 @@ tfl_listing_cat_epbc <- tfl_tcl %>%
     effective_to = date_delisted,
     review_due = recovery_plan_expiry_date,
     # check
-    last_reviewed_on = file_last_updated,
+    last_reviewed_on = NA,
+    comments = glue::glue("Occurences last reviewed on: {file_last_updated}."),
     taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
@@ -1390,7 +1393,8 @@ tfl_listing_cat_iucn1994 <- tfl_tcl %>%
     effective_to = date_delisted,
     review_due = recovery_plan_expiry_date,
     # check
-    last_reviewed_on = file_last_updated,
+    last_reviewed_on = NA,
+    comments = glue::glue("Occurences last reviewed on: {file_last_updated}."),
     taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
@@ -1415,7 +1419,8 @@ tfl_listing_cat_iucn2001 <- tfl_tcl %>%
     effective_to = date_delisted,
     review_due = recovery_plan_expiry_date,
     # check
-    last_reviewed_on = file_last_updated,
+    last_reviewed_on = NA,
+    comments = glue::glue("Occurences last reviewed on: {file_last_updated}."),
     taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
@@ -1440,7 +1445,8 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
     effective_to = date_delisted,
     review_due = recovery_plan_expiry_date,
     # check
-    last_reviewed_on = file_last_updated,
+    last_reviewed_on = NA,
+    comments = glue::glue("Occurences last reviewed on: {file_last_updated}."),
     taxon = name_id %>% as.character(),
     category = tsc_category_id %>% as.list(),
     criteria = tsc_criteria
@@ -1569,7 +1575,8 @@ tfl_plant_count %>% readr::write_csv(path = here::here("data/tfl_plant_count.csv
 
 ## Conservation Documents
 
-## Fire History
+## Fire Response
+<!-- Note: high prio to ingest this data as new (to be built) occ obs card. -->
 
 ## Conservation Threats and Actions
 
