@@ -18,11 +18,12 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
-default_date <- lubridate::parse_date_time(
-  "1900-01-01 00:00:00", 
-  orders = "ymd HMS", 
-  tz = "Australia/Perth"
-)
+
+# Cached data from TSC - delete to force refresh
+tec_file <- here::here("data", "tec.Rdata")
+tsc_cl_community_datafile <- here::here("data/tsc_cl_community.RData")
+tsc_occ_community_datafile <- here::here("data/tsc_tae_community.RData")
+
 ```
 
 # Context
@@ -45,16 +46,17 @@ on the DBCA data catalogue, then extracted and transformed.
 
 ## Communities
 
-```{r get_tec, message=FALSE}
-# Cached data from TFL database on CKAN - delete to force refresh
-tec_file <- here::here("data/tec.Rdata")
-
+```{r get_tec}
 if (file.exists(tec_file)) {
   load(tec_file)
 } else {
   tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
-  tec_file <- here::here("data", "tec.Rdata")
-save(tec, file=tec_file)
+  snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
+    ckanr::resource_show() %>%
+    magrittr::extract2("last_modified") %>%
+    lubridate::as_datetime() %>%
+    lubridate::with_tz("Australia/Perth")
+save(tec, snapshot_last_updated, file=tec_file)
 }
 
 tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
@@ -62,50 +64,42 @@ tec_site <- geojsonsf::geojson_sf("data/tec_sites.geojson")
 # tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
 # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 
-snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
-  ckanr::resource_show() %>%
-  magrittr::extract2("last_modified") %>%
-  lubridate::as_datetime() %>%
-  lubridate::with_tz("Australia/Perth")
-
-# Cached data from TSC - delete to force refresh
-# datafile_tsc_comm <- here::here("data", "etl_comm_tsc.Rda")
-tsc_cl_community_datafile <- here::here("data/tsc_cl_community.RData")
-tsc_occ_community_datafile <- here::here("data/tsc_tae_community.RData")
-
-
+# Lookup tables
 former_range <- tec$FORMER_RANGES %>%
   dplyr::transmute(
     former_range_code = FORMER.RANGE %>% as.character(),
     former_range = FORMER.RANGE.DESC %>% as.character()
   )
-# make_coldef(former_range)
-readr::write_csv(former_range, path = here::here("data", "tec_former_range.csv"))
+readr::write_csv(
+  former_range, 
+  path = here::here("data", "tec_former_range.csv"))
 
 range_decline <- tec$RANGE_DECLINE %>%
   dplyr::transmute(
     range_decline_id = RANGE.DECLINE %>% as.integer(),
     range_decline = RANGE.DECLINE.DESC %>% as.character()
   )
-# make_coldef(range_decline)
-readr::write_csv(range_decline, path = here::here("data", "tec_range_decline.csv"))
+readr::write_csv(
+  range_decline, 
+  path = here::here("data", "tec_range_decline.csv"))
 
 occ_decline <- tec$OCCURRENCES_DECLINE %>%
   dplyr::transmute(
     occ_decline_id = OCC.DECLINE %>% as.integer(),
     occ_decline = OCC.DECLINE.DESC %>% as.character()
   )
-# make_coldef(occ_decline)
-readr::write_csv(occ_decline, path = here::here("data", "tec_occ_decline.csv"))
+readr::write_csv(
+  occ_decline, 
+  path = here::here("data", "tec_occ_decline.csv"))
 
 status <- tec$STATUS %>%
   dplyr::transmute(
     status_code = STATUS.CODE %>% as.character(),
     status = STATUS.DESC %>% as.character()
   )
-# status %>% make_coldef()
-# unique(status$status_code) # "BELIEVED"   "IDENTIFIED" - where used?
-readr::write_csv(status, path = here::here("data", "tec_status.csv"))
+readr::write_csv(
+  status, 
+  path = here::here("data", "tec_status.csv"))
 
 communities <- tec$COMMUNITIES %>%
   tibble::as_tibble() %>%
