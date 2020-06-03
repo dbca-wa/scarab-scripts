@@ -1174,7 +1174,7 @@ transformed into a useable format for manual mapping to tec.
 A manual step annotated legacy conservation criteria exported from TEC to
 conservation criteria IDs in TSC in a spreadsheet.
 
-```{r get_tsc_ccl, message = FALSE}
+```{r get_tsc_ccl, message = FALSE,, eval = FALSE}
 tsc_conslists_com <- "conservationlist" %>%
   wastdr::wastd_GET(
     api_url = prod,
@@ -1254,7 +1254,7 @@ into a usable format for manual mapping to TEC.
 A manual step annotated lookups exported from TSC to 
 occurrence data in TEC in a spreadsheet.
 
-```{r get_tsc_occ_lookups, message=FALSE}
+```{r get_tsc_occ_lookups, message=FALSE, eval = FALSE}
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
@@ -1822,7 +1822,7 @@ tec_occ_no_sit %>% rt
 
 ### Missing date/time cae
 
-```{r show_tec_occ_missing datetime}
+```{r show_tec_cae_missing datetime}
 # Surveys
 tec_bdy_cae_no_encountered_on <- tec_bdy_cae_build %>%
   dplyr::filter(is.na(encountered_on))
@@ -1949,7 +1949,7 @@ confirms the...
 Any records in the following table indicate occurrences in `tec_site_cae` that are not 
 in `tsc_community_sites`.
 
-```{r show_tec_bdy_cae_missing_occurrences}
+```{r show_tec_site_cae_missing_occurrences}
 missing_occ_tsc_community_sites <- tec_site_cae %>%
   dplyr::anti_join(tsc_community_sites, by = "source_id")
 
