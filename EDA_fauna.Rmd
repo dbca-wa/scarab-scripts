@@ -942,6 +942,7 @@ tsc_det_meth <- wastdr::wastd_GET("lookup-detectionmethod") %>%
   readr::write_csv(path = here::here("data", "tsc_det_meth.csv"))
 
 # Load manual mapping of TFA lookup criteria from CSV file, and join to relevant table
+
 # Habitat composition
 tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
   readr::read_csv(
@@ -1316,8 +1317,10 @@ if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
 
 ## Occurrences
 
-The EOO (Extent of occurrence) is calculated as the convex hull around all recorded fauna occurrences, including fossil records.
-For further details on the methodology behind the movement of EOO data, please follow the link to the workbook.
+The EOO (Extent of occurrence) is calculated as the convex hull around all 
+recorded fauna occurrences, including fossil records.
+For further details on the methodology behind the movement of EOO data, 
+please follow the link to the workbook.
 
 ### Upload EOOs to TSC
 
@@ -1342,7 +1345,8 @@ tfa_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
 
 ### Upload TAEs to TSC
 
-A single record (taxon area encounter), or a list of (one or) many records, can be uploaded to the TSC API as follows.
+A single record (taxon area encounter), or a list of (one or) many records, 
+can be uploaded to the TSC API as follows.
 
 ```{r load_tfa_tae, eval=FALSE}
 # Test upload one, some, many to local or PROD:
@@ -1584,6 +1588,7 @@ tfa_tae_create_res <- tfa_tae_create %>% chunk_post(serializer = "occ-taxon-poin
 ```
 
 # Compare legacy from TFA to migrated data from TSC
+
 This section provides an automated comparison between original data from TFA 
 and TFA data as uploaded into TSC. 
 
@@ -1711,14 +1716,14 @@ tsc_taxa_fauna %>%
 
 ## Conservation Listing
 
-TFA has `r nrow(tfa_tcl_edit)` conservation listings of `r tfa_tcl_unique_taxa`.
+TFA has `r nrow(tfa_tcl_edit)` conservation listings of `r tfa_tcl_unique_taxa` unique taxa.
 TSC has `r nrow(tsc_tcl_fauna)` fauna conservation listings of 
 `r tsc_tcl_unique_taxa`, including animals but excluding plants.
 
-### TFA conservation listings not in TSC
+### `tfa_tcl` conservation listings not in `tsc_tcl_fauna`
 
 Any records in the following table indicate conservation listings in TFA that
-were not migrated into TSC. The species listed were likely not migrated because they do not contain list_codes or category_codes.
+were not migrated into TSC. 
 
 Already excluded are conservation listings from the excluded categories 
 "ActionPlan", "RedList", and "BCA".
@@ -1729,10 +1734,10 @@ tfa_tcl_edit %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-### TSC conservation listings not in TFA
+### `tsc_tcl_fauna` conservation listings not in `tfa_tcl`
 
 The following table shows any conservation listings in TSC which are not in TFA.
-Because there are more taxa in TSC than TFA, taxa with no `source_id` have also
+Because there are more taxa in TSC than TFA, taxa with no source\_id have also
 been removed.
 
 ```{r show_tsc_tcl_not_in_tfl}
@@ -1741,10 +1746,10 @@ tsc_tcl_fauna %>%
   reactable::reactable(filterable = TRUE)
 ```
 
-### TFA cons listed phrase names
+### `tfa_tcl` listed phrase names
 
 Some TFA cons listings have a name\_id of 0. These are phrase names and require
-to be assigned the `name_id` of the published name, once the published name is
+to be assigned the name\_id of the published name, once the published name is
 known and entered into WACensus, then propagated into TSC.
 
 ```{r show_tfa_tcl_without_nameid}
@@ -2260,10 +2265,12 @@ missing_occ_tfa_tae_unique %>% rt
 ```
 
 There are `r nrow(missing_occ_tfa_tae)` occurrences missing from `tfa_tae`when
-compared to `tfa_occ`. These missing occurrences come from 
-`r nrow(missing_occ_tfa_tae_unique)` unique species. The occurrences listed 
-were likely not migrated because they do not contain a name_id and/or a 
-location which are a requirement of a tfa taxon area encounter.
+compared to `tfa_occ`. 
+
+These missing occurrences come from `r nrow(missing_occ_tfa_tae_unique)` unique species. 
+
+The occurrences listed were likely not migrated because they do not contain a name_id 
+and/or a location which are a requirement of a tfa taxon area encounter.
 
 The table below is a tally of mismatching occurrences by taxon and confirms the two
 missing occurrences identified above.
@@ -2307,10 +2314,12 @@ missing_occ_tfa_tae_tsc_unique %>% rt
 ```
 
 There are `r nrow(missing_occ_tfa_tae_tsc)` taxon records missing from `tsc_occ_fauna` when 
-compared to `tfa_tae`. These records are attributed to 
-`r nrow(missing_occ_tfa_tae_tsc_unique)` unique species. The occurrences listed 
-were likely not migrated because they do not contain lat or long data which is 
-a requirement for valid taxon area encounters.
+compared to `tfa_tae`. 
+
+These records are attributed to `r nrow(missing_occ_tfa_tae_tsc_unique)` unique species. 
+
+The occurrences listed were likely not migrated because they do not contain lat or long 
+data which is a requirement for valid taxon area encounters.
 
 The table below is a tally of mismatching occurrences by taxon. There are no mismatches but
 there are five duplicated records. 
@@ -2367,8 +2376,10 @@ missing_taxa_tae_tsc_unique <- missing_taxa_tae_tsc %>%
 ```
 
 There are `r nrow(missing_taxa_tae_tsc)` unique occurrences missing from
-`tsc_occ_fauna` when compared to `tfa_tae`. These missing occurrences come from 
-`r nrow(missing_taxa_tae_tsc_unique)` unique species.
+`tsc_occ_fauna` when compared to `tfa_tae`. 
+
+These missing occurrences come from `r nrow(missing_taxa_tae_tsc_unique)` 
+unique species.
 
 ## Conservation Documents
 
