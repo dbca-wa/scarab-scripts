@@ -14,6 +14,7 @@ output:
     theme: lumen
   pdf_document: default
 ---
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
@@ -335,7 +336,6 @@ readr::write_csv(all_crit_map, path = here::here("data", "all_tfa_conscrit.csv")
 ## Occurrences
 This section extracts TFA occurrences.
 
-
 The Mallee Fowl occurrence data subset forms a special case. 
 It is extracted into a CSV spreadsheet to the 
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv) resource on the 
@@ -551,7 +551,6 @@ phys_sample <- tfa_occ %>%
   dplyr::filter(sample_type != "Unknown" |
                   sample_destination != "Unknown location")
 
-
 phys_sample %>%
   dplyr::select(sample_destination) %>%
   distinct() %>% 
@@ -687,7 +686,6 @@ leaflet::leaflet(width = 800, height = 600) %>%
   )
 ```
 
-
 ## Recovery Actions and Plans
 This section extracts recovery actions and plans, which will be ingested into 
 TSC later.
@@ -746,7 +744,6 @@ readr::write_csv(tfa_resp,
 readr::write_csv(tfa_rest, 
                  path = here::here("data", "research_topics_data.csv"))
 ```
-
 
 ```{r savepoint_tfa}
 tfa_datafile <- here::here("data/tfa_all.RData")
