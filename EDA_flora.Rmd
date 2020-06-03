@@ -1628,10 +1628,6 @@ tfl_tae %>%
 ```
 
 ### Upload ObservationGroups
-
-* Associated species are free text which will never map to proper taxonomic names.
-  TODO add as plain text to TAE comments. 
-  Challenge: merge 0 to many associated species per TAE into one comment.
   
 ```{r load_obsgroups, eval=FALSE}
 # Example: one record
