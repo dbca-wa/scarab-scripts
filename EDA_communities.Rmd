@@ -1070,7 +1070,7 @@ tec_site_cae <- tec_site_cae_build %>%
 ```
 
 ```{r savepoint_tfa}
-tfa_datafile <- here::here("data/tfa_all.RData")
+tec_datafile <- here::here("data/tec_all.RData")
 save(
 actions,
 all_crit_map,
@@ -1156,7 +1156,6 @@ tz,
 uat,
 upload_file_to_ckan,
 upload_to_ckan,
-users,
 voucher_specimens,
 wastd_occ_obs_post,
 file = tec_datafile,
@@ -1248,13 +1247,12 @@ tec_ccl <- tec_cons_listing %>%
   left_join(tec_conscrit, by = c("category_code", "criterion_code"))
 ```
 
-## Occurrence lookup criteria
-
+## Observation Groups
 Occurrence lookup data from TSC are downloaded from the TSC API and transformed
 into a usable format for manual mapping to TEC.
 
-A manual step annotated lookup criteria exported from TSC to occurrence data in
-TEC in a spreadsheet.
+A manual step annotated lookups exported from TSC to 
+occurrence data in TEC in a spreadsheet.
 
 ```{r get_tsc_occ_lookups, message=FALSE}
 tsc_landforms <- "lookup-landform" %>%
@@ -1604,7 +1602,9 @@ tec_conscrit %>%
 ```
 
 In addition, some conservation criteria could not be mapped as they do not exist 
-in the `list_code` / `category_code`. These need to be corrected before the 
+in the `list_code` / `category_code`. 
+
+These need to be corrected before the 
 manual mapping can be updated and the correct criteria assigned for all communities.
 
 ### Conservation listing dates
@@ -1964,9 +1964,10 @@ missing_occ_tsc_community_sites_unique %>% rt
 
 There are `r nrow(missing_occ_tsc_community_sites)` occurrences 
 missing from tec\_site\_cae when compared to tsc\_community\_sites. 
+
 These missing occurrences come from 
 `r nrow(missing_occ_tsc_community_sites_unique)` unique 
-communities. The occurrences listed were likely not migrated because.....
+communities.
 
 The table below is a tally of mismatching occurrences by community and 
 confirms the...
@@ -2015,6 +2016,7 @@ upload_file_to_ckan("7942b979-f768-4365-8303-f1b1e00b3a61", "EDA_communities.htm
 
 Create resource once-off to get a resource ID.
 Also upload the compiled workbook.
+
 Note, this process lags one compilation of this workbook, as the HTML output
 is generated after the R code is run - knit a workbook twice to update the data catalogue.
 
