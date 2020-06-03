@@ -30,6 +30,9 @@ tsc_occ_community_datafile <- here::here("data/tsc_tae_community.RData")
 This workbook summarises the legacy data migration and QA for the Threatened
 Ecological Communities database (TEC).
 
+The last chapter of this workbook forms the "data migration report", which 
+shows whether the data migration was correct, consistent, and comprehensive.
+
 ![](https://data.dbca.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/98588a4e-b3af-452b-bbf4-f63ca7697752/download/tsc-progress.jpg){width="100%"}
 
 By default, all code blocks are collapsed to provide better readability to the
@@ -38,13 +41,53 @@ non-technical audience. Feel free to expand the code blocks to view the process.
 The code for all SCB workbooks is under version control at
 [github](https://github.com/dbca-wa/scarab-scripts).
 
-# Legacy Data (TFL)
+## How to read this workbook
+This workbook servers several audiences.
 
-Data from the Threatened Ecological Communities Database (TEC) is downloaded from the 
+### Data custodians
+**Data custodians** are the "daily drivers" of the legacy systems, and will be
+the "daily drivers" of TSC.
+Data custodians should 
+
+* read this workbook end to end, and be able to understand each section,
+* review the summary tables for matching totals of legacy systems vs TSC,
+* use the interactive tables for spot checks of individual records.
+
+### Data analysts
+**Data analysts** will re-build all legacy reports from TSC's API. Since this
+workbook accesses and parses all data from TSC, it thereby supplies working
+examples of extracting every bit of TSC data.
+
+Reports follow a common scheme:
+
+* access data from TSC,
+* parse data into suitable shape (spreadsheets-like flat tables) and 
+  datatypes (e.g. dates, locations),
+* filter data as required (date range, regions),
+* visualise data as required (pivot tables, maps),
+* export data as required (CSV, GeoJSON),
+* disseminate report as required (data catalogue, Google Drive).
+
+This workbook shows many examples of the above steps, which then can be 
+recombined and adapted by data analysts as required.
+
+### Data engineers
+**Data engineers** will ingest other data sources into TSC as required.
+This workbook also contains working examples to upload every TSC related data 
+using the TSC API.
+Future data imports from other sources can recombine and adapt the code in this
+workbook for a running start.
+
+# Legacy Data (TEC)
+
+In this section, data from the Threatened Ecological Communities Database (TEC) is downloaded from the 
 [TEC dataset](https://data.dbca.wa.gov.au/dataset/threatened-ecological-communities-database)
 on the DBCA data catalogue, then extracted and transformed.
 
 ## Communities
+
+This section extracts communties data from TEC. 
+This data will later be compared to the taxonomic data from TSC.
 
 ```{r get_tec}
 if (file.exists(tec_file)) {
@@ -248,6 +291,10 @@ com_history <- tec$HISTORY %>%
 
 ## Conservation listings
 
+This section extracts conservation listings from TEC.
+TEC conservation criteria are exported as CSV spreadsheet for manual mapping
+to TSC values.
+
 ```{r get_tec_ccl}
 tec_cons_cat <- tec$CATEGORY_TYPES %>%
   dplyr::transmute(
@@ -319,6 +366,7 @@ readr::write_csv(
 ```
 
 ## Occurrences
+This section extracts TEC occurrences.
 
 ```{r get_tec_occ, message = FALSE, warning = FALSE}
 reliability <- tec$RELIABILITY %>% dplyr::transmute(
@@ -818,6 +866,10 @@ voucher_specimens <- tec$SITE_SPECIES %>%
 
 There are `r nrow(sites)` point locations known as TEC sites.
 
+## Occurrence sites map
+The following map shows the occurrence sites data from TEC.
+Occurrences without `comm_id` or location are skipped.
+
 ```{r show_sites_map, fig.height=5, fig.width=7}
 leaflet(width = 800, height = 600) %>%
   addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
@@ -851,6 +903,8 @@ leaflet(width = 800, height = 600) %>%
 ```
 
 ## Recovery Plans
+This section extracts recovery actions and plans, which will be ingested into 
+TSC later.
 
 ```{r make_recovery_plans}
 recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
@@ -1013,6 +1067,102 @@ tec_site_cae <- tec_site_cae_build %>%
   dplyr::filter(community != "NA")%>%
   dplyr::filter(!is.na(encountered_on))%>%
   dplyr::filter(point != "null")
+```
+
+```{r savepoint_tfa}
+tfa_datafile <- here::here("data/tfa_all.RData")
+save(
+actions,
+all_crit_map,
+area_decline,
+authorities,
+bdy_w_one_site,
+chunk_post,
+communities,
+com_actions,
+com_history,
+com_publications,
+com_recommendations,
+com_reviews,
+com_short,
+com_threats,
+conditions,
+datum,
+default_date,
+default_date_notime,
+dev,
+dl_mdbzip,
+endorsement,
+fat_filter,
+fauna_conservation_codes,
+fauna_groups,
+fire_history,
+fix_incomplete_date,
+former_range,
+hab_comp,
+impacts,
+items,
+lonlat_to_convex_hull,
+maps,
+numerous_communities,
+occ_actions,
+occ_additional_data,
+occ_biol_process,
+occ_decline,
+occ_extent,
+occ_fauna,
+occ_maps,
+occ_nonbiol_process,
+occ_recommendations,
+occ_short,
+occ_species,
+orders,
+parse_as_datetime,
+prod,
+publications,
+recommendations,
+range_decline,
+recovery_plans,
+reliability,
+reviews,
+sites,
+sites_keep,
+site_visit,
+site_visit_cae,
+snapshot_last_updated,
+sources,
+species_roles,
+status,
+surveys,
+survey_cae,
+survey_conditions,
+survey_threats,
+tec_bdy,
+tec_site,
+tec_site_cae,
+tec_site_cae_build,
+tec_cons_cat,
+tec_cons_crit,
+tec_cons_cat_mis_crit,
+tec_cons_crit_mis_cat,
+tec_cons_listing,
+tec_cons_listing_categories,
+tec_cons_listing_criteria,
+tec_bdy_cae,
+tec_bdy_cae_build,
+tec_occ,
+threats,
+tz,
+uat,
+upload_file_to_ckan,
+upload_to_ckan,
+users,
+voucher_specimens,
+wastd_occ_obs_post,
+file = tec_datafile,
+compress = "xz"
+)
+load(tec_datafile)
 ```
 
 # Current conservation lists (TSC)
