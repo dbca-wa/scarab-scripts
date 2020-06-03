@@ -41,7 +41,6 @@ non-technical audience. Feel free to expand the code blocks to view the process.
 The code for all SCB workbooks is under version control at 
 [github](https://github.com/dbca-wa/scarab-scripts).
 
-
 ## How to read this workbook
 This workbook servers several audiences.
 
@@ -80,11 +79,13 @@ Future data imports from other sources can recombine and adapt the code in this
 workbook for a running start.
 
 # Legacy Data (TFA)
+
 In this section, data from the Threatened Fauna Database (TFA) is downloaded from the 
 [TFA dataset](https://data.dpaw.wa.gov.au/dataset/threatened-and-priority-fauna-database) 
 on the DBCA data catalogue, then extracted and transformed.
 
 ## Taxonomy
+
 This section extracts taxonomic data from TFA. 
 This data will later be compared to the taxonomic data from TSC.
 
