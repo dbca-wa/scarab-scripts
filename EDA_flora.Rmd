@@ -93,13 +93,15 @@ This data will later be compared to the taxonomic data from TSC.
 if (file.exists(tfl_file)) {
   load(tfl_file)
 } else {
-  tfl_data <- dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd", verbose = T)
-  snapshot_last_updated <- "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
+  tfl_data <-
+    dl_mdbzip("77062fa0-f409-4fe7-ae28-de8c933a59bd", verbose = T)
+  snapshot_last_updated <-
+    "77062fa0-f409-4fe7-ae28-de8c933a59bd" %>%
     ckanr::resource_show() %>%
     magrittr::extract2("last_modified") %>%
     lubridate::as_datetime() %>%
     lubridate::with_tz("Australia/Perth")
-save(tfl_data, snapshot_last_updated, file=tfl_file)
+  save(tfl_data, snapshot_last_updated, file = tfl_file)
 }
 
 # Look up tables
@@ -996,50 +998,48 @@ fire_sum <- tfl_data$DRF_FIRE_SUMMARIES %>%
 tfl_datafile <- here::here("data/tfl_all.RData")
 save(
   act_fenc,
-act_rdmk,
-all_crit_map,
-area_ass,
-ass_species,
-chunk_post,
-default_date,
-default_date_notime,
-dev,
-dl_mdbzip,
-fix_incomplete_date,
-fire_sum,
-hab_comp,
-hab_cond,
-lonlat_to_convex_hull,
-make_eoo,
-mgmt_act,
-names_pop_vegclass,
-names_pop_threats,
-occ_fire,
-occ_threats,
-occ_vegclass,
-orders,
-parse_as_datetime,
-phys_sample,
-plant_count,
-populations,
-pop_forms,
-pop_threats,
-pop_vegclass,
-prod,
-resolution,
-snapshot_last_updated,
-tfl_cons_listing,
-tfl_data,
-tfl_fire_hist,
-tfl_occ,
-tfl_tae,
-tz,
-uat,
-upload_file_to_ckan,
-upload_to_ckan,
-wastd_occ_obs_post,
-file = tfl_datafile,
-compress = "xz"
+  act_rdmk,
+  all_crit_map,
+  area_ass,
+  ass_species,
+  chunk_post,
+  default_date,
+  default_date_notime,
+  dev,
+  dl_mdbzip,
+  fix_incomplete_date,
+  fire_sum,
+  hab_comp,
+  hab_cond,
+  lonlat_to_convex_hull,
+  make_eoo,
+  mgmt_act,
+  names_pop_vegclass,
+  names_pop_threats,
+  occ_fire,
+  occ_threats,
+  occ_vegclass,
+  orders,
+  parse_as_datetime,
+  phys_sample,
+  plant_count,
+  populations,
+  pop_forms,
+  pop_threats,
+  pop_vegclass,
+  prod,
+  resolution,
+  snapshot_last_updated,
+  tfl_cons_listing,
+  tfl_data,
+  tfl_fire_hist,
+  tfl_occ,
+  tfl_tae,
+  tz,
+  uat,
+  wastd_occ_obs_post,
+  file = tfl_datafile,
+  compress = "xz"
 )
 load(tfl_datafile)
 ```
@@ -1683,9 +1683,11 @@ if (file.exists(tsc_cl_flora_datafile)) {
   load(tsc_cl_flora_datafile)
 } else {
   # TSC contains taxonomic names from WACensus
+  # 33382 results shown at
+  # https://tsc.dbca.wa.gov.au/api/1/taxon/?paraphyletic_groups__icontains=21
   tsc_taxa_flora <- "taxon" %>%
     wastdr::wastd_GET(query = list(paraphyletic_groups__icontains = 21)) %>%
-    wastdr::wastd_parse() %>%
+    wastdr::wastd_parse() %>% # 33382 
     dplyr::mutate(taxon = name_id %>% as.character())
   
   # Taxon conservation listings for flora
@@ -1721,7 +1723,7 @@ applicable), plus taxonomic names.
 if (file.exists(tsc_occ_flora_datafile)) {
   load(tsc_occ_flora_datafile)
 } else {
-  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 150 987
   
   tsc_tae <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
@@ -1729,10 +1731,11 @@ if (file.exists(tsc_occ_flora_datafile)) {
     geojsonsf::geojson_sf() %>%
     dplyr::mutate(taxon = taxon %>% as.character())
   
-  tsc_taxa_flora <- "taxon" %>%
-    wastdr::wastd_GET(query = list(paraphyletic_groups = 21)) %>%
-    wastdr::wastd_parse() %>%
-    dplyr::mutate(taxon = name_id %>% as.character())
+  # Already run in prev chunk
+  # tsc_taxa_flora <- "taxon" %>%
+  #   wastdr::wastd_GET(query = list(paraphyletic_groups = 21)) %>%
+  #   wastdr::wastd_parse() %>%
+  #   dplyr::mutate(taxon = name_id %>% as.character())
 
   tsc_areas <- wastdr::wastd_GET("area") %>%
     magrittr::extract2("data") %>%
@@ -1750,7 +1753,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
   tsc_occ_flora <- tsc_tae %>%
     # sf::st_join(regions) %>%
     # sf::st_join(districts) %>%
-    dplyr::mutate(taxon = taxon %>% as.character()) %>%
+    # dplyr::mutate(taxon = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_flora, by = "taxon")
   
   save(tsc_tae,
@@ -1759,8 +1762,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
        regions,
        districts,
        tsc_occ_flora,
-       file = tsc_occ_flora_datafile,
-       compress = "xz")
+       file = tsc_occ_flora_datafile)
 }
 ```
 
@@ -1770,9 +1772,22 @@ if (file.exists(tsc_occ_flora_datafile)) {
 tsc_occ_flora_no <- tsc_tae %>%
   dplyr::filter(source == 11)
 
-# All sources are flora (11)
+# All sources in tsc_tae: 10 11
+unique(tsc_tae$source) == c(10,11)
+
+# FM laptop, R 3.6.3, dplyr 1.0.0: 106 152 TFA + 44 835 TFL = 150 987 TSC TAE
+# FM RSS,    R 4.0.0, dplyr 0.8.5: 106 120 TFA + 44 867 TFL = 150 987 TSC TAE
+# FM RSS,    R 4.0.0, dplyr 0.8.5: 106 156 TFA + 44 831 TFL = 150 987 TSC TAE
+tsc_tae %>% dplyr::filter(source == 10) %>% nrow
+tsc_tae %>% dplyr::filter(source == 11) %>% nrow
+
+# All sources are flora (11): inner_join to tsc_taxa_flora seems to work
 unique(tsc_occ_flora$source)
-length(unique(tsc_occ_flora$source_id)) # 43050 on Fri 22nd
+# However, different number of unique source IDs
+# FM laptop, R 3.6.3, dplyr 1.0.0: 43 050 on Fri 22 May
+# FM laptop, R 3.6.3, dplyr 1.0.0: 42 206 on Mon 08 Jun
+# FM RSS,    R 4.0.0, dplyr 0.8.5: 42 887 on Mon 08 Jun
+length(unique(tsc_occ_flora$source_id))
 
 ## Check for duplicates
 tsc_tae_flora_dup <- tsc_tae %>%
@@ -1782,15 +1797,15 @@ tsc_tae_flora_dup <- tsc_tae %>%
 tsc_occ_flora_dup <- tsc_occ_flora %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
 
-#### Identify missing tae in tsc\_tae
-tfl_tae_create <- tfl_tae %>% 
-  dplyr::anti_join(tsc_occ_flora, by = "source_id") #2448 # 2211 # 2293
+#### Identify missing tae in tsc_tae
+#2448 # 2211 # 2293
+tfl_tae_create <- tfl_tae %>% dplyr::anti_join(tsc_occ_flora, by = "source_id")
 
-tfl_tae_update <- tfl_tae %>% 
-  dplyr::semi_join(tsc_occ_flora, by = "source_id") #42343 # 42580 # 42498
+ #42343 # 42580 # 42498
+tfl_tae_update <- tfl_tae %>% dplyr::semi_join(tsc_occ_flora, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+# tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 # Compare legacy from TFL to migrated data from TSC
