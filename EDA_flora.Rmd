@@ -1047,7 +1047,6 @@ load(tfl_datafile)
 # Current conservation lists (TSC)
 
 ## Conservation criteria
-
 Conservation criteria Data from TSC is extracted through the TSC API and
 transformed into a useable format for manual mapping to TFL.
 
@@ -1106,7 +1105,6 @@ tfl_tcl <- tfl_cons_listing %>%
 ```
 
 ## Observation Groups lookups
-
 Occurrence lookup data from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TFL.
 
@@ -1377,13 +1375,11 @@ to the Habitat Condition card in TSC because it requires a %.
 Instead, 'occurrence_condition' has been added to the TAE description.
 
 # Migrate legacy data (TFL to TSC)
-
 In this section, the extracted and transformed data from TFL are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the
 process.
 
 ## Taxonomy
-
 The QA part of this workbook will compare TFL names to TSC names.
 
 ## Conservation listings
@@ -1571,7 +1567,6 @@ if (file.exists(datafile_tsc_flora)) {fs::file_delete(datafile_tsc_flora)}
 ```
 
 ## Occurrences
-
 The EOO (Extent of occurrence) is calculated as the convex hull around all
 recorded flora occurrences, including fossil records. 
 For further details on the methodology behind the movement of EOO data, 
@@ -1609,7 +1604,6 @@ tfl_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
 ```
 
 ### Upload TAEs to TSC
-
 A single record (taxon area encounter), or a list of (one or) many records, 
 can be uploaded to the TSC API as follows.
 
@@ -1768,16 +1762,23 @@ if (file.exists(tsc_occ_flora_datafile)) {
        file = tsc_occ_flora_datafile,
        compress = "xz")
 }
-
 ```
 
 
 ```{r show_duplicates_and_missing_tae, eval=FALSE}
+# Check tsc_occ_flora correct
+tsc_occ_flora_no <- tsc_tae %>%
+  dplyr::filter(source == 11)
+
 # All sources are flora (11)
 unique(tsc_occ_flora$source)
 length(unique(tsc_occ_flora$source_id)) # 43050 on Fri 22nd
 
 ## Check for duplicates
+tsc_tae_flora_dup <- tsc_tae %>%
+  dplyr::filter(source == 11) %>% 
+  dplyr::filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
+
 tsc_occ_flora_dup <- tsc_occ_flora %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
 
