@@ -290,7 +290,6 @@ com_history <- tec$HISTORY %>%
 ```
 
 ## Conservation listings
-
 This section extracts conservation listings from TEC.
 TEC conservation criteria are exported as CSV spreadsheet for manual mapping
 to TSC values.
@@ -1167,7 +1166,6 @@ load(tec_datafile)
 # Current conservation lists (TSC)
 
 ## Conservation criteria
-
 Conservation criteria Data from TSC is extracted through the TSC API and
 transformed into a useable format for manual mapping to tec.
 
@@ -1301,7 +1299,6 @@ dplyr::mutate(obstype = "HabitatComposition")
 ```
 
 # Migrate legacy data (TEC to TSC)
-
 In this section, the extracted and transformed data from TEC are loaded into TSC
 using the TSC API. The code is collapsed; expand the code blocks to view the
 process.
@@ -1360,12 +1357,10 @@ tec_cl_tsc_res <- tec_cl_tsc %>%
 ```
 
 ## Occurrences
-
 TEC refers to a single AOO as "occurrence". Occurrences may be geo-referenced as boundaries and/or
 buffered boundaries (buffers) and/or through point sites within.
 
 ### Upload TEC boundaries to TSC
-
 The TEC boundary upload excludes the heavyweight communities with more than 400 features
 
 ```{r load_tec_bdy, eval = FALSE}
@@ -1384,7 +1379,6 @@ tec_bdy_cae %>%
 ```
 
 ### Upload TEC buffers to TSC
-
 The TEC buffer upload excludes all but the numerous ones
 
 ```{r load_tec_buf, eval = FALSE}
@@ -1438,7 +1432,6 @@ tec_hab_comp %>%
 
 
 # Migrated Data (TSC)
-
 Data from TSC is extracted through the TSC API and transformed into a usable
 format. This process is also the template for future reporting from TSC.
 
@@ -1461,7 +1454,6 @@ save(tsc_cl_communities, file = tsc_cl_community_datafile, compress="xz")
 ```
 
 ## Occurrences
-
 We get Community occurrences with their point and boundary representations from 
 TSC through the API endpoint
 [occ-community-points](https://tsc.dbca.wa.gov.au/api/1/occ-community-points/).
@@ -1537,7 +1529,6 @@ bdy_cae_create_res <- bdy_cae_create %>% chunk_post(serializer = "occ-community-
 ```
 
 # Compare legacy to migrated data
-
 This section provides an automated comparison between original data from TEC,
 and TEC data as uploaded into TSC.
 
@@ -1547,7 +1538,6 @@ that the data migration has worked correctly.
 Legacy data snapshot used for TEC was updated last on `r snapshot_last_updated`.
 
 ## Summary statistics
-
 Check unique number of communities by com\_label. Check unique number of observations
 and identify observations missing from TSC compared to TEC.
 
@@ -1565,13 +1555,11 @@ tsc_ccl_unique_comm <- tsc_ccl$com_label %>%
 ```
 
 ## Conservation Listing
-
 TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique_comm` 
 communities. TSC has `r nrow(tsc_ccl)` community conservation listings of 
 `r tsc_ccl_unique_comm` unique communities.
 
 ### tec\_ccl conservation listings not in tsc\_ccl
-
 Any records in the following table indicate conservation listings in TEC that
 were not migrated into TSC.
 
@@ -1582,7 +1570,6 @@ tec_ccl %>%
 ```
 
 ### tsc\_ccl conservation listings not in tec\_ccl
-
 The following table shows any conservation listings in TSC which are not in TEC.
 
 ```{r show_tsc_ccl_not_in_tec}
@@ -1592,7 +1579,6 @@ tsc_ccl %>%
 ```
 
 ### Conservation criteria mapping
-
 Conservation criteria were manually mapped for each community, therefore they need
 to be checked to confirm whether the mapping is correct.
 
@@ -1608,7 +1594,6 @@ These need to be corrected before the
 manual mapping can be updated and the correct criteria assigned for all communities.
 
 ### Conservation listing dates
-
 Below are the dates of the most recent conservation criteria changes made in the
 snapshot of the TFA.
 
@@ -1633,7 +1618,6 @@ cl_corner_dates %>% reactable::reactable()
 ```
 
 ### Conservation listing differences
-
 Summary of the number of conservation listings for each list.
 
 Discrepancies in numbers indicate the need for a closer review of category\_code
@@ -1735,7 +1719,6 @@ tsc_listing_cat_dbcarle %>%
 ```
 
 ### tec\_ccl unmigrated conservation listings
-
 Below are the listings from tec\_ccl that could not be assigned to either WAPEC or 
 DBCA_RLE and therefore are not migrated, becasue the category\_code does not 
 correlate to a list\_code. 
@@ -1750,7 +1733,6 @@ tec_ccl %>%
 ## Occurrences
 
 ### Date/ Location caveats
-
 This section lists data issues which need to be fixed at the source (here, in 
 legacy TEC).
 
@@ -1878,7 +1860,6 @@ Any records listed here need to be fixed in the original Threatened
 Ecological Communities database.
 
 ### Occurrence mapping
-
 Occurrence criteria were manually mapped for each variable, therefore they need
 to be checked to confirm whether the mapping is correct. 
 
@@ -1892,13 +1873,11 @@ tec_drainage %>% rt
 ```
 
 ### Trust level of occurrence records
-
 Currently, we assume that all occurrence records in the legacy databases are 
 trustworthy. If this weren't the case, this analysis should exclude the 
 non-trustworthy records.
 
 ### tec\_bdy\_cae occurrences not in tsc\_community\_boundaries
-
 Any records in the following table indicate occurrences in `tec_bdy_cae` that are not 
 in `tsc_community_boundaries`.
 
@@ -1945,7 +1924,6 @@ confirms the...
 ```
 
 ### tec\_site\_cae occurrences not in tsc\_community\_sites
-
 Any records in the following table indicate occurrences in `tec_site_cae` that are not 
 in `tsc_community_sites`.
 
