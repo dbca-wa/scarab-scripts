@@ -1570,19 +1570,29 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 
 ```{r show_duplicates_and_missing_tae, eval = FALSE}
 # All sources are fauna (10)
+tsc_occ_fauna_no <- tsc_tae %>%
+  dplyr::filter(source == 10)
+
+tsc_occ_flora_no <- tsc_tae %>%
+  dplyr::filter(source == 11)
+
 unique(tsc_occ_fauna$source)
-length(unique(tsc_occ_fauna$source_id)) # 102563 on Thur 21st, now 102366 on Fri 22nd
+length(unique(tsc_occ_fauna$source_id)) # 102248
 
 ## Check for duplicates
-tsc_occ_fauna_duplicate_source_ids <- tsc_occ_fauna %>%
-  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])])) #3797 on Fri 22nd
+tsc_tae_fauna_dup <- tsc_tae %>%
+  dplyr::filter(source == 10) %>% 
+  dplyr::filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
+
+tsc_occ_fauna_dup <- tsc_occ_fauna %>%
+  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
 
 #### Identify missing tae in tsc\_tae
 tfa_tae_create <- tfa_tae %>% 
-  dplyr::anti_join(tsc_occ_fauna, by = "source_id") #2448
+  dplyr::anti_join(tsc_occ_fauna, by = "source_id")
 
 tfa_tae_update <- tfa_tae %>% 
-  dplyr::semi_join(tsc_occ_fauna, by = "source_id") #42343
+  dplyr::semi_join(tsc_occ_fauna, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
 tfa_tae_create_res <- tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
