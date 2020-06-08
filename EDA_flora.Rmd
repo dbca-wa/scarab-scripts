@@ -1737,6 +1737,17 @@ if (file.exists(tsc_occ_flora_datafile)) {
     geojsonsf::geojson_sf() %>%
     dplyr::mutate(taxon = taxon %>% as.character())
   
+  tsc_tae2 <- tsc_tae_data %>%
+    magrittr::extract2("data") %>%
+    geojsonio::as.json() %>%
+    geojsonsf::geojson_sf() %>%
+    wastdr::sf_as_tbl() %>% 
+    dplyr::mutate(taxon = taxon %>% as.character())
+  
+  tsc_tae3 <- tsc_tae_data %>%
+    wastdr::wastd_parse()  %>% 
+    dplyr::mutate(taxon = taxon %>% as.character())
+  
   # Already run in prev chunk
   # tsc_taxa_flora <- "taxon" %>%
   #   wastdr::wastd_GET(query = list(paraphyletic_groups = 21)) %>%
@@ -1760,9 +1771,12 @@ if (file.exists(tsc_occ_flora_datafile)) {
     # sf::st_join(regions) %>%
     # sf::st_join(districts) %>%
     # dplyr::mutate(taxon = taxon %>% as.character()) %>%
-    dplyr::inner_join(tsc_taxa_flora, by = "taxon")
+    # dplyr::inner_join(tsc_taxa_flora, by = "taxon") # NO - tsc_taxa_flora contains fauna taxa
+    dplyr::filter(source == 11)
   
   save(tsc_tae,
+       tsc_tae2,
+       tsc_tae3,
        tsc_taxa_flora,
        tsc_areas,
        regions,
@@ -1780,19 +1794,23 @@ if (file.exists(tsc_occ_flora_datafile)) {
 # All sources in tsc_tae: 10 11
 unique(tsc_tae$source) == c(10,11)
 
-# FM laptop, R 3.6.3, dplyr 1.0.0: 106 152 TFA + 44 835 TFL = 150 987 TSC TAE
-# FM RSS,    R 4.0.0, dplyr 0.8.5: 106 120 TFA + 44 867 TFL = 150 987 TSC TAE
-# FM RSS,    R 4.0.0, dplyr 0.8.5: 106 156 TFA + 44 831 TFL = 150 987 TSC TAE
-tsc_tae %>% dplyr::filter(source == 10) %>% nrow
-tsc_tae %>% dplyr::filter(source == 11) %>% nrow
+# FM RSS,    R 4.0.0, dplyr 0.8.5: 106 140 RFA + 44 847 TFL = 150 987 TSC TAE
+tsc_tae3 %>% dplyr::filter(source == 10) %>% nrow
+tsc_tae3 %>% dplyr::filter(source == 11) %>% nrow # == tsc_occ_flora
+unique(tsc_occ_flora$source) == 11
+tsc_occ_flora %>% dplyr::filter(source == 10) %>% nrow # 0 Fauna Occ
+tsc_occ_flora %>% dplyr::filter(source == 11) %>% nrow # 44 847 Fauna Occ
 
-# All sources are flora (11): inner_join to tsc_taxa_flora seems to work
-unique(tsc_occ_flora$source)
 # However, different number of unique source IDs
-# FM laptop, R 3.6.3, dplyr 1.0.0: 43 050 on Fri 22 May
-# FM laptop, R 3.6.3, dplyr 1.0.0: 42 206 on Mon 08 Jun
-# FM RSS,    R 4.0.0, dplyr 0.8.5: 42 887 on Mon 08 Jun
+# FM RSS,    R 4.0.0, dplyr 0.8.5: 42 713 on Mon 08 Jun
 length(unique(tsc_occ_flora$source_id))
+
+
+# What is the difference between tsc_tae and tsc_tae2 and tsc_tae3?
+# https://bookdown.org/Maxine/r4ds/comparing-two-data-frames-tibbles.html
+testthat::expect_equal(tsc_tae2, tsc_tae3)
+dplyr::all_equal(tsc_tae2, tsc_tae3)
+
 
 ## Check for duplicates
 tsc_occ_flora_dup <- tsc_occ_flora %>%
