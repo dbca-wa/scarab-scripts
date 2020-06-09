@@ -1616,8 +1616,7 @@ x <- tfl_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfl_tae %>% 
-  chunk_post(serializer = "occ-taxon-points")
+tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 ### Upload ObservationGroups
@@ -1634,25 +1633,21 @@ tfl_tae %>%
 #   wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
-# Example: one hundred records
-# tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
-#   wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-tfl_phys_sample_res <- tfl_phys_sample[23591:23632,] %>%
-  wastd_occ_obs_post(obstype="PhysicalSample")
-x <- tfl_phys_sample[23591:23632,]
-tfl_hab_cond_res <- tfl_hab_cond[22091:22181,] %>%
-  wastd_occ_obs_post(obstype="HabitatCondition")
-tfl_area_ass_res <- tfl_area_ass %>%
-  wastd_occ_obs_post(obstype="AreaAssessment")
+tfl_phys_sample_res <- tfl_phys_sample[1:10000,] %>%
+  wastd_occ_obs_post(obstype="PhysicalSample") #23632
+tfl_hab_cond_res <- tfl_hab_cond[1:10000,] %>%
+  wastd_occ_obs_post(obstype="HabitatCondition") #22181
+tfl_area_ass_res <- tfl_area_ass[1:9899,] %>%
+  wastd_occ_obs_post(obstype="AreaAssessment") #9899
 tfl_plant_count_res <- tfl_plant_count[1:10000,] %>%
-  wastd_occ_obs_post(obstype="PlantCount")
-tfl_hab_comp_res <- tfl_hab_comp %>%
-  wastd_occ_obs_post(obstype="HabitatComposition")
+  wastd_occ_obs_post(obstype="PlantCount") #38624
+tfl_hab_comp_res <- tfl_hab_comp[1:10000,] %>%
+  wastd_occ_obs_post(obstype="HabitatComposition") #40996
 
-# setdiff(tfl_phys_sample$source_id,tfl_tae$source_id)
+# setdiff(tfl_hab_comp$source_id,tfl_tae$source_id) - All ObservationGroups checked.
 
 # Export as (confidential) test data for API
 tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
