@@ -1635,9 +1635,6 @@ tfl_tae_res <- tfl_tae[1:10000,] %>%
 #   wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
-# Example: one hundred records
-# tfl_phys_sample_res <- tfl_phys_sample[1:100,] %>%
-#   wastd_occ_obs_post(obstype="PhysicalSample")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
@@ -1652,7 +1649,7 @@ tfl_plant_count_res <- tfl_plant_count[1:10000,] %>%
 tfl_hab_comp_res <- tfl_hab_comp[1:10000,] %>%
   wastd_occ_obs_post(obstype="HabitatComposition") #40996
 
-# setdiff(tfl_phys_sample$source_id,tfl_tae$source_id)
+# setdiff(tfl_hab_comp$source_id,tfl_tae$source_id) - All ObservationGroups checked.
 
 # Export as (confidential) test data for API
 tfl_hab_cond %>% readr::write_csv(path = here::here("data/tfl_hab_cond.csv"))
