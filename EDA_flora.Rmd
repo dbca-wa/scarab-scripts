@@ -23,8 +23,7 @@ source("helpers.R")
 tfl_extracted <- here::here("data/tfl_extracted.Rdata")
 tfl_transformed <- here::here("data/tfl_transformed.RData")
 tfl_occ_datafile <- here::here("data/tfl_occ.RData")
-tsc_cl_flora_datafile <- here::here("data/tsc_cl_flora.RData")
-tsc_occ_flora_datafile <- here::here("data/tsc_tae_flora.RData")
+tsc_extracted <- here::here("data/tsc_extracted.RData")
 ```
 
 # Context
@@ -1670,69 +1669,48 @@ tfl_plant_count %>% readr::write_csv(path = here::here("data/tfl_plant_count.csv
 Data from TSC is extracted through the TSC API and transformed into a usable
 format. This process is also the template for future reporting from TSC.
 
-Expand the code block below to view the process.
+First, we get a list of taxonomic names from TSC to resolve taxon IDs from
+taxon occurrences to names.
 
-## Conservation listings
+Next, we extract conservation listings.
 
-```{r get_tsc_tcl2, message=FALSE, warning=FALSE}
-# Taxonomic names and taxon conservation listings for flora from TSC
-if (file.exists(tsc_cl_flora_datafile)) {
-  load(tsc_cl_flora_datafile)
-} else {
-  # TSC contains taxonomic names from WACensus
-  # 33382 results shown at
-  # https://tsc.dbca.wa.gov.au/api/1/taxon/?paraphyletic_groups__icontains=21
-  tsc_taxa_flora <- "taxon" %>%
-    wastdr::wastd_GET(query = list(paraphyletic_groups__icontains = 21)) %>%
-    wastdr::wastd_parse() %>% # 33382 
-    dplyr::mutate(taxon = name_id %>% as.character())
-  
-  # Taxon conservation listings for flora
-  tsc_tcl_flora <- "taxon-conservationlisting" %>% 
-    wastdr::wastd_GET() %>%
-    wastdr::wastd_parse() %>%
-    dplyr::mutate(taxon = taxon %>% as.character()) %>%
-    dplyr::inner_join(tsc_taxa_flora, by = "taxon")
-  
-  save(tsc_taxa_flora, tsc_tcl_flora, file = tsc_cl_flora_datafile)
-}
-```
-
-## Occurrences
-
-We get taxon occurrences with their point representations from TSC through the
-API endpoint
+Last, we get taxon occurrences with their point representations from TSC through 
+the API endpoint 
 [occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
 
 Currently, all Flora occurrences are geo-referenced only with point
 coordinates, not polygons.
 
-We then get TSC Areas and split them into DBCA Regions and Districts. Caveat:
-Regions and Districts to not comprehensively cover WA.
+We also get TSC Areas and split them into DBCA Regions and Districts. Caveat:
+Regions and Districts to not comprehensively cover WA, and they are multi-polygons.
+We do not join these multi-polygons to the data to prevent duplicates.
 
-Lastly, we get a list of taxonomic names from TSC to resolve taxon IDs from
-taxon occurrences to names.
-
-Occurrences are presented as `occ` with DBCA Region and District names (where
-applicable), plus taxonomic names.
+Expand the code block below to view the process.
 
 ```{r get_tsc_occ}
-if (file.exists(tsc_occ_flora_datafile)) {
-  load(tsc_occ_flora_datafile)
+if (file.exists(tsc_extracted)) {
+  load(tsc_extracted)
 } else {
-  # 44786 TFL
-  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points", query = list(source=11))
-  
-  tsc_tae <- tsc_tae_data %>%
-    wastdr::wastd_parse()  %>%
-    dplyr::mutate(taxon = taxon %>% as.character())
 
-  # Already run in prev chunk
+  # Flora taxa
   tsc_taxa_flora <- "taxon" %>%
     wastdr::wastd_GET(query = list(paraphyletic_groups = 21)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
+  
+  # Flora conservation listings
+  tsc_tcl_flora <- "taxon-conservationlisting" %>% 
+    wastdr::wastd_GET() %>%
+    wastdr::wastd_parse() %>%
+    dplyr::mutate(taxon = taxon %>% as.character()) %>%
+    dplyr::inner_join(tsc_taxa_flora, by = "taxon")
 
+  # Flora occurrences
+  tsc_tae <- "occ-taxon-points" %>% 
+    wastdr::wastd_GET(query = list(source=11)) %>%
+    wastdr::wastd_parse()  %>%
+    dplyr::mutate(taxon = taxon %>% as.character())
+  
   tsc_areas <- wastdr::wastd_GET("area") %>%
     magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
@@ -1746,50 +1724,47 @@ if (file.exists(tsc_occ_flora_datafile)) {
     dplyr::filter(area_type == "District") %>%
     dplyr::transmute(district_id = pk, district_name = name)
   
-  save(tsc_tae,
-       tsc_taxa_flora,
-       tsc_areas,
-       regions,
-       districts,
-       file = tsc_occ_flora_datafile)
+  save(
+    tsc_taxa_flora,
+    tsc_tcl_flora,
+    tsc_tae,
+    tsc_areas,
+    regions,
+    districts,
+    file = tsc_extracted)
 }
 ```
 
 
-```{r show_duplicates_and_missing_tae, eval=FALSE}
-# All sources in tsc_tae: 11
+```{r tsc_screen_for_duplicates, eval=FALSE}
+# All sources in tsc_tae: 11 == Flora
 unique(tsc_tae$source) == 11
 
-# FM RSS,    R 4.0.0, dplyr 0.8.5: 106 140 RFA + 44 847 TFL = 150 987 TSC TAE
-# tsc_tae3 106748 10451
-# tsc_tae2 same
-# tsc_tae  same
+# There are no fauna records in tsc_tae
 tsc_tae %>% dplyr::filter(source == 10) %>% nrow
-tsc_tae %>% dplyr::filter(source == 11) %>% nrow # == tsc_occ_flora
 
-# However, different number of unique source IDs
-# FM RSS,    R 4.0.0, dplyr 0.8.5: 42 713 on Mon 08 Jun
-length(unique(tsc_tae$source_id))
+# There are only flora records in tsc_tae
+tsc_tae %>% dplyr::filter(source == 11) %>% nrow
+
+# There are as many unique source_ids (TPFL sheet numbers) as occurrence records
+length(unique(tsc_tae$source_id)) # == nrow(tsc_tae)
+
+# There are no source_ids that occur more than once
 tsc_tae_tally <- tsc_tae %>% 
   group_by(source, source_id) %>% 
   dplyr::tally() %>% 
   dplyr::ungroup() %>% 
+  dplyr::filter(n>1) %>% 
   dplyr::arrange(-n)
 View(tsc_tae_tally)
 
-## Check for duplicates
-tsc_tae_flora_dup <- tsc_tae %>%
-  dplyr::filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
 
-#### Identify missing tae in tsc_tae
-#2448 # 2211 # 2293
+# If loaded occurences in TSC were to mismatch original occurrences from TPFL:
 tfl_tae_create <- tfl_tae %>% dplyr::anti_join(tsc_tae, by = "source_id")
-
- #42343 # 42580 # 42498
 tfl_tae_update <- tfl_tae %>% dplyr::semi_join(tsc_tae, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-# tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+# tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points")
 ```
 
 # Compare legacy from TFL to migrated data from TSC
