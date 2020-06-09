@@ -21,9 +21,9 @@ source("helpers.R")
 
 # Cached data from TSC - delete to force refresh
 tfa_file <- here::here("data", "tfa.Rdata")
+tfa_occ_datafile <- here::here("data", "tfa_occ.Rdata")
 tsc_cl_fauna_datafile <- here::here("data/tsc_cl_fauna.RData")
 tsc_occ_fauna_datafile <- here::here("data/tsc_tae_fauna.RData")
-tfa_occ_datafile <- here::here("data", "tfa_occ.Rdata")
 ```
 
 # Context
@@ -1378,11 +1378,10 @@ x <- tfa_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
+tfa_tae_res <- tfa_tae %>% chunk_post(serializer = "occ-taxon-points", chunksize = 1000)
 
-tfa_tae[100001:nrow(tfa_tae),] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+# tfa_tae[100001:nrow(tfa_tae),] %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
     # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
-    
-tfa_tae_res <- tfa_tae %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 ### Upload ObservationGroups
