@@ -21,9 +21,9 @@ source("helpers.R")
 
 # Cached data from TSC - delete to force refresh
 tec_file <- here::here("data", "tec.Rdata")
+tec_occ_datafile <- here::here("data", "tec_occ.Rdata")
 tsc_cl_community_datafile <- here::here("data/tsc_cl_community.RData")
 tsc_occ_community_datafile <- here::here("data/tsc_tae_community.RData")
-
 ```
 
 # Context
@@ -447,7 +447,6 @@ occ_short <- tec_occ %>%
      com_name = com_name)
 
 ## Create occurrence data tables for each card in TSC
-
 hab_comp <- tec_occ %>%
   dplyr::filter(!is.na(occ_id) & !is.na(com_id) & occ_id!=0) %>% 
   dplyr::transmute(
@@ -506,7 +505,6 @@ occ_recommendations <- tec$OCCURRENCE_RECOMMENDATIONS %>%
   ) %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(recommendations, by = "recommendation_code")
-
 ```
 
 ### Occurrence Extent
@@ -1066,6 +1064,9 @@ tec_site_cae <- tec_site_cae_build %>%
   dplyr::filter(community != "NA")%>%
   dplyr::filter(!is.na(encountered_on))%>%
   dplyr::filter(point != "null")
+
+save(tec_occ, tec_bdy_cae, tec_site_cae, file=tec_occ_datafile, compress = "xz")
+if (file.exists(tec_occ_datafile)) load(tec_occ_datafile)
 ```
 
 ```{r savepoint_tfa}
@@ -1389,7 +1390,7 @@ x <- tec_buf_cae[1,] %>% as.list() %>%
   # tfl_tae[1:1000,] %>%
   wastd_POST(serializer = "occ-community-areas")
 
-tec_buf_cae %>%
+tec_buf_cae_res <- tec_buf_cae %>%
  dplyr::filter(!grepl(fat_filter, community)) %>%
  chunk_post(serializer = "occ-community-areas")
 ```
@@ -1406,7 +1407,7 @@ x <- tec_site_cae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tec_site_cae %>%
+tec_site_cae_res <- tec_site_cae %>%
   dplyr::filter(grepl(fat_filter, community)) %>%
   chunk_post(serializer = "occ-community-points")
 ```
@@ -1420,7 +1421,7 @@ tec_hab_comp[1,] %>%
 
 # Bulk upload
 # LONG RUNNING UPLOAD
-tec_hab_comp %>% 
+tec_hab_comp_res <- tec_hab_comp %>% 
   wastdr::wastd_bulk_post("occ-observation")
 ```
 
@@ -1429,7 +1430,6 @@ tec_hab_comp %>%
 ## Fire History
 
 ## Conservation Threats and Actions
-
 
 # Migrated Data (TSC)
 Data from TSC is extracted through the TSC API and transformed into a usable
@@ -1566,7 +1566,7 @@ were not migrated into TSC.
 ```{r show_tec_ccl_not_in_tsc}
 tec_ccl %>%
   dplyr::anti_join(tsc_ccl, by = "com_label") %>%
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 ### tsc\_ccl conservation listings not in tec\_ccl
@@ -1575,7 +1575,7 @@ The following table shows any conservation listings in TSC which are not in TEC.
 ```{r show_tsc_ccl_not_in_tec}
 tsc_ccl %>%
   dplyr::anti_join(tec_ccl, by = "com_label") %>%
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 ### Conservation criteria mapping
@@ -1584,7 +1584,7 @@ to be checked to confirm whether the mapping is correct.
 
 ```{r how_cl_mapping}
 tec_conscrit %>%
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 In addition, some conservation criteria could not be mapped as they do not exist 
@@ -1614,7 +1614,7 @@ cl_corner_dates <- rbind(tec_corner_dates, tsc_corner_dates) %>%
   t() %>%
   magrittr::set_colnames(c("TEC", "TSC"))
 
-cl_corner_dates %>% reactable::reactable()
+cl_corner_dates %>% rt
 ```
 
 ### Conservation listing differences
@@ -1675,7 +1675,7 @@ cons_cat_summary <- tec_cons_cat_sum %>%
   cbind(Category = c("WAPEC", "DBCA_RLE")) %>%
   dplyr::select("Category", everything())
 
-cons_cat_summary %>% reactable::reactable()
+cons_cat_summary %>% rt
 ```
 
 The following tables show any conservation listings in TEC which are not in TSC, 
@@ -1687,7 +1687,7 @@ WAPEC
 #### WAPEC
 tec_listing_cat_wapec %>%
   dplyr::anti_join(tsc_listing_cat_wapec, by = "com_label") %>%
-  reactable::reactable(filterable = TRUE) # 106
+  rt # 106
 ```
 
 DBCA_RLE
@@ -1696,7 +1696,7 @@ DBCA_RLE
 #### DBCA_RLE
 tec_listing_cat_dbcarle %>%
   dplyr::anti_join(tsc_listing_cat_dbcarle, by = "com_label") %>%
-  reactable::reactable(filterable = TRUE) # 26
+  rt # 26
 ```
 
 The following tables show any conservation listings in TSC which are not in TEC, 
@@ -1707,7 +1707,7 @@ WAPEC
 ```{r}
 tsc_listing_cat_wapec %>%
   dplyr::anti_join(tec_listing_cat_wapec, by = "com_label") %>%
-  reactable::reactable(filterable = TRUE) # 0
+  rt # 0
 ```
 
 DBCA_RLE
@@ -1715,7 +1715,7 @@ DBCA_RLE
 ```{r}
 tsc_listing_cat_dbcarle %>%
   dplyr::anti_join(tec_listing_cat_dbcarle, by = "com_label") %>%
-  reactable::reactable(filterable = TRUE) # 12
+  rt # 12
 ```
 
 ### tec\_ccl unmigrated conservation listings
@@ -1727,7 +1727,7 @@ correlate to a list\_code.
 tec_ccl %>%
   dplyr::anti_join(tec_listing_cat_wapec, by = c("com_id", "effective_from", "category_code")) %>%
   dplyr::anti_join(tec_listing_cat_dbcarle, by = c("com_id", "effective_from", "category_code")) %>%
-  reactable::reactable(filterable = TRUE)
+  rt
 ```
 
 ## Occurrences
