@@ -1617,8 +1617,8 @@ x <- tfl_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfl_tae_res <- tfl_tae[1:10000,] %>% 
-  chunk_post(serializer = "occ-taxon-points", chunksize = 100) #44791
+tfl_tae_res <- tfl_tae %>% 
+  chunk_post(serializer = "occ-taxon-points", chunksize = 1000) #44791
 ```
 
 ### Upload ObservationGroups
