@@ -213,7 +213,7 @@ chunk_post <- function(data,
         wastdr::wastdr_msg_info(
             glue::glue("[chunk_post][{Sys.time()}] Updating {api_url}{serializer}..."))
     len <- nrow(data)
-    for (i in 0:((len/chunksize)-1)) {
+    for (i in 0:(len/chunksize)) {
         start <- (i * chunksize) + 1
         end <- min((start + chunksize) - 1, len)
         wastdr::wastdr_msg_info(
