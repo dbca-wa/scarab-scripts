@@ -1691,7 +1691,7 @@ Expand the code block below to view the process.
 if (file.exists(tsc_extracted)) {
   load(tsc_extracted)
 } else {
-
+  
   # Flora taxa
   tsc_taxa_flora <- "taxon" %>%
     wastdr::wastd_GET(query = list(paraphyletic_groups = 21)) %>%
@@ -1758,7 +1758,6 @@ tsc_tae_tally <- tsc_tae %>%
   dplyr::arrange(-n)
 View(tsc_tae_tally)
 
-
 # If loaded occurences in TSC were to mismatch original occurrences from TPFL:
 tfl_tae_create <- tfl_tae %>% dplyr::anti_join(tsc_tae, by = "source_id")
 tfl_tae_update <- tfl_tae %>% dplyr::semi_join(tsc_tae, by = "source_id")
@@ -1813,7 +1812,7 @@ tfl_tcl %>% dplyr::anti_join(tsc_tcl_flora, by = "source_id") %>% rt
 ### `tsc_tcl_flora` conservation listings not in `tfl_tcl`
 
 The following table shows any conservation listings in TSC which are not in TFL.
-Because there are more taxa in TSC than TFL, taxa with no source\_id have also
+Because there are more taxa in TSC than TFL, taxa with no `source_id` have also
 been removed.
 
 ```{r show_tsc_tcl_not_in_tfl}
@@ -1825,8 +1824,8 @@ tsc_tcl_flora %>%
 
 ### `tfl_tcl` listed phrase names
 
-Some TFL cons listings have a name\_id of 0. These are phrase names and require
-to be assigned the name\_id of the published name, once the published name is
+Some TFL cons listings have a `name_id` of 0. These are phrase names and require
+to be assigned the `name_id` of the published name, once the published name is
 known and entered into WACensus, then propagated into TSC.
 
 ```{r show_tfl_tcl_without_nameid}
