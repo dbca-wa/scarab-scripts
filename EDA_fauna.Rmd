@@ -171,6 +171,8 @@ species_notes <- tfa_data$`Species Notes` %>%
     species_code = SpCode %>% as.character(),
     species_notes = Notes %>% as.character()
   )
+species_notes_dup <- species_notes %>%
+  filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) # two duplicate species_codes
 
 category <- tfa_data$`Category List` %>%
   dplyr::transmute(
@@ -237,7 +239,12 @@ species <- tfa_data$`Species List` %>%
   ) %>%
   dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
   dplyr::left_join(species_notes, by = "species_code") %>%
-  dplyr::left_join(category, by = "category_id") 
+  dplyr::left_join(category, by = "category_id")
+
+# The above needs to be added back in after we deal with duplicates
+species_dup <- species %>%
+  filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # three duplicate name_id
+
 # species_skim <- skimr::skim(species)
 # print(species_skim)
 # DT::datatable(species)
@@ -438,12 +445,15 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
 ) %>%
   dplyr::left_join(shires, by = "lga_id") %>%
   dplyr::left_join(tenure, by = "tenure_id") %>%
-  ## veg types has duplicates
-  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>% 
+  # ## veg types has duplicates
+  dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
   dplyr::left_join(certainty, by = "certainty_id") %>%
   dplyr::left_join(species_names, by = "species_code") %>%
-  dplyr::left_join(resolution_m, by = "resolution_id") %>% 
+  dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible()
+
+tfa_tae_dup <- tfa_occ %>%
+  filter(id %in% unique(.[["id"]][duplicated(.[["id"]])]))
 
 hab_comp <- tfa_occ %>%
   has_name_id_and_location %>% 
