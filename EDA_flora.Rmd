@@ -21,6 +21,7 @@ source("helpers.R")
 
 # Cached data from TFL database on CKAN - delete to force refresh
 tfl_file <- here::here("data/tfl.Rdata")
+tfl_datafile <- here::here("data/tfl_all.RData")
 tsc_cl_flora_datafile <- here::here("data/tsc_cl_flora.RData")
 tsc_occ_flora_datafile <- here::here("data/tsc_tae_flora.RData")
 tfl_occ_datafile <- here::here("data", "tfl_occ.Rdata")
@@ -995,7 +996,6 @@ fire_sum <- tfl_data$DRF_FIRE_SUMMARIES %>%
 
 
 ```{r savepoint_tfl}
-tfl_datafile <- here::here("data/tfl_all.RData")
 save(
   act_fenc,
   act_rdmk,
@@ -1038,8 +1038,7 @@ save(
   tz,
   uat,
   wastd_occ_obs_post,
-  file = tfl_datafile,
-  compress = "xz"
+  file = tfl_datafile
 )
 load(tfl_datafile)
 ```
@@ -1618,7 +1617,7 @@ x <- tfl_tae[1,] %>% as.list() %>%
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 tfl_tae %>% 
-  chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+  chunk_post(serializer = "occ-taxon-points")
 ```
 
 ### Upload ObservationGroups
@@ -1723,13 +1722,20 @@ applicable), plus taxonomic names.
 if (file.exists(tsc_occ_flora_datafile)) {
   load(tsc_occ_flora_datafile)
 } else {
-  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points", query = list(source=11)) # 44786
+  # 44786 TFL
+  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points", query = list(source=11))
   
   tsc_tae <- tsc_tae_data %>%
-    magrittr::extract2("data") %>%
-    geojsonio::as.json() %>%
-    geojsonsf::geojson_sf() %>%
+    #
+    # version 1: json > geojson_sf
+    # magrittr::extract2("data") %>%
+    # geojsonio::as.json() %>%
+    # geojsonsf::geojson_sf() %>%
     # wastdr::sf_as_tbl() %>% 
+    # 
+    # version 2: wastd_parse
+    wastdr::wastd_parse()  %>%
+    # turn taxon NameID into character for later joins
     dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_tae3 <- tsc_tae_data %>%
@@ -1789,25 +1795,16 @@ unique(tsc_tae$source) == c(10,11)
 # tsc_tae  same
 tsc_tae %>% dplyr::filter(source == 10) %>% nrow
 tsc_tae %>% dplyr::filter(source == 11) %>% nrow # == tsc_occ_flora
-unique(tsc_occ_flora$source) == 11
-tsc_occ_flora %>% dplyr::filter(source == 10) %>% nrow # 0 Fauna Occ
-tsc_occ_flora %>% dplyr::filter(source == 11) %>% nrow # 44 847 Fauna Occ
 
 # However, different number of unique source IDs
 # FM RSS,    R 4.0.0, dplyr 0.8.5: 42 713 on Mon 08 Jun
-length(unique(tsc_occ_flora$source_id))
+length(unique(tsc_tae$source_id))
 tsc_tae_tally <- tsc_tae %>% 
   group_by(source, source_id) %>% 
   dplyr::tally() %>% 
   dplyr::ungroup() %>% 
   dplyr::arrange(-n)
-View(head(tsc_tae_tally))
-
-# What is the difference between tsc_tae and tsc_tae2 and tsc_tae3?
-# https://bookdown.org/Maxine/r4ds/comparing-two-data-frames-tibbles.html
-testthat::expect_equal(tsc_tae2, tsc_tae3)
-dplyr::all_equal(tsc_tae2, dplyr::select(tsc_tae3, -id, -type, -geometry))
-
+View(tsc_tae_tally)
 
 ## Check for duplicates
 tsc_tae_flora_dup <- tsc_tae %>%
