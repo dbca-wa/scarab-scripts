@@ -1723,19 +1723,13 @@ applicable), plus taxonomic names.
 if (file.exists(tsc_occ_flora_datafile)) {
   load(tsc_occ_flora_datafile)
 } else {
-  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 150 987
+  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points", query = list(source=11)) # 44786
   
   tsc_tae <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
     geojsonsf::geojson_sf() %>%
-    dplyr::mutate(taxon = taxon %>% as.character())
-  
-  tsc_tae2 <- tsc_tae_data %>%
-    magrittr::extract2("data") %>%
-    geojsonio::as.json() %>%
-    geojsonsf::geojson_sf() %>%
-    wastdr::sf_as_tbl() %>% 
+    # wastdr::sf_as_tbl() %>% 
     dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_tae3 <- tsc_tae_data %>%
@@ -1790,8 +1784,11 @@ tsc_occ_flora_no <- tsc_tae %>%
 unique(tsc_tae$source) == c(10,11)
 
 # FM RSS,    R 4.0.0, dplyr 0.8.5: 106 140 RFA + 44 847 TFL = 150 987 TSC TAE
-tsc_tae3 %>% dplyr::filter(source == 10) %>% nrow
-tsc_tae3 %>% dplyr::filter(source == 11) %>% nrow # == tsc_occ_flora
+# tsc_tae3 106748 10451
+# tsc_tae2 same
+# tsc_tae  same
+tsc_tae %>% dplyr::filter(source == 10) %>% nrow
+tsc_tae %>% dplyr::filter(source == 11) %>% nrow # == tsc_occ_flora
 unique(tsc_occ_flora$source) == 11
 tsc_occ_flora %>% dplyr::filter(source == 10) %>% nrow # 0 Fauna Occ
 tsc_occ_flora %>% dplyr::filter(source == 11) %>% nrow # 44 847 Fauna Occ
@@ -1799,12 +1796,17 @@ tsc_occ_flora %>% dplyr::filter(source == 11) %>% nrow # 44 847 Fauna Occ
 # However, different number of unique source IDs
 # FM RSS,    R 4.0.0, dplyr 0.8.5: 42 713 on Mon 08 Jun
 length(unique(tsc_occ_flora$source_id))
-
+tsc_tae_tally <- tsc_tae %>% 
+  group_by(source, source_id) %>% 
+  dplyr::tally() %>% 
+  dplyr::ungroup() %>% 
+  dplyr::arrange(-n)
+View(head(tsc_tae_tally))
 
 # What is the difference between tsc_tae and tsc_tae2 and tsc_tae3?
 # https://bookdown.org/Maxine/r4ds/comparing-two-data-frames-tibbles.html
 testthat::expect_equal(tsc_tae2, tsc_tae3)
-dplyr::all_equal(tsc_tae2, tsc_tae3)
+dplyr::all_equal(tsc_tae2, dplyr::select(tsc_tae3, -id, -type, -geometry))
 
 
 ## Check for duplicates
