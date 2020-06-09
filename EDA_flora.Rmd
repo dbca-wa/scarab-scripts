@@ -1617,7 +1617,7 @@ x <- tfl_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfl_tae_res <- tfl_tae %>% 
+tfl_tae_res <- tfl_tae[44001:44791,] %>% 
   chunk_post(serializer = "occ-taxon-points", chunksize = 1000) #44791
 ```
 
@@ -1673,7 +1673,7 @@ Expand the code block below to view the process.
 
 ## Conservation listings
 
-```{r get_tsc_tcl2, message=FALSE, warning=FALSE}
+```{r get_tsc_tcl2}
 # Taxonomic names and taxon conservation listings for flora from TSC
 if (file.exists(tsc_cl_flora_datafile)) {
   load(tsc_cl_flora_datafile)
@@ -1719,7 +1719,7 @@ applicable), plus taxonomic names.
 if (file.exists(tsc_occ_flora_datafile)) {
   load(tsc_occ_flora_datafile)
 } else {
-  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points", query = list(source=11)) # 44786
+  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points", query = list(source=11)) # Should be 44791 tfl_tae + 106... tfa_tae
   
   tsc_tae <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
@@ -1728,7 +1728,7 @@ if (file.exists(tsc_occ_flora_datafile)) {
     # wastdr::sf_as_tbl() %>% 
     dplyr::mutate(taxon = taxon %>% as.character())
   
-  tsc_tae3 <- tsc_tae_data %>%
+  tsc_tae2 <- tsc_tae_data %>%
     wastdr::wastd_parse()  %>% 
     dplyr::mutate(taxon = taxon %>% as.character())
   
@@ -1756,11 +1756,10 @@ if (file.exists(tsc_occ_flora_datafile)) {
     # sf::st_join(districts) %>%
     # dplyr::mutate(taxon = taxon %>% as.character()) %>%
     # dplyr::inner_join(tsc_taxa_flora, by = "taxon") # NO - tsc_taxa_flora contains fauna taxa
-    dplyr::filter(source == 11)
+    dplyr::filter(source == 11) # Should be 44791 tfl_tae
   
   save(tsc_tae,
        tsc_tae2,
-       tsc_tae3,
        tsc_taxa_flora,
        tsc_areas,
        regions,
@@ -1806,12 +1805,14 @@ dplyr::all_equal(tsc_tae2, dplyr::select(tsc_tae3, -id, -type, -geometry))
 
 
 ## Check for duplicates
-tsc_tae_flora_dup <- tsc_tae %>%
-  dplyr::filter(source == 11) %>% 
-  dplyr::filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
-
-tsc_occ_flora_dup <- tsc_occ_flora %>%
+tsc_tae_flora_dup_1 <- tsc_tae %>%
+  dplyr::filter(source == 11) %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
+
+tsc_tae_flora_dup_2 <- tsc_tae %>%
+  dplyr::filter(source == 11) %>% 
+  dplyr::group_by(source_id) %>% 
+  dplyr::filter(n()>1)
 
 #### Identify missing tae in tsc_tae
 #2448 # 2211 # 2293
