@@ -839,10 +839,17 @@ occ_fire <- tfl_data$DRF_FIRE_DETAILS %>%
     modified_by = MODIFIED.BY %>% as.character()
   ) 
 
+form_options <- tfl_occ %>% 
+  dplyr::group_by(form_status_code) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
+
 # Create taxon area encounter
 tfl_tae <- tfl_occ %>%
   has_name_id_and_location %>% 
   dplyr::filter(!is.na(observation_date)) %>%
+  # dplyr::filter(form_status_code == "ACCEPTED"| form_status_code == "READY"| form_status_code == "NEW") %>% 
   dplyr::transmute(
     taxon = name_id,
     code = pop_id,
@@ -1313,9 +1320,9 @@ tfl_plant_count <- plant_count %>%
   dplyr::transmute(
     source = source,
     source_id = source_id,
-    count_method = tsc_plant_count_method,
-    counted_subject = tsc_counted_subject,
-    plant_condition = tsc_Plant_condition,
+    count_methods = tsc_plant_count_method,
+    count_subjects = tsc_counted_subject,
+    plant_conditions = tsc_Plant_condition,
     land_manager_present = land_manager_present,
     no_alive_mature = number_alive_mature,
     no_alive_juvenile = number_alive_juvenile,
@@ -1341,9 +1348,12 @@ tfl_plant_count <- plant_count %>%
     comments = comments,
     ) %>%
   dplyr::mutate(obstype = "PlantCount") %>% 
-  base::replace(., is.na(.), "") %>% 
+  # base::replace(., is.na(.), "") %>%
   dplyr::semi_join(tfl_tae)
 
+x <- tfl_plant_count %>% 
+  dplyr::filter(is.na(source))
+y <- unique(tfl_plant_count$source_id)
 
 ## Physical sample
 tfl_sampdest <-
@@ -1631,23 +1641,23 @@ tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 #   wastd_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
 #   wastd_occ_obs_post(obstype="AreaAssessment")
-# tfl_plant_count_res <- tfl_plant_count[1,] %>%
-#   wastd_occ_obs_post(obstype="PlantCount")
+tfl_plant_count_res <- tfl_plant_count[1:2,] %>%
+  wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
 tfl_phys_sample_res <- tfl_phys_sample %>%
-  wastd_occ_obs_post(obstype="PhysicalSample") #23632
+  wastd_occ_obs_post(obstype="PhysicalSample", chunksize = 1000) #23632
 tfl_hab_cond_res <- tfl_hab_cond %>%
-  wastd_occ_obs_post(obstype="HabitatCondition") #22181
+  wastd_occ_obs_post(obstype="HabitatCondition", chunksize = 1000) #22181
 tfl_area_ass_res <- tfl_area_ass %>%
-  wastd_occ_obs_post(obstype="AreaAssessment") #9899
+  wastd_occ_obs_post(obstype="AreaAssessment", chunksize = 1000) #9899
 tfl_plant_count_res <- tfl_plant_count %>%
-  wastd_occ_obs_post(obstype="PlantCount") #38624
+  wastd_occ_obs_post(obstype="PlantCount", chunksize = 1000) #38624
 tfl_hab_comp_res <- tfl_hab_comp %>%
-  wastd_occ_obs_post(obstype="HabitatComposition") #40996
+  wastd_occ_obs_post(obstype="HabitatComposition", chunksize = 1000) #40996
 
 # setdiff(tfl_hab_comp$source_id,tfl_tae$source_id) - All ObservationGroups checked.
 
@@ -2099,9 +2109,12 @@ tfl_skim %>%
 #### Default/ missing date/time
 
 ```{r show_tfl_occ_missing_datetime}
-tfl_occ_no_datetime<- tfl_occ %>% 
-  dplyr::filter(created_date == "")
-tfl_occ_no_datetime %>% rt
+tfl_occ_no_obsdate<- tfl_occ %>% 
+  dplyr::filter(is.na(observation_date))
+
+tfl_occ_no_obsdate %>% rt
+
+readr::write_csv(tfl_occ_no_obsdate, path = here::here("data/flora_occ_no_obsdate.csv"))
 
 # tfl_tae_no_obs_date <- tfl_occ %>%
 #   dplyr::filter(observation_date == "") 
@@ -2114,6 +2127,8 @@ tfl_occ_no_datetime %>% rt
 tfl_occ_no_latlng <- tfl_occ %>%
   dplyr::filter(is.na(latitude) | is.na(longitude))
 tfl_occ_no_latlng %>% rt
+
+readr::write_csv(tfl_occ_no_latlng, path = here::here("data/flora_occ_no_latlng.csv"))
 ```
 
 There are `r nrow(tfl_occ_no_latlng)` distinct flora records with missing
@@ -2153,6 +2168,20 @@ TODO Which datum do we want to use? WGS84 and GDA94 are designed to be \<1 m
 different. GDA94 is designed to be comparable with WGS84 GPS data. As GDA94 is
 the most frequently used datum in the dataset, should we convert all others to
 GDA94?
+
+#### Form status codes
+
+Below is a summary of the form status codes found in TPFL. At present all records
+have been migrated regardless of status. 
+
+```{r show_form_status_codes}
+form_options <- tfl_occ %>% 
+  dplyr::group_by(form_status_code) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
+form_options %>% rt
+```
 
 #### Taxonomic caveats
 
@@ -2302,7 +2331,7 @@ migrated into tsc.
 
 ```{r show_tsc_occ_flora_missing_occurrences}
 missing_occ_tfl_occ_flora <- tfl_tae %>%
-  dplyr::anti_join(tsc_occ_flora, by = "source_id") 
+  dplyr::anti_join(tsc_tae, by = "source_id") 
 
 missing_occ_tfl_occ_flora %>% rt
 # missing_occ_tae_tsc <- tsc_tae %>%
@@ -2333,7 +2362,7 @@ tfl_tae_tally <- tfl_tae %>%
   dplyr::arrange(desc(n)) %>%
   ungroup()
 
-tsc_occ_flora_tally <- tsc_occ_flora %>%
+tsc_occ_flora_tally <- tsc_tae %>%
   dplyr::group_by(taxon) %>%
   dplyr::tally() %>%
   dplyr::arrange(desc(n)) %>%
@@ -2371,7 +2400,7 @@ compared to `tfa_tae`. These records are attributed to
 
 ```{r show_name_mismatches_tfl_tae_to_tsc_taxa_flora}
 missing_taxa_tsc <- tfl_tae %>%
-  dplyr::anti_join(tsc_occ_flora, by = "taxon")
+  dplyr::anti_join(tsc_tae, by = "taxon")
 
 missing_taxa_tsc_unique <- missing_taxa_tsc %>%
   dplyr::select(taxon) %>%
