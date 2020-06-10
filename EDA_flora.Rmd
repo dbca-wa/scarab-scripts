@@ -560,7 +560,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
 #     row_num = ROW.NO %>% as.integer()
 #     )
 
-## Occurence observations
+## Occurrence observations
 hab_comp <- tfl_occ %>%
    has_name_id_and_location %>% 
   dplyr::transmute(
@@ -1734,6 +1734,11 @@ if (file.exists(tsc_extracted)) {
     dplyr::filter(area_type == "District") %>%
     dplyr::transmute(district_id = pk, district_name = name)
   
+  # Flora occurrence observations
+  tsc_tae_observations <- "occ-observation" %>% 
+    wastdr::wastd_GET(query = list(source=11)) %>%
+    wastdr::wastd_parse()  
+  
   save(
     tsc_taxa_flora,
     tsc_tcl_flora,
@@ -1741,6 +1746,7 @@ if (file.exists(tsc_extracted)) {
     tsc_areas,
     regions,
     districts,
+    tsc_tae_observations,
     file = tsc_extracted)
 }
 ```
@@ -2221,7 +2227,7 @@ to be checked to confirm whether the mapping is correct.
 Some conservation criteria could not be mapped as they do not exist in the
 `list_code` / `category_code`.
 
-Soil type: Three of these criteria could not be mapped because and we don't know
+Soil type: Three of these criteria could not be mapped because we don't know
 what they are.
 
 ```{r show_tfl_lookup_mappings}
@@ -2240,15 +2246,15 @@ tfl_sampdest %>% rt
 
 Sample destination was manually mapped to a generic field for its location and
 the specific location added to the sample label field as free text. We have done
-this because, combined with flora, there are \> 100 unique locations for sample
+this because, combined with fauna, there are \> 100 unique locations for sample
 destination, which would make a very long drop down menu.
 
-The above need to be corrected before the manual mapping can be completed.
+The above need to be approved before the manual mapping can be considered complete.
 
 ### Occurrence observations with no matching TAE
 
-Below are occurrence observations which have not been migrated because they do 
-not have a corresponding TAE for them to be assigned to. 
+Below are occurrence observations which do not have a corresponding TAE for 
+them to be assigned to. 
 
 ```{r}
 missing_tae_phys_sample <- tfl_phys_sample %>% 
@@ -2268,9 +2274,6 @@ missing_tae_hab_cond %>% rt
 missing_tae_area_ass %>% rt
 missing_tae_hab_comp %>% rt
 ```
-
-The above need to be reviewed and a decision made on whether the information 
-should be migrated despite not having a TAE to assign it to.
 
 ### Trust level of occurrence records
 
