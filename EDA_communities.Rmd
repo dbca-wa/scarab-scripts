@@ -22,7 +22,7 @@ source("helpers.R")
 # Cached data from TSC - delete to force refresh
 tec_file <- here::here("data", "tec.Rdata")
 tec_occ_datafile <- here::here("data", "tec_occ.Rdata")
-tsc_cl_community_datafile <- here::here("data/tsc_cl_community.RData")
+tsc_ccl_community_datafile <- here::here("data/tsc_ccl_community.RData")
 tsc_occ_community_datafile <- here::here("data/tsc_tae_community.RData")
 ```
 
@@ -1173,7 +1173,7 @@ transformed into a useable format for manual mapping to tec.
 A manual step annotated legacy conservation criteria exported from TEC to
 conservation criteria IDs in TSC in a spreadsheet.
 
-```{r get_tsc_ccl, message = FALSE,, eval = FALSE}
+```{r get_tsc_ccl, message = FALSE}
 tsc_conslists_com <- "conservationlist" %>%
   wastdr::wastd_GET(
     api_url = prod,
@@ -1253,7 +1253,7 @@ into a usable format for manual mapping to TEC.
 A manual step annotated lookups exported from TSC to 
 occurrence data in TEC in a spreadsheet.
 
-```{r get_tsc_occ_lookups, message=FALSE, eval = FALSE}
+```{r get_tsc_occ_lookups}
 tsc_landforms <- "lookup-landform" %>%
   wastdr::wastd_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
@@ -1333,7 +1333,7 @@ tec_tsc <- tec_cons_listing_categories %>%
   dplyr::left_join(tec_crit_code, by = c("com_id", "effective_from")) %>%
   dplyr::left_join(tsc_crit_code, by = c("com_id", "effective_from"))
 
-tec_cl_tsc <- tec_tsc %>%
+tec_comms_ccl <- tec_tsc %>%
   dplyr::transmute(
     source = 3, # TaxonGaz.source TFA 1, TFL 2, TEC 3
     source_id = source_id %>% as.character(),
@@ -1353,7 +1353,7 @@ tec_cl_tsc <- tec_tsc %>%
 
 ```{r load_tec_tcl, eval=FALSE}
 # LONG RUNNING UPLOAD
-tec_cl_tsc_res <- tec_cl_tsc %>%
+tec_comms_ccl_res <- tec_comms_ccl %>%
   wastdr::wastd_POST("community-conservationlisting")
 ```
 
@@ -1439,17 +1439,17 @@ Expand the code block below to view the process.
 
 ## Conservation listings
 
-```{r get_tsc_ccl2, message=FALSE, warning=FALSE}
-if (file.exists(tsc_cl_community_datafile)) {
-  load(tsc_cl_community_datafile)
+```{r get_tsc_ccl2}
+if (file.exists(tsc_ccl_community_datafile)) {
+  load(tsc_ccl_community_datafile)
 } else {
 # Taxon conservation listings for communities
-  tsc_cl_communities <- "community-conservationlisting" %>% 
+  tsc_ccl_communities <- "community-conservationlisting" %>% 
     wastdr::wastd_GET() %>%
     wastdr::wastd_parse() %>% 
     dplyr::mutate(com_label = community)
    
-save(tsc_cl_communities, file = tsc_cl_community_datafile, compress="xz")
+save(tsc_ccl_communities, file = tsc_ccl_community_datafile, compress="xz")
 }
 ```
 
@@ -1542,21 +1542,18 @@ Check unique number of communities by com\_label. Check unique number of observa
 and identify observations missing from TSC compared to TEC.
 
 ```{r make_tec_summary}
-tsc_ccl_communities <- tsc_ccl_communities %>% 
-  dplyr::mutate(com_label = community)
-
-tec_ccl_unique_comm <- tec_ccl$com_label %>%
+tec_ccl_unique_comm <- tec_comms_ccl$community %>%
   unique() %>%
-  length() # 476
+  length() # 399
 
-tsc_ccl_unique_comm <- tsc_ccl$com_label %>%
+tsc_ccl_unique_comm <- tsc_ccl_communities$community %>%
   unique() %>%
-  length() # 378
+  length() # 399
 ```
 
 ## Conservation Listing
-TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique_comm` 
-communities. TSC has `r nrow(tsc_ccl)` community conservation listings of 
+TEC has `r nrow(tec_comms_ccl)` conservation listings of `r tec_ccl_unique_comm` 
+communities. TSC has `r nrow(tsc_ccl_communities)` community conservation listings of 
 `r tsc_ccl_unique_comm` unique communities.
 
 ### tec\_ccl conservation listings not in tsc\_ccl
@@ -1564,8 +1561,8 @@ Any records in the following table indicate conservation listings in TEC that
 were not migrated into TSC.
 
 ```{r show_tec_ccl_not_in_tsc}
-tec_ccl %>%
-  dplyr::anti_join(tsc_ccl, by = "com_label") %>%
+tec_comms_ccl %>%
+  dplyr::anti_join(tsc_ccl_communities, by = "source_id") %>%
   rt
 ```
 
@@ -1573,8 +1570,8 @@ tec_ccl %>%
 The following table shows any conservation listings in TSC which are not in TEC.
 
 ```{r show_tsc_ccl_not_in_tec}
-tsc_ccl %>%
-  dplyr::anti_join(tec_ccl, by = "com_label") %>%
+tsc_ccl_communities %>%
+  dplyr::anti_join(tec_comms_ccl, by = "source_id") %>%
   rt
 ```
 
@@ -1598,13 +1595,13 @@ Below are the dates of the most recent conservation criteria changes made in the
 snapshot of the TFA.
 
 ``` {r qa_effective_dates}
-tsc_corner_dates <- tsc_ccl %>%
+tsc_corner_dates <- tsc_ccl_communities %>%
   summarise(
     effective_from_min = min(effective_from, na.rm = T),
     effective_from_max = max(effective_from, na.rm = T)
   )
 
-tec_corner_dates <- tec_ccl %>%
+tec_corner_dates <- tec_comms_ccl %>%
   summarise(
     effective_from_min = min(effective_from, na.rm = T),
     effective_from_max = max(effective_from, na.rm = T)
@@ -1640,24 +1637,15 @@ tec_cl_sum_wapec <-
 tec_cl_sum_dbcarle <- 
   tec_listing_cat_dbcarle %>% make_tec_cl_summary()
 
-make_tsc_cl_summary <- function(data, cn) {
-  data %>%
-    dplyr::select(category_cache) %>%
-    dplyr::filter(str_detect(category_cache, cn)) %>%
-    nrow() %>%
-    as.data.frame() %>%
-    magrittr::set_colnames("TSC")
-}
-
-tsc_listing_cat_wapec <- tsc_ccl %>%
+tsc_listing_cat_wapec <- tsc_ccl_communities %>%
   dplyr::filter(str_detect(category_cache, "WAPEC"))
 
-tsc_listing_cat_dbcarle <- tsc_ccl %>%
+tsc_listing_cat_dbcarle <- tsc_ccl_communities %>%
   dplyr::filter(str_detect(category_cache, "DBCA_RLE"))
 
-tsc_cl_sum_wapec <- tsc_ccl %>% 
+tsc_cl_sum_wapec <- tsc_ccl_communities %>% 
   make_tsc_cl_summary("WAPEC")
-tsc_cl_sum_dbcarle <- tsc_ccl %>% 
+tsc_cl_sum_dbcarle <- tsc_ccl_communities %>% 
   make_tsc_cl_summary("DBCA_RLE")
 
 tec_cons_cat_sum <- rbind(
@@ -1724,7 +1712,7 @@ DBCA_RLE and therefore are not migrated, becasue the category\_code does not
 correlate to a list\_code. 
 
 ```{r show_tec_ccl_not_migrated}
-tec_ccl %>%
+tec_comms_ccl %>%
   dplyr::anti_join(tec_listing_cat_wapec, by = c("com_id", "effective_from", "category_code")) %>%
   dplyr::anti_join(tec_listing_cat_dbcarle, by = c("com_id", "effective_from", "category_code")) %>%
   rt
