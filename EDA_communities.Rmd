@@ -20,10 +20,9 @@ knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
 
 # Cached data from TSC - delete to force refresh
-tec_file <- here::here("data", "tec.Rdata")
+tec_extracted <- here::here("data", "tec_extracted.Rdata")
 tec_occ_datafile <- here::here("data", "tec_occ.Rdata")
-tsc_ccl_community_datafile <- here::here("data/tsc_ccl_community.RData")
-tsc_occ_community_datafile <- here::here("data/tsc_tae_community.RData")
+tsc_extracted <- here::here("data/tsc_extracted.RData")
 ```
 
 # Context
@@ -90,23 +89,30 @@ This section extracts communties data from TEC.
 This data will later be compared to the taxonomic data from TSC.
 
 ```{r get_tec}
-if (file.exists(tec_file)) {
-  load(tec_file)
+if (file.exists(tec_extracted)) {
+  load(tec_extracted)
 } else {
-  tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
-  snapshot_last_updated <- "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
+  # TEC data
+  tec_data <- 
+    dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+  
+  snapshot_last_updated <- 
+    "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
     ckanr::resource_show() %>%
     magrittr::extract2("last_modified") %>%
     lubridate::as_datetime() %>%
     lubridate::with_tz("Australia/Perth")
-save(tec, snapshot_last_updated, file=tec_file)
+  
+  # TEC boundaries and sites
+  tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
+  tec_site <- geojsonsf::geojson_sf("data/tec_sites.geojson")
+  # tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
+  # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
+save(tec, snapshot_last_updated, tec_bdy, tec_site, file=tec_file)
 }
+```
 
-tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
-tec_site <- geojsonsf::geojson_sf("data/tec_sites.geojson")
-# tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
-# tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
-
+```{r}
 # Lookup tables
 former_range <- tec$FORMER_RANGES %>%
   dplyr::transmute(
@@ -322,12 +328,12 @@ readr::write_csv(
 tec_cons_listing_categories <- tec$CATEGORIES %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
-    effective_from = CAT.EFFECT.DATE %>% parse_as_datetime(),
+    effective_from = CAT.EFFECT.DATE %>% parse_date_time(., orders = orders, tz = tz),
     category_code = CAT.CT.TYPE %>% as.character(),
     cat_comment = CAT.COMMENT %>% as.character(),
-    cat_review_date = CAT.REVIEW.DATE %>% parse_as_datetime(),
+    cat_review_date = CAT.REVIEW.DATE %>% parse_date_time(., orders = orders, tz = tz),
     cat_endorsed_code = CAT.ENDORSED.CODE %>% as.character(),
-    cat_endorsed_date = CAT.ENDORSED.DATE %>% parse_as_datetime(),
+    cat_endorsed_date = CAT.ENDORSED.DATE %>% parse_date_time(., orders = orders, tz = tz),
     cat_endorsed_by_minister = CAT.ENDORSED.BY.MINISTER %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
@@ -337,7 +343,7 @@ tec_cons_listing_categories <- tec$CATEGORIES %>%
 tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
-    effective_from = CAT.EFFECT.DATE %>% parse_as_datetime(),
+    effective_from = CAT.EFFECT.DATE %>% parse_date_time(., orders = orders, tz = tz),
     criterion_code = CC.CRIT.CODE %>% as.character()
   ) %>%
   dplyr::left_join(com_short, by = "com_id") %>%
@@ -1176,7 +1182,6 @@ conservation criteria IDs in TSC in a spreadsheet.
 ```{r get_tsc_ccl, message = FALSE}
 tsc_conslists_com <- "conservationlist" %>%
   wastdr::wastd_GET(
-    api_url = prod,
     query = c(scope_communities = TRUE)
   ) %>%
   magrittr::extract2("features") %>%
@@ -1306,7 +1311,7 @@ process.
 
 ## Conservation listings
 
-```{r make_tec_cl, message=FALSE}
+```{r make_tec_cl, warning = FALSE}
 # summarise criterion codes into one row per date
 comm_info <- tec_ccl %>%
   dplyr::select(com_id, com_label, com_name) %>%
@@ -1432,28 +1437,15 @@ tec_hab_comp_res <- tec_hab_comp %>%
 ## Conservation Threats and Actions
 
 # Migrated Data (TSC)
+
 Data from TSC is extracted through the TSC API and transformed into a usable
 format. This process is also the template for future reporting from TSC.
 
-Expand the code block below to view the process.
+First, we extract conservation listings.
 
-## Conservation listings
+Last, we get community occurrences with their point and boundary representations from TSC through the API endpoint 
+[occ-community-points](https://tsc.dbca.wa.gov.au/api/1/occ-community-points/).
 
-```{r get_tsc_ccl2}
-if (file.exists(tsc_ccl_community_datafile)) {
-  load(tsc_ccl_community_datafile)
-} else {
-# Taxon conservation listings for communities
-  tsc_ccl_communities <- "community-conservationlisting" %>% 
-    wastdr::wastd_GET() %>%
-    wastdr::wastd_parse() %>% 
-    dplyr::mutate(com_label = community)
-   
-save(tsc_ccl_communities, file = tsc_ccl_community_datafile, compress="xz")
-}
-```
-
-## Occurrences
 We get Community occurrences with their point and boundary representations from 
 TSC through the API endpoint
 [occ-community-points](https://tsc.dbca.wa.gov.au/api/1/occ-community-points/).
@@ -1465,11 +1457,22 @@ Currently, all Community occurrences are georeferenced with boundaries
 Occurrences are presented as `occ` with DBCA Region and District names (where
 applicable).
 
+Expand the code block below to view the process.
+
 ```{r get_tsc_occ}
-if (file.exists(tsc_occ_community_datafile)) {
-  load(tsc_occ_community_datafile)
+if (file.exists(tsc_extracted)) {
+  load(tsc_extracted)
 } else {
-tsc_cae_data <- wastdr::wastd_GET("occ-community-points",chunk_size = 100) # k records
+  
+# Community conservations listings
+  tsc_ccl_communities <- "community-conservationlisting" %>% 
+    wastdr::wastd_GET() %>%
+    wastdr::wastd_parse() %>% 
+    dplyr::mutate(com_label = community)
+
+# Community occurrences  
+ tsc_cae_data <- "occ-community-points"
+  wastdr::wastd_GET(chunk_size = 100) %>% 
 
 tsc_community_sites <- tsc_cae_data %>%
   magrittr::extract2("data") %>% 
@@ -1484,13 +1487,12 @@ tsc_community_boundaries <- tsc_cae_data %>%
   geojsonsf::geojson_sf() %>% 
   dplyr::mutate(area_type = area_type %>% as.character()) %>% 
   dplyr::filter(area_type == 10) 
-
-save(tsc_cae_data,
+   
+save(tsc_ccl_communities,
+     tsc_cae_data,
      tsc_community_sites,
      tsc_community_boundaries,
-     #tsc_community_boundaries,
-     file = tsc_occ_community_datafile, 
-     compress="xz")
+     file = tsc_extracted)
 }
 ```
 
