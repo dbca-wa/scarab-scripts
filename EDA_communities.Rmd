@@ -112,6 +112,7 @@ save(tec, snapshot_last_updated, tec_bdy, tec_site, file=tec_file)
 }
 ```
 
+<<<<<<< HEAD
 ```{r tec_transform}
 # Look up tables
 former_range <- tec$FORMER_RANGES %>%
