@@ -93,8 +93,7 @@ if (file.exists(tec_extracted)) {
   load(tec_extracted)
 } else {
   # TEC data
-  tec_data <- 
-    dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
+  tec <- dl_mdbzip("598b1e70-5707-4dbc-a665-1189e1524ebe")
   
   snapshot_last_updated <- 
     "598b1e70-5707-4dbc-a665-1189e1524ebe" %>%
@@ -108,7 +107,8 @@ if (file.exists(tec_extracted)) {
   tec_site <- geojsonsf::geojson_sf("data/tec_sites.geojson")
   # tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
   # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
-save(tec_data, snapshot_last_updated, tec_bdy, tec_site, file=tec_extracted)
+
+save(tec, snapshot_last_updated, tec_bdy, tec_site, file=tec_extracted)
 }
 ```
 
@@ -445,13 +445,14 @@ tec_occ <- tec_data$OCCURRENCES %>% ## most of this will get added to comments
   dplyr::select(-confidential_id, reliability_id)
 
 occ_short <- tec_occ %>% 
-   dplyr::transmute(
-     occ_id = occ_id,
-     boundary_id = boundary_id,
-     boundary_desc = boundary_desc,
-     com_id = com_id,
-     com_label = com_label,
-     com_name = com_name)
+   dplyr::select(
+     occ_id,
+     boundary_id,
+     boundary_desc,
+     com_id,
+     com_label,
+     com_name
+  )
 
 ## Create occurrence data tables for each card in TSC
 hab_comp <- tec_occ %>%
@@ -776,8 +777,9 @@ readr::write_csv(
 ```
 
 Out of `r nrow(surveys)` surveys, there are only `r length(unique(surveys$survey_id))` distinct survey_id's.
-With `r length(unique(surveys$surveyed_on))`, this means that a survey_id does not denote an individual
-visit of a TEC boundary.
+With `r length(unique(surveys$surveyed_on))` unique survey dates, this means that a 
+survey_id does not denote an individual visit of a TEC boundary.
+
 
 ## Site Visits
 `Site visits` are quick site visits with a partial set of measurements.
@@ -928,6 +930,29 @@ readr::write_csv(
   path = here::here("data", "tec_recovery_plans.csv"))
 ```
 
+## Context for `tec_cae`
+
+```{r}
+tec_occ_without_bdy <- tec_occ %>% dplyr::filter(is.na(boundary_id))
+```
+
+There are `r nrow(tec_occ)` records in `tec_occ`. Most link via `boundary_id` to
+the `tec_bdy` shapefile of last known extents of boundaries.
+
+`r nrow(tec_occ_without_bdy)` `tec_occ` do not have a `boundary_id`. 
+TODO find spatial reference for those.
+
+`tec_occ$occ_no` is a running number for each spatially distinct occurrence of 
+a given community and unique within that community. 
+`tec_occ$occ_id` is a running number of all occurrences and unique across
+all communities.
+
+Occurrences are named by the first site recorded within.
+TEC boundaries store the first site name as `tec_bdy$FIRST_S_ID`.
+CAE need to use `tec_bdy$FIRST_S_ID` as `area_code`.
+
+
+
 ## Occurrence Boundaries
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
@@ -959,7 +984,8 @@ tec_bdy_cae_build <- survey_cae %>%
         "Site description: {occ_desc} {species_desc} {reliability_id};\n",
         "Commonwealth:  {commonwealth_desc} {cwealth_listing};\n",
         "Area assessment: {data} {other};\n",
-        "Habitat composition: {soil} {surf_geology} {land_element} {water} {drainage} {com_structure} {classification} {other_attr} {reliability}."
+        "Habitat composition: {soil} {surf_geology} {land_element} {water} ",
+        "{drainage} {com_structure} {classification} {other_attr} {reliability}."
     )) %>% 
   dplyr::transmute(
     # occ_id = occ_id,
