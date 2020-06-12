@@ -22,7 +22,7 @@ source("helpers.R")
 # Cached data from TSC - delete to force refresh
 tec_extracted <- here::here("data", "tec_extracted.Rdata")
 tec_occ_datafile <- here::here("data", "tec_occ.Rdata")
-tsc_extracted <- here::here("data/tsc_extracted.RData")
+tsc_extracted <- here::here("data/tsc_communities_extracted.RData")
 ```
 
 # Context
