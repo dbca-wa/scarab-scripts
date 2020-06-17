@@ -23,7 +23,7 @@ source("helpers.R")
 tfl_extracted <- here::here("data/tfl_extracted.Rdata")
 tfl_transformed <- here::here("data/tfl_transformed.RData")
 tfl_occ_datafile <- here::here("data/tfl_occ.RData")
-tsc_extracted <- here::here("data/tsc_extracted.RData")
+tsc_extracted_flora <- here::here("data/tsc_extracted_flora.RData")
 ```
 
 # Context
@@ -1551,7 +1551,7 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 
 ```{r load_tfl_tcl, eval=FALSE}
 # Example: one record
-# tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1,] %>% 
+# tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1,] %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
 # tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc[1,] %>% 
 #   wastdr::wastd_POST("taxon-conservationlisting")
@@ -1653,7 +1653,7 @@ tfl_phys_sample_res <- tfl_phys_sample %>%
 tfl_hab_cond_res <- tfl_hab_cond %>%
   wastd_occ_obs_post(obstype="HabitatCondition", chunksize = 1000) #22181
 tfl_area_ass_res <- tfl_area_ass %>%
-  wastd_occ_obs_post(obstype="AreaAssessment", chunksize = 1000) #9899
+  wastd_occ_obs_post(obstype="AreaAssessment") #9899
 tfl_plant_count_res <- tfl_plant_count %>%
   wastd_occ_obs_post(obstype="PlantCount", chunksize = 1000) #38624
 tfl_hab_comp_res <- tfl_hab_comp %>%
@@ -1698,8 +1698,8 @@ We do not join these multi-polygons to the data to prevent duplicates.
 Expand the code block below to view the process.
 
 ```{r get_tsc_occ}
-if (file.exists(tsc_extracted)) {
-  load(tsc_extracted)
+if (file.exists(tsc_extracted_flora)) {
+  load(tsc_extracted_flora)
 } else {
   
   # Flora taxa
@@ -1718,7 +1718,7 @@ if (file.exists(tsc_extracted)) {
   # Flora occurrences
   tsc_tae <- "occ-taxon-points" %>% 
     wastdr::wastd_GET(query = list(source=11)) %>%
-    wastdr::wastd_parse()  %>%
+    wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_areas <- wastdr::wastd_GET("area") %>%
@@ -1737,7 +1737,7 @@ if (file.exists(tsc_extracted)) {
   # Flora occurrence observations
   tsc_tae_observations <- "occ-observation" %>% 
     wastdr::wastd_GET(query = list(source=11)) %>%
-    wastdr::wastd_parse()  
+    wastdr::wastd_parse()
   
   save(
     tsc_taxa_flora,
@@ -1747,7 +1747,7 @@ if (file.exists(tsc_extracted)) {
     regions,
     districts,
     tsc_tae_observations,
-    file = tsc_extracted)
+    file = tsc_extracted_flora)
 }
 ```
 
@@ -2091,7 +2091,7 @@ effect on analyses for conservation management purposes:
 Please review legacy data until the following numbers are all zero (or accept
 default handling):
 
--   `r tfl_occ %>% dplyr::filter(created_date == "") %>% nrow()` records lack an
+-   `r tfl_occ %>% dplyr::filter(is.na(observation_date)) %>% nrow()` records lack an
     explicit date\time and were defaulted to midnight AWST.
 -   `r tfl_occ %>% dplyr::filter(is.na(latitude)) %>% nrow` latitudes are
     missing.
@@ -2273,6 +2273,118 @@ missing_tae_plant_count %>% rt
 missing_tae_hab_cond %>% rt
 missing_tae_area_ass %>% rt
 missing_tae_hab_comp %>% rt
+```
+
+### `tfl_tae` occurrence observations not in `tsc_tae_observations`
+
+Any record differences in the following table indicate occurrence observations in TFL that
+were not migrated into TSC.
+
+```{r}
+make_tfl_tae_occ_obs_summary <-
+  . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFL")
+
+tfl_phys_sample_sum <-
+  tfl_phys_sample %>% make_tfl_tae_occ_obs_summary
+tfl_hab_cond_sum <-
+  tfl_hab_cond %>% make_tfl_tae_occ_obs_summary
+tfl_area_ass_sum <-
+  tfl_area_ass %>% make_tfl_tae_occ_obs_summary
+tfl_hab_comp_sum <-
+  tfl_hab_comp %>% make_tfl_tae_occ_obs_summary
+tfl_plant_count_sum <-
+  tfl_plant_count %>% make_tfl_tae_occ_obs_summary
+
+make_tsc_occ_obs_summary <- function(data, cn) {
+  data %>%
+    dplyr::select(obstype) %>%
+    dplyr::filter(str_detect(obstype, cn)) %>%
+    nrow() %>%
+    as.data.frame %>%
+    magrittr::set_colnames("TSC")
+}
+
+tsc_phys_sample_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("PhysicalSample")
+tsc_hab_cond_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("HabitatCondition")
+tsc_area_ass_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("AreaAssessment")
+tsc_hab_comp_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("HabitatComposition")
+# tsc_plant_count_sum <- 
+#   tsc_tae_observations %>% make_tsc_cl_summary("PlantCount")
+
+
+tfl_occ_obs_sum <- rbind(
+  tfl_phys_sample_sum,
+  tfl_hab_cond_sum,
+  tfl_area_ass_sum,
+  tfl_hab_comp_sum
+  #tfl_plant_count_sum
+)
+
+tsc_cons_cat_sum <- rbind(
+  tsc_phys_sample_sum,
+  tsc_hab_cond_sum,
+  tsc_area_ass_sum,
+  tsc_hab_comp_sum
+  #tsc_plant_countsum
+)
+
+occ_obs_summary <- tfl_occ_obs_sum %>%
+  cbind(tsc_cons_cat_sum) %>%
+  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition")) %>% # PlantCount
+  dplyr::select("Obstype", everything())
+
+occ_obs_summary %>% rt
+
+```
+
+The following tables show any occurrence observations in TFL which are not in TSC,
+for each observation table.
+
+Physical Sample
+
+```{r show_tfl_tcl_not_in_tsc_iucn2012}
+tsc_phys_sample <- tsc_tae_observations %>% 
+  dplyr::filter(obstype == "PhysicalSample")
+
+tfl_phys_sample %>%
+  dplyr::anti_join(tsc_phys_sample, by = "source_id") %>%
+  rt
+```
+
+Habitat condition
+
+```{r show_tfl_tcl_not_in_tsc_iucn2001}
+tfl_hab_cond %>%
+  dplyr::anti_join(tsc_hab_cond, by = c("source_id" = "id")) %>% 
+  rt
+```
+
+Area assessment
+
+```{r show_tfl_tcl_not_in_tsc_iucn1994}
+tfl_area_ass %>%
+  dplyr::anti_join(tsc_area_ass, by = c("source_id" = "id")) %>% 
+  rt
+```
+
+Habitat composition
+
+```{r show_tfl_tcl_not_in_tsc_prio}
+tfl_hab_comp %>%
+  dplyr::anti_join(tsc_hab_comp, by = c("source_id" = "id")) %>%  
+  rt
+```
+
+Plant count
+
+```{r show_tfl_tcl_not_in_tsc_prio}
+tfl_plant_count %>%
+  dplyr::anti_join(tsc_plant_count, by = c("source_id" = "id")) %>%  
+  rt
 ```
 
 ### Trust level of occurrence records
