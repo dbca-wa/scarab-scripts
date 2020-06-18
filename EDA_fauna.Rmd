@@ -1326,7 +1326,7 @@ tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc %>%
   wastdr::wastd_POST("taxon-conservationlisting")
 
 # Expire cached TSC TCL
-if (file.exists(datafile_tsc_fauna)) {fs::file_delete(datafile_tsc_fauna)}
+if (file.exists(tsc_cl_fauna_datafile)) {fs::file_delete(tsc_cl_fauna_datafile)}
 ```
 
 ## Occurrences
