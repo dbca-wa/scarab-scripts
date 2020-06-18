@@ -1413,15 +1413,9 @@ tfa_tae_res <- tfa_tae %>% chunk_post(serializer = "occ-taxon-points", chunksize
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
 tfa_phys_sample_res <- tfa_phys_sample %>% 
   wastd_occ_obs_post(obstype="PhysicalSample") 
-  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
-# Florian to re-upload tfa_tae to TSC
-# Florian to create: get TSC TAE source and sourceID, then compare locally
-# to determine what to create, what to update (if ever), what to skip
 
 tfa_anim_obs_res <- tfa_anim_obs %>% 
   wastd_occ_obs_post(obstype="AnimalObservation")
-  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
-# TAE missing
 
 # We cannot map hand-written AssSpecies to TSC NameIDs.
 # tfa_ass_species_res <- tfa_ass_species[1,] %>% 
@@ -1429,11 +1423,9 @@ tfa_anim_obs_res <- tfa_anim_obs %>%
 
 tfa_veg_class_res <- tfa_veg_class %>% 
   wastd_occ_obs_post(obstype="VegetationClassification")
-  # , api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
 tfa_hab_comp_res <- tfa_hab_comp %>% 
   wastd_occ_obs_post(obstype="HabitatComposition")
-  #, api_url = dev, api_token = Sys.getenv("WASTDR_API_DEV_TOKEN"))
 
 # Export as (confidential) test data for API
 tfa_phys_sample %>% readr::write_csv(path = here::here("data/tfa_phys_sample.csv"))
