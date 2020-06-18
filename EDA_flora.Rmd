@@ -2217,14 +2217,25 @@ database.
 
 ### Occurrence observation mapping
 
-Occurrence criteria were manually mapped for each variable, therefore they need
-to be checked to confirm whether the mapping is correct.
+Occurrence criteria were manually mapped for each variable.
 
 Some conservation criteria could not be mapped as they do not exist in the
 `list_code` / `category_code`.
 
-Soil type: Three of these criteria could not be mapped because we don't know
+Soil type: Three of these criteria (FSA_LOAM, LSA_LOAM, LMD_CLAY) could not be mapped because we don't know
 what they are.
+
+Habitat condition: 'Occurrence_condition' could not be mapped because the tsc card 
+options which require a %. Instead, occurrence condition has been added to tfl_tae
+description.
+
+Sample destination: Was manually mapped to a generic field for its location and
+the specific location added to the sample label field as free text. We have done
+this because, combined with fauna, there are \> 100 unique locations for sample
+destination, which would make a very long drop down menu.
+
+The manual mapping needs to be spot checked and approved before the manual mapping
+can be considered complete.
 
 ```{r show_tfl_lookup_mappings}
 tfl_landcrit %>% rt
@@ -2239,13 +2250,6 @@ tfl_plant_count_subject %>% rt
 tfl_plant_condition %>% rt
 tfl_sampdest %>% rt 
 ```
-
-Sample destination was manually mapped to a generic field for its location and
-the specific location added to the sample label field as free text. We have done
-this because, combined with fauna, there are \> 100 unique locations for sample
-destination, which would make a very long drop down menu.
-
-The above need to be approved before the manual mapping can be considered complete.
 
 ### Occurrence observations with no matching TAE
 
