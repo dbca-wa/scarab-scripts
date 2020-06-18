@@ -456,12 +456,13 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   # ## veg types has duplicates
   dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
   dplyr::left_join(certainty, by = "certainty_id") %>%
-  # dplyr::left_join(species_names, by = "species_code") %>%
+  dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible()
 
 tfa_occ_dup <- tfa_occ %>%
-  filter(id %in% unique(.[["id"]][duplicated(.[["id"]])]))
+  filter(id %in% unique(.[["id"]][duplicated(.[["id"]])])) 
+# no duplicates now problems have been removed from species_list and species_notes
 
 hab_comp <- tfa_occ %>%
   has_name_id_and_location %>% 
@@ -604,8 +605,9 @@ malleefowl_data <- tfa_data$`Fauna Records` %>%
 readr::write_csv(malleefowl_data, path = here::here("data", "malleefowl_data.csv"))
 
 # TFA records in Africa
-long_outofbounds <- tfa_occ %>% 
+tfa_occ_latlong_outofbounds <- tfa_occ %>% 
   filter(longitude < 96)
+readr::write_csv(tfa_occ_latlong_outofbounds, path = here::here("data", "tfa_occ_latlong_wrong.csv"))
 
 # Create taxon area encounter
 tfa_tae <- tfa_occ %>%
@@ -656,9 +658,12 @@ tfa_tae <- tfa_occ %>%
   ) %>%
   dplyr::arrange(taxon)
 
+tfa_tae_dup <- tfa_tae %>%
+  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])])) 
+# no duplicates now problems have been removed from species_list and species_notes
+
 save(tfa_occ, tfa_tae, file=tfa_occ_datafile, compress = "xz")
 if (file.exists(tfa_occ_datafile)) load(tfa_occ_datafile)
-
 ```
 
 ## Occurrence map
@@ -666,7 +671,9 @@ The following map shows the occurrence data from TFA.
 Occurrences without `name_id` or location are skipped.
 
 ```{r tfa_tae_map, eval=F}
-tfa_occ_map <- tfa_occ %>% has_name_id_and_location
+tfa_occ_map <- tfa_occ %>% 
+  has_name_id_and_location %>% 
+  filter(longitude > 96)
 
 leaflet::leaflet(width = 800, height = 600) %>%
   leaflet::addProviderTiles("Esri.WorldImagery", group = "Aerial") %>%
