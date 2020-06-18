@@ -171,10 +171,10 @@ species_notes_with_duplicates <- tfa_data$`Species Notes` %>%
     species_code = SpCode %>% as.character(),
     species_notes = Notes %>% as.character()
   )
-species_notes_dup <- species_notes_with_duplicates %>%
+tfa_species_notes_duplications <- species_notes_with_duplicates %>%
   filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) # two duplicate species_codes- remove from species notes
 
-readr::write_csv(species_notes_dup, path = here::here("data", "species_notes_duplications.csv"))
+readr::write_csv(tfa_species_notes_duplications, path = here::here("data", "tfa_species_notes_duplications.csv"))
 
 species_notes <- species_notes_with_duplicates %>% 
   distinct(species_code)
@@ -248,10 +248,10 @@ species <- tfa_data$`Species List` %>%
   dplyr::left_join(category, by = "category_id")
 
 # # Duplicate name_id's in species_list
-# species_list_dup <- species %>%
+# tfa_species_list_dup <- species %>%
 #   filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # one duplicate name_id
-# 
-# readr::write_csv(species_list_dup, path = here::here("data", "species_list_duplications.csv"))
+# # 
+# readr::write_csv(tfa_species_list_dup, path = here::here("data", "tfa_species_list_duplications.csv"))
 
 # species_skim <- skimr::skim(species)
 # print(species_skim)
@@ -554,7 +554,6 @@ phys_sample <- tfa_occ %>%
     source_id = id,
     sample_type = specimen_status,
     specimen_voucher_exists = specimen_voucher_exists,
-    # This column is confusing- what does it mean?
     sample_destination = specimen_voucher_location,
     sample_label = glue::glue(
       "[{specimen_voucher_location}]{specimen_voucher_catalogue_number}"
