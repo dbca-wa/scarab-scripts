@@ -2324,7 +2324,7 @@ tfl_occ_obs_sum <- rbind(
   #tfl_plant_count_sum
 )
 
-tsc_cons_cat_sum <- rbind(
+tsc_occ_obs_sum <- rbind(
   tsc_phys_sample_sum,
   tsc_hab_cond_sum,
   tsc_area_ass_sum,
@@ -2333,7 +2333,7 @@ tsc_cons_cat_sum <- rbind(
 )
 
 occ_obs_summary <- tfl_occ_obs_sum %>%
-  cbind(tsc_cons_cat_sum) %>%
+  cbind(tsc_occ_obs_sum) %>%
   cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition")) %>% # PlantCount
   dplyr::select("Obstype", everything())
 
