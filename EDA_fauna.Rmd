@@ -166,13 +166,18 @@ phylo_group <- tfa_data$`Group List` %>%
   dplyr::left_join(phylo_class, by = "phylo_class_id")
 # skimr::skim(group)
 
-species_notes <- tfa_data$`Species Notes` %>%
+species_notes_with_duplicates <- tfa_data$`Species Notes` %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
     species_notes = Notes %>% as.character()
   )
-species_notes_dup <- species_notes %>%
-  filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) # two duplicate species_codes
+species_notes_dup <- species_notes_with_duplicates %>%
+  filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) # two duplicate species_codes- remove from species notes
+
+readr::write_csv(species_notes_dup, path = here::here("data", "species_notes_duplications.csv"))
+
+species_notes <- species_notes_with_duplicates %>% 
+  distinct(species_code)
 
 category <- tfa_data$`Category List` %>%
   dplyr::transmute(
@@ -237,13 +242,16 @@ species <- tfa_data$`Species List` %>%
     # buffer = Buffer %>% as.character(), # NA 0 1 2 3 - unused
     # estimated_lifespan = EST.LIFE %>% as.integer() # NA  0 10  7 15  6  8
   ) %>%
+  dplyr::filter(!name_id == "34146") %>% # This is the removed name_id
   dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
   dplyr::left_join(species_notes, by = "species_code") %>%
   dplyr::left_join(category, by = "category_id")
 
-# The above needs to be added back in after we deal with duplicates
-species_dup <- species %>%
-  filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # three duplicate name_id
+# # Duplicate name_id's in species_list
+# species_list_dup <- species %>%
+#   filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # one duplicate name_id
+# 
+# readr::write_csv(species_list_dup, path = here::here("data", "species_list_duplications.csv"))
 
 # species_skim <- skimr::skim(species)
 # print(species_skim)
@@ -444,13 +452,16 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   # Field5 = Field5 %>% as.character()
 ) %>%
   dplyr::left_join(shires, by = "lga_id") %>%
-  dplyr::left_join(tenure, by = "tenure_id") %>%
+  dplyr::left_join(tenure, by = "tenure_id")%>%
   # ## veg types has duplicates
   dplyr::left_join(vegetation_types, by = "vegetation_type_id") %>%
   dplyr::left_join(certainty, by = "certainty_id") %>%
-  dplyr::left_join(species_names, by = "species_code") %>%
+  # dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible()
+
+tfa_occ_dup <- tfa_occ %>%
+  filter(id %in% unique(.[["id"]][duplicated(.[["id"]])]))
 
 hab_comp <- tfa_occ %>%
   has_name_id_and_location %>% 
