@@ -1351,10 +1351,6 @@ tfl_plant_count <- plant_count %>%
   # base::replace(., is.na(.), "") %>%
   dplyr::semi_join(tfl_tae)
 
-x <- tfl_plant_count %>% 
-  dplyr::filter(is.na(source))
-y <- unique(tfl_plant_count$source_id)
-
 ## Physical sample
 tfl_sampdest <-
   here::here("csv/tfl_sample_destination_w_tsc.csv") %>%
