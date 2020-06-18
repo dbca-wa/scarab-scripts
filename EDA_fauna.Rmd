@@ -2223,19 +2223,32 @@ tfa_occ_no_specode <- tfa_occ %>%
 tfa_occ_no_nameid %>% rt
 ```
 
-There are `r nrow(tfa_occ_no_specode)` distinct scientific fauna names missing a Species Code.
-Any records listed here need to be fixed in the original Threatened Fauna database.
+There are `r nrow(tfa_occ_no_specode)` distinct scientific fauna names missing a Species
+Code.Any records listed here need to be fixed in the original Threatened Fauna database.
 
 ### Observation occurrence mapping
 
 Occurrence criteria were manually mapped for each variable, therefore they need
 to be checked to confirm whether the mapping is correct. 
 
-Landforms: These terms were mapped to 'umbrella' terms which generally follow the morphological types listed in McDonald et al. (1998, p13). However, some of the terms could not be mapped as they are vegetation types (e.g. FOR = Forest) and not landform types. 
+Landforms: These terms were mapped to 'umbrella' terms which generally follow the 
+morphological types listed in McDonald et al. (1998, p13). However, some of the terms 
+could not be mapped as they are vegetation types (e.g. FOR = Forest) and not landform 
+types. 
 
-McDonald, R.C., Isbell, R.F., Speight, J.G., Walker, J., and Hopkins, M.S. (1998) Australian Soil and Land Survey - Field Handbook, Second Addition. CSIRO, Canberra, Australia.
+McDonald, R.C., Isbell, R.F., Speight, J.G., Walker, J., and Hopkins, M.S. (1998)
+Australian Soil and Land Survey - Field Handbook, Second Addition. CSIRO, Canberra, 
+Australia.
 
 Secondary signs: 'Definite signs' was not mapped
+
+Sample destination: Was manually mapped to a generic field for its location and
+the specific location added to the sample label field as free text. We have done
+this because, combined with flora, there are \> 100 unique locations for sample
+destination, which would make a very long drop down menu.
+
+The manual mapping needs to be spot checked and approved before the manual mapping
+can be considered complete.
 
 ```{r show_tfl_lookup_mappings}
 tfa_confidence %>% rt
@@ -2246,13 +2259,6 @@ tfa_repmap %>% rt
 tfa_samptype %>% rt
 tfa_sampdest %>% rt
 ```
-
-Sample destination was manually mapped to a generic field for its location and 
-the specific location added to the sample label field as free text. We have 
-done this because, combined with Flora, there are \> 100 unique locations for 
-sample destination, which would make a very long drop down menu.
-
-The above need to be corrected  before the manual mapping can be completed.
 
 ### Occurrence observations with no matching TAE
 
