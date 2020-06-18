@@ -2235,7 +2235,7 @@ tfa_occ_no_nameid %>% rt
 There are `r nrow(tfa_occ_no_specode)` distinct scientific fauna names missing a Species Code.
 Any records listed here need to be fixed in the original Threatened Fauna database.
 
-### Occurrence mapping
+### Observation occurrence mapping
 
 Occurrence criteria were manually mapped for each variable, therefore they need
 to be checked to confirm whether the mapping is correct. 
@@ -2262,6 +2262,135 @@ done this because, combined with Flora, there are \> 100 unique locations for
 sample destination, which would make a very long drop down menu.
 
 The above need to be corrected  before the manual mapping can be completed.
+
+### Occurrence observations with no matching TAE
+
+Below are occurrence observations which do not have a corresponding TAE for 
+them to be assigned to. 
+
+```{r}
+missing_tae_phys_sample <- tfa_phys_sample %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+missing_tae_anim_obs <- tfa_anim_obs %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+missing_tae_veg_class <- tfa_veg_class %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+missing_tae_hab_comp <- tfa_hab_comp %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+
+missing_tae_phys_sample %>% rt
+missing_tae_anim_obs %>% rt
+missing_tae_veg_class %>% rt
+missing_tae_hab_comp %>% rt
+```
+
+### `tfl_tae` occurrence observations not in `tsc_tae_observations`
+
+Any record differences in the following table indicate occurrence observations in TFL that
+were not migrated into TSC.
+
+```{r}
+make_tfa_tae_occ_obs_summary <-
+  . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFA")
+
+tfa_phys_sample_sum <-
+  tfa_phys_sample %>% make_tfa_tae_occ_obs_summary
+tfa_anim_obs_sum <-
+  tfa_anim_obs %>% make_tfa_tae_occ_obs_summary
+tfa_veg_class_sum <-
+  tfa_veg_class %>% make_tfa_tae_occ_obs_summary
+tfa_hab_comp_sum <-
+  tfa_hab_comp %>% make_tfa_tae_occ_obs_summary
+
+make_tsc_occ_obs_summary <- function(data, cn) {
+  data %>%
+    dplyr::select(obstype) %>%
+    dplyr::filter(str_detect(obstype, cn)) %>%
+    nrow() %>%
+    as.data.frame %>%
+    magrittr::set_colnames("TSC")
+}
+
+tsc_phys_sample_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("PhysicalSample")
+tsc_anim_obs_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("AnimalObservation")
+tsc_veg_class_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("VegetationClassification")
+tsc_hab_comp_sum <-
+  tsc_tae_observations %>% make_tsc_occ_obs_summary("HabitatComposition")
+
+
+tfa_occ_obs_sum <- rbind(
+  tfa_phys_sample_sum,
+  tfa_anim_obs_sum,
+  tfa_veg_class_sum,
+  tfa_hab_comp_sum
+  #tfl_plant_count_sum
+)
+
+tsc_occ_obs_sum <- rbind(
+  tsc_phys_sample_sum,
+  tsc_anim_obs_sum,
+  tsc_veg_class_sum,
+  tsc_hab_comp_sum
+  #tsc_plant_countsum
+)
+
+occ_obs_summary <- tfa_occ_obs_sum %>%
+  cbind(tsc_occ_obs_sum) %>%
+  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition")) %>% # PlantCount
+  dplyr::select("Obstype", everything())
+
+occ_obs_summary %>% rt
+
+```
+
+The following tables show any occurrence observations in TFL which are not in TSC,
+for each observation table.
+
+Physical Sample
+
+```{r show_tfl_tcl_not_in_tsc_iucn2012}
+tsc_phys_sample <- tsc_tae_observations %>% 
+  dplyr::filter(obstype == "PhysicalSample")
+
+tfl_phys_sample %>%
+  dplyr::anti_join(tsc_phys_sample, by = "source_id") %>%
+  rt
+```
+
+Habitat condition
+
+```{r show_tfl_tcl_not_in_tsc_iucn2001}
+tfl_hab_cond %>%
+  dplyr::anti_join(tsc_hab_cond, by = c("source_id" = "id")) %>% 
+  rt
+```
+
+Area assessment
+
+```{r show_tfl_tcl_not_in_tsc_iucn1994}
+tfl_area_ass %>%
+  dplyr::anti_join(tsc_area_ass, by = c("source_id" = "id")) %>% 
+  rt
+```
+
+Habitat composition
+
+```{r show_tfl_tcl_not_in_tsc_prio}
+tfl_hab_comp %>%
+  dplyr::anti_join(tsc_hab_comp, by = c("source_id" = "id")) %>%  
+  rt
+```
+
+Plant count
+
+```{r show_tfl_tcl_not_in_tsc_prio}
+tfl_plant_count %>%
+  dplyr::anti_join(tsc_plant_count, by = c("source_id" = "id")) %>%  
+  rt
+```
 
 #### Trust level of occurrence records
 
