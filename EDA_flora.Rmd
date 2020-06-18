@@ -2338,54 +2338,9 @@ occ_obs_summary <- tfl_occ_obs_sum %>%
   dplyr::select("Obstype", everything())
 
 occ_obs_summary %>% rt
-
 ```
 
-The following tables show any occurrence observations in TFL which are not in TSC,
-for each observation table.
-
-Physical Sample
-
-```{r show_tfl_tcl_not_in_tsc_iucn2012}
-tsc_phys_sample <- tsc_tae_observations %>% 
-  dplyr::filter(obstype == "PhysicalSample")
-
-tfl_phys_sample %>%
-  dplyr::anti_join(tsc_phys_sample, by = "source_id") %>%
-  rt
-```
-
-Habitat condition
-
-```{r show_tfl_tcl_not_in_tsc_iucn2001}
-tfl_hab_cond %>%
-  dplyr::anti_join(tsc_hab_cond, by = c("source_id" = "id")) %>% 
-  rt
-```
-
-Area assessment
-
-```{r show_tfl_tcl_not_in_tsc_iucn1994}
-tfl_area_ass %>%
-  dplyr::anti_join(tsc_area_ass, by = c("source_id" = "id")) %>% 
-  rt
-```
-
-Habitat composition
-
-```{r show_tfl_tcl_not_in_tsc_prio}
-tfl_hab_comp %>%
-  dplyr::anti_join(tsc_hab_comp, by = c("source_id" = "id")) %>%  
-  rt
-```
-
-Plant count
-
-```{r show_tfl_tcl_not_in_tsc_prio}
-tfl_plant_count %>%
-  dplyr::anti_join(tsc_plant_count, by = c("source_id" = "id")) %>%  
-  rt
-```
+#### Spot check occurrence observations
 
 ### Trust level of occurrence records
 
