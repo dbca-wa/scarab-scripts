@@ -1094,6 +1094,24 @@ tfa_veg_class <- veg_class %>%
   base::replace(., is.na(.), "") %>% 
   invisible()
 
+## Check for occ_observations with no matching tae
+missing_tae_phys_sample <- tfa_phys_sample %>% 
+  dplyr::anti_join(tfa_tae, by = "source_id") #0
+missing_tae_anim_obs <- tfa_anim_obs %>% 
+  dplyr::anti_join(tfa_tae, by = "source_id") #2 source_id = 140172, 140215
+missing_tae_veg_class <- tfa_veg_class %>% 
+  dplyr::anti_join(tfa_tae, by = "source_id") #2 source_id = 140172, 140215
+missing_tae_hab_comp <- tfa_hab_comp %>% 
+  dplyr::anti_join(tfa_tae, by = "source_id") #1 source_id = 140215
+
+## Remove source_id's with no matching tae
+tfa_anim_obs <- tfa_anim_obs %>% 
+  dplyr::filter(!source_id %in% c(140172,140215))
+tfa_veg_class <- tfa_veg_class %>% 
+  dplyr::filter(!source_id %in% c(140172,140215))
+tfa_hab_comp <- tfa_hab_comp %>%
+  dplyr::filter(!source_id %in% c(140215))
+
 # TODO tidyr::drop_na() where level1 is NA
 ```
 
@@ -1467,7 +1485,7 @@ Expand the code block below to view the process.
 
 ## Conservation listings
 
-```{r get_tsc_tcl2, message=FALSE, warning=FALSE}
+```{r get_tsc_tcl2}
 if (file.exists(tsc_cl_fauna_datafile)) {
   load(tsc_cl_fauna_datafile)
 } else {
@@ -1592,9 +1610,6 @@ if (file.exists(tsc_occ_fauna_datafile)) {
 # All sources are fauna (10)
 tsc_occ_fauna_no <- tsc_tae %>%
   dplyr::filter(source == 10)
-
-tsc_occ_flora_no <- tsc_tae %>%
-  dplyr::filter(source == 11)
 
 unique(tsc_occ_fauna$source)
 length(unique(tsc_occ_fauna$source_id)) # 102248
@@ -2284,13 +2299,13 @@ them to be assigned to.
 
 ```{r}
 missing_tae_phys_sample <- tfa_phys_sample %>% 
-  dplyr::anti_join(tfl_tae, by = "source_id")
+  dplyr::anti_join(tfa_tae, by = "source_id")
 missing_tae_anim_obs <- tfa_anim_obs %>% 
-  dplyr::anti_join(tfl_tae, by = "source_id")
+  dplyr::anti_join(tfa_tae, by = "source_id")
 missing_tae_veg_class <- tfa_veg_class %>% 
-  dplyr::anti_join(tfl_tae, by = "source_id")
+  dplyr::anti_join(tfa_tae, by = "source_id")
 missing_tae_hab_comp <- tfa_hab_comp %>% 
-  dplyr::anti_join(tfl_tae, by = "source_id")
+  dplyr::anti_join(tfa_tae, by = "source_id")
 
 missing_tae_phys_sample %>% rt
 missing_tae_anim_obs %>% rt
