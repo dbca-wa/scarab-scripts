@@ -1340,7 +1340,8 @@ please follow the link to the workbook.
 # extract all eoo
 tfa_occ_with_coords <- tfa_occ %>% 
   dplyr::filter(!is.na(latitude)) %>% 
-  dplyr::filter(!is.na(longitude))
+  dplyr::filter(!is.na(longitude)) %>% 
+  dplyr::filter(longitude > 96)
 
 # The total convex hull of all occurrences (one polygon)
 tfa_eoo_all <- eoo_polygon(tfa_occ_with_coords)
