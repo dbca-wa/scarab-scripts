@@ -1517,7 +1517,7 @@ tsc_community_boundaries <- tsc_cae_data %>%
 
  # Community occurrence observations
   tsc_tae_observations_communities <- "occ-observation" %>% 
-    wastdr::wastd_GET(query = list(source=)) %>%
+    wastdr::wastd_GET(query = list(source=15)) %>%
     wastdr::wastd_parse()
    
 save(tsc_ccl_communities,
