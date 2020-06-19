@@ -20,10 +20,10 @@ knitr::opts_chunk$set(echo = TRUE, message = TRUE)
 source("helpers.R")
 
 # Cached data from TSC - delete to force refresh
-tfa_file <- here::here("data", "tfa.Rdata")
-tfa_occ_datafile <- here::here("data", "tfa_occ.Rdata")
-tsc_cl_fauna_datafile <- here::here("data/tsc_cl_fauna.RData")
-tsc_occ_fauna_datafile <- here::here("data/tsc_tae_fauna.RData")
+tfa_extracted <- here::here("data/tfa_extracted.Rdata")
+tfa_transformed <- here::here("data/tfa_transformed.RData")
+tfa_occ_datafile <- here::here("data/tfa_occ.Rdata")
+tsc_extracted_fauna <- here::here("data/tsc_extracted_fauna.RData")
 ```
 
 # Context
@@ -89,9 +89,9 @@ on the DBCA data catalogue, then extracted and transformed.
 This section extracts taxonomic data from TFA. 
 This data will later be compared to the taxonomic data from TSC.
 
-```{r get_tfa}
-if (file.exists(tfa_file)) {
-  load(tfa_file)
+```{r tfa_extract}
+if (file.exists(tfa_extracted)) {
+  load(tfa_extracted)
 } else {
   tfa_data <- dl_mdbzip("66efb68d-8f05-4bfc-af14-5d1a381d0cf2", verbose = T)
   snapshot_last_updated <- "66efb68d-8f05-4bfc-af14-5d1a381d0cf2" %>%
@@ -101,7 +101,9 @@ if (file.exists(tfa_file)) {
     lubridate::with_tz("Australia/Perth")
   save(tfa_data, snapshot_last_updated, file=tfa_file)
 }
+```
 
+```{r tfa_transform}
 # Lookup tables
 shires <- tfa_data$Shires %>%
   dplyr::transmute(
@@ -357,7 +359,7 @@ It is extracted into a CSV spreadsheet to the
 [Mallee Fowl](https://data.dpaw.wa.gov.au/dataset/79e90d7b-33a3-4aa0-8634-8a12033eb21d/resource/c636bbdd-7926-4c10-8032-6c7fa5a7e318/download/malleefowl_data.csv) resource on the 
 data catalogue.
 
-```{r make_tfa_occ, message=FALSE, warning=FALSE}
+```{r get_tfa_occ, message=FALSE, warning=FALSE}
 # Taxon occurrences
 tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   id = DBNo %>% as.character(),
@@ -775,7 +777,6 @@ readr::write_csv(tfa_rest,
 ```
 
 ```{r savepoint_tfa}
-tfa_datafile <- here::here("data/tfa_all.RData")
 save(
   all_crit_map,
 anim_fauna,
@@ -833,10 +834,10 @@ users,
 veg_class,
 vegetation_types,
 wastd_occ_obs_post,
-file = tfa_datafile,
+file = tfa_transformed,
 compress = "xz"
 )
-load(tfa_datafile)
+load(tfa_transformed)
 ```
 
 # Current conservation lists (TSC)
