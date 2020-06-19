@@ -99,7 +99,7 @@ if (file.exists(tfa_extracted)) {
     magrittr::extract2("last_modified") %>%
     lubridate::as_datetime() %>%
     lubridate::with_tz("Australia/Perth")
-  save(tfa_data, snapshot_last_updated, file=tfa_file)
+  save(tfa_data, snapshot_last_updated, file=tfa_extracted)
 }
 ```
 
@@ -173,6 +173,7 @@ species_notes_with_duplicates <- tfa_data$`Species Notes` %>%
     species_code = SpCode %>% as.character(),
     species_notes = Notes %>% as.character()
   )
+
 tfa_species_notes_duplications <- species_notes_with_duplicates %>%
   filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) # two duplicate species_codes- remove from species notes
 
@@ -203,7 +204,7 @@ readr::write_csv(
 ) 
 
 # TODO species notes
-species <- tfa_data$`Species List` %>%
+species_with_duplicates <- tfa_data$`Species List` %>%
   dplyr::transmute(
     species_code = SpCode %>% as.character(),
     old_species_code = OldCode %>% as.character(),
@@ -244,17 +245,18 @@ species <- tfa_data$`Species List` %>%
     # buffer = Buffer %>% as.character(), # NA 0 1 2 3 - unused
     # estimated_lifespan = EST.LIFE %>% as.integer() # NA  0 10  7 15  6  8
   ) %>%
-  dplyr::filter(!name_id == "34146") %>% # This is the removed name_id
   dplyr::left_join(phylo_group, by = "phylo_group_id") %>%
   dplyr::left_join(species_notes, by = "species_code") %>%
   dplyr::left_join(category, by = "category_id")
 
-# # Duplicate name_id's in species_list
-# tfa_species_list_dup <- species %>%
-#   filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # one duplicate name_id
-# # 
-# readr::write_csv(tfa_species_list_dup, path = here::here("data", "tfa_species_list_duplications.csv"))
+# Duplicate name_id's in species_list
+tfa_species_list_dup <- species_with_duplicates %>%
+  filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # one duplicate name_id
+readr::write_csv(tfa_species_list_dup, path = here::here("data", "tfa_species_list_duplications.csv"))
 
+species <- species_with_duplicates %>% 
+dplyr::filter(!name_id == "34146") # This is the removed name_id
+  
 # species_skim <- skimr::skim(species)
 # print(species_skim)
 # DT::datatable(species)
@@ -817,15 +819,14 @@ tfa_cons_cat,
 tfa_cons_listings,
 tfa_cons_lists,
 tfa_data,
-tfa_file,
+tfa_extracted,
 tfa_occ,
 tfa_occ_datafile,
 tfa_pla,
 tfa_resp,
 tfa_rest,
 tfa_tae,
-tsc_cl_fauna_datafile,
-tsc_occ_fauna_datafile,
+tsc_extracted_fauna,
 tz,
 uat,
 upload_file_to_ckan,
@@ -1099,11 +1100,14 @@ tfa_veg_class <- veg_class %>%
 missing_tae_phys_sample <- tfa_phys_sample %>% 
   dplyr::anti_join(tfa_tae, by = "source_id") #0
 missing_tae_anim_obs <- tfa_anim_obs %>% 
-  dplyr::anti_join(tfa_tae, by = "source_id") #2 source_id = 140172, 140215
+  dplyr::anti_join(tfa_tae, by = "source_id") %>%  #2 source_id = 140172, 140215
+readr::write_csv(path = here::here("data", "missing_tae_anim_obs.csv"))
 missing_tae_veg_class <- tfa_veg_class %>% 
-  dplyr::anti_join(tfa_tae, by = "source_id") #2 source_id = 140172, 140215
+  dplyr::anti_join(tfa_tae, by = "source_id") %>% #2 source_id = 140172, 140215
+readr::write_csv(path = here::here("data", "missing_tae_veg_class.csv"))
 missing_tae_hab_comp <- tfa_hab_comp %>% 
-  dplyr::anti_join(tfa_tae, by = "source_id") #1 source_id = 140215
+  dplyr::anti_join(tfa_tae, by = "source_id") %>% #1 source_id = 140215
+readr::write_csv(path = here::here("data", "missing_tae_hab_comp.csv"))
 
 ## Remove source_id's with no matching tae
 tfa_anim_obs <- tfa_anim_obs %>% 
@@ -1722,6 +1726,28 @@ true_mismatches <- tfa_data_wacensus %>%
 true_mismatches %>% rt
 ```
 
+### Species notes duplications
+The records below are duplicated `species_code` in `Species Notes`, which is extracted from `tfa_data`.
+They need to be correct so there is only one record for each `species_code`.
+
+```{r show_species_note_duplicates}
+tfa_species_notes_duplications <- species_notes_with_duplicates %>%
+  filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) %>% as_tibble()
+
+tfa_species_notes_duplications %>% rt
+```
+
+### Species list duplications
+The records below are duplicated `name_id` in `Species List`, which is extracted from `tfa_data`.
+They need to be correct so there is only one record for each `name_id`. `name_id` must be unique for each species, including sub-species otherwise they cannot be migrated to TSC.
+
+````{r show_species_list_duplicates}
+tfa_species_list_duplications <- species_with_duplicates %>%
+  filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) %>% as_tibble()
+
+tfa_species_list_duplications %>% rt
+```
+
 ### Species names in TFA but not in TSC
 Since TSC contains all WACensus names, all names in TFA with a NameID other 
 than 0 (indicating a phrase name) should also occur in TSC.
@@ -2195,6 +2221,12 @@ There are `r nrow(tfa_occ_no_latlng_w_ne)` distinct fauna records with missing l
 Geographic coordinates outside possible boundaries must be rectified at source.
 ```{r tfa_occ_impossible_locations}
 tfa_occ %>% impossible_location() %>% rt
+```
+
+#### Out of bounds locations
+Geographic coordinates outside sensible boundaries must be rectified at source.
+```{r tfa_occ_unlikely_locations}
+tfa_occ %>% filter(longitude < 96) %>% rt
 ```
 
 #### Datum
