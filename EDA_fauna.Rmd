@@ -175,9 +175,12 @@ species_notes_with_duplicates <- tfa_data$`Species Notes` %>%
   )
 
 tfa_species_notes_duplications <- species_notes_with_duplicates %>%
-  filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) # two duplicate species_codes- remove from species notes
+  filter(species_code %in% unique(.[["species_code"]][duplicated(.[["species_code"]])])) 
+# two duplicate species_codes- remove from species notes
 
-readr::write_csv(tfa_species_notes_duplications, path = here::here("data", "tfa_species_notes_duplications.csv"))
+readr::write_csv(tfa_species_notes_duplications, path = here::here(
+  "data", "tfa_species_notes_duplications.csv")
+  )
 
 species_notes <- species_notes_with_duplicates %>% 
   distinct(species_code)
@@ -254,8 +257,9 @@ tfa_species_list_dup <- species_with_duplicates %>%
   filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # one duplicate name_id
 readr::write_csv(tfa_species_list_dup, path = here::here("data", "tfa_species_list_duplications.csv"))
 
+# Anti_join duplicate name_id to species_with_duplicates to remove them.
 species <- species_with_duplicates %>% 
-dplyr::filter(!name_id == "34146") # This is the removed name_id
+dplyr::anti_join(tfa_species_list_dup, by = "name_id")
   
 # species_skim <- skimr::skim(species)
 # print(species_skim)
@@ -780,7 +784,7 @@ readr::write_csv(tfa_rest,
 
 ```{r savepoint_tfa}
 save(
-  all_crit_map,
+all_crit_map,
 anim_fauna,
 anim_obs,
 ass_species,
@@ -984,7 +988,7 @@ tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfa_hab_comp <- hab_comp %>%
+tfa_hab_comp_complete <- hab_comp %>%
   left_join(tfa_landcrit, by = c("landform_id")) %>%
   dplyr::select(source, source_id, tsc_landform_id) %>%
   dplyr::rename(landform = tsc_landform_id) %>% 
@@ -1024,7 +1028,7 @@ tfa_repmap <- here::here("csv/tfa_repmat_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfa_anim_obs <- anim_obs %>%
+tfa_anim_obs_complete <- anim_obs %>%
   left_join(tfa_confidence, by = c("species_id_confidence")) %>%
   left_join(tfa_det_meth, by = c("detection_method")) %>%
   left_join(tfa_sec_sign, by = c("secondary_signs")) %>%
@@ -1049,7 +1053,7 @@ tfa_anim_obs <- anim_obs %>%
   invisible()
 
 # Associated species
-tfa_ass_species <- ass_species %>% 
+tfa_ass_species_complete <- ass_species %>% 
   base::replace(., is.na(.), "") %>% 
   invisible()
 
@@ -1070,7 +1074,7 @@ tfa_sampdest <- here::here("csv/tfa_sampdest_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
-tfa_phys_sample <- phys_sample %>%
+tfa_phys_sample_complete <- phys_sample %>%
   left_join(tfa_samptype, by = c("sample_type")) %>%
   left_join(tfa_sampdest, by = c("sample_destination")) %>%
   dplyr::transmute(
@@ -1086,7 +1090,7 @@ tfa_phys_sample <- phys_sample %>%
   invisible()
 
 # Vegetation classification 
-tfa_veg_class <- veg_class %>% 
+tfa_veg_class_complete <- veg_class %>% 
   dplyr::transmute(
     source = source,
     source_id = source_id,
@@ -1097,25 +1101,24 @@ tfa_veg_class <- veg_class %>%
   invisible()
 
 ## Check for occ_observations with no matching tae
-missing_tae_phys_sample <- tfa_phys_sample %>% 
+missing_tae_phys_sample <- tfa_phys_sample_complete %>% 
   dplyr::anti_join(tfa_tae, by = "source_id") #0
-missing_tae_anim_obs <- tfa_anim_obs %>% 
-  dplyr::anti_join(tfa_tae, by = "source_id") %>%  #2 source_id = 140172, 140215
-readr::write_csv(path = here::here("data", "missing_tae_anim_obs.csv"))
-missing_tae_veg_class <- tfa_veg_class %>% 
-  dplyr::anti_join(tfa_tae, by = "source_id") %>% #2 source_id = 140172, 140215
-readr::write_csv(path = here::here("data", "missing_tae_veg_class.csv"))
-missing_tae_hab_comp <- tfa_hab_comp %>% 
-  dplyr::anti_join(tfa_tae, by = "source_id") %>% #1 source_id = 140215
-readr::write_csv(path = here::here("data", "missing_tae_hab_comp.csv"))
+missing_tae_anim_obs <- tfa_anim_obs_complete %>% 
+  dplyr::anti_join(tfa_tae, by = "source_id")  #2 source_id = 140172, 140215
+missing_tae_veg_class <- tfa_veg_class_complete %>% 
+  dplyr::anti_join(tfa_tae, by = "source_id") #2 source_id = 140172, 140215
+missing_tae_hab_comp <- tfa_hab_comp_complete %>% 
+  dplyr::anti_join(tfa_tae, by = "source_id")#1 source_id = 140215
 
 ## Remove source_id's with no matching tae
-tfa_anim_obs <- tfa_anim_obs %>% 
-  dplyr::filter(!source_id %in% c(140172,140215))
-tfa_veg_class <- tfa_veg_class %>% 
-  dplyr::filter(!source_id %in% c(140172,140215))
-tfa_hab_comp <- tfa_hab_comp %>%
-  dplyr::filter(!source_id %in% c(140215))
+tfa_phys_sample <- tfa_phys_sample_complete %>% 
+  dplyr::anti_join(missing_tae_phys_sample, by = "source_id")
+tfa_anim_obs <- tfa_anim_obs_complete %>% 
+  dplyr::anti_join(missing_tae_anim_obs, by = "source_id")
+tfa_veg_class <- tfa_veg_class_complete %>% 
+  dplyr::anti_join(missing_tae_veg_class, by = "source_id")
+tfa_hab_comp <- tfa_hab_comp_complete %>% 
+  dplyr::anti_join(missing_tae_hab_comp, by = "source_id")
 
 # TODO tidyr::drop_na() where level1 is NA
 ```
@@ -2315,21 +2318,20 @@ tfa_sampdest %>% rt
 Below are occurrence observations which do not have a corresponding TAE for 
 them to be assigned to. 
 
-```{r}
-missing_tae_phys_sample <- tfa_phys_sample %>% 
+```{r show_occ_obs_no_matching_tae}
+missing_tae_phys_sample <- tfa_phys_sample_complete %>% 
   dplyr::anti_join(tfa_tae, by = "source_id")
-missing_tae_anim_obs <- tfa_anim_obs %>% 
+missing_tae_anim_obs <- tfa_anim_obs_complete %>% 
   dplyr::anti_join(tfa_tae, by = "source_id")
-missing_tae_veg_class <- tfa_veg_class %>% 
+missing_tae_veg_class <- tfa_veg_class_complete %>% 
   dplyr::anti_join(tfa_tae, by = "source_id")
-missing_tae_hab_comp <- tfa_hab_comp %>% 
+missing_tae_hab_comp <- tfa_hab_comp_complete %>% 
   dplyr::anti_join(tfa_tae, by = "source_id")
 
 missing_tae_phys_sample %>% rt
 missing_tae_anim_obs %>% rt
 missing_tae_veg_class %>% rt
 missing_tae_hab_comp %>% rt
-
 ```
 There are no results in the above tables because the occ_observations without a matching
 tae were removed prior to migration to prevent errors in the upload. See section...
@@ -2339,7 +2341,7 @@ tae were removed prior to migration to prevent errors in the upload. See section
 Any record differences in the following table indicate occurrence observations in TFL 
 that were not migrated into TSC.
 
-```{r}
+```{r show_occ_obs_summary}
 make_tfa_tae_occ_obs_summary <-
   . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFA")
 
