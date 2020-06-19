@@ -21,8 +21,9 @@ source("helpers.R")
 
 # Cached data from TSC - delete to force refresh
 tec_extracted <- here::here("data", "tec_extracted.Rdata")
+tec_transformed <- here::here("data/tec_transformed.RData")
 tec_occ_datafile <- here::here("data", "tec_occ.Rdata")
-tsc_extracted <- here::here("data/tsc_communities_extracted.RData")
+tsc_extracted <- here::here("data/tsc_extracted_communities.RData")
 ```
 
 # Context
@@ -88,7 +89,7 @@ on the DBCA data catalogue, then extracted and transformed.
 This section extracts communties data from TEC. 
 This data will later be compared to the taxonomic data from TSC.
 
-```{r get_tec}
+```{r tec_extract}
 if (file.exists(tec_extracted)) {
   load(tec_extracted)
 } else {
@@ -113,7 +114,7 @@ save(tec, snapshot_last_updated, tec_bdy, tec_site, file=tec_extracted)
 ```
 
 
-```{r tec_transform}
+```{r tec_transformed}
 # Look up tables
 former_range <- tec_data$FORMER_RANGES %>%
   dplyr::transmute(
@@ -1102,8 +1103,8 @@ save(tec_occ, tec_bdy_cae, tec_site_cae, file=tec_occ_datafile, compress = "xz")
 if (file.exists(tec_occ_datafile)) load(tec_occ_datafile)
 ```
 
-```{r savepoint_tfa}
-tec_datafile <- here::here("data/tec_all.RData")
+## Save point
+```{r savepoint_tec}
 save(
 actions,
 all_crit_map,
@@ -1191,10 +1192,9 @@ upload_file_to_ckan,
 upload_to_ckan,
 voucher_specimens,
 wastd_occ_obs_post,
-file = tec_datafile,
-compress = "xz"
+file = tec_transformed
 )
-load(tec_datafile)
+# load(tec_transformed)
 ```
 
 # Current conservation lists (TSC)
@@ -1486,9 +1486,9 @@ applicable).
 
 Expand the code block below to view the process.
 
-```{r get_tsc_occ}
-if (file.exists(tsc_extracted)) {
-  load(tsc_extracted)
+```{r get_tsc_data}
+if (file.exists(tsc_extracted_communities)) {
+  load(tsc_extracted_communities)
 } else {
   
 # Community conservations listings
@@ -1514,12 +1514,18 @@ tsc_community_boundaries <- tsc_cae_data %>%
   geojsonsf::geojson_sf() %>% 
   dplyr::mutate(area_type = area_type %>% as.character()) %>% 
   dplyr::filter(area_type == 10) 
+
+ # Community occurrence observations
+  tsc_tae_observations_communities <- "occ-observation" %>% 
+    wastdr::wastd_GET(query = list(source=)) %>%
+    wastdr::wastd_parse()
    
 save(tsc_ccl_communities,
      tsc_cae_data,
      tsc_community_sites,
      tsc_community_boundaries,
-     file = tsc_extracted)
+     tsc_tae_observations_communities,
+     file = tsc_extracted_communities)
 }
 ```
 
@@ -1898,6 +1904,61 @@ McDonald, R.C., Isbell, R.F., Speight, J.G., Walker, J., and Hopkins, M.S. (1998
 tec_landforms %>% rt
 tec_drainage %>% rt
 ```
+
+### Occurrence observations with no matching TAE
+
+Below are occurrence observations which do not have a corresponding TAE for 
+them to be assigned to. 
+
+```{r}
+missing_tae_hab_comp <- tfl_hab_comp %>% 
+  dplyr::anti_join(tfl_tae, by = "source_id")
+
+missing_tae_hab_comp %>% rt
+```
+
+### `tfl_tae` occurrence observations not in `tsc_tae_observations`
+
+Any record differences in the following table indicate occurrence observations in TFL that
+were not migrated into TSC.
+
+```{r}
+make_tfl_tae_occ_obs_summary <-
+  . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFL")
+
+tfl_hab_comp_sum <-
+  tfl_hab_comp %>% make_tfl_tae_occ_obs_summary
+
+make_tsc_occ_obs_summary <- function(data, cn) {
+  data %>%
+    dplyr::select(obstype) %>%
+    dplyr::filter(str_detect(obstype, cn)) %>%
+    nrow() %>%
+    as.data.frame %>%
+    magrittr::set_colnames("TSC")
+}
+
+tsc_hab_comp_sum <-
+  tsc_tae_observations_communities %>% make_tsc_occ_obs_summary("HabitatComposition")
+
+
+tfl_occ_obs_sum <- rbind(
+  tfl_hab_comp_sum
+)
+
+tsc_occ_obs_sum <- rbind(
+  tsc_hab_comp_sum
+)
+
+occ_obs_summary <- tfl_occ_obs_sum %>%
+  cbind(tsc_occ_obs_sum) %>%
+  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition")) %>% # PlantCount
+  dplyr::select("Obstype", everything())
+
+occ_obs_summary %>% rt
+```
+
+#### Spot check occurrence observations
 
 ### Trust level of occurrence records
 Currently, we assume that all occurrence records in the legacy databases are 
