@@ -1049,6 +1049,7 @@ tfa_anim_obs_complete <- anim_obs %>%
     no_juvenile_female =  number_of_juvenile_females,
     no_juvenile_unknown = number_of_juvenile_unknown,
   ) %>% 
+  mutate(no_juvenile_unknown = replace(no_juvenile_unknown, which(no_juvenile_unknown<0), 10)) %>% # make negative value a positive
   # base::replace(., is.na(.), "") %>% 
   invisible()
 
@@ -1460,8 +1461,6 @@ tfa_phys_sample_res <- tfa_phys_sample %>%
 tfa_anim_obs_res <- tfa_anim_obs %>% 
   wastd_occ_obs_post(obstype="AnimalObservation")
 
-anim_obs_issue <- tfa_anim_obs[201:300,]
-
 # We cannot map hand-written AssSpecies to TSC NameIDs.
 # tfa_ass_species_res <- tfa_ass_species[1,] %>% 
 #   wastd_occ_obs_post(obstype="AssociatedSpecies")
@@ -1624,7 +1623,7 @@ tfa_tae_update <- tfa_tae %>%
   dplyr::semi_join(tsc_occ_fauna, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-tfa_tae_create_res <- tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
+# tfa_tae_create_res <- tfa_tae_create %>% chunk_post(serializer = "occ-taxon-points", chunksize = 100)
 ```
 
 # Compare legacy from TFA to migrated data from TSC
@@ -2198,7 +2197,8 @@ default datetime. The records below are those.
 
 ```{r default_encountered_on}
 tfa_tae_default_datetime <- tfa_tae %>% 
-  filter(encountered_on == "1900-01-01 00:00:00+08:00") %>% rt
+  filter(encountered_on == "1900-01-01 00:00:00+08:00") %>% as_tibble()
+tfa_tae_default_datetime %>% rt
 ```
 
 #### Missing coordinates
@@ -2364,13 +2364,13 @@ make_tsc_occ_obs_summary <- function(data, cn) {
 }
 
 tsc_phys_sample_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("PhysicalSample")
+  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("PhysicalSample")
 tsc_anim_obs_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("AnimalObservation")
+  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("AnimalObservation")
 tsc_veg_class_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("VegetationClassification")
+  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("VegetationClassification")
 tsc_hab_comp_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("HabitatComposition")
+  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("HabitatComposition")
 
 
 tfa_occ_obs_sum <- rbind(
@@ -2391,11 +2391,10 @@ tsc_occ_obs_sum <- rbind(
 
 occ_obs_summary <- tfa_occ_obs_sum %>%
   cbind(tsc_occ_obs_sum) %>%
-  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition")) %>% # PlantCount
+  cbind(Obstype = c("PhysicalSample", "AnimalObservation", "VegetationClassification","HabitatComposition")) %>% # PlantCount
   dplyr::select("Obstype", everything())
 
 occ_obs_summary %>% rt
-
 ```
 
 #### Spot check occurrence observations
