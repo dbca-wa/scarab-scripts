@@ -1460,6 +1460,8 @@ tfa_phys_sample_res <- tfa_phys_sample %>%
 tfa_anim_obs_res <- tfa_anim_obs %>% 
   wastd_occ_obs_post(obstype="AnimalObservation")
 
+anim_obs_issue <- tfa_anim_obs[201:300,]
+
 # We cannot map hand-written AssSpecies to TSC NameIDs.
 # tfa_ass_species_res <- tfa_ass_species[1,] %>% 
 #   wastd_occ_obs_post(obstype="AssociatedSpecies")
@@ -1486,8 +1488,6 @@ tfa_hab_comp %>% readr::write_csv(path = here::here("data/tfa_hab_comp.csv"))
 
 # Migrated Data (TSC)
 
-# Migrated Data (TSC)
-
 Data from TSC is extracted through the TSC API and transformed into a usable
 format. This process is also the template for future reporting from TSC.
 
@@ -1509,7 +1509,7 @@ We do not join these multi-polygons to the data to prevent duplicates.
 
 Expand the code block below to view the process.
 
-```{r get_tsc_occ}
+```{r get_tsc_data}
 if (file.exists(tsc_extracted_fauna)) {
   load(tsc_extracted_fauna)
 } else {
@@ -1899,12 +1899,12 @@ tfa_cl_sum_iucn2001 <-
   tfa_listing_cat_iucn2001 %>% make_tfa_cl_summary
 tfa_cl_sum_iucn2012 <- 
   tfa_listing_cat_iucn2012 %>% make_tfa_cl_summary
-tfa_cl_sum_wawca <- 
-  tfa_listing_cat_wawca %>% make_tfa_cl_summary
+# tfa_cl_sum_wawca <- 
+#   tfa_listing_cat_wawca %>% make_tfa_cl_summary
 tfa_cl_sum_waps <- 
   tfa_listing_cat_waps %>% make_tfa_cl_summary
-tfa_cl_sum_spfn <- 
-  tfa_listing_cat_spfn %>% make_tfa_cl_summary
+# tfa_cl_sum_spfn <- 
+#   tfa_listing_cat_spfn %>% make_tfa_cl_summary
 tfa_cl_sum_epbc <- 
   tfa_listing_cat_epbc %>% make_tfa_cl_summary
 
@@ -1923,12 +1923,12 @@ tsc_cl_sum_iucn2001 <-
   tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN2001")
 tsc_cl_sum_iucn2012 <- 
   tsc_tcl_fauna %>% make_tsc_cl_summary("IUCN2012")
-tsc_cl_sum_wawca <- 
-  tsc_tcl_fauna %>% make_tsc_cl_summary("WAWCA")
+# tsc_cl_sum_wawca <- 
+#   tsc_tcl_fauna %>% make_tsc_cl_summary("WAWCA")
 tsc_cl_sum_waps <- 
   tsc_tcl_fauna %>% make_tsc_cl_summary("WAPS")
-tsc_cl_sum_spfn <- 
-  tsc_tcl_fauna %>% make_tsc_cl_summary("SPFN")
+# tsc_cl_sum_spfn <- 
+  # tsc_tcl_fauna %>% make_tsc_cl_summary("SPFN")
 tsc_cl_sum_epbc <- 
   tsc_tcl_fauna %>% make_tsc_cl_summary("EPBC")
 
@@ -1937,9 +1937,9 @@ tfa_cons_cat_sum <- rbind(
   tfa_cl_sum_iucn1994, 
   tfa_cl_sum_iucn2001, 
   tfa_cl_sum_iucn2012, 
-  tfa_cl_sum_wawca, 
+  # tfa_cl_sum_wawca, 
   tfa_cl_sum_waps,
-  tfa_cl_sum_spfn, 
+  # tfa_cl_sum_spfn, 
   tfa_cl_sum_epbc
 )
 
@@ -1947,16 +1947,16 @@ tsc_cons_cat_sum <- rbind(
   tsc_cl_sum_iucn1994, 
   tsc_cl_sum_iucn2001, 
   tsc_cl_sum_iucn2012, 
-  tsc_cl_sum_wawca, 
+  # tsc_cl_sum_wawca, 
   tsc_cl_sum_waps,
-  tsc_cl_sum_spfn, 
+  # tsc_cl_sum_spfn, 
   tsc_cl_sum_epbc 
   )
 
 cons_cat_summary <- tfa_cons_cat_sum %>%
   cbind(tsc_cons_cat_sum) %>%
   cbind(Category = c("IUCN1994", "IUCN2001", "IUCN2012", 
-                     "WAWCA", "WAPS", "SPFN", "EPBC")) %>%
+                     "WAPS", "EPBC")) %>%  #"WAWCA", "SPFN",
   dplyr::select("Category", everything())
 
 cons_cat_summary %>% rt
@@ -2004,15 +2004,15 @@ tfa_listing_cat_iucn1994 %>%
 ```
 
 WAWCA
-
+This was not migrated becasue it is a duplicate of the other conservation listing information
 ```{r show_tfa_tcl_not_in_tsc_wawca}
-#### WAWCA
-tsc_listing_cat_wawca <- tsc_tcl_fauna %>%
-  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
-  dplyr::filter(str_detect(category_cache, "WAWCA"))
-
-tfa_listing_cat_wawca %>% 
-  dplyr::anti_join(tsc_listing_cat_wawca, by = "taxon") %>%
+# #### WAWCA
+# tsc_listing_cat_wawca <- tsc_tcl_fauna %>%
+#   dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+#   dplyr::filter(str_detect(category_cache, "WAWCA"))
+# 
+# tfa_listing_cat_wawca %>% 
+#   dplyr::anti_join(tsc_listing_cat_wawca, by = "taxon") %>%
   rt
 ```
 
@@ -2030,16 +2030,16 @@ tfa_listing_cat_waps %>%
 ```
 
 SPFN
-
+This was not migrated becasue it is a duplicate of the other conservation listing information
 ```{r show_tfa_tcl_not_in_tsc_spfn}
-#### SPFN
-tsc_listing_cat_spfn <- tsc_tcl_fauna %>%
-  dplyr::mutate(taxon = name_id %>% as.integer) %>% 
-  dplyr::filter(str_detect(category_cache, "SPFN"))
-
-tfa_listing_cat_spfn %>% 
-  dplyr::anti_join(tsc_listing_cat_spfn, by = "taxon") %>%
-  rt
+# #### SPFN
+# tsc_listing_cat_spfn <- tsc_tcl_fauna %>%
+#   dplyr::mutate(taxon = name_id %>% as.integer) %>% 
+#   dplyr::filter(str_detect(category_cache, "SPFN"))
+# 
+# tfa_listing_cat_spfn %>% 
+#   dplyr::anti_join(tsc_listing_cat_spfn, by = "taxon") %>%
+#   rt
 ```
 
 EPBC
@@ -2086,12 +2086,12 @@ tsc_listing_cat_iucn1994 %>%
 ```
 
 WAWCA
-
+This was not migrated becasue it is a duplicate of the other conservation listing information
 ```{r show_tsc_tcl_not_in_tfa_wawca}
 #### WAWCA
-tsc_listing_cat_wawca %>% 
-  dplyr::anti_join(tfa_listing_cat_wawca,by = "taxon") %>% 
-  rt
+# tsc_listing_cat_wawca %>% 
+#   dplyr::anti_join(tfa_listing_cat_wawca,by = "taxon") %>% 
+#   rt
 ```
 
 WAPS
@@ -2104,12 +2104,12 @@ tsc_listing_cat_waps %>%
 ```
 
 SPFN
-
+This was not migrated becasue it is a duplicate of the other conservation listing information
 ```{r show_tsc_tcl_not_in_tfa_spfn}
 #### SPFN
-tsc_listing_cat_spfn %>% 
-  dplyr::anti_join(tfa_listing_cat_spfn,by = "taxon") %>% 
-  rt
+# tsc_listing_cat_spfn %>% 
+#   dplyr::anti_join(tfa_listing_cat_spfn,by = "taxon") %>% 
+#   rt
 ```
 
 EPBC
