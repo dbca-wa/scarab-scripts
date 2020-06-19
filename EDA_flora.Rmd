@@ -1731,7 +1731,7 @@ if (file.exists(tsc_extracted_flora)) {
     dplyr::transmute(district_id = pk, district_name = name)
   
   # Flora occurrence observations
-  tsc_tae_observations <- "occ-observation" %>% 
+  tsc_tae_observations_flora <- "occ-observation" %>% 
     wastdr::wastd_GET(query = list(source=11)) %>%
     wastdr::wastd_parse()
   
@@ -1742,7 +1742,7 @@ if (file.exists(tsc_extracted_flora)) {
     tsc_areas,
     regions,
     districts,
-    tsc_tae_observations,
+    tsc_tae_observations_flora,
     file = tsc_extracted_flora)
 }
 ```
