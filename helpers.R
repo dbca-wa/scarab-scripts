@@ -215,7 +215,7 @@ chunk_post <- function(data,
     len <- nrow(data)
     for (i in 0:(len/chunksize)) {
         start <- ((i) * chunksize) + 1
-        end <- min((start -1 + chunksize) - 1, len) + 1
+        end <- min((start + chunksize) - 1, len)
         wastdr::wastdr_msg_info(
             glue::glue("[chunk_post][{Sys.time()}][{i}] Processing feature {start} to {end}"))
         # data[start:end,] %>%
