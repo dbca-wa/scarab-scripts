@@ -2085,7 +2085,7 @@ tsc_listing_cat_iucn1994 %>%
 ```
 
 WAWCA
-This was not migrated becasue it is a duplicate of the other conservation listing information
+This was not migrated because it is a duplicate of the other conservation listing information
 ```{r show_tsc_tcl_not_in_tfa_wawca}
 #### WAWCA
 # tsc_listing_cat_wawca %>% 
@@ -2103,7 +2103,7 @@ tsc_listing_cat_waps %>%
 ```
 
 SPFN
-This was not migrated becasue it is a duplicate of the other conservation listing information
+This was not migrated because it is a duplicate of the other conservation listing information
 ```{r show_tsc_tcl_not_in_tfa_spfn}
 #### SPFN
 # tsc_listing_cat_spfn %>% 
