@@ -1478,16 +1478,32 @@ tfa_hab_comp %>% readr::write_csv(path = here::here("data/tfa_hab_comp.csv"))
 
 # Migrated Data (TSC)
 
+# Migrated Data (TSC)
+
 Data from TSC is extracted through the TSC API and transformed into a usable
 format. This process is also the template for future reporting from TSC.
 
+First, we get a list of taxonomic names from TSC to resolve taxon IDs from
+taxon occurrences to names.
+
+Next, we extract conservation listings.
+
+Last, we get taxon occurrences with their point representations from TSC through 
+the API endpoint 
+[occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
+
+Currently, all Fauna occurrences are geo-referenced only with point
+coordinates, not polygons.
+
+We also get TSC Areas and split them into DBCA Regions and Districts. Caveat:
+Regions and Districts to not comprehensively cover WA, and they are multi-polygons.
+We do not join these multi-polygons to the data to prevent duplicates.
+
 Expand the code block below to view the process.
 
-## Conservation listings
-
-```{r get_tsc_tcl2}
-if (file.exists(tsc_cl_fauna_datafile)) {
-  load(tsc_cl_fauna_datafile)
+```{r get_tsc_occ}
+if (file.exists(tsc_extracted_fauna)) {
+  load(tsc_extracted_fauna)
 } else {
 # WACensus is the upstream source of taxonomic names
 wace_names <- "public:herbie_hbvnames_public" %>%
@@ -1499,10 +1515,6 @@ wace_names <- "public:herbie_hbvnames_public" %>%
       wace_name = purrr::map(., c("properties", "name")) %>% flatten_chr()
     )
   }
-# tfa_species_nid <- species %>%
-#   dplyr::left_join(wace_names, by = "name_id")
-# tfa_species_name <- species %>%
-#   dplyr::left_join(wace_names, by = c("scientific_name" = "wace_name"))
 
 # Taxonomic names and taxon conservation listings for fauna from TSC
   tsc_taxa_fauna <- "taxon" %>%
@@ -1519,37 +1531,7 @@ wace_names <- "public:herbie_hbvnames_public" %>%
     dplyr::mutate(name_id = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
   
-  save(wace_names,
-       tsc_taxa_fauna, 
-       tsc_tcl_fauna, 
-       file = tsc_cl_fauna_datafile, 
-       compress="xz")
-}
-```
-
-## Occurrences
-
-We get Taxon ocurrences with their point representations from TSC through the 
-API endpoint 
-[occ-taxon-points](https://tsc.dbca.wa.gov.au/api/1/occ-taxon-points/).
-
-Currently, all Fauna occurrences are georeferenced only with point 
-coordinates, not polygons.
-
-We then get TSC Areas and split them into DBCA Regions and Districts.
-Caveat: Regions and Districts to not comprehensively cover WA.
-
-Lastly, we get a list of taxonomic names from TSC to resolve taxon IDs from
-taxon occurrences to names.
-
-Occurrences are presented as `occ` with DBCA Region and District names (where
-applicable), plus taxonomic names.
-
-```{r get_tsc_occ}
-if (file.exists(tsc_occ_fauna_datafile)) {
-  load(tsc_occ_fauna_datafile)
-} else {
-   tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
  
   tsc_tae <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
@@ -1589,19 +1571,23 @@ if (file.exists(tsc_occ_fauna_datafile)) {
     dplyr::mutate(taxon = taxon %>% as.character()) %>% 
     dplyr::left_join(tsc_taxa_fauna, by = c("taxon"))
   
-  # nrow(tsc_tae) 150987 - all fauna + flora taxa occurrences in TSC
-  # nrow(tsc_occ_fauna) 106108 - all fauna taxa occurrences joined to tsc_taxa_fauna
-  # this is puzzling
-  # length(unique(tsc_occ_fauna$source_id)) #102563
+   # Flora occurrence observations
+  tsc_tae_observations_fauna <- "occ-observation" %>% 
+    wastdr::wastd_GET(query = list(source=10)) %>%
+    wastdr::wastd_parse()
   
-  save(tsc_tae,
-       tsc_taxa_fauna,
-       tsc_areas,
-       regions,
-       districts,
-       tsc_occ_fauna,
-       file = tsc_occ_fauna_datafile,
-       compress = "xz")
+  save(
+    wace_names,
+    tsc_taxa_fauna, 
+    tsc_tcl_fauna,
+    tsc_tae,
+    tsc_taxa_fauna,
+    tsc_areas,
+    regions,
+    districts,
+    tsc_occ_fauna, 
+    tsc_tae_observations_fauna,
+    file = tsc_extracted_fauna)
 }
 ```
 
@@ -2182,8 +2168,7 @@ default datetime. The records below are those.
 
 ```{r default_encountered_on}
 tfa_tae_default_datetime <- tfa_tae %>% 
-  filter(encountered_on == "1900-01-01 00:00:00+08:00") %>% 
-  rt
+  filter(encountered_on == "1900-01-01 00:00:00+08:00") %>% rt
 ```
 
 #### Missing coordinates
@@ -2311,12 +2296,15 @@ missing_tae_phys_sample %>% rt
 missing_tae_anim_obs %>% rt
 missing_tae_veg_class %>% rt
 missing_tae_hab_comp %>% rt
+
 ```
+There are no results in the above tables because the occ_observations without a matching
+tae were removed prior to migration to prevent errors in the upload. See section...
 
 ### `tfl_tae` occurrence observations not in `tsc_tae_observations`
 
-Any record differences in the following table indicate occurrence observations in TFL that
-were not migrated into TSC.
+Any record differences in the following table indicate occurrence observations in TFL 
+that were not migrated into TSC.
 
 ```{r}
 make_tfa_tae_occ_obs_summary <-
