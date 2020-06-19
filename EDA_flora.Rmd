@@ -1693,7 +1693,7 @@ We do not join these multi-polygons to the data to prevent duplicates.
 
 Expand the code block below to view the process.
 
-```{r get_tsc_occ}
+```{r get_tsc_data}
 if (file.exists(tsc_extracted_flora)) {
   load(tsc_extracted_flora)
 } else {
@@ -2305,15 +2305,15 @@ make_tsc_occ_obs_summary <- function(data, cn) {
 }
 
 tsc_phys_sample_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("PhysicalSample")
+  tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("PhysicalSample")
 tsc_hab_cond_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("HabitatCondition")
+  tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("HabitatCondition")
 tsc_area_ass_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("AreaAssessment")
+  tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("AreaAssessment")
 tsc_hab_comp_sum <-
-  tsc_tae_observations %>% make_tsc_occ_obs_summary("HabitatComposition")
+  tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("HabitatComposition")
 # tsc_plant_count_sum <- 
-#   tsc_tae_observations %>% make_tsc_cl_summary("PlantCount")
+#   tsc_tae_observations_flora %>% make_tsc_cl_summary("PlantCount")
 
 
 tfl_occ_obs_sum <- rbind(
