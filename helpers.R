@@ -218,15 +218,15 @@ chunk_post <- function(data,
         end <- min((start + chunksize) - 1, len)
         wastdr::wastdr_msg_info(
             glue::glue("[chunk_post][{Sys.time()}][{i}] Processing feature {start} to {end}"))
-        # data[start:end,] %>%
-        #     wastdr::wastd_POST(.,
-        #                        serializer = serializer,
-        #                        query = query,
-        #                        api_url = api_url,
-        #                        api_token = api_token,
-        #                        api_un = api_un,
-        #                        api_pw = api_pw,
-        #                        verbose = verbose)
+        data[start:end,] %>%
+            wastdr::wastd_POST(.,
+                               serializer = serializer,
+                               query = query,
+                               api_url = api_url,
+                               api_token = api_token,
+                               api_un = api_un,
+                               api_pw = api_pw,
+                               verbose = verbose)
     }
     wastdr::wastdr_msg_success(
         glue::glue("[chunk_post][{Sys.time()}] Finished, {len} records created/updated."))
