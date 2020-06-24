@@ -992,7 +992,7 @@ tfa_hab_comp_complete <- hab_comp %>%
   left_join(tfa_landcrit, by = c("landform_id")) %>%
   dplyr::select(source, source_id, tsc_landform_id) %>%
   dplyr::rename(landform = tsc_landform_id) %>% 
-  base::replace(., is.na(.), "") %>% 
+  dplyr::mutate(obstype = "HabitatComposition") %>% 
   invisible()
 
 # Animal observations
@@ -1050,12 +1050,12 @@ tfa_anim_obs_complete <- anim_obs %>%
     no_juvenile_unknown = number_of_juvenile_unknown,
   ) %>% 
   mutate(no_juvenile_unknown = replace(no_juvenile_unknown, which(no_juvenile_unknown<0), 10)) %>% # make negative value a positive
-  # base::replace(., is.na(.), "") %>% 
+  dplyr::mutate(obstype = "AnimalObservation") %>% 
   invisible()
 
 # Associated species
 tfa_ass_species_complete <- ass_species %>% 
-  base::replace(., is.na(.), "") %>% 
+  dplyr::mutate(obstype = "AssociatedSpecies") %>% 
   invisible()
 
 # Physical sample
@@ -1087,7 +1087,7 @@ tfa_phys_sample_complete <- phys_sample %>%
     sample_label = sample_label,
     permit_type = NA
   ) %>% 
-  base::replace(., is.na(.), "") %>% 
+  dplyr::mutate(obstype = "PhysicalSample") %>% 
   invisible()
 
 # Vegetation classification 
@@ -1098,7 +1098,7 @@ tfa_veg_class_complete <- veg_class %>%
     level1 = glue::glue(
       "{vegetation_code}; {vegetation_type}")
     ) %>% 
-  base::replace(., is.na(.), "") %>% 
+  dplyr::mutate(obstype = "VegetationClassification") %>% 
   invisible()
 
 ## Check for occ_observations with no matching tae
@@ -1455,20 +1455,20 @@ tfa_tae_res <- tfa_tae %>% chunk_post(serializer = "occ-taxon-points", chunksize
 
 # Bulk upload
 # LONG RUNNING UPLOAD - RE-RUNS CREATE DUPLICATES
-tfa_phys_sample_res <- tfa_phys_sample %>% 
+tfa_phys_sample_res <- tfa_phys_sample_complete %>% 
   wastd_occ_obs_post(obstype="PhysicalSample") 
 
-tfa_anim_obs_res <- tfa_anim_obs %>% 
+bv btfa_anim_obs_res <- tfa_anim_obs_complete %>% 
   wastd_occ_obs_post(obstype="AnimalObservation")
 
 # We cannot map hand-written AssSpecies to TSC NameIDs.
 # tfa_ass_species_res <- tfa_ass_species[1,] %>% 
 #   wastd_occ_obs_post(obstype="AssociatedSpecies")
 
-tfa_veg_class_res <- tfa_veg_class %>% 
+tfa_veg_class_res <- tfa_veg_class_complete %>% 
   wastd_occ_obs_post(obstype="VegetationClassification")
 
-tfa_hab_comp_res <- tfa_hab_comp %>% 
+tfa_hab_comp_res <- tfa_hab_comp_complete %>% 
   wastd_occ_obs_post(obstype="HabitatComposition")
 
 # Export as (confidential) test data for API
@@ -1528,17 +1528,16 @@ wace_names <- "public:herbie_hbvnames_public" %>%
     wastdr::wastd_GET(api_url = prod,
                       query = list(paraphyletic_groups = 20)) %>%
     wastdr::wastd_parse() %>%
-    dplyr::mutate(name_id = name_id %>% as.character())%>%
     dplyr::mutate(taxon = name_id %>% as.character())
   
   # Taxon conservation listings for fauna
   tsc_tcl_fauna <-
     wastdr::wastd_GET("taxon-conservationlisting") %>%
     wastdr::wastd_parse()  %>%
-    dplyr::mutate(name_id = taxon %>% as.character()) %>%
-    dplyr::inner_join(tsc_taxa_fauna, by = "name_id")
+     dplyr::mutate(taxon = taxon %>% as.character()) %>%
+    dplyr::inner_join(tsc_taxa_fauna, by = "taxon")
   
-  tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
+tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
  
   tsc_tae <- tsc_tae_data %>%
     magrittr::extract2("data") %>%
@@ -1605,7 +1604,7 @@ tsc_occ_fauna_no <- tsc_tae %>%
   dplyr::filter(source == 10)
 
 unique(tsc_occ_fauna$source)
-length(unique(tsc_occ_fauna$source_id)) # 102248
+length(unique(tsc_occ_fauna$source_id)) # 107965
 
 ## Check for duplicates
 tsc_tae_fauna_dup <- tsc_tae %>%
