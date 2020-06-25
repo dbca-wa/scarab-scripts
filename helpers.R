@@ -100,33 +100,36 @@ dl_mdbzip <- function(resource_id,
                       dateformat = "%m-%d-%Y",
                       as.is = TRUE,
                       verbose = wastdr::get_wastdr_verbose()) {
-    if (!fs::dir_exists(destdir)) {fs::dir_create(destdir)}
+    if (!fs::dir_exists(destdir)) {
+        fs::dir_create(destdir)
+    }
 
     r <- ckanr::resource_show(resource_id)
     res_url <- r$url %>% stringr::str_replace("dpaw", "dbca")
     res_fn <- r$url %>% fs::path_file()
     res_file <- fs::path(fs::path(destdir, res_fn))
 
-    if (!fs::file_exists(res_file)){
-        if (verbose==TRUE)
-            wastdr::wastdr_msg_info(
-                glue::glue("Downloading {r$name} from CKAN to {res_file}...")
-            )
+    if (!fs::file_exists(res_file)) {
+        if (verbose == TRUE)
+            wastdr::wastdr_msg_info(glue::glue("Downloading {r$name} from CKAN to {res_file}..."))
         utils::download.file(res_url, res_file)
     } else {
-        if (verbose==TRUE)
+        if (verbose == TRUE)
             wastdr::wastdr_msg_noop(
-                glue::glue("Keeping already downloaded file {res_fn}. ",
-                           "Delete {res_fn} to force fresh download.")
+                glue::glue(
+                    "Keeping already downloaded file {res_fn}. ",
+                    "Delete {res_fn} to force fresh download."
+                )
             )
 
     }
 
-    if (verbose==TRUE)
+    if (verbose == TRUE)
         wastdr::wastdr_msg_info(glue::glue("Extracting {res_file}..."))
     dbfile <- utils::unzip(res_file, exdir = destdir)
-    con <- Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = as.is)
-    if (verbose==TRUE)
+    con <-
+        Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = as.is)
+    if (verbose == TRUE)
         wastdr::wastdr_msg_success("Done, returning open db connection.")
     con
 }
@@ -156,8 +159,7 @@ dl_mdbzip <- function(resource_id,
 upload_to_ckan <- function(data,
                            resource_title,
                            dataset_id,
-                           resource_id=NULL){
-
+                           resource_id = NULL) {
     resource_filename <- resource_title %>%
         stringr::str_to_lower(.) %>%
         stringr::str_replace_all(., " ", "_") %>%
@@ -166,12 +168,16 @@ upload_to_ckan <- function(data,
 
     write_delim(data, resource_filename, delim = ",")
 
-    if (is.null(resource_id)){
-        cat("No resource ID given, creating a new resource for", resource_title, ": ")
-        r <- ckanr::resource_create(package_id = dataset_id,
-                                    format = "csv",
-                                    name = resource_title,
-                                    upload = resource_filename)
+    if (is.null(resource_id)) {
+        cat("No resource ID given, creating a new resource for",
+            resource_title,
+            ": ")
+        r <- ckanr::resource_create(
+            package_id = dataset_id,
+            format = "csv",
+            name = resource_title,
+            upload = resource_filename
+        )
     } else {
         cat("Updating CKAN resource", resource_title, ": ")
         r <- ckanr::resource_update(resource_id,
@@ -182,7 +188,7 @@ upload_to_ckan <- function(data,
 }
 
 #' Upload a file to an existing CKAN resource ID. Skip if file missing.
-upload_file_to_ckan <- function(rid, fn){
+upload_file_to_ckan <- function(rid, fn) {
     if (fs::file_exists(fn)) {
         message(glue::glue("Uploading {fn} to data catalogue..."))
         r <- ckanr::resource_update(rid, fn)
@@ -210,14 +216,17 @@ chunk_post <- function(data,
                        chunksize = 1000,
                        verbose = wastdr::get_wastdr_verbose()) {
     if (verbose)
-        wastdr::wastdr_msg_info(
-            glue::glue("[chunk_post][{Sys.time()}] Updating {api_url}{serializer}..."))
+        "[chunk_post][{Sys.time()}] Updating {api_url}{serializer}..." %>%
+        glue::glue() %>% wastdr::wastdr_msg_info()
+
     len <- nrow(data)
-    for (i in 0:(len/chunksize - 1)) {
-        start <- ((i) * chunksize) + 1
-        end <- min((start + chunksize - 1), len)
-        wastdr::wastdr_msg_info(
-            glue::glue("[chunk_post][{Sys.time()}][{i}] Processing feature {start} to {end}"))
+    for (i in seq_len(ceiling(len / chunksize))) {
+        start <- (i - 1) * chunksize + 1
+        end <- min(start + chunksize - 1, len)
+
+        "[chunk_post][{Sys.time()}][{i}] Processing feature {start} to {end}" %>%
+            glue::glue() %>% wastdr::wastdr_msg_info()
+
         data[start:end,] %>%
             wastdr::wastd_POST(.,
                                serializer = serializer,
@@ -228,8 +237,9 @@ chunk_post <- function(data,
                                api_pw = api_pw,
                                verbose = verbose)
     }
-    wastdr::wastdr_msg_success(
-        glue::glue("[chunk_post][{Sys.time()}] Finished, {len} records created/updated."))
+
+    "[chunk_post][{Sys.time()}] Finished, {len} records created/updated." %>%
+        glue::glue() %>% wastdr::wastdr_msg_info()
 }
 
 
@@ -247,8 +257,10 @@ wastd_occ_obs_post <- function(data,
                                api_url = wastdr::get_wastdr_api_url(),
                                api_token = wastdr::get_wastdr_api_token()) {
     wastdr::wastdr_msg_info(
-        glue::glue("[{Sys.time()}] Uploading {nrow(data)} ",
-                   "{obstype}s to  TSC {api_url}")
+        glue::glue(
+            "[{Sys.time()}] Uploading {nrow(data)} ",
+            "{obstype}s to  TSC {api_url}"
+        )
     )
 
     res <- chunk_post(
@@ -262,12 +274,14 @@ wastd_occ_obs_post <- function(data,
 
     if ("created_count" %in% names(res$data))
         wastdr::wastdr_msg_success(
-            glue::glue("[{Sys.time()}] Done, created ",
-                       "{res$data$created_count} records."))
+            glue::glue(
+                "[{Sys.time()}] Done, created ",
+                "{res$data$created_count} records."
+            )
+        )
     if ("errors" %in% names(res$data) &&
         length(res$data$errors) > 0)
-        wastdr::wastdr_msg_warn(
-            glue::glue("[{Sys.time()}] Got {length(res$data$errors)} errors."))
+        wastdr::wastdr_msg_warn(glue::glue("[{Sys.time()}] Got {length(res$data$errors)} errors."))
     res
 }
 
@@ -275,13 +289,16 @@ wastd_occ_obs_post <- function(data,
 # Convenience helpers
 #
 # Make column def (mkd)
-add_dettol <- . %>% stringr::str_to_lower(.) %>% stringr::str_replace_all(., "\\.", "_")
-as_def <- . %>% paste(add_dettol(.), "=", ., " %>% as.character, \n")
+add_dettol <-
+    . %>% stringr::str_to_lower(.) %>% stringr::str_replace_all(., "\\.", "_")
+as_def <-
+    . %>% paste(add_dettol(.), "=", ., " %>% as.character, \n")
 mkd <- . %>% names() %>% purrr::map(as_def) %>% unlist() %>% cat(.)
 
 #' Normalise corporate filenumber into <agency>-<year>-<number> or ""
-as_filenumber <- function(body, prefix="DBCA", sep="-") {
-    if (is.null(body) || body == "") return("")
+as_filenumber <- function(body, prefix = "DBCA", sep = "-") {
+    if (is.null(body) || body == "")
+        return("")
     urlized_body <- stringr::str_replace_all(body, "F|/", "-")
     paste0(prefix, sep, urlized_body)
 }
@@ -294,15 +311,14 @@ chr2int <- . %>%
     purrr::map(as.integer)
 
 # Date conventions
-orders <- c("mdyHMS","dmy")
+orders <- c("mdyHMS", "dmy")
 tz <- "Australia/Perth"
 default_date <- "1900-01-01 00:00:00"
 default_date_notime <- "1900-01-01"
-parse_as_datetime <- function(
-    x,
-    default_datetime = lubridate::parse_date_time(
-        "1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)){
-    if (is.null(x)) return(default_datetime)
+parse_as_datetime <- function(x,
+                              default_datetime = lubridate::parse_date_time("1900-01-01 00:00:00", orders = "ymd HMS", tz = tz)) {
+    if (is.null(x))
+        return(default_datetime)
 
     x %>%
         lubridate::parse_date_time2(orders, tz = tz, cutoff_2000 = 20L) %>%
@@ -312,11 +328,9 @@ parse_as_datetime <- function(
 
 # Present tabular data as reactable
 rt <- . %>%
-    reactable::reactable(
-        sortable = TRUE,
-        filterable = TRUE,
-        style = "color:black;"
-    )
+    reactable::reactable(sortable = TRUE,
+                         filterable = TRUE,
+                         style = "color:black;")
 
 
 ## Create occurence data tables for each card in TSC
@@ -333,12 +347,10 @@ has_name_id_and_location <- . %>%
     )
 
 impossible_location <- . %>%
-    dplyr::filter(
-            latitude < -90 |
-            latitude > 90 |
-            longitude < -180 |
-            longitude > 180
-    )
+    dplyr::filter(latitude < -90 |
+                      latitude > 90 |
+                      longitude < -180 |
+                      longitude > 180)
 
 # -----------------------------------------------------------------------------#
 # Spatial helpers
@@ -352,11 +364,15 @@ impossible_location <- . %>%
 #' @param crs The coordinate reference system ID (4283=GDA94)
 #' @return An object of class "sfc_POLYGON" "sfc" (package sf)
 lonlat_to_convex_hull <- function(data,
-                                  lonlat_cols=c("longitude", "latitude"),
-                                  crs=4283) {
+                                  lonlat_cols = c("longitude", "latitude"),
+                                  crs = 4283) {
     suppressWarnings(
         data %>%
-            sf::st_as_sf(coords = lonlat_cols, crs = crs, agr = "constant") %>%
+            sf::st_as_sf(
+                coords = lonlat_cols,
+                crs = crs,
+                agr = "constant"
+            ) %>%
             sf::st_union(.) %>%
             sf::st_convex_hull(.) %>%
             sf::st_buffer(., 0.00001)
@@ -386,11 +402,7 @@ lonlat_to_convex_hull <- function(data,
 #'   }
 make_eoo <- function(data) {
     data %>%
-        dplyr::filter(
-            !name_id %in% c(NA, 0),
-            !is.na(longitude),
-            !is.na(latitude)
-        ) %>%
+        dplyr::filter(!name_id %in% c(NA, 0),!is.na(longitude),!is.na(latitude)) %>%
         tidyr::nest(-name_id) %>%
         dplyr::mutate(
             eoo_sfc = purrr::map(data, lonlat_to_convex_hull),
@@ -410,37 +422,42 @@ make_eoo <- function(data) {
 #' @return An object of class "sfc_POLYGON" "sfc" (package sf)
 #'   if points are given, else NULL.
 eoo_polygon <- function(data,
-                        nid=NULL,
-                        nid_col="name_id",
-                        lonlat_cols=c("longitude", "latitude"),
-                        crs=4283) {
+                        nid = NULL,
+                        nid_col = "name_id",
+                        lonlat_cols = c("longitude", "latitude"),
+                        crs = 4283) {
     if (is.null(nid)) {
         selected <- data
     } else {
-        selected <- dplyr::filter(data, (!! rlang::sym(nid_col)) == nid)
+        selected <- dplyr::filter(data, (!!rlang::sym(nid_col)) == nid)
     }
-    if (nrow(selected) == 0) return(NULL)
+    if (nrow(selected) == 0)
+        return(NULL)
     lonlat_to_convex_hull(selected, lonlat_cols = lonlat_cols, crs = crs)
 }
 
-anim_fauna <- function(data, title, nid){
+anim_fauna <- function(data, title, nid) {
     d <- data %>%
         dplyr::mutate(year = lubridate::year(datetime)) %>%
         dplyr::filter(name_id == nid)
 
     ggplot() +
         borders("world", colour = "gray75", fill = "gray95") +
-        coord_equal(xlim = c(110, 130), ylim = c(-40,-12)) +
+        coord_equal(xlim = c(110, 130), ylim = c(-40, -12)) +
         ggthemes::theme_map(base_size = 14) +
         ggtitle(title, subtitle = "{lubridate::year(frame_time)}") +
-        geom_point(data = d,
-                   aes(x = longitude,
-                       y = latitude,
-                       size = number_seen,
-                       colour = observation_type),
-                   alpha = 0.7,
-                   show.legend = FALSE) +
-        scale_size(range = c(2,8)) +
+        geom_point(
+            data = d,
+            aes(
+                x = longitude,
+                y = latitude,
+                size = number_seen,
+                colour = observation_type
+            ),
+            alpha = 0.7,
+            show.legend = FALSE
+        ) +
+        scale_size(range = c(2, 8)) +
         transition_time(o_date) +
         ease_aes('linear')
 
@@ -469,10 +486,11 @@ anim_fauna <- function(data, title, nid){
 #'testthat::expect_equal(fix_incomplete_date(""),
 #'                       lubridate::parse_date_time("01/01/1900 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))
 #' }
-fix_incomplete_date <- function(
-    date_string,
-    default_date_notime =
-        (lubridate::parse_date_time("01/01/1900 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))) {
+fix_incomplete_date <- function(date_string,
+                                default_date_notime =
+                                    (
+                                        lubridate::parse_date_time("01/01/1900 12:00:00+08", orders = "dmYHMSz", tz = "Australia/Perth")
+                                    )) {
     if (date_string == "") {
         return(default_date_notime)
     }
