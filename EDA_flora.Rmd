@@ -1344,7 +1344,7 @@ tfl_plant_count <- plant_count %>%
     vegetative_present = vegetative_state_present,
     flowerbuds_present = flower_buds_present,
     flowers_present = flowers_present,
-    flowering_plants_percent = flowering_plants,
+    flowering_plants_percent = flowering_plants %>% as.integer(),
     immature_fruit_present = immature_fruit_present,
     ripe_fruit_present = ripe_fruit_present,
     dehisced_fruit_present = dehisced_fruit_present,
@@ -1652,11 +1652,10 @@ tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 #   wastd_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
 #   wastd_occ_obs_post(obstype="AreaAssessment")
-tfl_plant_count_res <- tfl_plant_count[28501:28700,] %>%
-  wastd_occ_obs_post(obstype="PlantCount")
+# tfl_plant_count_res <- tfl_plant_count[30000:38624,] %>%
+#   wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
-plant_count_fails <- tfl_plant_count[28501:28600,] 
 
 # Bulk upload
 # LONG RUNNING UPLOAD
