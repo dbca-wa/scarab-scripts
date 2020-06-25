@@ -723,7 +723,9 @@ plant_count <- tfl_occ %>%
       counted_subject != "" | 
       plant_condition != "" | 
       comments != ""
-  )
+  ) %>% 
+  dplyr::mutate_at(vars(c("land_manager_present","clonal_reproduction_present","vegetative_state_present","flower_buds_present","flowers_present","immature_fruit_present","ripe_fruit_present","dehisced_fruit_present")), funs(. == 'Y')) 
+  
 # TODO filter correct?
 
 plant_count %>%
@@ -1332,10 +1334,11 @@ tfl_plant_count <- plant_count %>%
     no_dead_seedlings = number_dead_seedlings,
     no_alive_simple = number_alive,
     no_dead_simple = number_dead,
+    quadrats_details_attached = FALSE,
+    quadrats_present = number_of_quadrats_surveyed,
     no_quadrats_surveyed = number_of_quadrats_surveyed,
     quadrat_area_individual_m2 = individual_quadrat_area,
     quadrat_area_total_m2 = total_quadrat_area,
-    no_quadrats_surveyed = number_of_quadrats_surveyed,
     population_area_estimated_m2 = estimates_population_area,
     clonal_present = clonal_reproduction_present,
     vegetative_present = vegetative_state_present,
@@ -1349,12 +1352,19 @@ tfl_plant_count <- plant_count %>%
     ) %>%
   dplyr::mutate(obstype = "PlantCount") %>% 
   # base::replace(., is.na(.), "") %>%
+  dplyr::mutate_at(vars("quadrats_present"), funs(. > 0)) %>% 
+  dplyr::mutate_each(funs(replace(., is.na(.), F)), quadrats_present) %>% 
   dplyr::semi_join(tfl_tae)
+  
+## Filter non integer data from columns so I can correct it before migration
+plant_count_quadrat_crap <- tfl_plant_count %>% 
+  dplyr::filter(stringr::str_detect(quadrat_area_individual_m2,paste(c("x","m","p"),collapse = '|'))) %>% 
+  readr::write_csv(path = here::here("data", "tfl_plant_count_dirty.csv"))
 
-tfl_plant_count_save <- here::here("data/tfl_plant_count.RData")
-save(tfl_plant_count,
-  file = tfl_plant_count_save
-)
+## Replace non-integer values with NA for migration
+tfl_plant_count <- tfl_plant_count %>% 
+  dplyr::mutate(quadrat_area_individual_m2 =  quadrat_area_individual_m2 %>% as.integer(as.character())) %>% 
+  dplyr::mutate(population_area_estimated_m2 =  population_area_estimated_m2 %>% as.integer(as.character()))
 
 ## Physical sample
 tfl_sampdest <-
@@ -1642,10 +1652,11 @@ tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 #   wastd_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
 #   wastd_occ_obs_post(obstype="AreaAssessment")
-tfl_plant_count_res <- tfl_plant_count[2:3,] %>%
+tfl_plant_count_res <- tfl_plant_count[28501:28700,] %>%
   wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
+plant_count_fails <- tfl_plant_count[28501:28600,] 
 
 # Bulk upload
 # LONG RUNNING UPLOAD
@@ -1741,8 +1752,7 @@ if (file.exists(tsc_extracted_flora)) {
     wastdr::wastd_parse()
   
   tsc_tae_observations_flora %>% 
-    as.tibble() %>% 
-    tidyr::unpack(encounter)
+    tidyr::unnest_wider(encounter)
   
   save(
     tsc_taxa_flora,
