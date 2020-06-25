@@ -1351,6 +1351,11 @@ tfl_plant_count <- plant_count %>%
   # base::replace(., is.na(.), "") %>%
   dplyr::semi_join(tfl_tae)
 
+tfl_plant_count_save <- here::here("data/tfl_plant_count.RData")
+save(tfl_plant_count,
+  file = tfl_plant_count_save
+)
+
 ## Physical sample
 tfl_sampdest <-
   here::here("csv/tfl_sample_destination_w_tsc.csv") %>%
@@ -1637,7 +1642,7 @@ tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 #   wastd_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
 #   wastd_occ_obs_post(obstype="AreaAssessment")
-tfl_plant_count_res <- tfl_plant_count[1:2,] %>%
+tfl_plant_count_res <- tfl_plant_count[2:3,] %>%
   wastd_occ_obs_post(obstype="PlantCount")
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
@@ -1734,6 +1739,10 @@ if (file.exists(tsc_extracted_flora)) {
   tsc_tae_observations_flora <- "occ-observation" %>% 
     wastdr::wastd_GET(query = list(source=11)) %>%
     wastdr::wastd_parse()
+  
+  tsc_tae_observations_flora %>% 
+    as.tibble() %>% 
+    tidyr::unpack(encounter)
   
   save(
     tsc_taxa_flora,
