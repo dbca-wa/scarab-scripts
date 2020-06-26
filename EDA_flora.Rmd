@@ -1746,21 +1746,27 @@ if (file.exists(tsc_extracted_flora)) {
     dplyr::transmute(district_id = pk, district_name = name)
   
   # Flora occurrence observations
-  tsc_tae_observations_flora <- "occ-observation" %>% 
-    wastdr::wastd_GET(query = list(source=11)) %>%
+  tsc_tae_observations <- "occ-observation" %>% 
+    wastdr::wastd_GET() %>%
     wastdr::wastd_parse()
   
-  tsc_tae_observations_flora %>% 
-    tidyr::unnest_wider(encounter)
+  tsc_tae_observations_flora <- tsc_tae_observations %>% 
+    tidyr::unnest_wider(encounter,names_repair = "universal")
   
-  save(
+  tsc_tae_observations_flora_2 <- tsc_tae_observations_flora %>% 
+    tidyr::unnest_wider(properties,names_repair = "universal")
+  
+  tsc_flora_observations <- tsc_tae_observations_flora_2 %>% 
+    filter(source == 11)
+  
+save(
     tsc_taxa_flora,
     tsc_tcl_flora,
     tsc_tae,
     tsc_areas,
     regions,
     districts,
-    tsc_tae_observations_flora,
+    tsc_flora_observations,
     file = tsc_extracted_flora)
 }
 ```
@@ -2323,42 +2329,94 @@ make_tsc_occ_obs_summary <- function(data, cn) {
 }
 
 tsc_phys_sample_sum <-
-  tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("PhysicalSample")
+  tsc_flora_observations %>% make_tsc_occ_obs_summary("PhysicalSample")
 tsc_hab_cond_sum <-
   tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("HabitatCondition")
 tsc_area_ass_sum <-
   tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("AreaAssessment")
 tsc_hab_comp_sum <-
   tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("HabitatComposition")
-# tsc_plant_count_sum <- 
-#   tsc_tae_observations_flora %>% make_tsc_cl_summary("PlantCount")
+tsc_plant_count_sum <-
+  tsc_tae_observations_flora %>% make_tsc_occ_obs_summary("PlantCount")
 
 
 tfl_occ_obs_sum <- rbind(
   tfl_phys_sample_sum,
   tfl_hab_cond_sum,
   tfl_area_ass_sum,
-  tfl_hab_comp_sum
-  #tfl_plant_count_sum
+  tfl_hab_comp_sum,
+  tfl_plant_count_sum
 )
 
 tsc_occ_obs_sum <- rbind(
   tsc_phys_sample_sum,
   tsc_hab_cond_sum,
   tsc_area_ass_sum,
-  tsc_hab_comp_sum
-  #tsc_plant_countsum
+  tsc_hab_comp_sum,
+  tsc_plant_count_sum
 )
 
 occ_obs_summary <- tfl_occ_obs_sum %>%
   cbind(tsc_occ_obs_sum) %>%
-  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition")) %>% # PlantCount
+  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition","PlantCount")) %>% 
   dplyr::select("Obstype", everything())
 
 occ_obs_summary %>% rt
 ```
 
 #### Spot check occurrence observations
+```{r}
+
+tfl_species_plant_count <- tfl_plant_count %>% 
+  filter(source_id %in% c("75917", "32829", "100069"))
+tfl_species_phys_sample <- tfl_phys_sample %>% 
+  filter(source_id %in% c("75917", "32829", "100069"))
+tfl_species_hab_cond <- tfl_hab_cond %>% 
+  filter(source_id %in% c("75917", "32829", "100069"))
+tfl_species_area_ass <- tfl_area_ass %>% 
+  filter(source_id %in% c("75917", "32829", "100069"))
+tfl_species_hab_comp <- tfl_hab_comp %>% 
+  filter(source_id %in% c("75917", "32829", "100069"))
+
+tsc_species_plant_count <- tsc_flora_observations %>% 
+  filter(obstype == "PlantCount") %>% 
+  filter(source_id %in% c("75917", "32829", "100069")) 
+tsc_species_phys_sample <- tsc_flora_observations %>% 
+  filter(obstype == "PhysicalSample") %>% 
+  filter(source_id %in% c("75917", "32829", "100069")) 
+tsc_species_hab_cond <- tsc_flora_observations %>% 
+  filter(obstype == "HabitatCondition") %>% 
+  filter(source_id %in% c("75917", "32829", "100069")) 
+tsc_species_area_ass <- tsc_flora_observations %>% 
+  filter(obstype == "AreaAssessment") %>% 
+  filter(source_id %in% c("75917", "32829", "100069")) 
+tsc_species_hab_comp <- tsc_flora_observations %>% 
+  filter(obstype == "HabitatComposition") %>% 
+  filter(source_id %in% c("75917", "32829", "100069")) 
+
+tfl_occ_obs_sum <- rbind(
+  tfl_phys_sample_sum,
+  tfl_hab_cond_sum,
+  tfl_area_ass_sum,
+  tfl_hab_comp_sum,
+  tfl_plant_count_sum
+)
+
+tsc_occ_obs_sum <- rbind(
+  tsc_phys_sample_sum,
+  tsc_hab_cond_sum,
+  tsc_area_ass_sum,
+  tsc_hab_comp_sum,
+  tsc_plant_count_sum
+)
+
+occ_obs_summary <- tfl_occ_obs_sum %>%
+  cbind(tsc_occ_obs_sum) %>%
+  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition","PlantCount")) %>% 
+  dplyr::select("Obstype", everything())
+
+
+```
 
 ### Trust level of occurrence records
 
