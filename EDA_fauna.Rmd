@@ -2408,7 +2408,7 @@ occ_obs_summary %>% rt
 #### Spot check occurrence observations
 
 Below are "spot-check" results for the migrated occurrence observations data. 
-Each table shows example records for three species (source_id = 75917, 32829, 100069).
+Each table shows example records for three species.
 Any differences would mean the data had not been migrated correctly. 
 
 ```{r}
