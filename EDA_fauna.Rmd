@@ -1545,11 +1545,11 @@ tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
     geojsonsf::geojson_sf() %>%
     dplyr::mutate(taxon = taxon %>% as.character())
  
-  tsc_tae_sf <- tsc_tae_data %>%
-    magrittr::extract2("data") %>%
-    geojsonio::as.json() %>%
-    geojsonsf::geojson_sf() %>%
-    dplyr::mutate(taxon = taxon %>% as.character())
+  # tsc_tae_sf <- tsc_tae_data %>%
+  #   magrittr::extract2("data") %>%
+  #   geojsonio::as.json() %>%
+  #   geojsonsf::geojson_sf() %>%
+  #   dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_taxa_fauna <- "taxon" %>%
     wastdr::wastd_GET(api_url = prod,
@@ -1577,10 +1577,19 @@ tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
     dplyr::mutate(taxon = taxon %>% as.character()) %>% 
     dplyr::left_join(tsc_taxa_fauna, by = c("taxon"))
   
-   # Flora occurrence observations
-  tsc_tae_observations_fauna <- "occ-observation" %>% 
-    wastdr::wastd_GET(query = list(source=10)) %>%
+   # Fauna occurrence observations
+  tsc_tae_observations <- "occ-observation" %>% 
+    wastdr::wastd_GET() %>%
     wastdr::wastd_parse()
+  
+  tsc_tae_observations_fauna <- tsc_tae_observations %>% 
+    tidyr::unnest_wider(encounter,names_repair = "universal")
+  
+  tsc_tae_observations_fauna_2 <- tsc_tae_observations_fauna %>% 
+    tidyr::unnest_wider(properties,names_repair = "universal")
+  
+  tsc_fauna_observations <- tsc_tae_observations_fauna_2 %>% 
+    filter(source == 10)
   
   save(
     wace_names,
@@ -1592,7 +1601,7 @@ tsc_tae_data <- wastdr::wastd_GET("occ-taxon-points") # 137k records
     regions,
     districts,
     tsc_occ_fauna, 
-    tsc_tae_observations_fauna,
+    tsc_fauna_observations,
     file = tsc_extracted_fauna)
 }
 ```
@@ -2363,13 +2372,13 @@ make_tsc_occ_obs_summary <- function(data, cn) {
 }
 
 tsc_phys_sample_sum <-
-  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("PhysicalSample")
+  tsc_fauna_observations %>% make_tsc_occ_obs_summary("PhysicalSample")
 tsc_anim_obs_sum <-
-  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("AnimalObservation")
+  tsc_fauna_observations %>% make_tsc_occ_obs_summary("AnimalObservation")
 tsc_veg_class_sum <-
-  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("VegetationClassification")
+  tsc_fauna_observations %>% make_tsc_occ_obs_summary("VegetationClassification")
 tsc_hab_comp_sum <-
-  tsc_tae_observations_fauna %>% make_tsc_occ_obs_summary("HabitatComposition")
+  tsc_fauna_observations %>% make_tsc_occ_obs_summary("HabitatComposition")
 
 
 tfa_occ_obs_sum <- rbind(
@@ -2398,6 +2407,88 @@ occ_obs_summary %>% rt
 
 #### Spot check occurrence observations
 
+Below are "spot-check" results for the migrated occurrence observations data. 
+Each table shows example records for three species (source_id = 75917, 32829, 100069).
+Any differences would mean the data had not been migrated correctly. 
+
+```{r}
+tfa_species_phys_sample <- tfa_phys_sample_complete %>% 
+  filter(source_id %in% c("117", "10403", "70138")) %>% 
+  transmute(
+    source_id = source_id,
+    tfa_sample_destination= sample_destination,
+    tfa_sample_label = sample_label)
+
+tfa_species_anim_obs <- tfa_anim_obs %>% 
+  filter(source_id %in% c("117", "23126", "100008")) %>%
+  transmute(
+    source_id = source_id,
+    tfa_detection_method = detection_method,
+    tfa_no_adult_male = no_adult_male)
+
+tfa_species_veg_class <- tfa_veg_class_complete %>% 
+  filter(source_id %in% c("67", "96871", "73085")) %>%
+  transmute(
+    source_id = source_id,
+    tfl_level1= level1)
+
+tfa_species_hab_comp <- tfa_hab_comp_complete %>% 
+  filter(source_id %in% c("46", "74702", "85099")) %>%
+  transmute(
+    source_id = source_id,
+    tfl_landform = landform)
+
+tsc_species_phys_sample <- tsc_fauna_observations %>% 
+  filter(obstype == "PhysicalSample") %>% 
+  filter(source_id %in% c("117", "10403", "70138")) %>% 
+  transmute(
+    source_id = source_id,
+    tsc_sample_destination = sample_destination,
+    tsc_sample_label = sample_label)
+
+tsc_species_anim_obs <- tsc_fauna_observations %>% 
+  filter(obstype == "AnimalObservation") %>% 
+  filter(source_id %in% c("117", "23126", "100008")) %>% 
+  transmute(
+    source_id = source_id,
+    tsc_criteria = detection_method %>% as.character(),
+    tsc_no_adult_male = no_adult_male) %>%
+  dplyr::left_join(tfa_det_meth, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_detection_method","tsc_no_adult_male")) 
+
+tsc_species_veg_class <- tsc_fauna_observations %>% 
+  filter(obstype == "VegetationClassification") %>% 
+  filter(source_id %in% c("67", "96871", "73085")) %>%
+  transmute(
+    source_id = source_id,
+    tfl_level1= level1)
+
+tsc_species_hab_comp <- tsc_fauna_observations %>% 
+  filter(obstype == "HabitatComposition") %>% 
+  filter(source_id %in% c("46", "74702", "85099")) %>%
+  transmute(
+    source_id = source_id,
+    tsc_criteria = landform %>% as.character()) %>% 
+  dplyr::left_join(tfa_landcrit, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_landform_id")) 
+
+tfa_phys_sample_sum <- tfa_species_phys_sample %>% 
+  left_join(tsc_species_phys_sample, by = "source_id")
+
+tfa_anim_obs_sum <- tfa_species_anim_obs %>% 
+  left_join(tsc_species_anim_obs, by = "source_id")
+
+tfa_hab_veg_class <- tfa_species_veg_class %>% 
+  left_join(tsc_species_veg_class, by = "source_id")
+  
+tfa_hab_comp_sum <- tfa_species_hab_comp %>% 
+  left_join(tsc_species_hab_comp, by = "source_id")
+
+tfa_phys_sample_sum %>% rt
+tfa_anim_obs_sum %>% rt
+tfa_hab_veg_class %>% rt
+tfa_hab_comp_sum %>% rt
+```
 
 #### Trust level of occurrence records
 
