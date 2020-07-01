@@ -2305,6 +2305,8 @@ Any record differences in the following table indicate occurrence observations i
 were not migrated into TSC.
 
 ```{r}
+unique(tsc_flora_observations$source) == 11
+
 make_tfl_tae_occ_obs_summary <-
   . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFL")
 
@@ -2366,56 +2368,100 @@ occ_obs_summary %>% rt
 
 #### Spot check occurrence observations
 ```{r}
-
 tfl_species_plant_count <- tfl_plant_count %>% 
-  filter(source_id %in% c("75917", "32829", "100069"))
+  filter(source_id %in% c("75917", "32829", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tfl_no_alive_mature = no_alive_mature,
+    tfl_land_manager_present = land_manager_present)
+
 tfl_species_phys_sample <- tfl_phys_sample %>% 
-  filter(source_id %in% c("75917", "32829", "100069"))
+  filter(source_id %in% c("75917", "32829", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tfl_sample_type = sample_type,
+    tfl_sample_destination = sample_destination)
+
 tfl_species_hab_cond <- tfl_hab_cond %>% 
-  filter(source_id %in% c("75917", "32829", "100069"))
+  filter(source_id %in% c("75917", "32829", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tfl_soil_condition = soil_condition)
+
 tfl_species_area_ass <- tfl_area_ass %>% 
-  filter(source_id %in% c("75917", "32829", "100069"))
+  filter(source_id %in% c("75917", "32829", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tfl_survey_method = survey_method,
+    tfl_area_surveyed_m2 = area_surveyed_m2)
+
 tfl_species_hab_comp <- tfl_hab_comp %>% 
-  filter(source_id %in% c("75917", "32829", "100069"))
+  filter(source_id %in% c("75917", "32829", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tfl_landform = landform,
+    tfl_drainage = drainage)
 
 tsc_species_plant_count <- tsc_flora_observations %>% 
   filter(obstype == "PlantCount") %>% 
-  filter(source_id %in% c("75917", "32829", "100069")) 
+  filter(source_id %in% c("32829", "75917", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tsc_no_alive_mature = no_alive_mature,
+    tsc_land_manager_present = land_manager_present) %>% 
+  arrange(match(source_id, c("32829", "75917", "100069")))
+
 tsc_species_phys_sample <- tsc_flora_observations %>% 
   filter(obstype == "PhysicalSample") %>% 
-  filter(source_id %in% c("75917", "32829", "100069")) 
+  filter(source_id %in% c("75917", "32829", "100069"))  %>% 
+  transmute(
+    source_id = source_id,
+    tsc_sample_type = sample_type,
+    tsc_sample_destination = sample_destination)
+
 tsc_species_hab_cond <- tsc_flora_observations %>% 
   filter(obstype == "HabitatCondition") %>% 
-  filter(source_id %in% c("75917", "32829", "100069")) 
+  filter(source_id %in% c("75917", "32829", "100069"))  %>% 
+  transmute(
+    source_id = source_id,
+    tsc_soil_condition = soil_condition)
+
 tsc_species_area_ass <- tsc_flora_observations %>% 
   filter(obstype == "AreaAssessment") %>% 
-  filter(source_id %in% c("75917", "32829", "100069")) 
+  filter(source_id %in% c("75917", "32829", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tsc_survey_method = survey_method,
+    tsc_area_surveyed_m2 = area_surveyed_m2)
+ 
 tsc_species_hab_comp <- tsc_flora_observations %>% 
   filter(obstype == "HabitatComposition") %>% 
-  filter(source_id %in% c("75917", "32829", "100069")) 
+  filter(source_id %in% c("75917", "32829", "100069")) %>% 
+  transmute(
+    source_id = source_id,
+    tsc_landform = landform,
+    tsc_drainage = drainage)
 
-tfl_occ_obs_sum <- rbind(
-  tfl_phys_sample_sum,
-  tfl_hab_cond_sum,
-  tfl_area_ass_sum,
-  tfl_hab_comp_sum,
-  tfl_plant_count_sum
-)
+tfl_plant_count_sum <- tfl_species_plant_count %>% 
+  left_join(tsc_species_plant_count, by = "source_id")
 
-tsc_occ_obs_sum <- rbind(
-  tsc_phys_sample_sum,
-  tsc_hab_cond_sum,
-  tsc_area_ass_sum,
-  tsc_hab_comp_sum,
-  tsc_plant_count_sum
-)
+tfl_phys_sample_sum <- tfl_species_phys_sample %>% 
+  left_join(tsc_species_phys_sample, by = "source_id")
 
-occ_obs_summary <- tfl_occ_obs_sum %>%
-  cbind(tsc_occ_obs_sum) %>%
-  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition","PlantCount")) %>% 
-  dplyr::select("Obstype", everything())
-
-
+tfl_hab_cond_sum <- tfl_species_hab_cond %>% 
+  left_join(tsc_species_hab_cond, by = "source_id")
+  
+tfl_area_ass_sum <- tfl_species_area_ass %>% 
+  left_join(tsc_species_area_ass, by = "source_id")
+  
+tfl_hab_comp_sum <- tfl_species_hab_comp %>% 
+  left_join(tsc_species_hab_comp, by = "source_id")
+names(tsc_flora_observations)
+tfl_phys_sample_sum %>% rt
+tfl_plant_count_sum %>% rt
+tfl_hab_cond_sum %>% rt
+tfl_area_ass_sum %>% rt
+tfl_hab_comp_sum %>% rt
 ```
 
 ### Trust level of occurrence records
