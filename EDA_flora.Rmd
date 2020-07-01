@@ -2367,6 +2367,11 @@ occ_obs_summary %>% rt
 ```
 
 #### Spot check occurrence observations
+
+Below are "spot-check" results for the migrated occurrence observations data. 
+Each table shows three example records for three species (source_id = 75917, 32829, 100069).
+Any differences mean the data has not been migrated correctly. 
+
 ```{r}
 tfl_species_plant_count <- tfl_plant_count %>% 
   filter(source_id %in% c("75917", "32829", "100069")) %>% 
@@ -2424,23 +2429,35 @@ tsc_species_hab_cond <- tsc_flora_observations %>%
   filter(source_id %in% c("75917", "32829", "100069"))  %>% 
   transmute(
     source_id = source_id,
-    tsc_soil_condition = soil_condition)
+    tsc_criteria = soil_condition %>% as.character()) %>% 
+  dplyr::left_join(tfl_soil_condition, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_soil_condition"))
 
 tsc_species_area_ass <- tsc_flora_observations %>% 
   filter(obstype == "AreaAssessment") %>% 
   filter(source_id %in% c("75917", "32829", "100069")) %>% 
   transmute(
     source_id = source_id,
-    tsc_survey_method = survey_method,
-    tsc_area_surveyed_m2 = area_surveyed_m2)
+    tsc_criteria = survey_method %>% as.character(),
+    tsc_area_surveyed_m2 = area_surveyed_m2) %>% 
+  dplyr::left_join(tfl_survey_method, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_survey_method"))
  
 tsc_species_hab_comp <- tsc_flora_observations %>% 
   filter(obstype == "HabitatComposition") %>% 
   filter(source_id %in% c("75917", "32829", "100069")) %>% 
   transmute(
     source_id = source_id,
-    tsc_landform = landform,
-    tsc_drainage = drainage)
+    tsc_criteria = landform %>% as.character(),
+    tsc_drainage = drainage) %>% 
+  dplyr::left_join(tfl_landcrit, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_landforms","tsc_drainage")) %>% 
+  transmute(
+    source_id = source_id,
+    tsc_landforms = tsc_landforms,
+    tsc_criteria = tsc_drainage %>% as.character()) %>% 
+  dplyr::left_join(tfl_drainage, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_landforms","tsc_drainage"))
 
 tfl_plant_count_sum <- tfl_species_plant_count %>% 
   left_join(tsc_species_plant_count, by = "source_id")
@@ -2456,7 +2473,7 @@ tfl_area_ass_sum <- tfl_species_area_ass %>%
   
 tfl_hab_comp_sum <- tfl_species_hab_comp %>% 
   left_join(tsc_species_hab_comp, by = "source_id")
-names(tsc_flora_observations)
+
 tfl_phys_sample_sum %>% rt
 tfl_plant_count_sum %>% rt
 tfl_hab_cond_sum %>% rt
