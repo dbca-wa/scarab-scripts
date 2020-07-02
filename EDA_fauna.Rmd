@@ -2695,8 +2695,84 @@ upload_to_ckan(
 )
 # same for other TFA legacy data, copy over from data_etl_fauna.Rmd
 
-upload_to_ckan(communities, "Threatened Ecological Communities (TEC)",
+upload_to_ckan(category, "threatened-and-priority-fauna-database",
   d$id,
-  resource_id = "9782cc52-7be8-494a-a7da-51845c119a21"
+  resource_id = "ef713623-912f-409c-92fd-13f0e7d5c88b"
+)
+upload_to_ckan(certainty, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "0cef8910-daa7-42a6-990f-be9ba337600b"
+)
+upload_to_ckan(phylo_class, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "80914d52-cfaa-4b13-a1e9-1dda84ce73f3"
+)
+upload_to_ckan(phylo_group, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "5f69a428-dc17-4617-9443-0d932b528a90"
+)
+upload_to_ckan(species, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "db2a494b-9143-40fa-a81b-a17cd1ea04cb"
+)
+upload_to_ckan(species_names, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "9a30cf91-cb0b-4321-aeb0-90eab170b023"
+)
+upload_to_ckan(dec_tfa_cons_lists, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "6a3b2d20-692f-4e0d-8cdb-08a11567a836"
+)
+upload_to_ckan(tfa_cons_lists, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "10482953-443e-4917-b069-05dad1399d19"
+)
+upload_to_ckan(tfa_cons_listings, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f"
+)
+upload_to_ckan(tfa_cons_cat, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "81709dfb-ab13-4ea3-9716-c1e75db17211"
+)
+upload_to_ckan(tenure, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "93de5d9e-68d4-41e3-b7b5-20b1c7f6c8d5"
+)
+upload_to_ckan(tfa_act, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "80b0734b-9d03-4592-8519-9877923f495c"
+)
+upload_to_ckan(tfa_pla, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "705553d8-92eb-4e01-ba0e-4b39e6b44918"
+)
+upload_to_ckan(tfa_resp, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "02798015-7395-464d-8db1-cfe53196a69f"
+)
+upload_to_ckan(tfa_rest, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "66936696-a1e9-4c59-b67f-623b21f1b0c7"
+)
+upload_to_ckan(resolution, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "f8819c5a-ae56-4d15-9be3-e1c52ac11fb0"
+)
+upload_to_ckan(secondary_signs, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "562251ae-e09a-4d5e-9b64-272c7316e9a2"
+)
+upload_to_ckan(shires, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "3a588c2d-f143-486e-be47-92bfa46f6433"
+)
+upload_to_ckan(vegetation_types, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "78cce603-6d8a-409c-8c9d-dfecb737b9f9"
+)
+upload_to_ckan(tfa_occ, "threatened-and-priority-fauna-database",
+  d$id,
+  resource_id = "b73ae0de-f243-4bb3-bbce-25b65bb98e66"
 )
 ```
