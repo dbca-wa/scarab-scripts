@@ -677,7 +677,7 @@ if (file.exists(tfa_occ_datafile)) load(tfa_occ_datafile)
 The following map shows the occurrence data from TFA.
 Occurrences without `name_id` or location are skipped.
 
-```{r tfa_tae_map, eval=F}
+```{r tfa_tae_map}
 tfa_occ_map <- tfa_occ %>% 
   has_name_id_and_location %>% 
   filter(longitude > 96)
@@ -782,6 +782,7 @@ readr::write_csv(tfa_rest,
                  path = here::here("data", "research_topics_data.csv"))
 ```
 
+## Save point
 ```{r savepoint_tfa}
 save(
 all_crit_map,
@@ -790,25 +791,13 @@ anim_obs,
 ass_species,
 category,
 certainty,
-chunk_post,
 dec_tfa_cons_lists,
-default_date,
-default_date_notime,
-dev,
-dl_mdbzip,
-eoo_polygon,
-fix_incomplete_date,
 hab_comp,
 landform,
-lonlat_to_convex_hull,
-make_eoo,
 malleefowl_data,
-orders,
-parse_as_datetime,
 phylo_class,
 phylo_group,
 phys_sample,
-prod,
 resolution,
 resolution_m,
 secondary_signs,
@@ -831,14 +820,9 @@ tfa_resp,
 tfa_rest,
 tfa_tae,
 tsc_extracted_fauna,
-tz,
-uat,
-upload_file_to_ckan,
-upload_to_ckan,
 users,
 veg_class,
 vegetation_types,
-wastd_occ_obs_post,
 file = tfa_transformed,
 compress = "xz"
 )
