@@ -111,11 +111,17 @@ shires <- tfa_data$Shires %>%
     shire_name = LGAName %>% as.character(),
     shire_label = LGAName2 %>% as.character()
   )
+readr::write_csv(shires, 
+                 path = here::here("data", "tfa_shires_data.csv")
+  )
 
 tenure <- tfa_data$`Land Tenure` %>%
   dplyr::transmute(
     tenure_id = TenCode %>% as.character(),
     tenure = Tenure %>% as.character()
+  )
+readr::write_csv(tenure, 
+                 path = here::here("data", "tfa_tenure_data.csv")
   )
 
 vegetation_types <- tfa_data$`Vegetation Types` %>%
@@ -123,11 +129,17 @@ vegetation_types <- tfa_data$`Vegetation Types` %>%
     vegetation_type_id = VegCode %>% as.character(),
     vegetation_type = VegTypeName %>% as.character()
   )
+readr::write_csv(vegetation_types, 
+                 path = here::here("data", "tfa_vegetation_types_data.csv")
+  )
 
 certainty <- tfa_data$Certainty %>%
   dplyr::transmute(
     certainty_id = Code %>% as.integer(),
     certainty = Certainty %>% as.character()
+  )
+readr::write_csv(certainty, 
+                 path = here::here("data", "tfa_certainty_data.csv")
   )
 
 users <- tibble::tibble(
@@ -157,6 +169,9 @@ phylo_class <- tfa_data$`Class List` %>%
     order = ClassOrder %>% as.character()
   ) %>%
   dplyr::arrange(order)
+readr::write_csv(phylo_class, 
+                 path = here::here("data", "tfa_class_list_data.csv")
+  )
 
 phylo_group <- tfa_data$`Group List` %>%
   dplyr::transmute(
@@ -167,6 +182,9 @@ phylo_group <- tfa_data$`Group List` %>%
   ) %>%
   dplyr::left_join(phylo_class, by = "phylo_class_id")
 # skimr::skim(group)
+readr::write_csv(phylo_group, 
+                 path = here::here("data", "tfa_group_list_data.csv")
+  )
 
 species_notes_with_duplicates <- tfa_data$`Species Notes` %>%
   dplyr::transmute(
@@ -179,7 +197,7 @@ tfa_species_notes_duplications <- species_notes_with_duplicates %>%
 # two duplicate species_codes- remove from species notes
 
 readr::write_csv(tfa_species_notes_duplications, path = here::here(
-  "data", "tfa_species_notes_duplications.csv")
+  "data", "tfa_species_notes_duplications_data.csv")
   )
 
 species_notes <- species_notes_with_duplicates %>% 
@@ -189,6 +207,9 @@ category <- tfa_data$`Category List` %>%
   dplyr::transmute(
     category_id = Category %>% as.character(),
     phylogenetic_category = CategoryName %>% as.character()
+  )
+readr::write_csv(category, path = here::here(
+  "data", "tfa_category_list_data.csv")
   )
 
 landform <- tfa_data$`Landform` %>%
@@ -203,7 +224,7 @@ secondary_signs <- tfa_data$`Secondary Signs` %>%
   )
 readr::write_csv(
   secondary_signs, 
-  path = here::here("data", "secondary_signs_data.csv")
+  path = here::here("data", "tfa_secondary_signs_data.csv")
 ) 
 
 # TODO species notes
@@ -255,11 +276,15 @@ species_with_duplicates <- tfa_data$`Species List` %>%
 # Duplicate name_id's in species_list
 tfa_species_list_dup <- species_with_duplicates %>%
   filter(name_id %in% unique(.[["name_id"]][duplicated(.[["name_id"]])])) # one duplicate name_id
-readr::write_csv(tfa_species_list_dup, path = here::here("data", "tfa_species_list_duplications.csv"))
+readr::write_csv(tfa_species_list_dup, 
+                 path = here::here("data", "tfa_species_list_duplications_data.csv"))
 
 # Anti_join duplicate name_id to species_with_duplicates to remove them.
 species <- species_with_duplicates %>% 
 dplyr::anti_join(tfa_species_list_dup, by = "name_id")
+readr::write_csv(species, 
+  path = here::here("data", "tfa_species_data.csv")
+) 
   
 # species_skim <- skimr::skim(species)
 # print(species_skim)
@@ -268,6 +293,9 @@ dplyr::anti_join(tfa_species_list_dup, by = "name_id")
 # Just the essentials: species code, name_id, names.
 species_names <- species %>%
   dplyr::select(species_code, name_id, scientific_name, common_name)
+readr::write_csv(species_names, 
+  path = here::here("data", "tfa_species_names_data.csv")
+) 
 
 resolution <- tfa_data$Resolution %>%
   dplyr::transmute(
@@ -275,6 +303,9 @@ resolution <- tfa_data$Resolution %>%
     resolution_geographic_coords = ResolutionLL %>% as.character(),
     resolution_projected_coords = ResolutionUTM %>% as.character()
   )
+readr::write_csv(resolution, 
+  path = here::here("data", "tfa_resolution_data.csv")
+) 
 
 resolution_m <- tibble::tibble(
   resolution_id = c(1, 2, 3, 4, 5, 6),
@@ -296,6 +327,9 @@ tfa_cons_lists <- tfa_data$`Listing Names` %>%
     list_order = ListOrder %>% as.integer()
   ) %>%
   dplyr::arrange(list_order)
+readr::write_csv(tfa_cons_lists, 
+  path = here::here("data", "tfa_cons_lists_data.csv")
+) 
 
 dec_tfa_cons_lists <- tfa_data$`DEC List Names` %>%
   dplyr::transmute(
@@ -306,6 +340,9 @@ dec_tfa_cons_lists <- tfa_data$`DEC List Names` %>%
   dplyr::arrange(dec_listing_order)
 # dec_tfa_cons_lists %>% skim()
 # dec_tfa_cons_lists %>% dplyr::glimpse()
+readr::write_csv(dec_tfa_cons_lists, 
+  path = here::here("data", "tfa_dec_tfa_cons_lists_data.csv")
+) 
 
 # make_coldef(listing_category)
 tfa_cons_cat <- tfa_data$`Listing Category` %>%
@@ -322,6 +359,10 @@ tfa_cons_cat <- tfa_data$`Listing Category` %>%
   dplyr::arrange(order) %>%
   dplyr::left_join(tfa_cons_lists, by = "list_code") %>%
   dplyr::left_join(dec_tfa_cons_lists, by = "dec_listing_id")
+
+readr::write_csv(tfa_cons_cat, 
+  path = here::here("data", "tfa_cons_cat_data.csv")
+)
 
 # TFA taxon conservation listings
 tfa_cons_listings <- tfa_data$Gazettal %>%
@@ -342,7 +383,9 @@ tfa_cons_listings <- tfa_data$Gazettal %>%
   dplyr::left_join(species_names, by = "species_code") %>%
   tibble::rowid_to_column("source_id") %>% 
   dplyr::mutate(source_id = source_id %>% as.character()) 
-
+readr::write_csv(tfa_cons_listings, 
+  path = here::here("data", "tfa_cons_listings_data.csv")
+)
 # tfa_cons_listings %>% skim()
 # tfa_cons_listings %>% head(10) %>% DT::datatable()
 
@@ -467,6 +510,8 @@ tfa_occ <- tfa_data$`Fauna Records` %>% dplyr::transmute(
   dplyr::left_join(species_names, by = "species_code") %>%
   dplyr::left_join(resolution_m, by = "resolution_id") %>%
   invisible()
+readr::write_csv(tfa_occ, 
+                 path = here::here("data", "tfa_occ_data.csv"))
 
 tfa_occ_dup <- tfa_occ %>%
   filter(id %in% unique(.[["id"]][duplicated(.[["id"]])])) 
@@ -628,6 +673,7 @@ tfa_tae <- tfa_occ %>%
     description = glue::glue(
         "Observer: {observer_name} ({observer_role}) {observer_address} {observer_phone}\n",
         "Species ID confirmation: {species_id_confirmed_by}\n",
+        "Certainty: {certainty}\n",
         "Specimen voucher exists: {specimen_voucher_exists}\n",
         "Site comments: {site_comment}\n",
         "Curator comments: {comments}\n",
@@ -754,6 +800,11 @@ tfa_pla <- tfa_data$`Recovery Plans` %>%
     membership = Membership %>% as.character(),
     rt_file_number = RTFileNumber %>% as.character()
   )
+
+readr::write_csv(tfa_act,
+                 path = here::here("data", "tfa_recovery_actions_data.csv"))
+readr::write_csv(tfa_pla, 
+                 path = here::here("data", "tfa_recovery_plans_data.csv"))
 ```
 
 ## Research priorities and topics
@@ -775,11 +826,10 @@ tfa_rest <- tfa_data$`Research Topics` %>%
     research_topics = Research.Topics %>% as.character()
   )
 
-
 readr::write_csv(tfa_resp,
-                 path = here::here("data", "research_priorities_data.csv"))
+                 path = here::here("data", "tfa_research_priorities_data.csv"))
 readr::write_csv(tfa_rest, 
-                 path = here::here("data", "research_topics_data.csv"))
+                 path = here::here("data", "tfa_research_topics_data.csv"))
 ```
 
 ## Save point
@@ -2644,4 +2694,9 @@ upload_to_ckan(
   resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f"
 )
 # same for other TFA legacy data, copy over from data_etl_fauna.Rmd
+
+upload_to_ckan(communities, "Threatened Ecological Communities (TEC)",
+  d$id,
+  resource_id = "9782cc52-7be8-494a-a7da-51845c119a21"
+)
 ```
