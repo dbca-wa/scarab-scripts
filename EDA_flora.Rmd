@@ -532,7 +532,7 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
 #     modified_by = MODIFIED.BY %>% as.character(),
 #     modified_date = MODIFIED.DATE %>% as.character())
 
-# names(tfl_data$DRF_P2K_PRIORITY)
+
 
 # occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
 #   dplyr::transmute(
@@ -1013,32 +1013,21 @@ save(
   all_crit_map,
   area_ass,
   ass_species,
-  chunk_post,
-  default_date,
-  default_date_notime,
-  dev,
-  dl_mdbzip,
-  fix_incomplete_date,
   fire_sum,
   hab_comp,
   hab_cond,
-  lonlat_to_convex_hull,
-  make_eoo,
   mgmt_act,
   names_pop_vegclass,
   names_pop_threats,
   occ_fire,
   occ_threats,
   occ_vegclass,
-  orders,
-  parse_as_datetime,
   phys_sample,
   plant_count,
   populations,
   pop_forms,
   pop_threats,
   pop_vegclass,
-  prod,
   resolution,
   snapshot_last_updated,
   tfl_cons_listing,
@@ -1046,9 +1035,6 @@ save(
   tfl_fire_hist,
   tfl_occ,
   tfl_tae,
-  tz,
-  uat,
-  wastd_occ_obs_post,
   file = tfl_transformed
 )
 # load(tfl_transformed)
@@ -2305,8 +2291,6 @@ Any record differences in the following table indicate occurrence observations i
 were not migrated into TSC.
 
 ```{r}
-unique(tsc_flora_observations$source) == 11
-
 make_tfl_tae_occ_obs_summary <-
   . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFL")
 
@@ -2484,8 +2468,7 @@ tfl_hab_comp_sum %>% rt
 ### Trust level of occurrence records
 
 Currently, we assume that all occurrence records in the legacy databases are
-trustworthy. If this weren't the case, this analysis should exclude the
-non-trustworthy records.
+trustworthy as indicated by their QA status. 
 
 ### `tfl_occ` occurrences not in `tfl_tae`
 
