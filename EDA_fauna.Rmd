@@ -2439,11 +2439,11 @@ occ_obs_summary <- tfa_occ_obs_sum %>%
 occ_obs_summary %>% rt
 ```
 
-#### Spot check occurrence observations
+#### Individual occurrence observation comparisons
 
-Below are "spot-check" results for the migrated occurrence observations data. 
-Each table shows example records for three species.
-Any differences would mean the data had not been migrated correctly. 
+Below are comparisons of the original and migrated occurrence observations data. 
+Each table shows example records for three species from each occurrence observation 
+lookup table. Any differences would mean the data had not been migrated correctly. 
 
 ```{r}
 tfa_species_phys_sample <- tfa_phys_sample_complete %>% 
@@ -2505,22 +2505,41 @@ tsc_species_hab_comp <- tsc_fauna_observations %>%
     tsc_criteria = landform %>% as.character()) %>% 
   dplyr::left_join(tfa_landcrit, by = "tsc_criteria") %>% 
   select(c("source_id","tsc_landform_id")) 
+```
 
+Physical sample
+
+```{r}
 tfa_phys_sample_sum <- tfa_species_phys_sample %>% 
   left_join(tsc_species_phys_sample, by = "source_id")
 
+tfa_phys_sample_sum %>% rt
+```
+
+Animal observations
+
+```{r}
 tfa_anim_obs_sum <- tfa_species_anim_obs %>% 
   left_join(tsc_species_anim_obs, by = "source_id")
 
+tfa_anim_obs_sum %>% rt
+```
+
+Vegetation classification
+
+```{r}
 tfa_hab_veg_class <- tfa_species_veg_class %>% 
   left_join(tsc_species_veg_class, by = "source_id")
-  
+
+tfa_hab_veg_class %>% rt
+```
+
+Habitat composition
+
+```{r}
 tfa_hab_comp_sum <- tfa_species_hab_comp %>% 
   left_join(tsc_species_hab_comp, by = "source_id")
 
-tfa_phys_sample_sum %>% rt
-tfa_anim_obs_sum %>% rt
-tfa_hab_veg_class %>% rt
 tfa_hab_comp_sum %>% rt
 ```
 
