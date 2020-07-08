@@ -511,54 +511,54 @@ tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
     licence = LICENCE %>% as.character()
   )
 
-# occ_liasons <- tfl_data$DRF_LIAISONS %>%
-#   dplyr::transmute(
-#     liaisons_id = LIAISONS.ID %>% as.integer(),
-#     pop_id = POP.ID %>% as.integer(),
-#     notify_date = NOTIFY.DATE %>% as.character(),
-#     othernames = OTHERNAMES %>% as.character(),
-#     initials = INITIALS %>% as.character(),
-#     surname = SURNAME %>% as.character(),
-#     address = ADDRESS %>% as.character(),
-#     phone_number = PHONE.NO %>% as.character(),
-#     comments = COMMENTS %>% as.character(),
-#     notification_type = NOTIFICATION.TYPE %>% as.character(),
-#     notifier_name = NOTIFIER.NAME %>% as.character(),
-#     active_ind = ACTIVE.IND %>% as.character(),
-#     deactivated_date = DEACTIVATED.DATE %>% as.character(),
-#     reason_deactivated = REASON.DEACTIVATED %>% as.character(),
-#     created_by = CREATED.BY %>% as.character(),
-#     created_date = CREATED.DATE %>% as.character(),
-#     modified_by = MODIFIED.BY %>% as.character(),
-#     modified_date = MODIFIED.DATE %>% as.character())
+occ_liaisons <- tfl_data$DRF_LIAISONS %>%
+  dplyr::transmute(
+    liaisons_id = LIAISONS.ID %>% as.integer(),
+    pop_id = POP.ID %>% as.integer(),
+    notify_date = NOTIFY.DATE %>% as.character(),
+    othernames = OTHERNAMES %>% as.character(),
+    initials = INITIALS %>% as.character(),
+    surname = SURNAME %>% as.character(),
+    address = ADDRESS %>% as.character(),
+    phone_number = PHONE.NO %>% as.character(),
+    comments = COMMENTS %>% as.character(),
+    notification_type = NOTIFICATION.TYPE %>% as.character(),
+    notifier_name = NOTIFIER.NAME %>% as.character(),
+    active_ind = ACTIVE.IND %>% as.character(),
+    deactivated_date = DEACTIVATED.DATE %>% as.character(),
+    reason_deactivated = REASON.DEACTIVATED %>% as.character(),
+    created_by = CREATED.BY %>% as.character(),
+    created_date = CREATED.DATE %>% as.character(),
+    modified_by = MODIFIED.BY %>% as.character(),
+    modified_date = MODIFIED.DATE %>% as.character())
 
 
 
-# occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
-#   dplyr::transmute(
-#     species = SPECIES %>% as.character(),
-#     taxon_id = TAXONID %>% as.integer(),
-#     change = CHANGE %>% as.character(),
-#     change_date = CHANGE.DATE %>% as.character(),
-#     add_date = ADD.DATE %>% as.character(),
-#     delete_date = DELETE.DATE %>% as.character(),
-#     informal = INFORMAL %>% as.character(),
-#     authority = INFORMAL %>% as.character(),
-#     pr_code = PR.CODE %>% as.character(),
-#     wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
-#     iucn_criteria = IUCN.CRITERIA %>% as.character(),
-#     date_iucn_change = DATE.IUCN.CHANGE %>% as.character(),
-#     epbc_rank = EPBC.RANK %>% as.character(),
-#     calm_reg = CALM.REG %>% as.character(),
-#     district = DISTRICT %>% as.character(),
-#     dist = DIST %>% as.character(),
-#     fl_period = FL.PERIOD %>% as.character(),
-#     old_name = OLD.NAME %>% as.character(),
-#     fam_num = FAM.NO %>% as.character(),
-#     file_num = FILE.NO %>% as.character(),
-#     man_plan = MANPLAN %>% as.character(),
-#     row_num = ROW.NO %>% as.integer()
-#     )
+occ_priority <- tfl_data$DRF_P2K_PRIORITY %>%
+  dplyr::transmute(
+    species = SPECIES %>% as.character(),
+    taxon_id = TAXONID %>% as.integer(),
+    change = CHANGE %>% as.character(),
+    change_date = CHANGE.DATE %>% as.character(),
+    add_date = ADD.DATE %>% as.character(),
+    delete_date = DELETE.DATE %>% as.character(),
+    informal = INFORMAL %>% as.character(),
+    authority = INFORMAL %>% as.character(),
+    pr_code = PR.CODE %>% as.character(),
+    wa_iucn_rank = WA.IUCN.RANK %>% as.character(),
+    iucn_criteria = IUCN.CRITERIA %>% as.character(),
+    date_iucn_change = DATE.IUCN.CHANGE %>% as.character(),
+    epbc_rank = EPBC.RANK %>% as.character(),
+    calm_reg = CALM.REG %>% as.character(),
+    district = DISTRICT %>% as.character(),
+    dist = DIST %>% as.character(),
+    fl_period = FL.PERIOD %>% as.character(),
+    old_name = OLD.NAME %>% as.character(),
+    fam_num = FAM.NO %>% as.character(),
+    file_num = FILE.NO %>% as.character(),
+    man_plan = MANPLAN %>% as.character(),
+    row_num = ROW.NO %>% as.integer()
+    )
 
 ## Occurrence observations
 hab_comp <- tfl_occ %>%
@@ -851,7 +851,6 @@ form_options <- tfl_occ %>%
 tfl_tae <- tfl_occ %>%
   has_name_id_and_location %>% 
   dplyr::filter(!is.na(observation_date)) %>%
-  # dplyr::filter(form_status_code == "ACCEPTED"| form_status_code == "READY"| form_status_code == "NEW") %>% 
   dplyr::transmute(
     taxon = name_id,
     code = pop_id,
@@ -870,6 +869,7 @@ tfl_tae <- tfl_occ %>%
         ),
     source = 11,
     source_id = source_id %>% as.character(),
+    status = form_status_code %>% as.character(),
     # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/3/change/ = monitoring
     encounter_type = 3, 
     encountered_on = observation_date %>% as.character(),
@@ -879,7 +879,10 @@ tfl_tae <- tfl_occ %>%
     accuracy = 1000,
     point = glue::glue("SRID=4326;POINT({longitude} {latitude})")
   ) %>% 
-  base::replace(., is.na(.), "") 
+  dplyr::mutate(status = case_when(status == "NEW" ~ "new",
+                                status == "ACCEPTED" ~ "curated",
+                                status == "READY" ~ "proofread",
+                                status == "REJECTED" ~ "rejected"))
 
 ## Some (sub)populations are resighted. (Good examples: 1033, 10796, 10850)
 # tfl_tae %>% dplyr::group_by(taxon, name) %>% dplyr::tally() %>% dplyr::filter(n>2) %>% dplyr::arrange(-n) 
@@ -1881,8 +1884,8 @@ tsc_corner_dates <- tsc_tcl_flora %>%
     effective_from_max = max(effective_from, na.rm = T),
     effective_to_min = min(effective_to, na.rm = T),
     effective_to_max = max(effective_to, na.rm = T),
-    last_reviewed_on_min = min(last_reviewed_on, na.rm = T),
-    last_reviewed_on_max = max(last_reviewed_on, na.rm = T)
+    review_due_on_min = min(review_due, na.rm = T),
+    review_due_on_max = max(review_due, na.rm = T)
   )
 
 tfl_corner_dates <- tfl_tcl %>%
@@ -1891,8 +1894,8 @@ tfl_corner_dates <- tfl_tcl %>%
     effective_from_max = max(date_listed, na.rm = T),
     effective_to_min = min(date_delisted, na.rm = T),
     effective_to_max = max(date_delisted, na.rm = T),
-    last_reviewed_on_min = min(file_last_updated, na.rm = T),
-    last_reviewed_on_max = max(file_last_updated, na.rm = T)
+    review_due_on_min = min(recovery_plan_expiry_date, na.rm = T),
+    review_due_on_max = max(recovery_plan_expiry_date, na.rm = T)
   )
 
 cl_corner_dates <- rbind(tfl_corner_dates, tsc_corner_dates) %>%
@@ -2350,11 +2353,11 @@ occ_obs_summary <- tfl_occ_obs_sum %>%
 occ_obs_summary %>% rt
 ```
 
-#### Spot check occurrence observations
+#### Individual occurrence observation comparisons
 
-Below are "spot-check" results for the migrated occurrence observations data. 
-Each table shows example records for three species (source_id = 75917, 32829, 100069).
-Any differences would mean the data had not been migrated correctly. 
+Below are comparisons of the original and migrated occurrence observations data. 
+Each table shows example records for three species from each occurrence observation 
+lookup table. Any differences would mean the data had not been migrated correctly. 
 
 ```{r}
 tfl_species_plant_count <- tfl_plant_count %>% 
@@ -2442,26 +2445,50 @@ tsc_species_hab_comp <- tsc_flora_observations %>%
     tsc_criteria = tsc_drainage %>% as.character()) %>% 
   dplyr::left_join(tfl_drainage, by = "tsc_criteria") %>% 
   select(c("source_id","tsc_landforms","tsc_drainage"))
+```
 
+Plant count
+
+```{r}
 tfl_plant_count_sum <- tfl_species_plant_count %>% 
   left_join(tsc_species_plant_count, by = "source_id")
 
+tfl_plant_count_sum %>% rt
+```
+
+Physical samples
+
+```{r}
 tfl_phys_sample_sum <- tfl_species_phys_sample %>% 
   left_join(tsc_species_phys_sample, by = "source_id")
 
+tfl_phys_sample_sum %>% rt
+```
+
+Habitat condition
+
+```{r}
 tfl_hab_cond_sum <- tfl_species_hab_cond %>% 
   left_join(tsc_species_hab_cond, by = "source_id")
-  
+
+tfl_hab_cond_sum %>% rt
+```
+
+Area assessment
+
+```{r}
 tfl_area_ass_sum <- tfl_species_area_ass %>% 
   left_join(tsc_species_area_ass, by = "source_id")
-  
+
+tfl_area_ass_sum %>% rt
+```
+
+Habitat composition
+
+```{r}  
 tfl_hab_comp_sum <- tfl_species_hab_comp %>% 
   left_join(tsc_species_hab_comp, by = "source_id")
 
-tfl_phys_sample_sum %>% rt
-tfl_plant_count_sum %>% rt
-tfl_hab_cond_sum %>% rt
-tfl_area_ass_sum %>% rt
 tfl_hab_comp_sum %>% rt
 ```
 
@@ -2636,32 +2663,30 @@ d <- ckanr::package_show("threatened-and-priority-flora-database")
 # same for other tfl legacy data, copy over from data_etl_flora.Rmd
 
 # TODO review and adjust:
-# upload_to_ckan(flora_occ, "TPFL Species Occurrence",
-#                d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
-# upload_to_ckan(populations, "TPFL Populations", 
-#                d$id, resource_id = "477dbe8c-5bcb-4a5d-90d9-a28869d376b8")
-# upload_to_ckan(occ_vegclass, "TPFL Occurrence vegetation classes", 
-#                d$id, resource_id = "bb8814ff-c423-40d5-b18d-9977a66351b7")
-# upload_to_ckan(occ_threats, "TPFL Occurrence threats", 
-#                d$id, resource_id = "a58b7214-6db1-409b-a08f-d4e28ac0c139")
-# upload_to_ckan(occ_fire, "TPFL Occurrence fire details", 
-#                d$id, resource_id = "9591a80a-cd51-4f57-bc6c-1d0024b49a58")
-# upload_to_ckan(pop_forms, "TPFL Population forms", 
-#                d$id, resource_id = "f881dbd9-31f6-4c9b-a224-62380b2f7e83")
-# upload_to_ckan(pop_threats, "TPFL Population threats", 
-#                d$id, resource_id = "3a1f3e73-7b02-4534-955b-b403ae5577ad")
-# upload_to_ckan(pop_mgmtactions, "TPFL Population management actions", 
-#                d$id, resource_id = "3df48c1e-9fbd-48bf-8b75-ab9dbb71cfc3")
-# upload_to_ckan(pop_fire_summ, "TPFL Population fire summaries", 
-#                d$id, resource_id = "426571af-7c1a-462b-9325-6203383546c3")
-# upload_to_ckan(liaisons, "TPFL Liaisons", 
-#                d$id, resource_id = "610b31a2-d2f0-4c26-9a48-8d7fc8d58265")
-# upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes", 
-#                d$id, resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
-# upload_to_ckan(pop_sectionmap, "TPFL Population section maps", 
-#                d$id, resource_id = "6d557642-cd1f-4cca-8f22-0149d244dd83")
-# upload_to_ckan(flora_cons_listing, "TPFL Conservation Listings", 
-#                d$id, resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
-# upload_to_ckan(cons_prio, "TPFL Conservation priority", 
-#                d$id, resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")
+upload_to_ckan(tfl_occ, "TPFL Species Occurrence",
+               d$id, resource_id = "b2e7f5a9-8ffb-41c4-bd11-ab090ccb71ef")
+upload_to_ckan(populations, "TPFL Populations", 
+               d$id, resource_id = "477dbe8c-5bcb-4a5d-90d9-a28869d376b8")
+upload_to_ckan(occ_vegclass, "TPFL Occurrence vegetation classes", 
+               d$id, resource_id = "bb8814ff-c423-40d5-b18d-9977a66351b7")
+upload_to_ckan(occ_threats, "TPFL Occurrence threats", 
+               d$id, resource_id = "a58b7214-6db1-409b-a08f-d4e28ac0c139")
+upload_to_ckan(occ_fire, "TPFL Occurrence fire details", 
+               d$id, resource_id = "9591a80a-cd51-4f57-bc6c-1d0024b49a58")
+upload_to_ckan(pop_forms, "TPFL Population forms", 
+               d$id, resource_id = "f881dbd9-31f6-4c9b-a224-62380b2f7e83")
+upload_to_ckan(pop_threats, "TPFL Population threats", 
+               d$id, resource_id = "3a1f3e73-7b02-4534-955b-b403ae5577ad")
+upload_to_ckan(mgmt_act, "TPFL Population management actions", 
+               d$id, resource_id = "3df48c1e-9fbd-48bf-8b75-ab9dbb71cfc3")
+upload_to_ckan(fire_sum, "TPFL Population fire summaries", 
+               d$id, resource_id = "426571af-7c1a-462b-9325-6203383546c3")
+upload_to_ckan(occ_liaisons, "TPFL Liaisons", 
+               d$id, resource_id = "610b31a2-d2f0-4c26-9a48-8d7fc8d58265")
+upload_to_ckan(pop_vegclass, "TPFL Population vegetation classes", 
+               d$id, resource_id = "89ff76aa-4511-442c-9115-101a7d5be14b")
+upload_to_ckan(tfl_cons_listing, "TPFL Conservation Listings", 
+               d$id, resource_id = "0fbd9080-21d7-4fb1-ae43-4cc5791862c3")
+upload_to_ckan(occ_priority, "TPFL Poulation priority", 
+               d$id, resource_id = "668d2bd2-02bf-43fc-ad88-439185013d15")
 ```
