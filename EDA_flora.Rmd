@@ -1047,7 +1047,7 @@ save(
 
 ## Conservation criteria
 Conservation criteria Data from TSC is extracted through the TSC API and
-transformed into a useable format for manual mapping to TFL.
+transformed into a usable format for manual mapping to TFL.
 
 A manual step annotated legacy conservation criteria exported from TFL to
 conservation criteria IDs in TSC in a spreadsheet.
@@ -1562,19 +1562,19 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 
 # LONG RUNNING UPLOAD
 tfl_listing_cat_priority_res <- tfl_listing_cat_priority %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  chunk_post("taxon-conservationlisting", chunksize = 100, verbose = TRUE)
 tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  wastdr::wastd_POST("taxon-conservationlisting", verbose = TRUE)
 tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  wastdr::wastd_POST("taxon-conservationlisting", verbose = TRUE)
 tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  wastdr::wastd_POST("taxon-conservationlisting", verbose = TRUE)
 
 # There are none, skip upload:
 # tfl_cl_iucn2012 %>% wastdr::wastd_POST("taxon-conservationlisting")
 
 # Expire cached TSC TCL
-if (file.exists(tsc_cl_flora_datafile)) {fs::file_delete(tsc_cl_flora_datafile)}
+# if (file.exists(tsc_cl_flora_datafile)) {fs::file_delete(tsc_cl_flora_datafile)}
 ```
 
 ## Occurrences
@@ -1653,7 +1653,7 @@ tfl_phys_sample_res <- tfl_phys_sample %>%
 tfl_hab_cond_res <- tfl_hab_cond %>%
   wastd_occ_obs_post(obstype="HabitatCondition", chunksize = 1000) #22181
 tfl_area_ass_res <- tfl_area_ass %>%
-  wastd_occ_obs_post(obstype="AreaAssessment") #9899
+  wastd_occ_obs_post(obstype="AreaAssessment", chunksize = 1000) #9899
 tfl_plant_count_res <- tfl_plant_count %>%
   wastd_occ_obs_post(obstype="PlantCount", chunksize = 1000) #38624
 tfl_hab_comp_res <- tfl_hab_comp %>%
@@ -1739,13 +1739,9 @@ if (file.exists(tsc_extracted_flora)) {
     wastdr::wastd_GET() %>%
     wastdr::wastd_parse()
   
-  tsc_tae_observations_flora <- tsc_tae_observations %>% 
-    tidyr::unnest_wider(encounter,names_repair = "universal")
-  
-  tsc_tae_observations_flora_2 <- tsc_tae_observations_flora %>% 
-    tidyr::unnest_wider(properties,names_repair = "universal")
-  
-  tsc_flora_observations <- tsc_tae_observations_flora_2 %>% 
+  tsc_flora_observations <- tsc_tae_observations %>% 
+    tidyr::unnest_wider(encounter,names_repair = "universal") %>% 
+    tidyr::unnest_wider(properties,names_repair = "universal")  %>% 
     filter(source == 11)
   
 save(

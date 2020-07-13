@@ -1657,7 +1657,7 @@ tsc_tae_fauna_dup <- tsc_tae %>%
 tsc_occ_fauna_dup <- tsc_occ_fauna %>%
   filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])]))
 
-#### Identify missing tae in tsc\_tae
+#### Identify missing tae in tsc_tae
 tfa_tae_create <- tfa_tae %>% 
   dplyr::anti_join(tsc_occ_fauna, by = "source_id")
 
@@ -1680,7 +1680,7 @@ Legacy data snapshot used for TFA was updated last on `r snapshot_last_updated`.
 
 ## Summary statistics
 
-Check unique number of species by name\_id. Check unique number of observations
+Check unique number of species by `name_id`. Check unique number of observations
 and identify observations missing from TSC compared to TFA.
 
 ```{r make_tfl_summary}
