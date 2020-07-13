@@ -1740,8 +1740,8 @@ if (file.exists(tsc_extracted_flora)) {
     wastdr::wastd_parse()
   
   tsc_flora_observations <- tsc_tae_observations %>% 
-    tidyr::unnest_wider(encounter,names_repair = "universal") %>% 
-    tidyr::unnest_wider(properties,names_repair = "universal")  %>% 
+    tidyr::unnest_wider(encounter, names_repair = "universal") %>% 
+    tidyr::unnest_wider(properties, names_repair = "universal")  %>% 
     filter(source == 11)
   
 save(
