@@ -873,10 +873,9 @@ tsc_extracted_fauna,
 users,
 veg_class,
 vegetation_types,
-file = tfa_transformed,
-compress = "xz"
+file = tfa_transformed
 )
-load(tfa_transformed)
+# load(tfa_transformed)
 ```
 
 # Current conservation lists (TSC)
@@ -1384,11 +1383,11 @@ tfa_listing_cat_epbc <- tfa_tcl %>%
 
 # LONG RUNNING UPLOAD
 tfa_listing_cat_iucn2012_res <- tfa_listing_cat_iucn2012 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  chunk_post("taxon-conservationlisting")
 tfa_listing_cat_iucn2001_res <- tfa_listing_cat_iucn2001 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  chunk_post("taxon-conservationlisting")
 tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  chunk_post("taxon-conservationlisting")
 
 # DO NOT LOAD THESE DUPLICATES:
 # tfa_listing_cat_wawca_res <- tfa_listing_cat_wawca %>% 
@@ -1397,9 +1396,9 @@ tfa_listing_cat_iucn1994_res <- tfa_listing_cat_iucn1994 %>%
 #   wastdr::wastd_POST("taxon-conservationlisting")
 
 tfa_listing_cat_waps_res <- tfa_listing_cat_waps %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  chunk_post("taxon-conservationlisting")
 tfa_listing_cat_epbc_res <- tfa_listing_cat_epbc %>% 
-  wastdr::wastd_POST("taxon-conservationlisting")
+  chunk_post("taxon-conservationlisting")
 
 # Expire cached TSC TCL
 if (file.exists(tsc_cl_fauna_datafile)) {fs::file_delete(tsc_cl_fauna_datafile)}
