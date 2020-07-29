@@ -694,6 +694,7 @@ tfa_tae <- tfa_occ %>%
         ),
     source = 10,
     source_id = id %>% as.character(),
+    status = 'curated',
     encounter_type = 1, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/1/change/ = opportunistic 
     encountered_on = glue::glue("{datetime}+08:00"),
     encountered_by = 1,
@@ -708,7 +709,11 @@ tfa_tae <- tfa_occ %>%
       encountered_on, 
       encountered_on == "NA+08:00", 
       "1900-01-01 00:00:00+08:00")
-  ) %>%
+  ) %>% 
+  # dplyr::mutate(status = case_when(status == "NEW" ~ "new",
+  #                               status == "ACCEPTED" ~ "curated",
+  #                               status == "READY" ~ "proofread",
+  #                               status == "REJECTED" ~ "rejected")) %>%
   dplyr::arrange(taxon)
 
 tfa_tae_dup <- tfa_tae %>%
@@ -933,7 +938,7 @@ tfa_conscrit <- here::here("csv/tfa_conscrit_w_tsc.csv") %>%
   )
 
 tfa_tcl <- tfa_cons_listings %>%
-  left_join(tfa_conscrit, by = c("list_code", "criteria_code"))  %>% 
+  left_join(tfa_conscrit, by = c("list_code", "criteria_code")) %>% 
   # base::replace(., is.na(.), "") %>%
   invisible()
 ```
