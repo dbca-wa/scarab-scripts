@@ -1402,7 +1402,7 @@ x <- tec_bdy_cae[1,] %>% as.list() %>%
   # Or use any of:
   # tfl_tae[1:100,] %>% 
   # tfl_tae[1:1000,] %>% 
-  wastd_POST(serializer = "occ-community-areas", api_url = "UAT")
+  wastd_POST(serializer = "occ-community-areas", api_url = uat)
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
