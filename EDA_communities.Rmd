@@ -116,7 +116,7 @@ save(tec, snapshot_last_updated, tec_bdy, tec_site, file=tec_extracted)
 
 ```{r tec_transformed}
 # Look up tables
-former_range <- tec_data$FORMER_RANGES %>%
+former_range <- tec$FORMER_RANGES %>%
   dplyr::transmute(
     former_range_code = FORMER.RANGE %>% as.character(),
     former_range = FORMER.RANGE.DESC %>% as.character()
@@ -125,7 +125,7 @@ readr::write_csv(
   former_range, 
   path = here::here("data", "tec_former_range.csv"))
 
-range_decline <- tec_data$RANGE_DECLINE %>%
+range_decline <- tec$RANGE_DECLINE %>%
   dplyr::transmute(
     range_decline_id = RANGE.DECLINE %>% as.integer(),
     range_decline = RANGE.DECLINE.DESC %>% as.character()
@@ -134,7 +134,7 @@ readr::write_csv(
   range_decline, 
   path = here::here("data", "tec_range_decline.csv"))
 
-occ_decline <- tec_data$OCCURRENCES_DECLINE %>%
+occ_decline <- tec$OCCURRENCES_DECLINE %>%
   dplyr::transmute(
     occ_decline_id = OCC.DECLINE %>% as.integer(),
     occ_decline = OCC.DECLINE.DESC %>% as.character()
@@ -143,7 +143,7 @@ readr::write_csv(
   occ_decline, 
   path = here::here("data", "tec_occ_decline.csv"))
 
-status <- tec_data$STATUS %>%
+status <- tec$STATUS %>%
   dplyr::transmute(
     status_code = STATUS.CODE %>% as.character(),
     status = STATUS.DESC %>% as.character()
@@ -152,7 +152,7 @@ readr::write_csv(
   status, 
   path = here::here("data", "tec_status.csv"))
 
-communities <- tec_data$COMMUNITIES %>%
+communities <- tec$COMMUNITIES %>%
   tibble::as_tibble() %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
@@ -180,13 +180,13 @@ com_short <- communities %>% dplyr::select(com_id, com_label, com_name)
 ### Community Recommendations
 
 ```{r make_com_recommendations}
-recommendations <- tec_data$RECOMMENDATIONS %>%
+recommendations <- tec$RECOMMENDATIONS %>%
   dplyr::transmute(
     recommendation_code = REC.CODE %>% as.character(),
     recommendation = REC.DESC %>% as.character()
   )
 
-com_recommendations <- tec_data$COMMUNITY_RECOMMENDATIONS %>%
+com_recommendations <- tec$COMMUNITY_RECOMMENDATIONS %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     recommendation_id = CREC.NO %>% as.integer(),
@@ -205,7 +205,7 @@ readr::write_csv(
 ### Community Publications
 
 ```{r make_com_publications}
-publications <- tec_data$PUBLICATIONS %>%
+publications <- tec$PUBLICATIONS %>%
   dplyr::transmute(
     publication_id = PUB.NO %>% as.integer(),
     title = PUB.TITLE %>% as.character(),
@@ -215,7 +215,7 @@ publications <- tec_data$PUBLICATIONS %>%
     # published_with = PUB.PLACE %>% as.character()
   )
 
-com_publications <- tec_data$COMMUNITY_PUBLICATIONS %>%
+com_publications <- tec$COMMUNITY_PUBLICATIONS %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     publication_id = CP.PUB.NO %>% as.integer(),
@@ -231,14 +231,14 @@ readr::write_csv(
 ### Community Reviews
 
 ```{r make_com_reviews}
-reviews <- tec_data$REVIEWS %>%
+reviews <- tec$REVIEWS %>%
   dplyr::transmute(
     review_id = REV.NO %>% as.integer(),
     review_date = REV.DATE %>% parse_date_time(., orders = orders, tz = tz),
     review_panel = REV.PANEL %>% as.character()
   )
 
-com_reviews <- tec_data$COMMUNITY_REVIEWS %>%
+com_reviews <- tec$COMMUNITY_REVIEWS %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     review_id = CR.REV.NO %>% as.integer()
@@ -254,13 +254,13 @@ readr::write_csv(
 ### Community Actions
 
 ```{r make_com_actions}
-actions <- tec_data$ACTIONS %>%
+actions <- tec$ACTIONS %>%
   dplyr::transmute(
     action_id = ACTION.CODE %>% as.character(),
     description = ACTION.DESC %>% as.character()
   )
 
-com_actions <- tec_data$COMMUNITY_ACTIONS %>%
+com_actions <- tec$COMMUNITY_ACTIONS %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     com_action_id = CACT.NO %>% as.integer(),
@@ -279,13 +279,13 @@ readr::write_csv(
 ### Community History, Area Decline
 
 ```{r make_com_history}
-area_decline <- tec_data$AREA_DECLINE %>%
+area_decline <- tec$AREA_DECLINE %>%
   dplyr::transmute(
     area_decline_id = AD.CODE %>% as.integer(),
     area_decline = AD.DESC %>% as.character()
   )
 
-com_history <- tec_data$HISTORY %>%
+com_history <- tec$HISTORY %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     history_id = HIST.NO %>% as.character(),
@@ -303,14 +303,14 @@ TEC conservation criteria are exported as CSV spreadsheet for manual mapping
 to TSC values.
 
 ```{r make_tec_ccl}
-tec_cons_cat <- tec_data$CATEGORY_TYPES %>%
+tec_cons_cat <- tec$CATEGORY_TYPES %>%
   dplyr::transmute(
     category_code = CT.TYPE %>% as.character(),
     category_label = CT.DESC %>% as.character(),
     authority = CT.AUTHORITY.CODE %>% as.character()
   )
 
-tec_cons_crit <- tec_data$CRITERIA_CODES %>%
+tec_cons_crit <- tec$CRITERIA_CODES %>%
   dplyr::transmute(
     criterion_code = CRIT.CODE %>% as.character(),
     criterion_description = CRIT.DESC %>% as.character()
@@ -327,7 +327,7 @@ readr::write_csv(
   path = here::here("data", "tec_endorsement.csv"))
 
 # primary
-tec_cons_listing_categories <- tec_data$CATEGORIES %>%
+tec_cons_listing_categories <- tec$CATEGORIES %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     effective_from = CAT.EFFECT.DATE %>% parse_date_time(., orders = orders, tz = tz),
@@ -342,7 +342,7 @@ tec_cons_listing_categories <- tec_data$CATEGORIES %>%
   dplyr::left_join(tec_cons_cat, by = "category_code") %>%
   tibble::rowid_to_column("source_id")
 
-tec_cons_listing_criteria <- tec_data$CATEGORY_CRITERIA %>%
+tec_cons_listing_criteria <- tec$CATEGORY_CRITERIA %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     effective_from = CAT.EFFECT.DATE %>% parse_date_time(., orders = orders, tz = tz),
@@ -376,7 +376,7 @@ readr::write_csv(
 This section extracts TEC occurrences.
 
 ```{r get_tec_occ, message = FALSE, warning = FALSE}
-reliability <- tec_data$RELIABILITY %>% dplyr::transmute(
+reliability <- tec$RELIABILITY %>% dplyr::transmute(
   reliability_id = BR.CODE %>% as.character(),
   reliability = BR.DESC %>% as.character()
 )
@@ -384,7 +384,7 @@ readr::write_csv(
   reliability, 
   path = here::here("data", "tec_reliability.csv"))
 
-tec_occ <- tec_data$OCCURRENCES %>% ## most of this will get added to comments
+tec_occ <- tec$OCCURRENCES %>% ## most of this will get added to comments
   tibble::as_tibble() %>%
   dplyr::transmute(
     # IDs
@@ -487,7 +487,7 @@ hab_comp %>%
 ### Occurrence Actions
 
 ```{r make_occ_actions}
-occ_actions <- tec_data$OCCURRENCE_ACTIONS %>%
+occ_actions <- tec$OCCURRENCE_ACTIONS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     occ_action_id = OACT.NO %>% as.integer(),
@@ -503,7 +503,7 @@ occ_actions <- tec_data$OCCURRENCE_ACTIONS %>%
 ### Occurrence Recommendations
 
 ```{r make_occ_recommendations}
-occ_recommendations <- tec_data$OCCURRENCE_RECOMMENDATIONS %>%
+occ_recommendations <- tec$OCCURRENCE_RECOMMENDATIONS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     rank = OREC.RANK %>% as.character(),
@@ -519,7 +519,7 @@ occ_recommendations <- tec_data$OCCURRENCE_RECOMMENDATIONS %>%
 ### Occurrence Extent
 
 ```{r make_occ_extent}
-sources <- tec_data$SOURCES %>%
+sources <- tec$SOURCES %>%
   dplyr::transmute(
     source_code = SOURCE.CODE %>% as.character(),
     source = SOURCE.DESC %>% as.character()
@@ -528,7 +528,7 @@ readr::write_csv(
   sources, 
   path = here::here("data", "tec_sources.csv"))
 
-occ_extent <- tec_data$EXTENTS %>%
+occ_extent <- tec$EXTENTS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     EXT.NO = EXT.NO %>% as.character(),
@@ -548,7 +548,7 @@ occ_extent <- tec_data$EXTENTS %>%
 ### Additional Data
 
 ```{r make_occ_additional_data}
-items <- tec_data$ITEMS %>%
+items <- tec$ITEMS %>%
   dplyr::transmute(
     item_code = ITEM.CODE %>% as.character(),
     item = ITEM.DESC %>% as.character()
@@ -557,7 +557,7 @@ readr::write_csv(
   items, 
   path = here::here("data", "tec_items.csv"))
 
-occ_additional_data <- tec_data$ADDITIONAL_DATA %>%
+occ_additional_data <- tec$ADDITIONAL_DATA %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     additional_data_id = ADD.NO %>% as.integer(),
@@ -573,17 +573,17 @@ occ_additional_data <- tec_data$ADDITIONAL_DATA %>%
 Names of physical maps describing one or multiple occurrences.
 
 ```{r make_occ_maps}
-maps <- tec_data$MAPS
+maps <- tec$MAPS
 readr::write_csv(maps, path = here::here("data", "tec_maps.csv"))
 
-occ_maps <- tec_data$OCCURRENCE_MAPS
+occ_maps <- tec$OCCURRENCE_MAPS
 readr::write_csv(occ_maps, path = here::here("data", "tec_occ_maps.csv"))
 ```
 
 ### Biological Processes
 
 ```{r make_occ_biol_process}
-occ_biol_process <- tec_data$BIOL_PROCESSES %>%
+occ_biol_process <- tec$BIOL_PROCESSES %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     biol_process_id = BIOL.NO %>% as.integer(),
@@ -596,7 +596,7 @@ occ_biol_process <- tec_data$BIOL_PROCESSES %>%
 ### Non-biological Processes
 
 ```{r make_occ_nonbiol_process}
-occ_nonbiol_process <- tec_data$NON_BIOL_PROCESSES %>%
+occ_nonbiol_process <- tec$NON_BIOL_PROCESSES %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     nonbiol_process_id = NBIO.NO %>% as.integer(),
@@ -609,7 +609,7 @@ occ_nonbiol_process <- tec_data$NON_BIOL_PROCESSES %>%
 ## Fire History
 
 ```{r make_occ_fire_history}
-fire_history <- tec_data$FIRE_HISTORY %>%
+fire_history <- tec$FIRE_HISTORY %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     fire_history_id = FIRE.NO %>% as.integer(),
@@ -635,15 +635,15 @@ What is the overlap to the Threatened Fauna DB in terms of meaning and data flow
 
 ```{r make_fauna_occ}
 # lookup tables
-fauna_conservation_codes <- tec_data$FAUNA_CONSERVATION_CODES %>%
+fauna_conservation_codes <- tec$FAUNA_CONSERVATION_CODES %>%
   dplyr::transmute(
     conservation_code = CONSV.CODE %>% as.character(),
     conservation_code_description = CONSV.DESC %>% as.character()
   )
 
-fauna_groups <- tec_data$FAUNA_GROUPS # paraphyletic groups
+fauna_groups <- tec$FAUNA_GROUPS # paraphyletic groups
 
-species_roles <- tec_data$SPECIES_ROLES %>%
+species_roles <- tec$SPECIES_ROLES %>%
   dplyr::transmute(
     species_role_code = SP.ROLE.CODE %>% as.character(),
     species_role = SP.ROLE.DESC %>% as.character()
@@ -653,7 +653,7 @@ readr::write_csv(
   path = here::here("data", "tec_species_roles.csv"))
 
 # primary data
-occ_fauna <- tec_data$OCCURRENCE_FAUNA %>%
+occ_fauna <- tec$OCCURRENCE_FAUNA %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     taxon_id = OF.TAXON.ID %>% as.character(),
@@ -665,7 +665,7 @@ occ_fauna <- tec_data$OCCURRENCE_FAUNA %>%
   dplyr::left_join(occ_short, by = "occ_id") %>%
   dplyr::left_join(species_roles, by = "species_role_code")
 
-occ_species <- tec_data$OCCURRENCE_SPECIES %>%
+occ_species <- tec$OCCURRENCE_SPECIES %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(), ## Occ_id links to boundary id
     taxon_id = SPEC.TAXON.ID %>% as.character(),
@@ -685,7 +685,7 @@ occ_species <- tec_data$OCCURRENCE_SPECIES %>%
 
 ```{r make_surveys, warning = FALSE}
 # lookups
-impacts <- tec_data$THREAT_IMPACTS %>%
+impacts <- tec$THREAT_IMPACTS %>%
   dplyr::transmute(
     impact_code = IMP.CODE %>% as.character(),
     impact = IMP.DESC %>% as.character()
@@ -694,7 +694,7 @@ readr::write_csv(
   impacts, 
   path = here::here("data", "tec_impacts.csv"))
 
-threats <- tec_data$THREATS %>%
+threats <- tec$THREATS %>%
   dplyr::transmute(
     threat_code = THREAT.CODE %>% as.character(),
     threat = THREAT.DESC %>% as.character()
@@ -703,7 +703,7 @@ readr::write_csv(
   threats, 
   path = here::here("data", "tec_threats.csv"))
 
-conditions <- tec_data$CONDITIONS %>%
+conditions <- tec$CONDITIONS %>%
   dplyr::transmute(
     condition_code = COND.CODE %>% as.character(),
     condition = COND.DESC %>% as.character()
@@ -713,7 +713,7 @@ readr::write_csv(
   path = here::here("data", "tec_conditions.csv"))
 
 # primary
-com_threats <- tec_data$COMMUNITY_THREATS %>%
+com_threats <- tec$COMMUNITY_THREATS %>%
   dplyr::transmute(
     com_id = COM.NO %>% as.integer(),
     id = CTHR.NO %>% as.character(),
@@ -723,7 +723,7 @@ com_threats <- tec_data$COMMUNITY_THREATS %>%
   ) %>%
   dplyr::left_join(threats, by = "threat_code")
 
-surveys <- tec_data$SURVEYS %>%
+surveys <- tec$SURVEYS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     survey_id = SUR.NO %>% as.integer(),
@@ -740,7 +740,7 @@ readr::write_csv(
   surveys, 
   path = here::here("data", "tec_surveys.csv"))
 
-survey_threats <- tec_data$SURVEY_THREATS %>%
+survey_threats <- tec$SURVEY_THREATS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     survey_id = SUR.NO %>% as.integer(),
@@ -760,7 +760,7 @@ survey_threats <- tec_data$SURVEY_THREATS %>%
   dplyr::left_join(impacts, by = c("potential_impact_code" = "impact_code")) %>%
   dplyr::rename(potential_impact = impact)
 
-survey_conditions <- tec_data$SURVEY_CONDITIONS %>%
+survey_conditions <- tec$SURVEY_CONDITIONS %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     survey_id = SUR.NO %>% as.integer(),
@@ -786,7 +786,7 @@ survey_id does not denote an individual visit of a TEC boundary.
 `Site visits` are quick site visits with a partial set of measurements.
 
 ```{r make_sites}
-datum <- tec_data$DATUM %>%
+datum <- tec$DATUM %>%
   dplyr::transmute(
     datum_code = DATUM.CODE %>% as.character(),
     datum = DATUM.DESC %>% as.character(),
@@ -797,7 +797,7 @@ readr::write_csv(
   datum, 
   path = here::here("data", "tec_datum.csv"))
 
-sites <- tec_data$SITES %>%
+sites <- tec$SITES %>%
   dplyr::transmute(
     occ_id = OCC.UNIQUE.ID %>% as.integer(),
     site_code = S.ID %>% as.character(),
@@ -826,7 +826,7 @@ readr::write_csv(
   sites, 
   path = here::here("data", "tec_sites.csv"))
 
-site_visit <- tec_data$SITE_VISITS %>%
+site_visit <- tec$SITE_VISITS %>%
   dplyr::transmute(
     site_visit_id = SITE.VISIT.ID %>% as.integer(),
     site_code = S.ID %>% as.character(),
@@ -857,7 +857,7 @@ sites_keep <- tec_site %>%
   dplyr::filter(!(BDY_ID %in% bdy_w_one_site)) ## These are the sites we want to keep as they are not just boundary duplicates
 
 # coll code and number indicates voucher specimens
-voucher_specimens <- tec_data$SITE_SPECIES %>%
+voucher_specimens <- tec$SITE_SPECIES %>%
   dplyr::transmute(
     site_species_id = SITE.SPECIES.ID %>% as.character(),
     site_visit_id = SITE.VISIT.ID %>% as.integer(),
@@ -914,7 +914,7 @@ This section extracts recovery actions and plans, which will be ingested into
 TSC later.
 
 ```{r make_recovery_plans}
-recovery_plans <- tec_data$INTERIM_RECOVERY_PLANS %>%
+recovery_plans <- tec$INTERIM_RECOVERY_PLANS %>%
   dplyr::transmute(
     recovery_plan_id = IRP.NO %>% as.character(),
     com_id = COM.NO %>% as.integer(),
@@ -1000,7 +1000,7 @@ tec_bdy_cae_build <- survey_cae %>%
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
     source_id = source_id,
-    encountered_on = surveyed_on,
+    encountered_on = glue::glue("{surveyed_on}+08:00"),
     encountered_by = 1,
     geom = geometry %>%
       sf::st_convex_hull(.) %>%
@@ -1009,8 +1009,8 @@ tec_bdy_cae_build <- survey_cae %>%
   )
 
 tec_bdy_cae <- tec_bdy_cae_build %>%
-  dplyr::filter(community != "NA")%>%
-  dplyr::filter(!is.na(encountered_on))%>%
+  dplyr::filter(community != "NA") %>%
+  dplyr::filter(!is.na(encountered_on)) %>%
   dplyr::filter(geom != "null")
 ```
 
@@ -1089,7 +1089,7 @@ tec_site_cae_build <- site_visit_cae %>%
     source = 15, # TEC sit
     source_id = site_visit_id,
     encounter_type = 2, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/2/change/ = survey
-    encountered_on = site_visit_date,
+    encountered_on = glue::glue("{site_visit_date}+08:00"),
     encountered_by = 1,
     point = geometry %>% geojsonsf::sfc_geojson(.)
   )
@@ -1402,7 +1402,7 @@ x <- tec_bdy_cae[1,] %>% as.list() %>%
   # Or use any of:
   # tfl_tae[1:100,] %>% 
   # tfl_tae[1:1000,] %>% 
-  wastd_POST(serializer = "occ-community-areas")
+  wastd_POST(serializer = "occ-community-areas", api_url = "UAT")
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
@@ -1416,15 +1416,15 @@ The TEC buffer upload excludes all but the numerous ones
 
 ```{r load_tec_buf, eval = FALSE}
 # Test upload one, some, many to local or PROD:
-x <- tec_buf_cae[1,] %>% as.list() %>%
-  # Or use any of:
-  # tfl_tae[1:100,] %>%
-  # tfl_tae[1:1000,] %>%
-  wastd_POST(serializer = "occ-community-areas")
-
-tec_buf_cae_res <- tec_buf_cae %>%
- dplyr::filter(!grepl(fat_filter, community)) %>%
- chunk_post(serializer = "occ-community-areas")
+# x <- tec_buf_cae[1,] %>% as.list() %>%
+#   # Or use any of:
+#   # tfl_tae[1:100,] %>%
+#   # tfl_tae[1:1000,] %>%
+#   wastd_POST(serializer = "occ-community-areas")
+# 
+# tec_buf_cae_res <- tec_buf_cae %>%
+#  dplyr::filter(!grepl(fat_filter, community)) %>%
+#  chunk_post(serializer = "occ-community-areas")
 ```
 
 ### Upload TEC sites to TSC
