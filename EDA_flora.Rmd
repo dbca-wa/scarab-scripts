@@ -718,13 +718,31 @@ plant_count <- tfl_occ %>%
     number_dead = simple_dead_tot,
     plant_condition = population_condition,
     comments = population_notes) %>% 
-  dplyr::filter(
-    plant_count_method != "" | 
-      counted_subject != "" | 
-      plant_condition != "" | 
-      comments != ""
-  ) %>% 
+  dplyr::mutate(plant_count_method = 
+                  case_when(plant_count_method == "ACT_CLMP" ~ "actual-count-clumps",
+                            plant_count_method == "ACT_IND" ~ "actual-count-individuals",
+                            plant_count_method == "EXT_VIQD" ~ "area-population-m2",
+                            plant_count_method == "ESTMT" ~ "estimate",
+                            plant_count_method == "EXT_LOOK" ~ "extrapolated-count-look-around",
+                            plant_count_method == "EXT_GRQD" ~ "extrapolated-count-quadrat-based",
+                            plant_count_method == "EXT_TRNS" ~ "extrapolated-count-transect-based",
+                            plant_count_method == "EXT_TRAV" ~ "	extrapolated-count-traverse",
+                            plant_count_method == "PART_CNT" ~ "partial-count-spatially-defined-subset-population",
+                            plant_count_method == "UNKNOWN" ~ "unknown")) %>%
+  # dplyr::filter(
+  #   plant_count_method != "" | 
+  #     counted_subject != "" | 
+  #     plant_condition != "" | 
+  #     comments != ""
+  # ) %>% 
   dplyr::mutate_at(vars(c("land_manager_present","clonal_reproduction_present","vegetative_state_present","flower_buds_present","flowers_present","immature_fruit_present","ripe_fruit_present","dehisced_fruit_present")), funs(. == 'Y')) 
+  
+count_method_lookup <- plant_count %>% 
+  dplyr::transmute(plant_count_method = plant_count_method) %>% 
+  dplyr::distinct()
+
+lookups <- tfl_data$DRF_LOOKUP_TERMS %>% 
+  dplyr::filter(DOMAIN.CODE =="CNT_MTHD")
   
 # TODO filter correct?
 
@@ -1305,15 +1323,15 @@ tfl_plant_condition <-
   )
 
 tfl_plant_count <- plant_count %>%
-  left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
+  # left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
   left_join(tfl_plant_count_subject, by = c("counted_subject")) %>%
   left_join(tfl_plant_condition, by = c("plant_condition")) %>%
   dplyr::transmute(
     source = source,
     source_id = source_id,
-    count_methods = tsc_plant_count_method,
-    count_subjects = tsc_counted_subject,
-    plant_conditions = tsc_Plant_condition,
+    count_method = plant_count_method,
+    count_subject = tsc_counted_subject,
+    plant_condition = tsc_Plant_condition,
     land_manager_present = land_manager_present,
     no_alive_mature = number_alive_mature,
     no_alive_juvenile = number_alive_juvenile,
@@ -1641,8 +1659,8 @@ tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 #   wastd_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
 #   wastd_occ_obs_post(obstype="AreaAssessment")
-# tfl_plant_count_res <- tfl_plant_count[30000:38624,] %>%
-#   wastd_occ_obs_post(obstype="PlantCount")
+tfl_plant_count_res <- tfl_plant_count[1,] %>%
+  wastd_occ_obs_post(obstype="PlantCount", api_url = uat)
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
 #   wastd_occ_obs_post(obstype="HabitatComposition")
 
@@ -1654,8 +1672,8 @@ tfl_hab_cond_res <- tfl_hab_cond %>%
   wastd_occ_obs_post(obstype="HabitatCondition", chunksize = 1000) #22181
 tfl_area_ass_res <- tfl_area_ass %>%
   wastd_occ_obs_post(obstype="AreaAssessment", chunksize = 1000) #9899
-tfl_plant_count_res <- tfl_plant_count %>%
-  wastd_occ_obs_post(obstype="PlantCount", chunksize = 1000) #38624
+tfl_plant_count_res <- tfl_plant_count[1:1000,] %>%
+  wastd_occ_obs_post(obstype="PlantCount", api_url = uat, chunksize = 1000) #38624
 tfl_hab_comp_res <- tfl_hab_comp %>%
   wastd_occ_obs_post(obstype="HabitatComposition", chunksize = 1000) #40996
 
