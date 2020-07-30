@@ -988,7 +988,7 @@ tec_bdy_cae_build <- survey_cae %>%
     )) %>% 
   dplyr::transmute(
     # occ_id = occ_id,
-    community = com_id,
+    community = com_label,
     code = boundary_id,
     name = com_name,
     description = glue::glue(
@@ -998,8 +998,9 @@ tec_bdy_cae_build <- survey_cae %>%
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
     source_id = source_id,
-    encountered_on = glue::glue("{surveyed_on}+08:00"),
+    encountered_on = glue::glue("{surveyed_on} 00:00:00+08:00"),
     encountered_by = 1,
+    encounter_type = 2,
     geom = geometry %>%
       sf::st_convex_hull(.) %>%
       sf::st_buffer(., 0.00001) %>%
@@ -1388,14 +1389,14 @@ x <- tec_bdy_cae[1,] %>% #as.list() %>%
   # Or use any of:
   # tec_bdy_cae[1:100,] %>%
   # tfl_tae[1:1000,] %>% 
-  chunk_post(serializer = "occ-community-areas", 
+  wastd_POST(serializer = "occ-community-areas", 
              api_url = dev)
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tec_bdy_cae %>%
+tec_bdy_cae_res <- tec_bdy_cae %>%
   filter(grepl(fat_filter, community)) %>%
-  chunk_post(serializer = "occ-community-areas")
+  chunk_post(serializer = "occ-community-areas", api_url = dev)
 ```
 
 ### Upload TEC buffers to TSC
