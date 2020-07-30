@@ -952,8 +952,6 @@ Occurrences are named by the first site recorded within.
 TEC boundaries store the first site name as `tec_bdy$FIRST_S_ID`.
 CAE need to use `tec_bdy$FIRST_S_ID` as `area_code`.
 
-
-
 ## Occurrence Boundaries
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
@@ -1124,19 +1122,15 @@ conditions,
 datum,
 default_date,
 default_date_notime,
-dev,
-dl_mdbzip,
 endorsement,
 fat_filter,
 fauna_conservation_codes,
 fauna_groups,
 fire_history,
-fix_incomplete_date,
 former_range,
 hab_comp,
 impacts,
 items,
-lonlat_to_convex_hull,
 maps,
 numerous_communities,
 occ_actions,
@@ -1150,9 +1144,6 @@ occ_nonbiol_process,
 occ_recommendations,
 occ_short,
 occ_species,
-orders,
-parse_as_datetime,
-prod,
 publications,
 recommendations,
 range_decline,
@@ -1186,12 +1177,7 @@ tec_bdy_cae,
 tec_bdy_cae_build,
 tec_occ,
 threats,
-tz,
-uat,
-upload_file_to_ckan,
-upload_to_ckan,
 voucher_specimens,
-wastd_occ_obs_post,
 file = tec_transformed
 )
 # load(tec_transformed)
