@@ -356,7 +356,6 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 This section extracts TFL occurrences.
 
 ```{r get_tfl_occ, message=FALSE, warning=FALSE}
-names(tfl_data$DRF_RFR_FORMS)
 # Taxon occurrences
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
