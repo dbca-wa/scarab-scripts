@@ -1005,10 +1005,10 @@ tec_bdy_cae_build <- survey_cae %>%
       sf::st_convex_hull(.) %>%
       sf::st_buffer(., 0.00001) %>%
       geojsonsf::sfc_geojson(.)
-  ) %>%
+) %>% 
   dplyr::mutate(
     encountered_on = replace(
-      encountered_on,
+      encountered_on, 
       encountered_on == "NA 00:00:00+08:00",
       "1900-01-01 00:00:00+08:00"))
 
