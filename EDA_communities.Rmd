@@ -997,7 +997,7 @@ tec_bdy_cae_build <- survey_cae %>%
     ),
     area_type = 10, # 10 bound, 11 buffer, 12 site point
     source = 13, # TEC bdy
-    source_id = source_id,
+    source_id = source_id %>% as.character(),
     encountered_on = glue::glue("{surveyed_on} 00:00:00+08:00"),
     encountered_by = 1,
     encounter_type = 2,
@@ -1321,11 +1321,13 @@ tec_hab_comp <- hab_comp %>%
   left_join(tec_landforms, by = c("land_element")) %>%
   left_join(tec_drainage, by = c("drainage")) %>%  
 dplyr::transmute(
-  source = source,
-  source_id = occ_id,
+  source = 13,
+  source_id = occ_id %>% as.character(),
   landform = tsc_landform,
   drainage = tsc_drainage) %>% 
-dplyr::mutate(obstype = "HabitatComposition")
+dplyr::mutate(obstype = "HabitatComposition") %>% 
+  dplyr::semi_join(tec_bdy_cae, by = "source_id")
+
 ```
 
 # Migrate legacy data (TEC to TSC)
@@ -1446,12 +1448,12 @@ tec_site_cae_res <- tec_site_cae %>%
 ```{r, eval=FALSE}
 # Example: one record
 tec_hab_comp[1,] %>% 
-  wastdr::wastd_bulk_post("occ-observation")
+  wastdr::wastd_occ_obs_post(obstype="HabitatComposition", chunksize = 1000)
 
 # Bulk upload
 # LONG RUNNING UPLOAD
 tec_hab_comp_res <- tec_hab_comp %>% 
-  wastdr::wastd_bulk_post("occ-observation")
+  wastd_occ_obs_post(obstype="HabitatComposition", chunksize = 1000)
 ```
 
 ## Conservation Documents
