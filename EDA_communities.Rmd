@@ -1399,14 +1399,13 @@ x <- tec_bdy_cae[1,] %>% #as.list() %>%
   # Or use any of:
   # tec_bdy_cae[1:100,] %>%
   # tfl_tae[1:1000,] %>% 
-  wastd_POST(serializer = "occ-community-areas", 
-             api_url = dev)
+  wastd_POST(serializer = "occ-community-areas")
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
 tec_bdy_cae_res <- tec_bdy_cae %>%
   filter(grepl(fat_filter, community)) %>%
-  chunk_post(serializer = "occ-community-areas", api_url = dev)
+  chunk_post(serializer = "occ-community-areas")
 ```
 
 ### Upload TEC buffers to TSC
