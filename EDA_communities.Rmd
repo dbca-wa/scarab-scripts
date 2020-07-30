@@ -23,7 +23,7 @@ source("helpers.R")
 tec_extracted <- here::here("data", "tec_extracted.Rdata")
 tec_transformed <- here::here("data/tec_transformed.RData")
 tec_occ_datafile <- here::here("data", "tec_occ.Rdata")
-tsc_extracted <- here::here("data/tsc_extracted_communities.RData")
+tsc_extracted_communities <- here::here("data/tsc_extracted_communities.RData")
 ```
 
 # Context
@@ -1074,7 +1074,8 @@ site_visit_cae <- site_visit %>%
   left_join(tec_site, by = c("site_code" = "S_ID")) %>%
   left_join(tec_occ, by = c("OCC_UNIQUE" = "occ_id")) %>%
   left_join(communities, by = c("com_id", "com_label", "com_name")) %>% 
-  clean_names()
+  clean_names() %>% 
+  filter(latitude < -16)
 
 tec_site_cae_build <- site_visit_cae %>%
   dplyr::transmute(
@@ -1498,26 +1499,26 @@ if (file.exists(tsc_extracted_communities)) {
 
 # Community occurrences  
  tsc_cae_data <- "occ-community-points" %>% 
-  wastdr::wastd_GET(chunk_size = 100) 
+  wastdr::wastd_GET() %>% 
+  wastdr::wastd_parse()
 
 tsc_community_sites <- tsc_cae_data %>%
-  magrittr::extract2("data") %>% 
-  geojsonio::as.json() %>%
-  geojsonsf::geojson_sf() %>% 
   dplyr::mutate(area_type = area_type %>% as.character()) %>%
   dplyr::filter(area_type == 12) 
 
 tsc_community_boundaries <- tsc_cae_data %>%
-  magrittr::extract2("features") %>%
-  geojsonio::as.json() %>%
-  geojsonsf::geojson_sf() %>% 
   dplyr::mutate(area_type = area_type %>% as.character()) %>% 
   dplyr::filter(area_type == 10) 
 
  # Community occurrence observations
-  tsc_tae_observations_communities <- "occ-observation" %>% 
-    wastdr::wastd_GET(query = list(source=15)) %>%
+  tsc_tae_observations <- "occ-observation" %>% 
+    wastdr::wastd_GET() %>%
     wastdr::wastd_parse()
+  
+  tsc_communities_observations <- tsc_tae_observations %>% 
+    tidyr::unnest_wider(encounter, names_repair = "universal") %>% 
+    tidyr::unnest_wider(properties, names_repair = "universal")  %>% 
+    filter(source == 13)
    
 save(tsc_ccl_communities,
      tsc_cae_data,
