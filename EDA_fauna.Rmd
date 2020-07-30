@@ -943,7 +943,7 @@ tfa_tcl <- tfa_cons_listings %>%
   invisible()
 ```
 
-## Observation Groups
+## Observation Groups lookups
 Occurrence lookups from TSC are downloaded from the TSC API 
 and transformed into a usable format for manual mapping to TFA.
 
@@ -1028,10 +1028,12 @@ tfa_landcrit <- here::here("csv/tfa_landcrit_w_tsc.csv") %>%
 
 tfa_hab_comp_complete <- hab_comp %>%
   left_join(tfa_landcrit, by = c("landform_id")) %>%
-  dplyr::select(source, source_id, tsc_landform_id) %>%
-  dplyr::rename(landform = tsc_landform_id) %>% 
-  dplyr::mutate(obstype = "HabitatComposition") %>% 
-  invisible()
+  dplyr::transmute(
+    source = source,
+    source_id = source_id,
+    landform = tsc_landform_id
+    ) %>%
+  dplyr::mutate(obstype = "HabitatComposition")
 
 # Animal observations
 tfa_confidence <- here::here("csv/tfa_id_conf_w_tsc.csv") %>%
