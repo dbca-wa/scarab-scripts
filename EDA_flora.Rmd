@@ -356,6 +356,7 @@ readr::write_csv(all_crit_map, path = here::here("data","all_tfl_conscrit.csv"))
 This section extracts TFL occurrences.
 
 ```{r get_tfl_occ, message=FALSE, warning=FALSE}
+names(tfl_data$DRF_RFR_FORMS)
 # Taxon occurrences
 tfl_occ <- tfl_data$DRF_RFR_FORMS %>%
   dplyr::transmute(
@@ -718,17 +719,17 @@ plant_count <- tfl_occ %>%
     number_dead = simple_dead_tot,
     plant_condition = population_condition,
     comments = population_notes) %>% 
-  dplyr::mutate(plant_count_method = 
-                  case_when(plant_count_method == "ACT_CLMP" ~ "actual-count-clumps",
-                            plant_count_method == "ACT_IND" ~ "actual-count-individuals",
-                            plant_count_method == "EXT_VIQD" ~ "area-population-m2",
-                            plant_count_method == "ESTMT" ~ "estimate",
-                            plant_count_method == "EXT_LOOK" ~ "extrapolated-count-look-around",
-                            plant_count_method == "EXT_GRQD" ~ "extrapolated-count-quadrat-based",
-                            plant_count_method == "EXT_TRNS" ~ "extrapolated-count-transect-based",
-                            plant_count_method == "EXT_TRAV" ~ "	extrapolated-count-traverse",
-                            plant_count_method == "PART_CNT" ~ "partial-count-spatially-defined-subset-population",
-                            plant_count_method == "UNKNOWN" ~ "unknown")) %>%
+  # dplyr::mutate(plant_count_method = 
+  #                 case_when(plant_count_method == "ACT_CLMP" ~ "actual-count-clumps",
+  #                           plant_count_method == "ACT_IND" ~ "actual-count-individuals",
+  #                           plant_count_method == "EXT_VIQD" ~ "area-population-m2",
+  #                           plant_count_method == "ESTMT" ~ "estimate",
+  #                           plant_count_method == "EXT_LOOK" ~ "extrapolated-count-look-around",
+  #                           plant_count_method == "EXT_GRQD" ~ "extrapolated-count-quadrat-based",
+  #                           plant_count_method == "EXT_TRNS" ~ "extrapolated-count-transect-based",
+  #                           plant_count_method == "EXT_TRAV" ~ "	extrapolated-count-traverse",
+  #                           plant_count_method == "PART_CNT" ~ "partial-count-spatially-defined-subset-population",
+  #                           plant_count_method == "UNKNOWN" ~ "unknown")) %>%
   # dplyr::filter(
   #   plant_count_method != "" | 
   #     counted_subject != "" | 
@@ -1323,13 +1324,13 @@ tfl_plant_condition <-
   )
 
 tfl_plant_count <- plant_count %>%
-  # left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
+  left_join(tfl_plant_count_method, by = c("plant_count_method")) %>%
   left_join(tfl_plant_count_subject, by = c("counted_subject")) %>%
   left_join(tfl_plant_condition, by = c("plant_condition")) %>%
   dplyr::transmute(
     source = source,
     source_id = source_id,
-    count_method = plant_count_method,
+    count_method = tsc_plant_count_method,
     count_subject = tsc_counted_subject,
     plant_condition = tsc_Plant_condition,
     land_manager_present = land_manager_present,
