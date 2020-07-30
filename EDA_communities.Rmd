@@ -633,7 +633,7 @@ There is another separate group of occurrences:
 
 What is the overlap to the Threatened Fauna DB in terms of meaning and data flow?
 
-```{r make_fauna_occ}
+```{r make_com_occ}
 # lookup tables
 fauna_conservation_codes <- tec_data$FAUNA_CONSERVATION_CODES %>%
   dplyr::transmute(
@@ -1102,7 +1102,7 @@ if (file.exists(tec_occ_datafile)) load(tec_occ_datafile)
 ```
 
 ## Save point
-```{r savepoint_tec}
+```{r savepoint_tec, eval=F}
 save(
 actions,
 all_crit_map,
@@ -1384,11 +1384,12 @@ The TEC boundary upload excludes the heavyweight communities with more than 400 
 
 ```{r load_tec_bdy, eval = FALSE}
 # Test upload one, some, many to local or PROD:
-x <- tec_bdy_cae[1,] %>% as.list() %>% 
+x <- tec_bdy_cae[1,] %>% #as.list() %>% 
   # Or use any of:
-  # tfl_tae[1:100,] %>% 
+  # tec_bdy_cae[1:100,] %>%
   # tfl_tae[1:1000,] %>% 
-  wastd_POST(serializer = "occ-community-areas", api_url = uat)
+  chunk_post(serializer = "occ-community-areas", 
+             api_url = dev)
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
