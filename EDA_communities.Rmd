@@ -1093,10 +1093,15 @@ tec_site_cae_build <- site_visit_cae %>%
     source = 15, # TEC sit
     source_id = site_visit_id,
     encounter_type = 2, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/2/change/ = survey
-    encountered_on = glue::glue("{site_visit_date}+08:00"),
+    encountered_on = glue::glue("{site_visit_date} 00:00:00+08:00"),
     encountered_by = 1,
     point = geometry %>% geojsonsf::sfc_geojson(.)
-  )
+  ) %>% 
+  dplyr::mutate(
+    encountered_on = replace(
+      encountered_on, 
+      encountered_on == "NA 00:00:00+08:00",
+      "1900-01-01 00:00:00+08:00"))
 
 tec_site_cae <- tec_site_cae_build %>%
   dplyr::filter(community != "NA")%>%
