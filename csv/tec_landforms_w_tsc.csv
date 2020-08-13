@@ -38,10 +38,10 @@ Ridge,9,ridge
 mounds & tidals flats,6,hill
 Cheerawarra Land System,33,flat-claypan
 mid to upper slopes of hill,24,slope-mid-slope
-"mid to upper slopes of hill (hilltop, ridge, slope, gully)",25,slope-mid-slope
-mid to upper slopes of hill. Crest and slope,26,slope-mid-slope
-low ridges and colluvial flats,27,slope-mid-slope
-Low ridges and colluvial flats,28,slope-mid-slope
+"mid to upper slopes of hill (hilltop, ridge, slope, gully)",24,slope-mid-slope
+mid to upper slopes of hill. Crest and slope,24,slope-mid-slope
+low ridges and colluvial flats,24,slope-mid-slope
+Low ridges and colluvial flats,24,slope-mid-slope
 slopes and crest,20,slope
 swamp on alluvium (floodplain) adjacent to sandstone and minor scree,34,flat-floodplain
 peaty swamp and permanent spring feeding a small lake at the base of a sandstone range,48,depression-swamp-open
@@ -59,7 +59,7 @@ Clay based wetland in sandy closed depression,59,wetland
 swamp on alluvium,48,depression-swamp-open
 swamp,48,depression-swamp-open
 gilgai plain,50,depression-closed
-"mid to lower coastal slopes, downslope from granite hills and outcrops",24,slope-lower-slope
+"mid to lower coastal slopes, downslope from granite hills and outcrops",25,slope-lower-slope
 hill,6,hill
 lower slopes and low rises,25,slope-lower-slope
 Organic mound spring or raised peat swamp,59,wetland
@@ -146,9 +146,9 @@ headland,1,crest-hill-crest
 hilltop,1,crest-hill-crest
 upper slope and ridge,9,ridge
 upper slope of ridge,9,ridge
-pediment,24,slope-lower-slope
+pediment,25,slope-lower-slope
 upper slope and pediment,9,ridge
-lower to mid slope,24,slope-lower-slope
+lower to mid slope,25,slope-lower-slope
 lee of dune and interdunal swale,40,depression-swale
 headland and lee of dune,40,depression-swale
 lee of dune and interdunal swale with central gully and top slopes of dune,2,crest-dune-crest
@@ -267,7 +267,7 @@ Lower slope on the 50m contour line.,25,slope-lower-slope
 "Lower slope, between 35 and 40m contour lines.",25,slope-lower-slope
 "Lowerslope, between 35 and 40m contour lines. Soils mapping desc=Seasonally inundated swamps & depressions or seepage areas near the base of the Foothills.",25,slope-lower-slope
 Lake,53,depression-lake
-Ranging from gentle slope on hill crest/slope to moderate slope on hill crest (upper slope),24,slope-gentle-steep
+Ranging from gentle slope on hill crest/slope to moderate slope on hill crest (upper slope),26,slope-gentle-steep
 "Plain, negligible slope",30,plain
 Plain,30,plain
 "Undulating plain - Hill crest, gentle slope",30,plain
@@ -310,8 +310,8 @@ Plain to hill crest - low sandhilll,30,flat-plain
 vegetated uplands and wetland,59,wetland
 Vegetated wetlands and uplands,59,wetland
 "open water, vegetated wetland, vegetated uplands",59,wetland
-Described as winter wet flats.,60,wetland
-Described as wet and semi-wet flats.,61,wetland
+Described as winter wet flats.,59,wetland
+Described as wet and semi-wet flats.,59,wetland
 Basendean Sands,,
 hill crest,1,crest-hill-crest
 hills flat,1,crest-hill-crest
@@ -324,14 +324,14 @@ Undulating plain,30,flat-plain
 "Plain, negligible slope to Hill crest gentle slope",30,flat-plain
 "Hill crest, negligible slope",1,crest-hill-crest
 "Undulating Plain/ Low hill crest, gentle slope",30,flat-plain
-Low-lying drainage line- swamp,45,depression-swamp-open
+Low-lying drainage line- swamp,48,depression-swamp-open
 "Plain (lower lying)/ Swamp Land/Sumpland on southern perimeter of wetland, negligible slope",30,flat-plain
 alluvial fan,,
 "Localised Swamp Foci, negligible slope",55,depression-sumpland-swamp
 "Drainage Foci- low lying swampland, negligible slope",55,depression-sumpland-swamp
 Gentle Hill slope (lower slopes-base),26,slope-gentle-steep
 "Undulating Plain, Swampland (lowland isolated in middle of paddock), negligible slope",30,flat-plain
-"Sumpland, drainage foci in centre of paddock, holding water in centre, site located on upper slopes, gentle slope",48,depression-sumpland-swamp
+"Sumpland, drainage foci in centre of paddock, holding water in centre, site located on upper slopes, gentle slope",55,depression-sumpland-swamp
 "A major portion (89%) of this occurrence is rated as being in Degraded to Good condition. Impacts affecting the reserve include gravel extraction, revegetation and easy access to the public",,
 Seasonally-inundated shallow basin (sumpland),55,depression-sumpland-swamp
 Seasonally waterlogged flat (palusplain),36,flat-palusplain
@@ -341,9 +341,9 @@ Seasonally waterlogged flat (palusplain) negligible slope,36,flat-palusplain
 "Dune swales, closed depression",40,depression-swale
 "Dune swales, open depression",40,depression-swale
 plain,30,flat-plain
-hills upper slope (E027) and gully (E031),39,slope-upper-slope
+hills upper slope (E027) and gully (E031),23,slope-upper-slope
 valley,31,flat-valley-flat
-hills middle slope (L207)/ dune (L295),2,slope-mid-slope
+hills middle slope (L207)/ dune (L295),24,slope-mid-slope
 Paluslope wetland,36,flat-palusplain
 Gentle westerly slope at plot CHAM03 location.,26,slope-gentle-steep
 Limestone,,
@@ -352,7 +352,7 @@ coffee rock,,
 Ridge Hill Shelf soil and landform unit,9,ridge
 Riverine system,41,depression-river
 Bassendean dune transitioning into a wetland,59,wetland
-"Slope, Ridge Hill Shelf","9,20","slope,ridge"
+"Slope, Ridge Hill Shelf",20,slope
 Low Plain,30,flat-plain
 "open water, vegetated wetlands and uplands",59,wetland
 massive granite outcropping,14,outcrop
@@ -363,12 +363,12 @@ Spearwood sands,,
 drain adjacent properties.",,
 The large area of paddocks northwest of Yule Brook between the railway line and Grove Rd is part of the former extensive floodplain of Yule Brook,34,flat-floodplain
 "Sumpland near Bickley Rd grading into a floodplain in the vicinity of Quadrat 6 and into a gentle slope up a dune in the north east of the mapped native
-vegetation on Lot 233.",26,depression-sumpland-swamp
+vegetation on Lot 233.",55,depression-sumpland-swamp
 Dempster Landform Unit siltstones and sandstones,,
-hills middle to middle slope / hill crest (L279),24,slope-middle-slope
+hills middle to middle slope / hill crest (L279),24,slope-mid-slope
 Vegetated uplands and wetlands,59,wetland
 "cululla complex, Dandaragan Plateau",,
-"Lowerslope to midslope, gentle with a Westerly aspect",24,slope-middle-slope
+"Lowerslope to midslope, gentle with a Westerly aspect",24,slope-mid-slope
 Palusplain (seasonally waterlogged flat).,36,flat-palusplain
 Palusplain (seasonally waterlogged flat),36,flat-palusplain
 Floodplain,34,flat-floodplain
@@ -385,18 +385,18 @@ Peninsula in middle of salt system,,
 Upper slope,23,slope-upper-slope
 Mid-slope,24,slope-mid-slope
 Lower slope,25,slope-lower-slope
-Upper-middle slope,24,slope-middle-slope
+Upper-middle slope,24,slope-mid-slope
 Lower mid-slope,25,slope-lower-slope
-Mid-lower slope,24,slope-middle-slope
-Mid-upper slope,24,slope-middle-slope
-Plain - midslope of gently undulating plain.,24,slope-middle-slope
-Hill top (localised plateau),"6,4","hill,crest-mesa"
+Mid-lower slope,24,slope-mid-slope
+Mid-upper slope,24,slope-mid-slope
+Plain - midslope of gently undulating plain.,24,slope-mid-slope
+Hill top (localised plateau),6,hill
 Upper slope - hilltop,23,slope-upper-slope
 Hilltop,1,crest-hill-crest
 Mid-slope adjacent to waterway,24,slope-mid-slope
 Upper slope of valley,23,slope-upper-slope
 Mid slopes of valley,24,slope-mid-slope
-Mid upper slope,24,slope-middle-slope
+Mid upper slope,24,slope-mid-slope
 Upper slopes of valley - hilltop (ridge),23,slope-upper-slope
 Lower valley floor,31,flat-valley-flat
 "Lower valley floor, adjacent to a secondary saline lake; 346m above sea level",31,flat-valley-flat
@@ -404,7 +404,7 @@ Upper slopes of valley,23,slope-upper-slope
 Mid west facing slope,22,slope-simple-slope
 Hillside,21,slope-hillslope
 Edge of creek,42,depression-riverbank
-Midslope; western aspect to upslope,24,slope-middle-slope
+Midslope; western aspect to upslope,24,slope-mid-slope
 Broad valley floor,31,flat-valley-flat
 Low lying calcareous saline flats in old lake bed,53,depression-lake
 "Mountain crest, slopes and gullies/drainage depressions",22,slope-simple-slope
@@ -432,8 +432,8 @@ Well drained ironstone ridge to seasonally wet flat,34,flat-floodplain
 Low lying seasonally inundated slightly sloping site adjacent river,34,flat-floodplain
 Seasonally inundated low lying ironstone flats and rises,34,flat-floodplain
 Ironstone flat with 10-30% loose ironstone rock (this rock may have been transported here),29,flat
-"mid to upper slopes of hill, slope, gull and ridge",24,slope-upper-slope
-"Seasonally inundated low lying ironstone flats and rises, slopes down to river",20,flat
+"mid to upper slopes of hill, slope, gull and ridge",23,slope-upper-slope
+"Seasonally inundated low lying ironstone flats and rises, slopes down to river",29,flat
 Ironstone rises and flats,29,flat
 Low lying seasonally inundated slightly sloping site,34,flat-floodplain
 Limestone ridge,9,ridge
@@ -526,9 +526,9 @@ Paluslope and flood plain,34,flat-floodplain
 Flood Plain,34,flat-floodplain
 Paluslope and Flood Plain,34,flat-floodplain
 paluslope,36,flat-palusplain
-Sand Dune,11,depression-swale
+Sand Dune,40,depression-swale
 Sand dune swale,40,depression-swale
-"Mountain: crests, sideslopes and gullies",1,creat-hill-crest
+"Mountain: crests, sideslopes and gullies",1,crest-hill-crest
 "valley, riparian zone and most upper slopes",23,slope-upper-slope
 Seasonal wetland,59,wetland
 gradual slope. creekline dissecting plain,43,depression-creek
@@ -562,7 +562,7 @@ Swan and Guildford soil and landform units,,
 Dark grey sand with clay fines,,
 base of small dune,11,ridge-dune
 clay pan,33,flat-claypan
-"Plateau, hill slope",4,slope-hillslope
+"Plateau, hill slope",21,slope-hillslope
 Hill slope,21,slope-hillslope
 "Upper catchment of Bungaroo Creek, a tributary of the Robe River which is incised into Hamersley Ranges, Hamersley Basin, Pilbara Craton (Bennelongia 2013)",,
 Coastal sand dune,11,ridge-dune
@@ -579,7 +579,7 @@ estuary edge,46,depression-estuary
 Gilgai micro relief,59,wetland
 Gilgai microrelief,59,wetland
 gilgai microrelief,59,wetland
-Crest/hill,1,creat-hill-crest
+Crest/hill,1,crest-hill-crest
 river edges,42,depression-riverbank
 Edges of Swan River,42,depression-riverbank
 Dunes,11,ridge-dune
@@ -636,7 +636,7 @@ Unit 5 internal drainage plains of the Wannamunna Land System,34,flat-floodplain
 forming the major part of the Burrup Peninsula.",,
 coastal dune,11,ridge-dune
 Mound spring/wetland,59,wetland
-drainage lines slopes and hills,45,hill
+drainage lines slopes and hills,6,hill
 BIF,,
 coastal dunes,11,ridge-dune
 flat outcrop,18,outcrop-flat
