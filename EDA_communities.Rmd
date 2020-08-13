@@ -104,12 +104,12 @@ if (file.exists(tec_extracted)) {
     lubridate::with_tz("Australia/Perth")
   
   # TEC boundaries and sites
-  tec_bdy <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
-  tec_site <- geojsonsf::geojson_sf("data/tec_sites.geojson")
+  tec_bdy_raw <- geojsonsf::geojson_sf("data/tec_boundaries.geojson")
+  tec_site_raw <- geojsonsf::geojson_sf("data/tec_sites.geojson")
   # tec_buf <- geojsonsf::geojson_sf("data/tec_buffers.geojson")
   # tec_app <- dl_mdbzip("27d9b026-6933-4516-acf6-41edc6134adb")
 
-save(tec_data, snapshot_last_updated, tec_bdy, tec_site, file=tec_extracted)
+save(tec_data, snapshot_last_updated, tec_bdy_raw, tec_site_raw, file=tec_extracted)
 }
 ```
 
@@ -849,11 +849,11 @@ site_visit <- tec_data$SITE_VISITS %>%
     observation_notes = SV.OBSERVATION.NOTES %>% as.character()
   )
 
-bdy_w_one_site <- tec_bdy %>%
+bdy_w_one_site <- tec_bdy_raw %>%
   filter(S_ID_COUNT == 1) %>%
   magrittr::extract2("BDY_ID") # 121578 with a site ID = 1, which measn they are duplicates
 
-sites_keep <- tec_site %>%
+sites_keep <- tec_site_raw %>%
   dplyr::filter(!(BDY_ID %in% bdy_w_one_site)) ## These are the sites we want to keep as they are not just boundary duplicates
 
 # coll code and number indicates voucher specimens
@@ -938,7 +938,7 @@ tec_occ_without_bdy <- tec_occ %>% dplyr::filter(is.na(boundary_id))
 ```
 
 There are `r nrow(tec_occ)` records in `tec_occ`. Most link via `boundary_id` to
-the `tec_bdy` shapefile of last known extents of boundaries.
+the `tec_bdy_raw` shapefile of last known extents of boundaries.
 
 `r nrow(tec_occ_without_bdy)` `tec_occ` do not have a `boundary_id`. 
 TODO find spatial reference for those.
@@ -949,14 +949,14 @@ a given community and unique within that community.
 all communities.
 
 Occurrences are named by the first site recorded within.
-TEC boundaries store the first site name as `tec_bdy$FIRST_S_ID`.
-CAE need to use `tec_bdy$FIRST_S_ID` as `area_code`.
+TEC boundaries store the first site name as `tec_bdy_raw$FIRST_S_ID`.
+CAE need to use `tec_bdy_raw$FIRST_S_ID` as `area_code`.
 
 ## Occurrence Boundaries
 Boundaries are named after the first site (see [site visits]) captured inside the respective boundary.
 
 ```{r make_tec_bdy, message = FALSE}
-tec_bdy %>%
+tec_bdy <- tec_bdy_raw %>%
   filter(BDY_ID == 0) %>%
   nrow() # Six boundaries have no boundary id
 
@@ -1606,7 +1606,7 @@ Check unique number of communities by com\_label. Check unique number of observa
 and identify observations missing from TSC compared to TEC.
 
 ```{r make_tec_summary}
-tec_ccl_unique <- tec_ccl$com_label %>%
+tec_comms_ccl_unique <- tec_comms_ccl$community %>%
   unique() %>%
   length() 
 
@@ -1617,30 +1617,32 @@ tsc_ccl_unique <- tsc_ccl_communities$com_label %>%
 
 ## Conservation Listing
 
-TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique` communities. 
+TEC has `r nrow(tec_comms_ccl)` conservation listings of `r tec_comms_ccl_unique` communities. 
 TSC has `r nrow(tsc_ccl_communities)` community conservation listings of `r tsc_ccl_unique` unique communities.
 
-### `tec_ccl` conservation listings not in `tsc_ccl_communities`
+### `tec_comms_ccl` conservation listings not in `tsc_ccl_communities`
 
 Any records in the following table indicate conservation listings in TEC that
 were not migrated into TSC.
 
 ```{r show_tec_ccl_not_in_tsc}
-tec_ccl %>%
+tec_comms_ccl %>%
   dplyr::anti_join(tsc_ccl_communities, by = "source_id") %>%
   rt
 ```
 
-### tsc\_ccl conservation listings not in tec\_ccl
+### `tsc_ccl_communities` conservation listings not in `tec_comms_ccl`
+
 The following table shows any conservation listings in TSC which are not in TEC.
 
 ```{r show_tsc_ccl_not_in_tec}
 tsc_ccl_communities %>%
-  dplyr::anti_join(tec_ccl, by = "source_id") %>%
+  dplyr::anti_join(tec_comms_ccl, by = "source_id") %>%
   rt
 ```
 
 ### Conservation criteria mapping
+
 Conservation criteria were manually mapped for each community, therefore they need
 to be checked to confirm whether the mapping is correct.
 
@@ -1658,7 +1660,7 @@ manual mapping can be updated and the correct criteria assigned for all communit
 ### Conservation listing dates
 
 Below are the dates of the most recent conservation criteria changes made in the
-snapshot of the TFA.
+snapshot of the TEC.
 
 ``` {r qa_effective_dates}
 tsc_corner_dates <- tsc_ccl_communities %>%
@@ -1667,7 +1669,7 @@ tsc_corner_dates <- tsc_ccl_communities %>%
     effective_from_max = max(effective_from, na.rm = T)
   )
 
-tec_corner_dates <- tec_ccl %>%
+tec_corner_dates <- tec_comms_ccl %>%
   summarise(
     effective_from_min = min(effective_from, na.rm = T),
     effective_from_max = max(effective_from, na.rm = T)
@@ -1714,10 +1716,10 @@ tsc_cl_sum_wapec <- tsc_ccl_communities %>%
 tsc_cl_sum_dbcarle <- tsc_ccl_communities %>% 
   make_tsc_cl_summary("DBCA_RLE")
 
-tec_listing_cat_wapec <- tec_ccl %>%
+tec_listing_cat_wapec <- tec_comms_ccl %>%
   dplyr::filter(category %in% c("35", "36", "37", "38"))
 
-tec_listing_cat_dbcarle <- tec_ccl %>%
+tec_listing_cat_dbcarle <- tec_comms_ccl %>%
   dplyr::filter(category %in% c("23", "24", "29", "31", "32", "34")) 
 
 tec_cl_sum_wapec <- 
@@ -1783,10 +1785,10 @@ tsc_listing_cat_dbcarle %>%
   rt # 12
 ```
 
-### `tec_ccl` unmigrated conservation listings
+### `tec_comms_ccl` unmigrated conservation listings
 
-Below are the listings from `tec_ccl` that could not be assigned to either WAPEC or 
-DBCA_RLE and therefore are not migrated, becasue the `category_code` does not 
+Below are the listings from `tec_comms_ccl` that could not be assigned to either WAPEC or 
+DBCA_RLE and therefore are not migrated, because the `category_code` does not 
 correlate to a `list_code`. 
 
 ```{r show_tec_ccl_not_migrated}
@@ -1820,13 +1822,15 @@ effect on analyses for conservation management purposes:
 Please review legacy data until the following numbers are all zero (or accept
 default handling):
 
--   `r surveys %>% dplyr::filter(surveyed_on == "") %>% nrow()` survey records 
-    lack an explicit date\time and were defaulted to midnight AWST.
--   `r site_visit %>% dplyr::filter(is.na(site_visit_date)) %>% nrow()` site
+-   `r tec_bdy_cae %>% dplyr::filter(encountered_on == "") %>% nrow()` boundary 
+    survey records lack an explicit date\time and were defaulted to midnight AWST.
+-   `r tec_site_cae %>% dplyr::filter(encountered_on == "") %>% nrow()` site
     records lack an explicit date\time and were defaulted to midnight AWST.
+    
+
 -   `r tec_bdy %>% dplyr::filter(BDY_ID ==  0) %>% nrow()` survey records 
     lack an explicit boundary_id so could not be migrated.
--   `r tec_occ_no_sit <- tec_site %>% dplyr::filter(S_ID == 0) %>% nrow()` site
+-   `r tec_occ_no_sit <- tec_site_cae %>% dplyr::filter(S_ID == 0) %>% nrow()` site
     records lack an explicit site_id so could not be migrated.
 
 There are `r nrow(tec_occ)` species occurrence records (encounters) in TEC. The
