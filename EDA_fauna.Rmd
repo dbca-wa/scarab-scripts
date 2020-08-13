@@ -2454,7 +2454,7 @@ Below are comparisons of the original and migrated occurrence observations data.
 Each table shows example records for three species from each occurrence observation 
 lookup table. Any differences would mean the data had not been migrated correctly. 
 
-```{r}
+```{r show individual occurrence observation comparisons}
 tfa_species_phys_sample <- tfa_phys_sample_complete %>% 
   filter(source_id %in% c("117", "10403", "70138")) %>% 
   transmute(
