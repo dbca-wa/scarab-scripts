@@ -1318,6 +1318,8 @@ tec_drainage <- here::here("csv/tec_drainage_w_tsc.csv") %>%
       tsc_criteria = col_character()
     ))
 
+## Soil not manually mapped, 1222 manual mappings required- maybe at a later date!
+
 tec_hab_comp <- hab_comp %>%
   left_join(tec_landforms, by = c("land_element")) %>%
   left_join(tec_drainage, by = c("drainage")) %>%  
@@ -1492,10 +1494,10 @@ if (file.exists(tsc_extracted_communities)) {
 } else {
   
 # Community conservations listings
-  tsc_ccl_communities <- "community-conservationlisting" %>% 
-    wastdr::wastd_GET() %>%
-    wastdr::wastd_parse() %>% 
-    dplyr::mutate(com_label = community)
+tsc_ccl_communities <- "community-conservationlisting" %>% 
+  wastdr::wastd_GET() %>%
+  wastdr::wastd_parse() %>% 
+  dplyr::mutate(com_label = community)
 
 # Community occurrences  
  tsc_cae_data <- "occ-community-points" %>% 
@@ -1519,51 +1521,76 @@ tsc_community_boundaries <- tsc_cae_data %>%
     tidyr::unnest_wider(encounter, names_repair = "universal") %>% 
     tidyr::unnest_wider(properties, names_repair = "universal")  %>% 
     filter(source == 13)
+  
+  tsc_communities_occ_obs <- tsc_communities_observations %>% 
+    dplyr::transmute(
+      source = 13,
+      source_id = source_id %>% as.character(),
+      landform = landform,
+      drainage = drainage)
    
 save(tsc_ccl_communities,
      tsc_cae_data,
      tsc_community_sites,
      tsc_community_boundaries,
-     tsc_tae_observations_communities,
+     tsc_tae_observations,
+     tsc_communities_observations,
+     tsc_communities_occ_obs,
      file = tsc_extracted_communities)
 }
 ```
 
-
 ```{r show_duplicates_and_missing_tae, eval = FALSE}
 # All sources are communities ()
-unique(tsc_community_sites$source)
-length(unique(tsc_community_sites$source_id))
+unique(tsc_community_sites$source) == 15
+unique(tsc_community_boundaries$source) == 13
 
-unique(tsc_community_boundaries$source)
-length(unique(tsc_community_boundaries$source_id))
+# There are no boundary records in tsc_community_sites
+tsc_community_sites %>% dplyr::filter(source == 13) %>% nrow
 
-## Check for duplicates
-tsc_community_sites_duplicate_source_ids <- tsc_community_sites %>%
-  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])])) 
-tsc_community_boundaries_duplicate_source_ids <- tsc_community_boundaries %>%
-  filter(source_id %in% unique(.[["source_id"]][duplicated(.[["source_id"]])])) 
+# There are no site records in tsc_community_boundaries
+tsc_community_boundaries %>% dplyr::filter(source == 15) %>% nrow
+
+# There are as many unique source_ids as occurrence records
+length(unique(tsc_community_sites$source_id)) == nrow(tsc_community_sites)
+length(unique(tsc_community_boundaries$source_id)) == nrow(tsc_community_boundaries)
+
+# There are no source_ids that occur more than once
+tsc_site_cae_tally <- tsc_community_sites %>% 
+  group_by(source, source_id) %>% 
+  dplyr::tally() %>% 
+  dplyr::ungroup() %>% 
+  dplyr::filter(n>1) %>% 
+  dplyr::arrange(-n)
+View(tsc_site_cae_tally)
+
+tsc_boundary_cae_tally <- tsc_community_boundaries %>% 
+  group_by(source, source_id) %>% 
+  dplyr::tally() %>% 
+  dplyr::ungroup() %>% 
+  dplyr::filter(n>1) %>% 
+  dplyr::arrange(-n)
+View(tsc_boundary_cae_tally)
 
 #### Identify missing tae in tsc\_cae
-site_cae_create <- tec_site_cae %>% 
+#### # If loaded occurences in TSC were to mismatch original occurrences from TPFL:
+tec_site_cae_create <- tec_site_cae %>% 
   dplyr::anti_join(tsc_community_sites, by = "source_id")
-
-site_cae_update <- tec_site_cae %>% 
-  dplyr::right_join(tsc_community_boundaries, by = "source_id")
+tec_site_cae_update <- tec_site_cae %>% 
+  dplyr::semi_join(tsc_community_sites, by = "source_id")
 
 bdy_cae_create <- tec_bdy_cae %>% 
-  dplyr::anti_join(tsc_community_sites, by = "source_id")
-
+  dplyr::anti_join(tsc_community_boundaries, by = "source_id")
 bdy_cae_update <- tec_bdy_cae %>% 
-  dplyr::right_join(tsc_community_boundaries, by = "source_id")
+  dplyr::semi_join(tsc_community_boundaries, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-site_cae_create_res <- site_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
-
-bdy_cae_create_res <- bdy_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
+# site_cae_create_res <- site_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
+# bdy_cae_create_res <- bdy_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
 ```
 
-# Compare legacy to migrated data
+# Compare legacy from TEC to migrated data from TSC
+
 This section provides an automated comparison between original data from TEC,
 and TEC data as uploaded into TSC.
 
@@ -1573,30 +1600,32 @@ that the data migration has worked correctly.
 Legacy data snapshot used for TEC was updated last on `r snapshot_last_updated`.
 
 ## Summary statistics
+
 Check unique number of communities by com\_label. Check unique number of observations
 and identify observations missing from TSC compared to TEC.
 
 ```{r make_tec_summary}
-tec_ccl_unique_comm <- tec_comms_ccl$community %>%
+tec_ccl_unique <- tec_ccl$com_label %>%
   unique() %>%
-  length() # 399
+  length() 
 
-tsc_ccl_unique_comm <- tsc_ccl_communities$community %>%
+tsc_ccl_unique <- tsc_ccl_communities$com_label %>%
   unique() %>%
-  length() # 399
+  length()
 ```
 
 ## Conservation Listing
-TEC has `r nrow(tec_comms_ccl)` conservation listings of `r tec_ccl_unique_comm` 
-communities. TSC has `r nrow(tsc_ccl_communities)` community conservation listings of 
-`r tsc_ccl_unique_comm` unique communities.
 
-### tec\_ccl conservation listings not in tsc\_ccl
+TEC has `r nrow(tec_ccl)` conservation listings of `r tec_ccl_unique` communities. 
+TSC has `r nrow(tsc_ccl_communities)` community conservation listings of `r tsc_ccl_unique` unique communities.
+
+### `tec_ccl` conservation listings not in `tsc_ccl_communities`
+
 Any records in the following table indicate conservation listings in TEC that
 were not migrated into TSC.
 
 ```{r show_tec_ccl_not_in_tsc}
-tec_comms_ccl %>%
+tec_ccl %>%
   dplyr::anti_join(tsc_ccl_communities, by = "source_id") %>%
   rt
 ```
@@ -1606,7 +1635,7 @@ The following table shows any conservation listings in TSC which are not in TEC.
 
 ```{r show_tsc_ccl_not_in_tec}
 tsc_ccl_communities %>%
-  dplyr::anti_join(tec_comms_ccl, by = "source_id") %>%
+  dplyr::anti_join(tec_ccl, by = "source_id") %>%
   rt
 ```
 
@@ -1626,6 +1655,7 @@ These need to be corrected before the
 manual mapping can be updated and the correct criteria assigned for all communities.
 
 ### Conservation listing dates
+
 Below are the dates of the most recent conservation criteria changes made in the
 snapshot of the TFA.
 
@@ -1636,7 +1666,7 @@ tsc_corner_dates <- tsc_ccl_communities %>%
     effective_from_max = max(effective_from, na.rm = T)
   )
 
-tec_corner_dates <- tec_comms_ccl %>%
+tec_corner_dates <- tec_ccl %>%
   summarise(
     effective_from_min = min(effective_from, na.rm = T),
     effective_from_max = max(effective_from, na.rm = T)
@@ -1650,10 +1680,11 @@ cl_corner_dates %>% rt
 ```
 
 ### Conservation listing differences
+
 Summary of the number of conservation listings for each list.
 
-Discrepancies in numbers indicate the need for a closer review of category\_code
-and criteria\_code in TEC.
+Discrepancies in numbers indicate the need for a closer review of `category_code`
+and `criteria_code` in TEC.
 
 Equality of numbers does not prove absence of equal numbers of false positives
 and false negatives.
@@ -1682,10 +1713,10 @@ tsc_cl_sum_wapec <- tsc_ccl_communities %>%
 tsc_cl_sum_dbcarle <- tsc_ccl_communities %>% 
   make_tsc_cl_summary("DBCA_RLE")
 
-tec_listing_cat_wapec <- tec_comms_ccl %>%
+tec_listing_cat_wapec <- tec_ccl %>%
   dplyr::filter(category %in% c("35", "36", "37", "38"))
 
-tec_listing_cat_dbcarle <- tec_comms_ccl %>%
+tec_listing_cat_dbcarle <- tec_ccl %>%
   dplyr::filter(category %in% c("23", "24", "29", "31", "32", "34")) 
 
 tec_cl_sum_wapec <- 
@@ -1751,10 +1782,11 @@ tsc_listing_cat_dbcarle %>%
   rt # 12
 ```
 
-### tec\_ccl unmigrated conservation listings
-Below are the listings from tec\_ccl that could not be assigned to either WAPEC or 
-DBCA_RLE and therefore are not migrated, becasue the category\_code does not 
-correlate to a list\_code. 
+### `tec_ccl` unmigrated conservation listings
+
+Below are the listings from `tec_ccl` that could not be assigned to either WAPEC or 
+DBCA_RLE and therefore are not migrated, becasue the `category_code` does not 
+correlate to a `list_code`. 
 
 ```{r show_tec_ccl_not_migrated}
 tec_comms_ccl %>%
@@ -1766,6 +1798,7 @@ tec_comms_ccl %>%
 ## Occurrences
 
 ### Date/ Location caveats
+
 This section lists data issues which need to be fixed at the source (here, in 
 legacy TEC).
 
@@ -1961,11 +1994,12 @@ occ_obs_summary %>% rt
 #### Spot check occurrence observations
 
 ### Trust level of occurrence records
+
 Currently, we assume that all occurrence records in the legacy databases are 
 trustworthy. If this weren't the case, this analysis should exclude the 
 non-trustworthy records.
 
-### tec\_bdy\_cae occurrences not in tsc\_community\_boundaries
+### `tec_bdy_cae` occurrences not in `tsc_community_boundaries`
 Any records in the following table indicate occurrences in `tec_bdy_cae` that are not 
 in `tsc_community_boundaries`.
 
@@ -1983,7 +2017,7 @@ missing_occ_tsc_community_boundaries_unique %>% rt
 ```
 
 There are `r nrow(missing_occ_tsc_community_boundaries)` occurrences 
-missing from tec\_bdy\_cae when compared to tsc\_community\_boundaries. 
+missing from `tec_bdy_cae` when compared to `tsc_community_boundaries`. 
 These missing occurrences come from 
 `r nrow(missing_occ_tsc_community_boundaries_unique)` unique 
 communities. The occurrences listed were likely not migrated because.....
@@ -2011,7 +2045,8 @@ confirms the...
 #   filter(tfa_occ != tfa_tae) %>% rt
 ```
 
-### tec\_site\_cae occurrences not in tsc\_community\_sites
+### `tec_site_cae` occurrences not in `tsc_community_sites`
+
 Any records in the following table indicate occurrences in `tec_site_cae` that are not 
 in `tsc_community_sites`.
 
@@ -2029,10 +2064,9 @@ missing_occ_tsc_community_sites_unique %>% rt
 ```
 
 There are `r nrow(missing_occ_tsc_community_sites)` occurrences 
-missing from tec\_site\_cae when compared to tsc\_community\_sites. 
+missing from `tec_site_cae` when compared to `tsc_community_sites`. 
 
-These missing occurrences come from 
-`r nrow(missing_occ_tsc_community_sites_unique)` unique 
+These missing occurrences come from `r nrow(missing_occ_tsc_community_sites_unique)` unique
 communities.
 
 The table below is a tally of mismatching occurrences by community and 
