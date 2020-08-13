@@ -1092,7 +1092,7 @@ tec_site_cae_build <- site_visit_cae %>%
     ),
     area_type = 12, # 10 bound, 11 buffer, 12 site point
     source = 15, # TEC sit
-    source_id = site_visit_id,
+    source_id = site_visit_id %>% as.character(),
     encounter_type = 2, # https://tsc.dbca.wa.gov.au/admin/occurrence/encountertype/2/change/ = survey
     encountered_on = glue::glue("{site_visit_date} 00:00:00+08:00"),
     encountered_by = 1,
@@ -1505,6 +1505,7 @@ tsc_ccl_communities <- "community-conservationlisting" %>%
   wastdr::wastd_parse()
 
 tsc_community_sites <- tsc_cae_data %>%
+  dplyr::mutate(source_id = source_id %>% as.character()) %>%
   dplyr::mutate(area_type = area_type %>% as.character()) %>%
   dplyr::filter(area_type == 12) 
 
