@@ -1528,7 +1528,8 @@ tsc_community_boundaries <- tsc_cae_data %>%
       source = 13,
       source_id = source_id %>% as.character(),
       landform = landform,
-      drainage = drainage)
+      drainage = drainage,
+      obstype = obstype)
    
 save(tsc_ccl_communities,
      tsc_cae_data,
@@ -1951,17 +1952,17 @@ missing_bdy_cae_hab_comp %>% rt
 missing_site_cae_hab_comp %>% rt
 ```
 
-### `tfl_tae` occurrence observations not in `tsc_tae_observations`
+### `tec_cae` occurrence observations not in `tsc_communities_occ_obs`
 
 Any record differences in the following table indicate occurrence observations in TFL that
 were not migrated into TSC.
 
 ```{r}
-make_tfl_tae_occ_obs_summary <-
-  . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TFL")
+make_tec_cae_occ_obs_summary <-
+  . %>% nrow() %>% as.data.frame() %>% magrittr::set_colnames("TEC")
 
-tfl_hab_comp_sum <-
-  tfl_hab_comp %>% make_tfl_tae_occ_obs_summary
+tec_hab_comp_sum <-
+  tec_hab_comp %>% make_tec_cae_occ_obs_summary
 
 make_tsc_occ_obs_summary <- function(data, cn) {
   data %>%
@@ -1973,26 +1974,65 @@ make_tsc_occ_obs_summary <- function(data, cn) {
 }
 
 tsc_hab_comp_sum <-
-  tsc_tae_observations_communities %>% make_tsc_occ_obs_summary("HabitatComposition")
+  tsc_communities_occ_obs %>% make_tsc_occ_obs_summary("HabitatComposition")
 
 
-tfl_occ_obs_sum <- rbind(
-  tfl_hab_comp_sum
+tec_occ_obs_sum <- rbind(
+  tec_hab_comp_sum
 )
 
 tsc_occ_obs_sum <- rbind(
   tsc_hab_comp_sum
 )
 
-occ_obs_summary <- tfl_occ_obs_sum %>%
+occ_obs_summary <- tec_occ_obs_sum %>%
   cbind(tsc_occ_obs_sum) %>%
-  cbind(Obstype = c("PhysicalSample", "HabitatCondition", "AreaAssessment", "HabitatComposition")) %>% # PlantCount
+  cbind(Obstype = c("HabitatComposition")) %>%
   dplyr::select("Obstype", everything())
 
 occ_obs_summary %>% rt
 ```
 
-#### Spot check occurrence observations
+#### Individual occurrence observation comparisons
+
+Below are comparisons of the original and migrated occurrence observations data. 
+Each table shows example records for three species from each occurrence observation 
+lookup table. Any differences would mean the data had not been migrated correctly. 
+
+
+```{r show individual occurrence observation comparisons}
+tec_comms_hab_comp <- tec_hab_comp %>% 
+  filter(source_id %in% c("5381", "201", "1821")) %>%
+  transmute(
+    source_id = source_id,
+    tec_landform = landform,
+    tec_drainage = drainage)
+
+tsc_comms_hab_comp <- tsc_communities_occ_obs %>% 
+  filter(source_id %in% c("5381", "201", "1821")) %>%
+  transmute(
+    source_id = source_id,
+    tsc_criteria = landform %>% as.character(),
+    drainage = drainage) %>% 
+  dplyr::left_join(tec_landforms, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_landform","drainage")) %>% 
+  transmute(
+    source_id = source_id,
+    tsc_landform = tsc_landform,
+    tsc_criteria = drainage %>% as.character()) %>% 
+  dplyr::left_join(tec_drainage, by = "tsc_criteria") %>% 
+  select(c("source_id","tsc_landform","tsc_drainage")) %>%
+  distinct()
+```
+
+Habitat composition
+
+```{r}
+tec_hab_comp_sum <- tec_comms_hab_comp %>% 
+  left_join(tsc_comms_hab_comp, by = "source_id")
+
+tec_hab_comp_sum %>% rt
+```
 
 ### Trust level of occurrence records
 
