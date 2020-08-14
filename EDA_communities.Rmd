@@ -2001,6 +2001,7 @@ Below are comparisons of the original and migrated occurrence observations data.
 Each table shows example records for three species from each occurrence observation 
 lookup table. Any differences would mean the data had not been migrated correctly. 
 
+Habitat composition
 
 ```{r show individual occurrence observation comparisons}
 tec_comms_hab_comp <- tec_hab_comp %>% 
@@ -2025,11 +2026,7 @@ tsc_comms_hab_comp <- tsc_communities_occ_obs %>%
   dplyr::left_join(tec_drainage, by = "tsc_criteria") %>% 
   select(c("source_id","tsc_landform","tsc_drainage")) %>%
   distinct()
-```
 
-Habitat composition
-
-```{r}
 tec_hab_comp_sum <- tec_comms_hab_comp %>% 
   left_join(tsc_comms_hab_comp, by = "source_id")
 
@@ -2044,7 +2041,7 @@ non-trustworthy records.
 
 ### `tec_bdy_cae` occurrences not in `tsc_community_boundaries`
 
-Any records in the following table indicate occurrences in `tec_bdy_cae` that are not 
+Any records in the following table indicate community occurrences in `tec_bdy_cae` that are not 
 in `tsc_community_boundaries`.
 
 ```{r show_tec_bdy_cae_missing_occurrences}
@@ -2054,39 +2051,36 @@ missing_occ_tsc_community_boundaries <- tec_bdy_cae %>%
 missing_occ_tsc_community_boundaries %>% rt
 
 missing_occ_tsc_community_boundaries_unique <- missing_occ_tsc_community_boundaries %>%
-  dplyr::select(source_id) %>%
+  dplyr::select(community) %>%
   distinct() 
 
 missing_occ_tsc_community_boundaries_unique %>% rt 
 ```
 
-There are `r nrow(missing_occ_tsc_community_boundaries)` occurrences 
-missing from `tec_bdy_cae` when compared to `tsc_community_boundaries`. 
-These missing occurrences come from 
-`r nrow(missing_occ_tsc_community_boundaries_unique)` unique 
-communities. The occurrences listed were likely not migrated because.....
+There are `r nrow(missing_occ_tsc_community_boundaries)` occurrences missing from `tec_bdy_cae` when compared to `tsc_community_boundaries`. 
 
-The table below is a tally of mismatching occurrences by community and 
-confirms the...
+These missing occurrences come from `r nrow(missing_occ_tsc_community_boundaries_unique)` unique communities. 
 
-```{r make_tally_tfa_occ_tae}
-# tfa_occ_tally <- tfa_occ %>%
-#   dplyr::group_by(name_id) %>% 
-#   dplyr::tally() %>%
-#   dplyr::arrange(desc(n)) %>% 
-#   ungroup()
-# 
-# tfa_tae_tally <- tfa_tae %>%
-#   dplyr::group_by(taxon) %>% 
-#   dplyr::tally() %>%
-#   dplyr::arrange(desc(n)) %>% 
-#   ungroup()
-# 
-# tfa_occ_tally %>%
-#   dplyr::rename(tfa_occ = n) %>% 
-#   left_join(tfa_tae_tally, by = c("name_id" = "taxon")) %>% 
-#   dplyr::rename(tfa_tae = n) %>% 
-#   filter(tfa_occ != tfa_tae) %>% rt
+The table below is a tally of mismatching boundary occurrences by community.
+
+```{r make_tally_tec_bdy_cae}
+tec_bdy_cae_tally <- tec_bdy_cae %>%
+  dplyr::group_by(community) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
+
+tsc_bdy_cae_tally <- tsc_community_boundaries %>%
+  dplyr::group_by(community) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
+
+tec_bdy_cae_tally %>%
+  dplyr::rename(tec_bdy = n) %>%
+  left_join(tsc_bdy_cae_tally, by = ("community")) %>%
+  dplyr::rename(tsc_bdy = n) %>%
+  filter(tec_bdy != tsc_bdy) %>% rt
 ```
 
 ### `tec_site_cae` occurrences not in `tsc_community_sites`
@@ -2101,7 +2095,7 @@ missing_occ_tsc_community_sites <- tec_site_cae %>%
 missing_occ_tsc_community_sites %>% rt
 
 missing_occ_tsc_community_sites_unique <- missing_occ_tsc_community_sites %>%
-  dplyr::select(source_id) %>%
+  dplyr::select(community) %>%
   distinct() 
 
 missing_occ_tsc_community_sites_unique %>% rt 
@@ -2113,64 +2107,53 @@ missing from `tec_site_cae` when compared to `tsc_community_sites`.
 These missing occurrences come from `r nrow(missing_occ_tsc_community_sites_unique)` unique
 communities.
 
-The table below is a tally of mismatching occurrences by community and 
-confirms the...
+The table below is a tally of mismatching site occurrences by community.
 
 ```{r make_tally_tfa_tae_tsc}
-# tfa_tae_tally <- tfa_tae %>%
-#   dplyr::group_by(taxon) %>% 
-#   dplyr::tally() %>%
-#   dplyr::arrange(desc(n)) %>% 
-#   ungroup()
-# 
-# tsc_occ_tally <- tsc_occ_fauna %>%
-#   dplyr::group_by(taxon) %>% 
-#   dplyr::tally() %>%
-#   dplyr::arrange(desc(n)) %>% 
-#   ungroup()
-# 
-# tfa_tae_tsc_tally <- tfa_tae_tally %>%
-#   dplyr::rename(tfa_tae = n) %>% 
-#   left_join(tsc_occ_tally,by = "taxon") %>% 
-#   dplyr::rename(tsc_occ = n) %>% 
-#   filter(tfa_tae != tsc_occ)
-# # tfa_tae_tsc_tally %>% rt 
-# # TODO cast sfc to tbl_df
+tec_site_cae_tally <- tec_site_cae %>%
+  dplyr::group_by(community) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
+
+tsc_site_cae_tally <- tsc_community_sites %>%
+  dplyr::group_by(community) %>%
+  dplyr::tally() %>%
+  dplyr::arrange(desc(n)) %>%
+  ungroup()
+
+tec_site_cae_tally %>%
+  dplyr::rename(tec_site = n) %>%
+  left_join(tsc_site_cae_tally, by = ("community")) %>%
+  dplyr::rename(tsc_site = n) %>%
+  filter(tec_site != tsc_site) %>% rt
 ```
 
 # Upload to data catalogue
+
+The [compiled version of this workbook](https://data.dpaw.wa.gov.au/dataset/7942b979-f768-4365-8303-f1b1e00b3a61/resource/7942b979-f768-4365-8303-f1b1e00b3a61/download/eda_communities.html) is uploaded to the 
+[Threatened Ecological Communities Dataset](https://data.dbca.wa.gov.au/dataset/threatened-ecological-communities-database) 
+on the DBCA data catalogue.
+
+The manual mapping of conservation criteria, plus all legacy data is also
+uploaded as CSV snapshots.
 
 ```{r upload_data_catalogue}
 # This workbook
 upload_file_to_ckan("7942b979-f768-4365-8303-f1b1e00b3a61", "EDA_communities.html")
 
+# TODO add file number from data catalogue
 # # Manual mapping of conservation criteria
-# upload_file_to_ckan("e1c3119b-f44d-4244-8915-21097bd16b90",
-#                     here::here("tfa_conscrit_w_tsc.csv"))
+# upload_file_to_ckan("",
+#                     here::here("tec_conscrit_w_tsc.csv"))
 
-# Legacy TFA data
-# d <- ckanr::package_show("threatened-and-priority-fauna-database")
-# upload_to_ckan(
-#   tfa_cons_listings, "Threatened Fauna Conservation Status Gazettal", d$id,
-#   resource_id = "ac089664-de5a-4efa-af3c-ada0ec77ef1f"
-# )
-# same for other TFA legacy data, copy over from data_etl_fauna.Rmd
-# Data upload
-```
-
-Create resource once-off to get a resource ID.
-Also upload the compiled workbook.
-
-Note, this process lags one compilation of this workbook, as the HTML output
-is generated after the R code is run - knit a workbook twice to update the data catalogue.
-
-```{r tec_upload, eval = FALSE}
+# Legacy TEC data
 d <- ckanr::package_show("threatened-ecological-communities-database")
-# ckanr::resource_update("80009375-19e2-45d3-a1ae-068143fa03a5", "data_etl_tec.html") # HTML, not CSV
-upload_to_ckan(communities, "Threatened Ecological Communities (TEC)",
-  d$id,
+upload_to_ckan(
+  communities, "Threatened Ecological Communities (TEC)", d$id,
   resource_id = "9782cc52-7be8-494a-a7da-51845c119a21"
 )
+
 upload_to_ckan(tec_occ, "TEC Occurrences",
   d$id,
   resource_id = "65f43392-a8c5-41e2-a31e-cc4135e9274e"
