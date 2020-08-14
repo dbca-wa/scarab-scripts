@@ -1869,16 +1869,18 @@ site_visit_no_datetime %>% rt
 ### Missing location ID
 
 ```{r show_missing_location_id}
+# TODO cast sfc to tbl_df
 # Boundaries
 tec_bdy_missing_boundary_id <- tec_bdy %>% 
     dplyr::filter(BDY_ID == "")
-tec_bdy_missing_boundary_id %>% rt
+# tec_bdy_missing_boundary_id %>% rt
 
 # Sites
 tec_occ_no_sit <- tec_site %>% 
     dplyr::filter(S_ID == "") 
-tec_occ_no_sit %>% rt
+# tec_occ_no_sit %>% rt
 ```
+
 
 ### Missing date/time cae
 
@@ -2041,6 +2043,7 @@ trustworthy. If this weren't the case, this analysis should exclude the
 non-trustworthy records.
 
 ### `tec_bdy_cae` occurrences not in `tsc_community_boundaries`
+
 Any records in the following table indicate occurrences in `tec_bdy_cae` that are not 
 in `tsc_community_boundaries`.
 
