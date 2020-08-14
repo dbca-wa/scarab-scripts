@@ -1938,10 +1938,10 @@ tec_landforms %>% rt
 tec_drainage %>% rt
 ```
 
-### Occurrence observations with no matching TAE
+### Occurrence observations with no matching CAE
 
-Below are occurrence observations which do not have a corresponding TAE for 
-them to be assigned to. 
+Below are occurrence observations which do not have a corresponding CAE boundary 
+(table one) or site (table two) for them to be assigned to. 
 
 ```{r}
 missing_bdy_cae_hab_comp <- tec_hab_comp %>% 
