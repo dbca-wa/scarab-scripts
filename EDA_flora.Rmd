@@ -1072,7 +1072,7 @@ conservation criteria IDs in TSC in a spreadsheet.
 
 ```{r get_tsc_tcl, message = FALSE}
 tsc_conslist <- tsc_GET("conservationlist") %>% 
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::select(
     -conservationcategory_set,
     -conservationcriterion_set
@@ -1084,13 +1084,13 @@ tsc_conslist <- tsc_GET("conservationlist") %>%
   )
 
 tsc_conscat <- tsc_GET("conservationcategory") %>% 
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(tsc_conslist, by = "list_id")
 
 tsc_conscrit <- tsc_GET("conservationcriterion", api_url = prod) %>% 
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(tsc_conslist, by = "list_id")
@@ -1131,57 +1131,57 @@ occurrence data in TFL in a spreadsheet.
 ```{r get_tsc_occ_lookups, message=FALSE}
 tsc_landforms <- "lookup-landform" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
 
 tsc_rocktype <- "lookup-rocktype" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_rocktype.csv"))
 
 tsc_soiltype <- "lookup-soiltype" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
 
 tsc_soilcolour <- "lookup-soilcolour" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soilcolour.csv"))
 
 tsc_drainage <- "lookup-drainage" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_drainage.csv"))
 
 tsc_soilcondition <- "lookup-soilcondition" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soilcondition.csv"))
 
 tsc_surveymethod <- "lookup-surveymethod" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_surveymethod.csv"))
 
 tsc_countmethod <- "lookup-countmethod" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_countmethod.csv"))
 
 tsc_countsubject <- "lookup-countsubject" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_countsubject.csv"))
 
 tsc_plantcondition <- "lookup-plantcondition" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_plantcondition.csv"))
 
 tsc_samp_dest <- "lookup-sampledestination" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
 
 # Load manual mapping of tfl lookup criteria from CSV file, and join to relevant table
@@ -1416,7 +1416,7 @@ The QA part of this workbook will compare TFL names to TSC names.
 ```{r make_tfl_tcl, message=FALSE}
 tsc_conscat_sp <- "conservationcategory" %>%
   tsc_GET(api_url = prod) %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   dplyr::rename(
     tsc_category_id = id,
     category_code = code,
@@ -1723,20 +1723,20 @@ if (file.exists(tsc_extracted_flora)) {
   # Flora taxa
   tsc_taxa_flora <- "taxon" %>%
     tsc_GET(query = list(paraphyletic_groups = 21)) %>%
-    wastdr::wastd_parse() %>%
+    tsc_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
   
   # Flora conservation listings
   tsc_tcl_flora <- "taxon-conservationlisting" %>% 
     tsc_GET() %>%
-    wastdr::wastd_parse() %>%
+    tsc_parse() %>%
     dplyr::mutate(taxon = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_flora, by = "taxon")
 
   # Flora occurrences
   tsc_tae <- "occ-taxon-points" %>% 
     tsc_GET(query = list(source=11)) %>%
-    wastdr::wastd_parse() %>%
+    tsc_parse() %>%
     dplyr::mutate(taxon = taxon %>% as.character())
   
   tsc_areas <- tsc_GET("area") %>%
@@ -1755,7 +1755,7 @@ if (file.exists(tsc_extracted_flora)) {
   # Flora occurrence observations
   tsc_tae_observations <- "occ-observation" %>% 
     tsc_GET() %>%
-    wastdr::wastd_parse()
+    tsc_parse()
   
   tsc_flora_observations <- tsc_tae_observations %>% 
     tidyr::unnest_wider(encounter, names_repair = "universal") %>% 

@@ -895,7 +895,7 @@ conservation criteria IDs in TSC in a spreadsheet.
 
 ``` {r get_tsc_tcl, message=FALSE}
 tsc_conslist <- tsc_GET("conservationlist") %>%
-   wastdr::wastd_parse() %>% 
+   tsc_parse() %>% 
   dplyr::select(
     -conservationcategory_set,
     -conservationcriterion_set
@@ -907,13 +907,13 @@ tsc_conslist <- tsc_GET("conservationlist") %>%
   )
 
 tsc_conscat <-  tsc_GET("conservationcategory") %>%
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(tsc_conslist, by = "list_id")
 
 tsc_conscrit <- tsc_GET("conservationcriterion", api_url = prod) %>% 
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(tsc_conslist, by = "list_id")
@@ -952,7 +952,7 @@ occurrence data in TFA in a spreadsheet.
 
 ``` {r get_tsc_occ_lookups, message=FALSE}
 tsc_landforms <- tsc_GET("lookup-landform") %>%
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(
     list_id = id,
     list_code = code,
@@ -961,7 +961,7 @@ tsc_landforms <- tsc_GET("lookup-landform") %>%
   readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
 
 tsc_confidence <- tsc_GET("lookup-confidence") %>%
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(
     list_id = id,
     list_code = code,
@@ -970,7 +970,7 @@ tsc_confidence <- tsc_GET("lookup-confidence") %>%
   readr::write_csv(path = here::here("data", "tsc_confidence.csv"))
   
 tsc_repro_mat <- tsc_GET("lookup-reproductivematurity") %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   dplyr::rename(
     list_id = id,
     list_code = code,
@@ -979,7 +979,7 @@ tsc_repro_mat <- tsc_GET("lookup-reproductivematurity") %>%
   readr::write_csv(path = here::here("data", "tsc_repro_mat.csv"))
 
 tsc_sec_signs <- tsc_GET("lookup-secondarysigns") %>%
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(
     list_id = id,
     list_code = code,
@@ -988,7 +988,7 @@ tsc_sec_signs <- tsc_GET("lookup-secondarysigns") %>%
   readr::write_csv(path = here::here("data", "tsc_sec_signs.csv"))
 
 tsc_samp_dest <- tsc_GET("lookup-sampledestination") %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   dplyr::rename(
     list_id = id,
     list_code = code,
@@ -997,7 +997,7 @@ tsc_samp_dest <- tsc_GET("lookup-sampledestination") %>%
   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
 
 tsc_samp_type <- tsc_GET("lookup-sampletype") %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   dplyr::rename(
     list_id = id,
     list_code = code,
@@ -1006,7 +1006,7 @@ tsc_samp_type <- tsc_GET("lookup-sampletype") %>%
   readr::write_csv(path = here::here("data", "tsc_samp_type.csv"))
 
 tsc_det_meth <- tsc_GET("lookup-detectionmethod") %>%
-  wastdr::wastd_parse() %>%
+  tsc_parse() %>%
   dplyr::rename(
     list_id = id,
     list_code = code,
@@ -1179,7 +1179,7 @@ The QA part of this workbook will compare TFA names to TSC names.
 ```{r make_tfa_tcl, message=FALSE}
 tsc_conscat_sp <- "conservationcategory" %>% 
   tsc_GET() %>% 
-  wastdr::wastd_parse() %>% 
+  tsc_parse() %>% 
   dplyr::rename(
     tsc_category_id = id,
     category_code = code,
@@ -1570,13 +1570,13 @@ wace_names <- "public:herbie_hbvnames_public" %>%
   tsc_taxa_fauna <- "taxon" %>%
     tsc_GET(api_url = prod,
                       query = list(paraphyletic_groups = 20)) %>%
-    wastdr::wastd_parse() %>%
+    tsc_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
   
   # Taxon conservation listings for fauna
   tsc_tcl_fauna <-
     tsc_GET("taxon-conservationlisting") %>%
-    wastdr::wastd_parse()  %>%
+    tsc_parse()  %>%
      dplyr::mutate(taxon = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_fauna, by = "taxon")
   
@@ -1597,7 +1597,7 @@ tsc_tae_data <- tsc_GET("occ-taxon-points") # 137k records
   tsc_taxa_fauna <- "taxon" %>%
     tsc_GET(api_url = prod,
                       query = list(paraphyletic_groups = 20)) %>%
-    wastdr::wastd_parse() %>%
+    tsc_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
   
   tsc_areas <- tsc_GET("area") %>%
@@ -1623,7 +1623,7 @@ tsc_tae_data <- tsc_GET("occ-taxon-points") # 137k records
    # Fauna occurrence observations
   tsc_tae_observations <- "occ-observation" %>% 
     tsc_GET() %>%
-    wastdr::wastd_parse()
+    tsc_parse()
   
   tsc_tae_observations_fauna <- tsc_tae_observations %>% 
     tidyr::unnest_wider(encounter,names_repair = "universal")
@@ -2454,7 +2454,7 @@ Below are comparisons of the original and migrated occurrence observations data.
 Each table shows example records for three species from each occurrence observation 
 lookup table. Any differences would mean the data had not been migrated correctly. 
 
-```{r}
+```{r show individual occurrence observation comparisons}
 tfa_species_phys_sample <- tfa_phys_sample_complete %>% 
   filter(source_id %in% c("117", "10403", "70138")) %>% 
   transmute(
