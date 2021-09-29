@@ -41,14 +41,14 @@ wastd_POST(namesprops[[1]], serializer = "names", api_url = dev)
 
 ```{r list_names, eval=F}
 wace_names <- "public:herbie_hbvnames_public" %>% 
-    gs_getFeature()  %>% 
-    magrittr::extract2("features") %>% 
-    {dplyr::tbl_df(
+    gs_getFeature() %>% 
+  magrittr::extract2("features") %>% 
+  {tibble::tibble(
         name_id = purrr::map(., c("properties", "name_id")) %>% as.integer(),
-        name = purrr::map(., c("properties", "name")),
-        author = purrr::map(., c("properties", "author")),
-        reference = purrr::map(., c("properties", "reference")),
-        rank_name = purrr::map(., c("properties", "rank_name"))
+        name = purrr::map(., c("properties", "name")) %>% as.character(),
+        author = purrr::map(., c("properties", "author")) %>% as.character(),
+        reference = purrr::map(., c("properties", "reference")) %>% as.character(),
+        rank_name = purrr::map(., c("properties", "rank_name")) %>% as.character()
     )}
 ```
 

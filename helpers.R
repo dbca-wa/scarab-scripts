@@ -63,6 +63,8 @@ library(ggthemes)
 library(grDevices)
 library(reactable)
 
+library(tscr)
+
 # -----------------------------------------------------------------------------#
 # Server shortcuts
 dev <- "http://localhost:8220/api/1/"
@@ -206,84 +208,7 @@ load_ckan_csv <- .  %>%
     read_csv()
 
 
-chunk_post <- function(data,
-                       serializer = "names",
-                       query = list(),
-                       api_url = wastdr::get_wastdr_api_url(),
-                       api_token = wastdr::get_wastdr_api_token(),
-                       api_un = wastdr::get_wastdr_api_un(),
-                       api_pw = wastdr::get_wastdr_api_pw(),
-                       chunksize = 1000,
-                       verbose = wastdr::get_wastdr_verbose()) {
-    if (verbose)
-        "[chunk_post][{Sys.time()}] Updating {api_url}{serializer}..." %>%
-        glue::glue() %>% wastdr::wastdr_msg_info()
 
-    len <- nrow(data)
-    for (i in seq_len(ceiling(len / chunksize))) {
-        start <- (i - 1) * chunksize + 1
-        end <- min(start + chunksize - 1, len)
-
-        "[chunk_post][{Sys.time()}][{i}] Processing feature {start} to {end}" %>%
-            glue::glue() %>% wastdr::wastdr_msg_info()
-
-        data[start:end,] %>%
-            wastdr::wastd_POST(.,
-                               serializer = serializer,
-                               query = query,
-                               api_url = api_url,
-                               api_token = api_token,
-                               api_un = api_un,
-                               api_pw = api_pw,
-                               verbose = verbose)
-    }
-
-    "[chunk_post][{Sys.time()}] Finished, {len} records created/updated." %>%
-        glue::glue() %>% wastdr::wastdr_msg_info()
-}
-
-
-#' Post a list of records to "occ-observation/bulk_create"
-#'
-#' @param data A tbl_df of occ-observation records
-#' @param obstype The model type of the occ-observation model,
-#'   default: "PhysicalSample"
-#' @param api_url TSC API URL, default: `wastdr::get_wastdr_api_url()`
-#' @param api_token TSC API URL, default: `wastdr::get_wastdr_api_token()`
-#' @export
-wastd_occ_obs_post <- function(data,
-                               obstype = "PhysicalSample",
-                               chunksize = 100,
-                               api_url = wastdr::get_wastdr_api_url(),
-                               api_token = wastdr::get_wastdr_api_token()) {
-    wastdr::wastdr_msg_info(
-        glue::glue(
-            "[{Sys.time()}] Uploading {nrow(data)} ",
-            "{obstype}s to  TSC {api_url}"
-        )
-    )
-
-    res <- chunk_post(
-        data,
-        serializer = "occ-observation/bulk_create",
-        query = list(obstype = obstype),
-        api_url = api_url,
-        api_token = api_token,
-        chunksize = chunksize
-    )
-
-    if ("created_count" %in% names(res$data))
-        wastdr::wastdr_msg_success(
-            glue::glue(
-                "[{Sys.time()}] Done, created ",
-                "{res$data$created_count} records."
-            )
-        )
-    if ("errors" %in% names(res$data) &&
-        length(res$data$errors) > 0)
-        wastdr::wastdr_msg_warn(glue::glue("[{Sys.time()}] Got {length(res$data$errors)} errors."))
-    res
-}
 
 # -----------------------------------------------------------------------------#
 # Convenience helpers

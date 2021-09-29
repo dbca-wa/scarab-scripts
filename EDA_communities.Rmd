@@ -1120,7 +1120,7 @@ all_crit_map,
 area_decline,
 authorities,
 bdy_w_one_site,
-chunk_post,
+tsc_chunk_post,
 communities,
 com_actions,
 com_history,
@@ -1205,9 +1205,7 @@ conservation criteria IDs in TSC in a spreadsheet.
 
 ```{r get_tsc_ccl, message = FALSE}
 tsc_conslists_com <- "conservationlist" %>%
-  wastdr::wastd_GET(
-    query = c(scope_communities = TRUE)
-  ) %>%
+  tsc_GET(query = c(scope_communities = TRUE)) %>%
   magrittr::extract2("features") %>%
   {
     tibble::tibble(
@@ -1228,7 +1226,7 @@ tsc_conslists_com <- "conservationlist" %>%
 # tsc_conscat$id = TSC ID for the cons category
 # tsc_conscat$label = tec_cons_listing_categories$category_code
 tsc_conscat <- "conservationcategory" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   magrittr::extract2("features") %>%
   {
     tibble::tibble(
@@ -1241,7 +1239,7 @@ tsc_conscat <- "conservationcategory" %>%
   dplyr::filter(conservation_list %in% c(11, 12, 16))
 
 tsc_cons_crit <-
-  wastdr::wastd_GET("conservationcriterion", api_url = prod) %>%
+  tsc_GET("conservationcriterion", api_url = prod) %>%
   magrittr::extract2("features") %>%
   {
     tibble::tibble(
@@ -1284,17 +1282,17 @@ occurrence data in TEC in a spreadsheet.
 
 ```{r get_tsc_occ_lookups}
 tsc_landforms <- "lookup-landform" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
 
 tsc_drainage <- "lookup-drainage" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_drainage.csv"))
 
 tsc_soiltype <- "lookup-soiltype" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
 
@@ -1383,7 +1381,7 @@ tec_comms_ccl <- tec_tsc %>%
 ```{r load_tec_tcl, eval=FALSE}
 # LONG RUNNING UPLOAD
 tec_comms_ccl_res <- tec_comms_ccl %>%
-  wastdr::wastd_POST("community-conservationlisting")
+  tsc_POST("community-conservationlisting")
 ```
 
 ## Occurrences
@@ -1405,7 +1403,7 @@ x <- tec_bdy_cae[1,] %>% #as.list() %>%
 # LONG RUNNING UPLOAD
 tec_bdy_cae_res <- tec_bdy_cae %>%
   filter(grepl(fat_filter, community)) %>%
-  chunk_post(serializer = "occ-community-areas")
+  tsc_chunk_post(serializer = "occ-community-areas")
 ```
 
 ### Upload TEC buffers to TSC
@@ -1421,7 +1419,7 @@ The TEC buffer upload excludes all but the numerous ones
 # 
 # tec_buf_cae_res <- tec_buf_cae %>%
 #  dplyr::filter(!grepl(fat_filter, community)) %>%
-#  chunk_post(serializer = "occ-community-areas")
+#  tsc_chunk_post(serializer = "occ-community-areas")
 ```
 
 ### Upload TEC sites to TSC
@@ -1438,15 +1436,15 @@ x <- tec_site_cae[1,] %>% as.list() %>%
 # LONG RUNNING UPLOAD
 tec_site_cae_res <- tec_site_cae %>%
   dplyr::filter(grepl(fat_filter, community)) %>%
-  chunk_post(serializer = "occ-community-points")
+  tsc_chunk_post(serializer = "occ-community-points")
 ```
 
 ### Upload ObservationGroups
 
 ```{r, eval=FALSE}
 # Example: one record
-tec_hab_comp[1,] %>% 
-  wastdr::wastd_bulk_post("occ-observation")
+tec_hab_comp %>% 
+  tsc_occ_obs_post(obstype="HabitatComposition", api_url = dev)
 
 # Bulk upload
 # LONG RUNNING UPLOAD
@@ -1490,13 +1488,13 @@ if (file.exists(tsc_extracted_communities)) {
   
 # Community conservations listings
   tsc_ccl_communities <- "community-conservationlisting" %>% 
-    wastdr::wastd_GET() %>%
+    tsc_GET() %>%
     wastdr::wastd_parse() %>% 
     dplyr::mutate(com_label = community)
 
 # Community occurrences  
  tsc_cae_data <- "occ-community-points" %>% 
-  wastdr::wastd_GET(chunk_size = 100) 
+  tsc_GET(chunk_size = 100) 
 
 tsc_community_sites <- tsc_cae_data %>%
   magrittr::extract2("data") %>% 
@@ -1514,7 +1512,7 @@ tsc_community_boundaries <- tsc_cae_data %>%
 
  # Community occurrence observations
   tsc_tae_observations_communities <- "occ-observation" %>% 
-    wastdr::wastd_GET(query = list(source=15)) %>%
+    tsc_GET(query = list(source=15)) %>%
     wastdr::wastd_parse()
    
 save(tsc_ccl_communities,
@@ -1555,9 +1553,9 @@ bdy_cae_update <- tec_bdy_cae %>%
   dplyr::right_join(tsc_community_boundaries, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-site_cae_create_res <- site_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
+site_cae_create_res <- site_cae_create %>% tsc_chunk_post(serializer = "occ-community-points", chunksize = 100)
 
-bdy_cae_create_res <- bdy_cae_create %>% chunk_post(serializer = "occ-community-points", chunksize = 100)
+bdy_cae_create_res <- bdy_cae_create %>% tsc_chunk_post(serializer = "occ-community-points", chunksize = 100)
 ```
 
 # Compare legacy to migrated data

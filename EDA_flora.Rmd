@@ -1071,7 +1071,7 @@ A manual step annotated legacy conservation criteria exported from TFL to
 conservation criteria IDs in TSC in a spreadsheet.
 
 ```{r get_tsc_tcl, message = FALSE}
-tsc_conslist <- wastdr::wastd_GET("conservationlist") %>% 
+tsc_conslist <- tsc_GET("conservationlist") %>% 
   wastdr::wastd_parse() %>% 
   dplyr::select(
     -conservationcategory_set,
@@ -1083,13 +1083,13 @@ tsc_conslist <- wastdr::wastd_GET("conservationlist") %>%
     list_label = label
   )
 
-tsc_conscat <- wastdr::wastd_GET("conservationcategory") %>% 
+tsc_conscat <- tsc_GET("conservationcategory") %>% 
   wastdr::wastd_parse() %>% 
   dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
   dplyr::left_join(tsc_conslist, by = "list_id")
 
-tsc_conscrit <- wastdr::wastd_GET("conservationcriterion", api_url = prod) %>% 
+tsc_conscrit <- tsc_GET("conservationcriterion", api_url = prod) %>% 
   wastdr::wastd_parse() %>% 
   dplyr::rename(list_id = conservation_list) %>% 
   dplyr::arrange(list_id, rank) %>% 
@@ -1130,57 +1130,57 @@ occurrence data in TFL in a spreadsheet.
 
 ```{r get_tsc_occ_lookups, message=FALSE}
 tsc_landforms <- "lookup-landform" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_landforms.csv"))
 
 tsc_rocktype <- "lookup-rocktype" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_rocktype.csv"))
 
 tsc_soiltype <- "lookup-soiltype" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soiltype.csv"))
 
 tsc_soilcolour <- "lookup-soilcolour" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soilcolour.csv"))
 
 tsc_drainage <- "lookup-drainage" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_drainage.csv"))
 
 tsc_soilcondition <- "lookup-soilcondition" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_soilcondition.csv"))
 
 tsc_surveymethod <- "lookup-surveymethod" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_surveymethod.csv"))
 
 tsc_countmethod <- "lookup-countmethod" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_countmethod.csv"))
 
 tsc_countsubject <- "lookup-countsubject" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_countsubject.csv"))
 
 tsc_plantcondition <- "lookup-plantcondition" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_plantcondition.csv"))
 
 tsc_samp_dest <- "lookup-sampledestination" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   readr::write_csv(path = here::here("data", "tsc_samp_dest.csv"))
 
@@ -1355,7 +1355,7 @@ tfl_plant_count <- plant_count %>%
     immature_fruit_present = immature_fruit_present,
     ripe_fruit_present = ripe_fruit_present,
     dehisced_fruit_present = dehisced_fruit_present,
-    comments = comments,
+    comments = comments
     ) %>%
   dplyr::mutate(obstype = "PlantCount") %>% 
   # base::replace(., is.na(.), "") %>%
@@ -1415,7 +1415,7 @@ The QA part of this workbook will compare TFL names to TSC names.
 
 ```{r make_tfl_tcl, message=FALSE}
 tsc_conscat_sp <- "conservationcategory" %>%
-  wastdr::wastd_GET(api_url = prod) %>%
+  tsc_GET(api_url = prod) %>%
   wastdr::wastd_parse() %>%
   dplyr::rename(
     tsc_category_id = id,
@@ -1570,26 +1570,26 @@ tfl_listing_cat_iucn2012 <- tfl_tcl %>%
 ```{r load_tfl_tcl, eval=FALSE}
 # Example: one record
 # tfl_listing_cat_priority_res <- tfl_listing_cat_priority[1,] %>%
-#   wastdr::wastd_POST("taxon-conservationlisting")
+#   tsc_POST("taxon-conservationlisting")
 # tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc[1,] %>% 
-#   wastdr::wastd_POST("taxon-conservationlisting")
+#   tsc_POST("taxon-conservationlisting")
 # tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994[1,] %>% 
-#   wastdr::wastd_POST("taxon-conservationlisting")
+#   tsc_POST("taxon-conservationlisting")
 # tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001[1,] %>% 
-  # wastdr::wastd_POST("taxon-conservationlisting")
+  # tsc_POST("taxon-conservationlisting")
 
 # LONG RUNNING UPLOAD
 tfl_listing_cat_priority_res <- tfl_listing_cat_priority %>% 
-  chunk_post("taxon-conservationlisting", chunksize = 100, verbose = TRUE)
+  tsc_chunk_post("taxon-conservationlisting", chunksize = 100, verbose = TRUE)
 tfl_listing_cat_epbc_res <- tfl_listing_cat_epbc %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", verbose = TRUE)
+  tsc_POST("taxon-conservationlisting", verbose = TRUE)
 tfl_listing_cat_iucn1994_res <-  tfl_listing_cat_iucn1994 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", verbose = TRUE)
+  tsc_POST("taxon-conservationlisting", verbose = TRUE)
 tfl_listing_cat_iucn2001_res <- tfl_listing_cat_iucn2001 %>% 
-  wastdr::wastd_POST("taxon-conservationlisting", verbose = TRUE)
+  tsc_POST("taxon-conservationlisting", verbose = TRUE)
 
 # There are none, skip upload:
-# tfl_cl_iucn2012 %>% wastdr::wastd_POST("taxon-conservationlisting")
+# tfl_cl_iucn2012 %>% tsc_POST("taxon-conservationlisting")
 
 # Expire cached TSC TCL
 # if (file.exists(tsc_cl_flora_datafile)) {fs::file_delete(tsc_cl_flora_datafile)}
@@ -1608,7 +1608,7 @@ one_taxon_eoo <- tibble::tibble(
   name_id = 24162,
   eoo = eoo_polygon(tfl_occ, nid = 17914) %>% sfc_geojson()
 )
-one_taxon_eoo %>% wastdr::wastd_POST("taxon")
+one_taxon_eoo %>% tsc_POST("taxon")
 ```
 
 ### Upload EOOs to TSC
@@ -1629,7 +1629,7 @@ tfl_eoo <- tfl_occ_with_coords %>% make_eoo()
 ```
 
 ```{r load_eoo, eval=FALSE}
-tfl_eoo %>% dplyr::select(-data, -eoo_sfc) %>% wastdr::wastd_POST("taxon")
+tfl_eoo %>% dplyr::select(-data, -eoo_sfc) %>% tsc_POST("taxon")
 ```
 
 ### Upload TAEs to TSC
@@ -1646,7 +1646,7 @@ x <- tfl_tae[1,] %>% as.list() %>%
 
 # Upload all occurrences to TSC PROD
 # LONG RUNNING UPLOAD
-tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
+tfl_tae %>% tsc_chunk_post(serializer = "occ-taxon-points")
 ```
 
 ### Upload ObservationGroups
@@ -1654,28 +1654,28 @@ tfl_tae %>% chunk_post(serializer = "occ-taxon-points")
 ```{r load_obsgroups, eval=FALSE}
 # Example: one record
 # tfl_phys_sample_res <- tfl_phys_sample[1,] %>%
-#   wastd_occ_obs_post(obstype="PhysicalSample")
+#   tsc_occ_obs_post(obstype="PhysicalSample")
 # tfl_hab_cond_res <- tfl_hab_cond[1,]%>%
-#   wastd_occ_obs_post(obstype="HabitatCondition")
+#   tsc_occ_obs_post(obstype="HabitatCondition")
 # tfl_area_ass_res <- tfl_area_ass[1,] %>%
-#   wastd_occ_obs_post(obstype="AreaAssessment")
+#   tsc_occ_obs_post(obstype="AreaAssessment")
 tfl_plant_count_res <- tfl_plant_count[1,] %>%
-  wastd_occ_obs_post(obstype="PlantCount", api_url = uat)
+  tsc_occ_obs_post(obstype="PlantCount", api_url = uat)
 # tfl_hab_comp_res <- tfl_hab_comp[1,] %>%
-#   wastd_occ_obs_post(obstype="HabitatComposition")
+#   tsc_occ_obs_post(obstype="HabitatComposition")
 
 # Bulk upload
 # LONG RUNNING UPLOAD
 tfl_phys_sample_res <- tfl_phys_sample %>%
-  wastd_occ_obs_post(obstype="PhysicalSample", chunksize = 1000) #23632
+  tsc_occ_obs_post(obstype="PhysicalSample", chunksize = 1000) #23632
 tfl_hab_cond_res <- tfl_hab_cond %>%
-  wastd_occ_obs_post(obstype="HabitatCondition", chunksize = 1000) #22181
+  tsc_occ_obs_post(obstype="HabitatCondition", chunksize = 1000) #22181
 tfl_area_ass_res <- tfl_area_ass %>%
-  wastd_occ_obs_post(obstype="AreaAssessment", chunksize = 1000) #9899
+  tsc_occ_obs_post(obstype="AreaAssessment", chunksize = 1000) #9899
 tfl_plant_count_res <- tfl_plant_count[1:1000,] %>%
-  wastd_occ_obs_post(obstype="PlantCount", api_url = uat, chunksize = 1000) #38624
+  tsc_occ_obs_post(obstype="PlantCount", api_url = uat, chunksize = 1000) #38624
 tfl_hab_comp_res <- tfl_hab_comp %>%
-  wastd_occ_obs_post(obstype="HabitatComposition", chunksize = 1000) #40996
+  tsc_occ_obs_post(obstype="HabitatComposition", chunksize = 1000) #40996
 
 # setdiff(tfl_hab_comp$source_id,tfl_tae$source_id) - All ObservationGroups checked.
 
@@ -1722,24 +1722,24 @@ if (file.exists(tsc_extracted_flora)) {
   
   # Flora taxa
   tsc_taxa_flora <- "taxon" %>%
-    wastdr::wastd_GET(query = list(paraphyletic_groups = 21)) %>%
+    tsc_GET(query = list(paraphyletic_groups = 21)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = name_id %>% as.character())
   
   # Flora conservation listings
   tsc_tcl_flora <- "taxon-conservationlisting" %>% 
-    wastdr::wastd_GET() %>%
+    tsc_GET() %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = taxon %>% as.character()) %>%
     dplyr::inner_join(tsc_taxa_flora, by = "taxon")
 
   # Flora occurrences
   tsc_tae <- "occ-taxon-points" %>% 
-    wastdr::wastd_GET(query = list(source=11)) %>%
+    tsc_GET(query = list(source=11)) %>%
     wastdr::wastd_parse() %>%
     dplyr::mutate(taxon = taxon %>% as.character())
   
-  tsc_areas <- wastdr::wastd_GET("area") %>%
+  tsc_areas <- tsc_GET("area") %>%
     magrittr::extract2("data") %>%
     geojsonio::as.json() %>%
     geojsonsf::geojson_sf()
@@ -1754,7 +1754,7 @@ if (file.exists(tsc_extracted_flora)) {
   
   # Flora occurrence observations
   tsc_tae_observations <- "occ-observation" %>% 
-    wastdr::wastd_GET() %>%
+    tsc_GET() %>%
     wastdr::wastd_parse()
   
   tsc_flora_observations <- tsc_tae_observations %>% 
@@ -1802,7 +1802,7 @@ tfl_tae_create <- tfl_tae %>% dplyr::anti_join(tsc_tae, by = "source_id")
 tfl_tae_update <- tfl_tae %>% dplyr::semi_join(tsc_tae, by = "source_id")
 
 ## Upload the missing tfa_tae to tsc_tae
-# tfl_tae_create %>% chunk_post(serializer = "occ-taxon-points")
+# tfl_tae_create %>% tsc_chunk_post(serializer = "occ-taxon-points")
 ```
 
 # Compare legacy from TFL to migrated data from TSC
