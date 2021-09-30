@@ -70,7 +70,7 @@ library(tscr)
 dev <- "http://localhost:8220/api/1/"
 uat <- "https://tsc-uat.dbca.wa.gov.au/api/1/"
 prod <- "https://tsc.dbca.wa.gov.au/api/1/"
-dev_token <- Sys.getenv("WASTDR_API_DEV_TOKEN", unset = "")
+dev_token <- Sys.getenv("TSC_API_DEV_TOKEN", unset = "")
 
 # -----------------------------------------------------------------------------#
 # Setup packages
@@ -82,133 +82,15 @@ ckanr::ckanr_setup(url = Sys.getenv("CKAN_URL"), key = Sys.getenv("CKAN_API_KEY"
 
 # -----------------------------------------------------------------------------#
 # Web helpers
-#
-#' Download, extract and open a zipped Access database from a CKAN dataset.
-#'
-#' The extracted file will be kept in `destdir`.
-#' If a file with the expected filename already exists in `destdir`, this file
-#' will be used.
-#' To force a fresh download, remove or rename the file in `destdir`.
-#'
-#' @param resource_id The CKAN resource ID of a zipped Access DB.
-#' @param destdir The local destination directory for the extracted file,
-#'  will be created if not existing. Default: `here::here("data")`.
-#' @param dateformat The parameter dateformat for `Hmisc::mdb.get()`,
-#'   default: `%Y-%m-%d`.
-#' @param as.is The parameter `as.is` for `Hmisc::mdb.get()`, default: TRUE.
-#' @returns The `Hmisc::mdb.get` connection.
-dl_mdbzip <- function(resource_id,
-                      destdir = here::here("data"),
-                      dateformat = "%m-%d-%Y",
-                      as.is = TRUE,
-                      verbose = wastdr::get_wastdr_verbose()) {
-    if (!fs::dir_exists(destdir)) {
-        fs::dir_create(destdir)
-    }
-
-    r <- ckanr::resource_show(resource_id)
-    res_url <- r$url %>% stringr::str_replace("dpaw", "dbca")
-    res_fn <- r$url %>% fs::path_file()
-    res_file <- fs::path(fs::path(destdir, res_fn))
-
-    if (!fs::file_exists(res_file)) {
-        if (verbose == TRUE)
-            wastdr::wastdr_msg_info(glue::glue("Downloading {r$name} from CKAN to {res_file}..."))
-        utils::download.file(res_url, res_file)
-    } else {
-        if (verbose == TRUE)
-            wastdr::wastdr_msg_noop(
-                glue::glue(
-                    "Keeping already downloaded file {res_fn}. ",
-                    "Delete {res_fn} to force fresh download."
-                )
-            )
-
-    }
-
-    if (verbose == TRUE)
-        wastdr::wastdr_msg_info(glue::glue("Extracting {res_file}..."))
-    dbfile <- utils::unzip(res_file, exdir = destdir)
-    con <-
-        Hmisc::mdb.get(dbfile, dateformat = dateformat, as.is = as.is)
-    if (verbose == TRUE)
-        wastdr::wastdr_msg_success("Done, returning open db connection.")
-    con
-}
-
-#' Create or update a CKAN resource.
-#'
-#'
-#' @details The data will be written to CSV in a directory `data/` with the resource title
-#'   in snake_case. If no resource ID is given, a resource will be created.
-#'   The resource ID is returned in either case.
-#' @param data A data frame to write to disk
-#' @param resource_title A CKAN resource title
-#' @param dataset_id A CKAN dataset (package) ID
-#' @param resource_id A CKAN resource ID, default: NULL
-#' @return The resource ID of the created or updated resource.
-#' @examples
-#' \notrun{
-#' d <- ckanr::package_show("threatened-ecological-communities-database")
-#'
-#' # Run this once to create resource and retrieve resource ID
-#' upload_to_ckan(a_tibble, "Resource title", d$id, resource_id = NULL)
-#' # returns "502c74d7-32be-453f-aff6-c50aedd3deed" - paste into resource_id
-#'
-#' # Re-run this to update resource with new data
-#' upload_to_ckan(a_tibble, "Resource title", d$id, resource_id = "502c74d7-32be-453f-aff6-c50aedd3deed")
-#' }
-upload_to_ckan <- function(data,
-                           resource_title,
-                           dataset_id,
-                           resource_id = NULL) {
-    resource_filename <- resource_title %>%
-        stringr::str_to_lower(.) %>%
-        stringr::str_replace_all(., " ", "_") %>%
-        paste0(".csv") %>%
-        file.path("data", .)
-
-    write_delim(data, resource_filename, delim = ",")
-
-    if (is.null(resource_id)) {
-        cat("No resource ID given, creating a new resource for",
-            resource_title,
-            ": ")
-        r <- ckanr::resource_create(
-            package_id = dataset_id,
-            format = "csv",
-            name = resource_title,
-            upload = resource_filename
-        )
-    } else {
-        cat("Updating CKAN resource", resource_title, ": ")
-        r <- ckanr::resource_update(resource_id,
-                                    resource_filename)
-
-    }
-    r$id
-}
-
-#' Upload a file to an existing CKAN resource ID. Skip if file missing.
-upload_file_to_ckan <- function(rid, fn) {
-    if (fs::file_exists(fn)) {
-        message(glue::glue("Uploading {fn} to data catalogue..."))
-        r <- ckanr::resource_update(rid, fn)
-        message(glue::glue("Updated {r$name} at\n{r$url}"))
-    } else {
-        message(glue::glue("File {fn} does not exist, skipping."))
-    }
-}
-
+# tscr::dl_mdbzip()
+# tscr::upload_to_ckan()
+# tscr::upload_file_to_ckan()
 
 #' Load a CSV from a CKAN resource ID, requires ckanr_setup
 load_ckan_csv <- .  %>%
     resource_show() %>%
     magrittr::extract2("url") %>%
     read_csv()
-
-
-
 
 # -----------------------------------------------------------------------------#
 # Convenience helpers
@@ -411,21 +293,23 @@ anim_fauna <- function(data, title, nid) {
 #'testthat::expect_equal(fix_incomplete_date(""),
 #'                       lubridate::parse_date_time("01/01/1900 12:00:00+08",orders = "dmYHMSz", tz = "Australia/Perth"))
 #' }
-fix_incomplete_date <- function(date_string,
-                                default_date_notime =
-                                    (
-                                        lubridate::parse_date_time("01/01/1900 12:00:00+08", orders = "dmYHMSz", tz = "Australia/Perth")
-                                    )) {
-    if (date_string == "") {
-        return(default_date_notime)
-    }
+fix_incomplete_date <-
+    function(date_string,
+             default_date_notime = (
+                 lubridate::parse_date_time(
+                     "01/01/1900 12:00:00+08",
+                     orders = "dmYHMSz",
+                     tz = "Australia/Perth")
+                 )
+             ) {
+        if (date_string == "") {return(default_date_notime)}
 
-    date_parts <- stringr::str_split(date_string, "/")
-    day_int <- as.integer(date_parts[[1]][[1]])
-    day <- ifelse(is.na(day_int), 1, day_int)
-    month_int <- as.integer(date_parts[[1]][[2]])
-    month <- ifelse(is.na(month_int), 1, month_int)
-    year_int <- as.integer(date_parts[[1]][[3]])
-    year <- ifelse(is.na(year_int), 1900, year_int)
-    lubridate::make_datetime(year, month, day, 12, tz = tz)
-}
+        date_parts <- stringr::str_split(date_string, "/")
+        day_int <- as.integer(date_parts[[1]][[1]])
+        day <- ifelse(is.na(day_int), 1, day_int)
+        month_int <- as.integer(date_parts[[1]][[2]])
+        month <- ifelse(is.na(month_int), 1, month_int)
+        year_int <- as.integer(date_parts[[1]][[3]])
+        year <- ifelse(is.na(year_int), 1900, year_int)
+        lubridate::make_datetime(year, month, day, 12, tz = tz)
+    }
